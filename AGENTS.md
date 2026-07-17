@@ -120,3 +120,15 @@ RFC 9562 v8 layout composition + constraint-guided mutation as repair.
 - `benchmark.ts` has no module-level side effects — call `init(host?)` to wire up DOM and window hooks.
 - `index.html` loads `dist/benchmark.js` via `<script type="module">` and calls `init()`.
 - `tsconfig.json` extends `tsconfig.base.json`. `tsconfig.scripts.json` extends the same base for script typechecking.
+
+## Releasing
+
+GenoID uses [changesets](https://github.com/changesets/changesets) for version management (no npm publish — version is metadata + git tags only).
+
+| Command | What |
+|---|---|
+| `bun x changeset add` | Describe a change (major/minor/patch + summary) → writes a file in `.changeset/` |
+| `bun run version-packages` (`changeset version`) | Bumps `package.json`, generates `CHANGELOG.md`, consumes the changeset |
+| `git tag -a vX.Y.Z -m "genoid X.Y.Z"` | Tag the release locally (we skip `changeset publish` — no registry) |
+
+Workflow: add a changeset per logical change → run `version-packages` → commit the bump (`package.json`, `CHANGELOG.md`, `.changeset/`) → tag. `commit: false` is set in `.changeset/config.json`, so changesets never auto-commits.
