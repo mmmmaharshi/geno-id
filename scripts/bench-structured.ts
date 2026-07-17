@@ -20,16 +20,17 @@ const {
   forceVersionVariant,
   getFieldValue,
   completeLayout,
+  uuidToRandomBits,
 } = algo as {
   genStructuredParent: (l: V8Layout, mask: number[]) => Uint8Array
   composeStructured: (l: V8Layout, a: Uint8Array, b: Uint8Array, fs: number) => Uint8Array
   repairConstraints: (l: V8Layout, b: Uint8Array) => number
   genStructuredGenoID: (l: V8Layout) => string
   genGenoID: () => string
-  validateLayout: (l: V8Layout) => void
   forceVersionVariant: (b: Uint8Array) => void
   getFieldValue: (b: Uint8Array, f: V8Field) => number
   completeLayout: (name: string, core: V8Field[]) => V8Layout
+  uuidToRandomBits: (uuid: string, layout: V8Layout) => string
 }
 
 // ---------------- E1: Composition correctness (RQ1) ----------------
@@ -152,23 +153,17 @@ function e3e4e5(): void {
   console.log(`  dbkey layout, n=${nColl}: ${c} collisions`)
   console.log(`  theoretical 50% collision n: ${birthdayBound50(122).toExponential(2)}`)
 
-  // Uniformity on random-field bits
+  // Uniformity on random-field bits (reuse the canonical bit extractor)
   const randomFields = layout.fields.filter((f) => f.type === "random")
   const totalBits = randomFields.reduce((s, f) => s + f.length, 0)
   const ones = new Array<number>(totalBits).fill(0)
   const M = 50_000
   for (let i = 0; i < M; i++) {
-    const uuid = genStructuredGenoID(layout)
-    const b = new Uint8Array(16)
-    const h = uuid.replaceAll("-", "")
-    for (let j = 0; j < 16; j++) b[j] = Number.parseInt(h.slice(j * 2, j * 2 + 2), 16)
+    const bits = uuidToRandomBits(genStructuredGenoID(layout), layout)
     let idx = 0
-    for (const f of randomFields) {
-      for (let bit = 0; bit < f.length; bit++) {
-        const pos = f.start + bit
-        if ((b[pos >> 3] >> (7 - (pos & 7))) & 1) ones[idx]++
-        idx++
-      }
+    for (const ch of bits) {
+      if (ch === "1") ones[idx]++
+      idx++
     }
   }
   const maxDev = Math.max(...ones.map((o) => Math.abs(o / M - 0.5)))

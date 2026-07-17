@@ -6,9 +6,10 @@ const __dirname = import.meta.dirname
 const root = path.resolve(__dirname, "..")
 
 const algo = await import(path.resolve(root, "dist/algo.js"))
-const { genStructuredGenoID, completeLayout } = algo as {
+const { genStructuredGenoID, completeLayout, uuidToRandomBits } = algo as {
   genStructuredGenoID: (l: V8Layout) => string
   completeLayout: (name: string, core: V8Field[]) => V8Layout
+  uuidToRandomBits: (uuid: string, layout: V8Layout) => string
 }
 
 const layouts: V8Layout[] = [
@@ -26,30 +27,6 @@ const layouts: V8Layout[] = [
     { name: "seq", start: 66, length: 24, type: "counter", constraint: { monotonic: true } },
   ]),
 ]
-
-function uuidToBytes(uuid: string): Uint8Array {
-  const h = uuid.replaceAll("-", "")
-  const b = new Uint8Array(16)
-  for (let i = 0; i < 16; i++) b[i] = Number.parseInt(h.slice(i * 2, i * 2 + 2), 16)
-  return b
-}
-
-// Extract only the bits belonging to random fields — the high-entropy part
-// that NIST should assess. Structured fields are low-entropy by design and
-// must not poison the randomness test.
-function uuidToRandomBits(uuid: string, layout: V8Layout): string {
-  const b = uuidToBytes(uuid)
-  let bits = ""
-  for (const f of layout.fields) {
-    if (f.type !== "random") continue
-    for (let i = 0; i < f.length; i++) {
-      const pos = f.start + i
-      const bit = (b[pos >> 3] >> (7 - (pos & 7))) & 1
-      bits += bit ? "1" : "0"
-    }
-  }
-  return bits
-}
 
 const TARGET_BITS = 1_220_000
 

@@ -254,6 +254,29 @@ export function forceVersionVariant(bytes: Uint8Array): void {
   bytes[8] = (bytes[8] & 0x3f) | 0x80
 }
 
+export function uuidToBytes(uuid: string): Uint8Array {
+  const h = uuid.replaceAll("-", "")
+  const b = new Uint8Array(16)
+  for (let j = 0; j < 16; j++) b[j] = Number.parseInt(h.slice(j * 2, j * 2 + 2), 16)
+  return b
+}
+
+// Extract only the layout's `random`-type bits from a UUID, as an ordered
+// "0/1" string (field order, MSB-first per byte). Used for NIST bit-stream
+// export; the canonical home keeps layout-aware extraction in one place.
+export function uuidToRandomBits(uuid: string, layout: V8Layout): string {
+  const b = uuidToBytes(uuid)
+  let bits = ""
+  for (const f of layout.fields) {
+    if (f.type !== "random") continue
+    for (let bit = 0; bit < f.length; bit++) {
+      const pos = f.start + bit
+      bits += ((b[pos >> 3] >> (7 - (pos & 7))) & 1).toString()
+    }
+  }
+  return bits
+}
+
 /**
  * Fill any gaps left by the caller's declared fields (including the reserved
  * v8 nibble bits) with `random`-type filler fields so the layout covers all
