@@ -14,7 +14,7 @@
     "bench": "bun run scripts/bench.ts",
     "test:stats": "bun run scripts/stats.ts",
     "puppeteer": "bun run scripts/puppeteer.ts",
-    "verify-puppeteer": "bun run scripts/puppeteer-test.ts",
+    "verify-puppeteer": "bun run scripts/puppeteer.dryrun.ts",
     "changeset": "changeset",
     "version-packages": "changeset version"
   },

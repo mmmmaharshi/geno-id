@@ -1,6 +1,7 @@
 node_modules/
 dist/
-bun.lockb
-*.results.json
+bun.lock
+*results.json
+!benchmark_results.json
 *_failure.png
 /tmp/

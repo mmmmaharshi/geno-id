@@ -13,7 +13,7 @@ Novel GA-inspired UUIDv8 algorithm benchmark against v4, v7, SHA-256 hash-derive
 | `scripts/bench.ts` | Node.js benchmark + GenoID experimental variants (Fast v1–v3). Imports from `dist/bench-core.js` and `dist/algo.js`. |
 | `scripts/stats.ts` | NIST SP 800-22 monobit, runs, chi-square, pairwise correlation. Imports from `dist/algo.js`. |
 | `scripts/puppeteer.ts` | Puppeteer automation (launches Chrome, runs benchmark, scrapes results). Exports `runBenchmark` with injectable `launch` factory. |
-| `scripts/puppeteer-test.ts` | Dry-run test with JSDOM mock. Calls `init()` after import (no global patching needed). |
+| `scripts/puppeteer.dryrun.ts` | Dry-run test with JSDOM mock. Calls `init()` after import (no global patching needed). |
 
 ## Running benchmarks
 
