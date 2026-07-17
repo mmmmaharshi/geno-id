@@ -164,3 +164,5 @@ GenoID uses [changesets](https://github.com/changesets/changesets) for version m
 | `git tag -a vX.Y.Z -m "genoid X.Y.Z"` | Tag the release locally (we skip `changeset publish` — no registry) |
 
 Workflow: add a changeset per logical change → run `version-packages` → commit the bump (`package.json`, `CHANGELOG.md`, `.changeset/`) → tag. `commit: false` is set in `.changeset/config.json`, so changesets never auto-commits.
+
+For richer changelog/release-note prose, the `changelog-automation` skill (installed globally) can assist in drafting `.changeset/*.md` summaries; changesets remains the source of truth for versioning and `CHANGELOG.md` generation.
