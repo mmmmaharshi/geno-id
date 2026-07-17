@@ -24,17 +24,14 @@ The output is a valid v8 UUID that carries your structure while keeping
 CSPRNG-grade randomness in the remaining bits.
 
 ## Evaluation
-- **Composition correctness (E1):** 1.5M structured-field checks → 0 mismatches,
-  0 constraint violations.
-- **Repair beats rejection (E2):** GA repairs/UUID ≈ k (linear, O(k·8) ops);
-  naive rejection needs 64^k trials (k=6 → 6.9×10¹⁰).
-- **Collision + uniformity safety (E3–E5):** 0 collisions in 2M UUIDs
-  (50%-collision n ≈ 2.7×10¹⁸); uniformity max deviation 0.0053.
-- **Statistical quality (NIST SP 800-22):** all 15 tests PASS for the dbkey,
-  multitenant, and eventsourcing layouts.
-- **Practical throughput (E6 + browser):** ≈0.53M structured UUIDs/s; only
-  ~3× slower than native `crypto.randomUUID` in-browser (and the base GenoID
-  pool is 7.5× faster than native v4).
+
+| Experiment | Result |
+|---|---|
+| Composition correctness (E1) | 1.5M structured-field checks → 0 mismatches, 0 constraint violations |
+| Repair beats rejection (E2) | GA repairs/UUID ≈ k (linear, O(k·8) ops); naive rejection needs 64^k trials (k=6 → 6.9×10¹⁰) |
+| Collision + uniformity safety (E3–E5) | 0 collisions in 2M UUIDs (50%-collision n ≈ 2.7×10¹⁸); uniformity max deviation 0.0053 |
+| Statistical quality (NIST SP 800-22) | all 15 tests PASS for the dbkey, multitenant, and eventsourcing layouts |
+| Practical throughput (E6 + browser) | ≈0.53M structured UUIDs/s; ~3× slower than native `crypto.randomUUID` in-browser (base GenoID pool 7.5× faster than native v4) |
 
 ## Applications
 The framework targets systems that need IDs to be both unique *and*
