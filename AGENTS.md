@@ -85,6 +85,11 @@ Automatic steps (run after the gates pass):
 4. Commit the bump (`package.json`, `CHANGELOG.md`, `.changeset/`).
 5. Tag locally: `git tag -a vX.Y.Z -m "genoid X.Y.Z"`.
 6. Push `main` and the new tag to `origin` when a remote is configured.
+7. Create the GitHub Release for `vX.Y.Z` with that version's `CHANGELOG.md`
+   section as notes (mark it latest):
+   `gh release create vX.Y.Z --title "genoid X.Y.Z" --latest --notes-file <vX.Y.Z section>`.
+   Tags alone do not create a Release page — this step is what makes the
+   changelog visible on GitHub.
 
 Example: Phase A (new comparison baselines + 10M collision scaling + NIST on baselines)
 was a **minor** addition → bump to `1.2.0`.
