@@ -76,11 +76,15 @@ Bump type (semver):
 Automatic steps (run after the gates pass):
 1. `bun x changeset add` (or write `.changeset/<name>.md`) with the correct type and a
    one-line summary.
-2. `bun run version-packages` — bumps `package.json`, regenerates `CHANGELOG.md`, consumes
-   the changeset.
-3. Commit the bump (`package.json`, `CHANGELOG.md`, `.changeset/`).
-4. Tag locally: `git tag -a vX.Y.Z -m "genoid X.Y.Z"`.
-5. Push `main` and the new tag to `origin` when a remote is configured.
+2. `bun run version-packages` — bumps `package.json` and consumes the changeset.
+   CHANGELOG generation is disabled (`changelog: false` in `.changeset/config.json`),
+   so the entry is authored manually in the next step.
+3. Add the `CHANGELOG.md` entry for `vX.Y.Z` in **Keep a Changelog** style (see the
+   `changelog-automation` skill): Summary, Highlights (with emoji), Breaking Changes,
+   Upgrade Guide, Known Issues, Dependencies Updated. Prepend above the previous release.
+4. Commit the bump (`package.json`, `CHANGELOG.md`, `.changeset/`).
+5. Tag locally: `git tag -a vX.Y.Z -m "genoid X.Y.Z"`.
+6. Push `main` and the new tag to `origin` when a remote is configured.
 
 Example: Phase A (new comparison baselines + 10M collision scaling + NIST on baselines)
 was a **minor** addition → bump to `1.2.0`.
@@ -160,9 +164,9 @@ GenoID uses [changesets](https://github.com/changesets/changesets) for version m
 | Command | What |
 |---|---|
 | `bun x changeset add` | Describe a change (major/minor/patch + summary) → writes a file in `.changeset/` |
-| `bun run version-packages` (`changeset version`) | Bumps `package.json`, generates `CHANGELOG.md`, consumes the changeset |
+| `bun run version-packages` (`changeset version`) | Bumps `package.json` and consumes the changeset (CHANGELOG generation is disabled via `changelog: false`) |
 | `git tag -a vX.Y.Z -m "genoid X.Y.Z"` | Tag the release locally (we skip `changeset publish` — no registry) |
 
-Workflow: add a changeset per logical change → run `version-packages` → commit the bump (`package.json`, `CHANGELOG.md`, `.changeset/`) → tag. `commit: false` is set in `.changeset/config.json`, so changesets never auto-commits.
+Workflow: add a changeset per logical change → run `version-packages` → write the `CHANGELOG.md` entry manually in Keep a Changelog style (see `changelog-automation` skill) → commit the bump (`package.json`, `CHANGELOG.md`, `.changeset/`) → tag. `commit: false` is set in `.changeset/config.json`, so changesets never auto-commits.
 
-For richer changelog/release-note prose, the `changelog-automation` skill (installed globally) can assist in drafting `.changeset/*.md` summaries; changesets remains the source of truth for versioning and `CHANGELOG.md` generation.
+`CHANGELOG.md` is hand-maintained in **Keep a Changelog** format (the `changelog-automation` skill assists with prose); changesets handles version bumps only.
