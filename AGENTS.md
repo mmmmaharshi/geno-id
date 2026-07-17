@@ -106,6 +106,9 @@ RFC 9562 v8 layout composition + constraint-guided mutation as repair.
 | `scripts/export-degraded.ts` | Export 5 controlled-entropy degraded sources × (raw + GA) for NIST rescue testing |
 | `scripts/export-structured.ts` | Export structured-layout samples (dbkey, multitenant, eventsourcing) for NIST |
 | `scripts/bench-structured.ts` | E1–E6: composition, repair-vs-rejection, collision/uniformity, throughput |
+| `scripts/baselines.ts` | Phase A comparison baselines: `genPgUuidV8` (closest prior art), `genUlid`/`genUlidV8`, `genKsuid`, `genSnowflake` + `extractRandomBits` (payload-only uniformity) |
+| `scripts/baselines.test.ts` | TDD unit tests for the baseline generators |
+| `scripts/export-baselines.ts` | Export random-payload bit streams of UUID-shaped baselines for NIST SP 800-22 |
 | `scripts/nist-bridge.py` | Run full 15-test NIST SP 800-22 battery on all sample files |
 | `scripts/test-crypto-v8.ts` | Node.js crypto test suite adapted for v8 (4 tests) |
 | `scripts/stats.ts` | In-house monobit, runs, chi-square, pairwise correlation, entropy |

@@ -6,6 +6,15 @@ import {
   collisionTest,
   collisionTestAsync,
 } from "../dist/bench-core.js"
+import {
+  genPgUuidV8,
+  genUlid,
+  genUlidV8,
+  genKsuid,
+  genSnowflake,
+  extractRandomBits,
+  TIMESTAMPED_FIXED,
+} from "./baselines.ts"
 
 const __dirname = import.meta.dirname
 const root = path.resolve(__dirname, "..")
@@ -183,3 +192,79 @@ console.log("v4 (122 bits):", birthdayBound50(122).toExponential(3))
 console.log("v7 random part (74 bits):", birthdayBound50(74).toExponential(3))
 console.log("hash-derived (121 bits):", birthdayBound50(121).toExponential(3))
 console.log("GenoID (122 bits):", birthdayBound50(122).toExponential(3))
+
+// ---------- Baseline comparison (Phase A) ----------
+// pg_uuid_v8 is the closest prior art (UUID v4-compatible steganographic timestamp).
+// ULID / KSUID / Snowflake are the broader structured-ID landscape.
+
+console.log("\n--- Baseline throughput (Node v22, V8, single run) ---")
+const rPg = benchSync(genPgUuidV8, nSync)
+printRate("pg_uuid_v8 (steganographic v4, XOR)", rPg)
+const rUlid = benchSync(genUlid, nSync)
+printRate("ULID (26-char base32)", rUlid)
+const rUlidV8 = benchSync(genUlidV8, nSync)
+printRate("ULID-v8 (UUID-mapped)", rUlidV8)
+const rKsuid = benchSync(genKsuid, nSync)
+printRate("KSUID (27-char base62, 160-bit)", rKsuid)
+const rSnow = benchSync(() => genSnowflake(), nSync)
+printRate("Snowflake (64-bit int)", rSnow)
+
+function printRate(label: string, r: { opsPerSec: number; elapsed: number; n: number }) {
+  console.log(
+    `${label}:`,
+    r.opsPerSec.toFixed(0),
+    "ops/sec,",
+    ((r.elapsed / r.n) * 1000).toFixed(4),
+    "us/op",
+  )
+}
+
+console.log("\n--- Baseline collision (UUID-shaped only, n=2M) ---")
+console.log(`pg_uuid_v8, n=${nColl}:`, collisionTest(genPgUuidV8, nColl), "collisions")
+console.log(`ULID-v8, n=${nColl}:`, collisionTest(genUlidV8, nColl), "collisions")
+
+console.log("\n--- Baseline uniformity (random payload only, monobit) ---")
+// Naive whole-UUID histograms are invalid for timestamped IDs (byte0 is a constant
+// timestamp), so we measure ones-balance over the random payload bits instead.
+function randomMonobit(
+  fn: () => string,
+  fixed: [number, number][],
+  n: number,
+  label: string,
+): void {
+  let ones = 0
+  let total = 0
+  for (let i = 0; i < n; i++) {
+    const bits = extractRandomBits(fn(), fixed)
+    for (const b of bits) ones += b
+    total += bits.length
+  }
+  const balance = ones / total
+  // 99.7% of the time (binomial, large n) balance stays within ~0.5 ± 0.011.
+  const pass = Math.abs(balance - 0.5) < 0.02
+  console.log(
+    `${label}: random-bit-balance=${balance.toFixed(5)} (expect 0.500), PASS=${pass}`,
+  )
+}
+
+await randomMonobit(genPgUuidV8, TIMESTAMPED_FIXED, 20_000, "pg_uuid_v8 (steganographic v4)")
+await randomMonobit(genUlidV8, TIMESTAMPED_FIXED, 20_000, "ULID-v8 (UUID-mapped)")
+
+// Exact (BigInt) large-scale collision test — memory-efficient vs full-string Set.
+function collisionTestBigInt(fn: () => string, n: number): number {
+  const set = new Set<bigint>()
+  let collisions = 0
+  for (let i = 0; i < n; i++) {
+    const v = BigInt("0x" + fn().replaceAll("-", ""))
+    if (set.has(v)) collisions++
+    else set.add(v)
+  }
+  return collisions
+}
+
+console.log("\n--- Large-scale collision (n=10M, exact BigInt) ---")
+const nLarge = 10_000_000
+console.log(`v4 native, n=${nLarge}:`, collisionTestBigInt(genV4Native, nLarge), "collisions")
+console.log(`GenoID, n=${nLarge}:`, collisionTestBigInt(genGenoID, nLarge), "collisions")
+console.log(`pg_uuid_v8, n=${nLarge}:`, collisionTestBigInt(genPgUuidV8, nLarge), "collisions")
+console.log(`ULID-v8, n=${nLarge}:`, collisionTestBigInt(genUlidV8, nLarge), "collisions")
