@@ -56,6 +56,35 @@ After every change to any `.ts` file:
 6. Run `bun run puppeteer` (browser/deployable check: confirm `dist/benchmark.js` + `index.html` run with `browserErrors: []`, the `GenoID-structured` entry present, and 0 collisions — i.e. deployable matches development behavior)
 7. Fix any errors from the above before continuing
 
+## Automatic versioning
+
+When a **worthy improvement** is completed and the Agent workflow gates (steps 1–7)
+are green, the agent must proactively cut a release with the changesets workflow — do
+**not** leave `package.json` stale. This is automatic; do not wait to be asked.
+
+A change is *worthy* if it is any of: a new feature / new public API, a completed
+experiment phase (Phase A/B/C/D), a bug fix, or a significant results/documentation
+addition. Trivial formatting-, lint-only, or comment-only changes are not worthy on
+their own (they may ride along in the next changeset).
+
+Bump type (semver):
+- **major** — breaking change to a public API or to the on-disk/sample format.
+- **minor** — new feature, new public function, new baseline/experiment, or a newly
+  documented result.
+- **patch** — bug fix, documentation correction, or behavior-preserving refactor.
+
+Automatic steps (run after the gates pass):
+1. `bun x changeset add` (or write `.changeset/<name>.md`) with the correct type and a
+   one-line summary.
+2. `bun run version-packages` — bumps `package.json`, regenerates `CHANGELOG.md`, consumes
+   the changeset.
+3. Commit the bump (`package.json`, `CHANGELOG.md`, `.changeset/`).
+4. Tag locally: `git tag -a vX.Y.Z -m "genoid X.Y.Z"`.
+5. Push `main` and the new tag to `origin` when a remote is configured.
+
+Example: Phase A (new comparison baselines + 10M collision scaling + NIST on baselines)
+was a **minor** addition → bump to `1.2.0`.
+
 ## Research findings
 
 | Finding | Detail |
