@@ -27,6 +27,7 @@ Novel GA-inspired UUIDv8 algorithm benchmark against v4, v7, SHA-256 hash-derive
 | `bun run puppeteer` | Automated browser benchmark via Puppeteer (see `--help`) | `bun install` |
 | `bun run verify-puppeteer` | Dry-run test of Puppeteer script with jsdom | `bun install` |
 | `bun run typecheck` | Typecheck all `.ts` files (root + scripts) | `bun install` |
+| `bun run test` | Run all unit tests (`scripts/*.test.ts`) via Bun's built-in test runner | `bun install` |
 | `open index.html` | Interactive browser benchmark | Any browser |
 
 ## Architecture
@@ -50,9 +51,10 @@ After every change to any `.ts` file:
 1. Run `/thermo-nuclear-code-quality-review` (ambitious structural simplification: kill duplication, spaghetti, oversized files, redundant layers)
 2. Run `bun run lint` (check all `.ts` files with oxlint)
 3. Run `bun run typecheck` (typecheck both root + scripts tsconfigs)
-4. Run `bun run build` (compiles to dist/)
-5. Run `bun run puppeteer` (browser/deployable check: confirm `dist/benchmark.js` + `index.html` run with `browserErrors: []`, the `GenoID-structured` entry present, and 0 collisions — i.e. deployable matches development behavior)
-6. Fix any errors from the above before continuing
+4. Run `bun run test` (Bun's test runner over `scripts/*.test.ts`)
+5. Run `bun run build` (compiles to dist/)
+6. Run `bun run puppeteer` (browser/deployable check: confirm `dist/benchmark.js` + `index.html` run with `browserErrors: []`, the `GenoID-structured` entry present, and 0 collisions — i.e. deployable matches development behavior)
+7. Fix any errors from the above before continuing
 
 ## Research findings
 

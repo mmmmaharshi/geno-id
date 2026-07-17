@@ -138,9 +138,9 @@ const { runBenchmark } = await import("./puppeteer.js")
   console.log(
     "results rows:",
     output.results.length,
-    "(expect 5: v4, v7, hash, mathrandom, GenoID)",
+    "(expect 6: v4, v7, hash, mathrandom, GenoID, GenoID-structured)",
   )
-  console.log("collisions rows:", output.collisions.length, "(expect 5)")
+  console.log("collisions rows:", output.collisions.length, "(expect 6)")
   console.log('rawLog includes "Done.":', output.rawLog.includes("Done."))
   console.log("sample results[0]:", JSON.stringify(output.results[0]))
   console.log("sample collisions[0]:", JSON.stringify(output.collisions[0]))
@@ -153,6 +153,7 @@ const { runBenchmark } = await import("./puppeteer.js")
     "SHA-256 hash-derived (v5-style)",
     "Math.random (v4-format)",
     "GenoID (proposed, GA-inspired, v8)",
+    "GenoID-structured (dbkey, v8)",
   ]
   const namesMatch =
     JSON.stringify(namesResults) === JSON.stringify(expectedNames) &&
@@ -160,8 +161,8 @@ const { runBenchmark } = await import("./puppeteer.js")
   console.log("algorithm names match expected set/order:", namesMatch)
 
   if (
-    output.results.length !== 5 ||
-    output.collisions.length !== 5 ||
+    output.results.length !== 6 ||
+    output.collisions.length !== 6 ||
     !output.rawLog.includes("Done.") ||
     !namesMatch
   ) {
