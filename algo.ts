@@ -277,6 +277,19 @@ export function uuidToRandomBits(uuid: string, layout: V8Layout): string {
   return bits
 }
 
+// Inverse of the structured generators: read each field's integer value from a
+// UUID string, keyed by field name. Uses `getFieldValue` (exact BigInt), so it
+// is safe for fields wider than 32 bits — the same path the truncation bug
+// lived on, now exercised by the test suite.
+export function readStructured(uuid: string, layout: V8Layout): Record<string, number> {
+  const b = uuidToBytes(uuid)
+  const out: Record<string, number> = {}
+  for (const f of layout.fields) {
+    out[f.name] = Number(getFieldValue(b, f))
+  }
+  return out
+}
+
 /**
  * Fill any gaps left by the caller's declared fields (including the reserved
  * v8 nibble bits) with `random`-type filler fields so the layout covers all
