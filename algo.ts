@@ -337,6 +337,24 @@ function ensureValidated(layout: V8Layout): void {
   }
 }
 
+// Populate every structured/fixed field of `bytes` per its declared type.
+// When `mask` is supplied, only the named field indices are written (the
+// buffer is assumed pre-filled with CSPRNG bytes — used by single-parent
+// construction); when omitted, all non-random fields are written (used by the
+// pool refill, where both parents must carry independent structured values).
+function applyStructuredFields(
+  bytes: Uint8Array,
+  layout: V8Layout,
+  mask?: number[],
+): void {
+  const maskSet = mask ? new Set(mask) : null
+  for (const [fi, f] of layout.fields.entries()) {
+    if (maskSet && !maskSet.has(fi)) continue
+    if (f.type === "fixed") setFieldBytes(bytes, f, f.value ?? 0)
+    else if (f.type !== "random") setFieldBytes(bytes, f, structuredValue(layout, f))
+  }
+}
+
 /**
  * Build one valid v8 UUID parent. Fields whose index is in `mask` are
  * populated per their declared type; all other fields receive CSPRNG bytes.
@@ -348,12 +366,7 @@ export function genStructuredParent(
   ensureValidated(layout)
   const bytes = new Uint8Array(16)
   crypto.getRandomValues(bytes)
-  const maskSet = new Set(mask)
-  for (const [fi, f] of layout.fields.entries()) {
-    if (!maskSet.has(fi)) continue
-    if (f.type === "fixed") setFieldBytes(bytes, f, f.value ?? 0)
-    else setFieldBytes(bytes, f, structuredValue(layout, f))
-  }
+  applyStructuredFields(bytes, layout, mask)
   forceVersionVariant(bytes)
   return bytes
 }
@@ -482,16 +495,10 @@ export function genStructuredGenoID(layout: V8Layout): string {
       const A = p.pool.subarray(off, off + 16)
       const B = p.pool.subarray(off + 16, off + 32)
       const fieldSelect = p.pool[off + 32] | (p.pool[off + 33] << 8)
-      for (const f of layout.fields) {
-        if (f.type === "fixed") {
-          setFieldBytes(A, f, f.value ?? 0)
-          setFieldBytes(B, f, f.value ?? 0)
-        } else if (f.type !== "random") {
-          // Independent structured value in each parent.
-          setFieldBytes(A, f, structuredValue(layout, f))
-          setFieldBytes(B, f, structuredValue(layout, f))
-        }
-      }
+      // Every structured field populated independently in both parents, so
+      // field-boundary crossover can pick either without producing garbage.
+      applyStructuredFields(A, layout)
+      applyStructuredFields(B, layout)
       const child = new Uint8Array(16)
       for (const [fi, f] of layout.fields.entries()) {
         const takeA = ((fieldSelect >> fi) & 1) === 1

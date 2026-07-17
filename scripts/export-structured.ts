@@ -1,52 +1,14 @@
 import path from "node:path"
 import fs from "node:fs"
+import type { V8Field, V8Layout } from "../dist/algo.js"
 
 const __dirname = import.meta.dirname
 const root = path.resolve(__dirname, "..")
 
-interface V8Field {
-  name: string
-  start: number
-  length: number
-  type: string
-  constraint?: { allowed?: number[]; min?: number; max?: number; monotonic?: boolean }
-  value?: number
-}
-interface V8Layout {
-  name: string
-  fields: V8Field[]
-}
-
 const algo = await import(path.resolve(root, "dist/algo.js"))
-const { genStructuredGenoID, validateLayout } = algo as {
+const { genStructuredGenoID, completeLayout } = algo as {
   genStructuredGenoID: (l: V8Layout) => string
-  validateLayout: (l: V8Layout) => void
-}
-
-const NIBBLE_BITS = new Set([48, 49, 50, 51, 64, 65])
-
-// Fill any uncovered non-nibble bits with random fields so the layout
-// passes validateLayout (version/variant nibbles stay auto-forced).
-function completeLayout(name: string, core: V8Field[]): V8Layout {
-  const covered = new Array<boolean>(128).fill(false)
-  for (const f of core) {
-    for (let i = 0; i < f.length; i++) covered[f.start + i] = true
-  }
-  const fields: V8Field[] = [...core]
-  let i = 0
-  while (i < 128) {
-    if (covered[i] || NIBBLE_BITS.has(i)) {
-      i++
-      continue
-    }
-    let end = i
-    while (end < 128 && !covered[end] && !NIBBLE_BITS.has(end)) end++
-    fields.push({ name: `rand_${i}`, start: i, length: end - i, type: "random" })
-    i = end
-  }
-  const layout = { name, fields }
-  validateLayout(layout)
-  return layout
+  completeLayout: (name: string, core: V8Field[]) => V8Layout
 }
 
 const layouts: V8Layout[] = [

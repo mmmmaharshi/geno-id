@@ -45,10 +45,12 @@ Novel GA-inspired UUIDv8 algorithm benchmark against v4, v7, SHA-256 hash-derive
 ## Agent workflow
 
 After every change to any `.ts` file:
-1. Run `bun run build` (compiles to dist/)
-2. Run `bun run lint:fix` (auto-fix lint issues)
+1. Run `/thermo-nuclear-code-quality-review` (ambitious structural simplification: kill duplication, spaghetti, oversized files, redundant layers)
+2. Run `bun run lint` (check all `.ts` files with oxlint)
 3. Run `bun run typecheck` (typecheck both root + scripts tsconfigs)
-4. Fix any errors from the above before continuing
+4. Run `bun run build` (compiles to dist/)
+5. Run `bun run puppeteer` (browser/deployable check: confirm `dist/benchmark.js` + `index.html` run with `browserErrors: []`, the `GenoID-structured` entry present, and 0 collisions — i.e. deployable matches development behavior)
+6. Fix any errors from the above before continuing
 
 ## Research findings
 

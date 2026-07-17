@@ -5,22 +5,10 @@ import {
   collisionTest,
   birthdayBound50,
 } from "../dist/bench-core.js"
+import type { V8Field, V8Layout } from "../dist/algo.js"
 
 const __dirname = import.meta.dirname
 const root = path.resolve(__dirname, "..")
-
-interface V8Field {
-  name: string
-  start: number
-  length: number
-  type: string
-  constraint?: { allowed?: number[]; min?: number; max?: number; monotonic?: boolean }
-  value?: number
-}
-interface V8Layout {
-  name: string
-  fields: V8Field[]
-}
 
 const algo = await import(path.resolve(root, "dist/algo.js"))
 const {
@@ -29,9 +17,9 @@ const {
   repairConstraints,
   genStructuredGenoID,
   genGenoID,
-  validateLayout,
   forceVersionVariant,
   getFieldValue,
+  completeLayout,
 } = algo as {
   genStructuredParent: (l: V8Layout, mask: number[]) => Uint8Array
   composeStructured: (l: V8Layout, a: Uint8Array, b: Uint8Array, fs: number) => Uint8Array
@@ -41,28 +29,7 @@ const {
   validateLayout: (l: V8Layout) => void
   forceVersionVariant: (b: Uint8Array) => void
   getFieldValue: (b: Uint8Array, f: V8Field) => number
-}
-
-const NIBBLE_BITS = new Set([48, 49, 50, 51, 64, 65])
-
-function completeLayout(name: string, core: V8Field[]): V8Layout {
-  const covered = new Array<boolean>(128).fill(false)
-  for (const f of core) for (let i = 0; i < f.length; i++) covered[f.start + i] = true
-  const fields: V8Field[] = [...core]
-  let i = 0
-  while (i < 128) {
-    if (covered[i] || NIBBLE_BITS.has(i)) {
-      i++
-      continue
-    }
-    let end = i
-    while (end < 128 && !covered[end] && !NIBBLE_BITS.has(end)) end++
-    fields.push({ name: `rand_${i}`, start: i, length: end - i, type: "random" })
-    i = end
-  }
-  const layout = { name, fields }
-  validateLayout(layout)
-  return layout
+  completeLayout: (name: string, core: V8Field[]) => V8Layout
 }
 
 // ---------------- E1: Composition correctness (RQ1) ----------------
