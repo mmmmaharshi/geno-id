@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": ".",
+    "declaration": true
+  },
+  "include": ["algo.ts", "benchmark.ts", "bench-core.ts"],
+  "exclude": ["dist", "scripts", "node_modules"]
+}

@@ -1,0 +1,100 @@
+{
+  "browserErrors": [],
+  "collisions": [
+    {
+      "Algorithm": "crypto.randomUUID (v4)",
+      "Sample size": "2,000,000",
+      "Collisions found": "0",
+      "n for 50% collision prob. (theoretical)": "2.715e+18"
+    },
+    {
+      "Algorithm": "UUIDv7 (custom, RFC 9562)",
+      "Sample size": "2,000,000",
+      "Collisions found": "0",
+      "n for 50% collision prob. (theoretical)": "1.618e+11"
+    },
+    {
+      "Algorithm": "SHA-256 hash-derived (v5-style)",
+      "Sample size": "50,000 (reduced, async cost)",
+      "Collisions found": "0",
+      "n for 50% collision prob. (theoretical)": "1.920e+18"
+    },
+    {
+      "Algorithm": "Math.random (v4-format)",
+      "Sample size": "2,000,000",
+      "Collisions found": "0",
+      "n for 50% collision prob. (theoretical)": "2.715e+18"
+    },
+    {
+      "Algorithm": "GenoID (proposed, GA-inspired, v8)",
+      "Sample size": "2,000,000",
+      "Collisions found": "0",
+      "n for 50% collision prob. (theoretical)": "2.715e+18"
+    },
+    {
+      "Algorithm": "GenoID-structured (dbkey, v8)",
+      "Sample size": "2,000,000",
+      "Collisions found": "0",
+      "n for 50% collision prob. (theoretical)": "3.951e+7"
+    }
+  ],
+  "htmlPath": "/Users/jasmine/Desktop/GenoID/index.html",
+  "inputs": {
+    "nAsync": "20000",
+    "nColl": "2000000",
+    "nSync": "200000"
+  },
+  "rawLog": "Benchmarking crypto.randomUUID (v4) (n=200000)...\n  -> 1.626e+6 ops/sec, 0.615 µs/op\nBenchmarking UUIDv7 (custom, RFC 9562) (n=200000)...\n  -> 1.120e+6 ops/sec, 0.893 µs/op\nBenchmarking SHA-256 hash-derived (v5-style) (n=20000)...\n  -> 235,294.1 ops/sec, 4.250 µs/op\nBenchmarking Math.random (v4-format) (n=200000)...\n  -> 880,669.3 ops/sec, 1.136 µs/op\nBenchmarking GenoID (proposed, GA-inspired, v8) (n=200000)...\n  -> 1.227e+7 ops/sec, 0.081 µs/op\nBenchmarking GenoID-structured (dbkey, v8) (n=200000)...\n  -> 527,565.3 ops/sec, 1.896 µs/op\nRunning collision test, n=2000000 per algorithm...\n  crypto.randomUUID (v4): 0 collisions in 2,000,000 samples\n  UUIDv7 (custom, RFC 9562): 0 collisions in 2,000,000 samples\n  SHA-256 hash-derived (v5-style): 0 collisions in 50,000 samples\n  Math.random (v4-format): 0 collisions in 2,000,000 samples\n  GenoID (proposed, GA-inspired, v8): 0 collisions in 2,000,000 samples\n  GenoID-structured (dbkey, v8): 0 collisions in 2,000,000 samples\nDone.\nNative baseline: v4=1.626e+6 ops/s, GenoID pool=1.227e+7 ops/s (7.5x faster), structured=527,565.3 ops/s (3.1x slower vs v4).\n",
+  "results": [
+    {
+      "Algorithm": "crypto.randomUUID (v4)",
+      "Ops/sec": "1.626e+6",
+      "Mean time/op": "0.615 µs",
+      "Random entropy (bits)": "122",
+      "RNG source": "OS CSPRNG",
+      "Security class": "High"
+    },
+    {
+      "Algorithm": "UUIDv7 (custom, RFC 9562)",
+      "Ops/sec": "1.120e+6",
+      "Mean time/op": "0.893 µs",
+      "Random entropy (bits)": "74",
+      "RNG source": "OS CSPRNG",
+      "Security class": "High* (timestamp leaks creation time)"
+    },
+    {
+      "Algorithm": "SHA-256 hash-derived (v5-style)",
+      "Ops/sec": "235,294.1",
+      "Mean time/op": "4.250 µs",
+      "Random entropy (bits)": "121",
+      "RNG source": "OS CSPRNG + SHA-256",
+      "Security class": "High (slower)"
+    },
+    {
+      "Algorithm": "Math.random (v4-format)",
+      "Ops/sec": "880,669.3",
+      "Mean time/op": "1.136 µs",
+      "Random entropy (bits)": "122",
+      "RNG source": "Xorshift128+ PRNG",
+      "Security class": "Insecure (state-recoverable)"
+    },
+    {
+      "Algorithm": "GenoID (proposed, GA-inspired, v8)",
+      "Ops/sec": "1.227e+7",
+      "Mean time/op": "0.081 µs",
+      "Random entropy (bits)": "122",
+      "RNG source": "Pooled OS CSPRNG draws (64 UUIDs/call) + byte-level GA crossover/mutation",
+      "Security class": "High (near-native speed)"
+    },
+    {
+      "Algorithm": "GenoID-structured (dbkey, v8)",
+      "Ops/sec": "527,565.3",
+      "Mean time/op": "1.896 µs",
+      "Random entropy (bits)": "50",
+      "RNG source": "Pooled CSPRNG + declared v8 layout (timestamp/shard/monotonic-counter) + field-boundary crossover + constraint repair",
+      "Security class": "High (composition framework)"
+    }
+  ],
+  "timestamp": "2026-07-17T14:32:20.985Z",
+  "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/150.0.0.0 Safari/537.36"
+}

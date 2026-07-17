@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Browser UUID Generation: Algorithm Comparison Benchmark</title>
+</head>
+<body>
+
+<h1>Browser UUID Generation: Cross-Algorithm Benchmark</h1>
+<p>Compares crypto.randomUUID (v4, native CSPRNG), custom UUIDv7 (RFC 9562), SHA-256 hash-derived UUID, Math.random-based UUID, and GenoID (genetic-algorithm-inspired, proposed) on speed, entropy, and collision risk. All computation runs locally in this page.</p>
+
+<h2>1. Live sample output</h2>
+<div id="samples"></div>
+
+<h2>2. Benchmark controls</h2>
+<label>Iterations (sync algos)</label>
+<input type="number" id="nSync" value="200000">
+<label>Iterations (SHA-256, async)</label>
+<input type="number" id="nAsync" value="20000">
+<label>Collision test sample size</label>
+<input type="number" id="nColl" value="2000000">
+<button id="runBtn" onclick="runAll()">Run full benchmark</button>
+<pre id="log"></pre>
+
+<h2>3. Results</h2>
+<button onclick="copyTableToClipboard('resultsTable', this)">Copy results</button>
+<table id="resultsTable" border="1" cellpadding="6">
+  <thead><tr>
+    <th>Algorithm</th><th>Ops/sec</th><th>Mean time/op</th>
+    <th>Random entropy (bits)</th><th>RNG source</th><th>Security class</th>
+  </tr></thead>
+  <tbody></tbody>
+</table>
+
+<h2>4. Collision test (empirical) &amp; theoretical bound</h2>
+<button onclick="copyTableToClipboard('collTable', this)">Copy collision results</button>
+<table id="collTable" border="1" cellpadding="6">
+  <thead><tr><th>Algorithm</th><th>Sample size</th><th>Collisions found</th><th>n for 50% collision prob. (theoretical)</th></tr></thead>
+  <tbody></tbody>
+</table>
+
+<h2>5. Native baseline throughput note</h2>
+<div id="nativeCallout"></div>
+
+<script type="module">
+  import { init } from "./dist/benchmark.js";
+  init();
+</script>
+</body>
+</html>

@@ -1,0 +1,31 @@
+{
+  "name": "genoid",
+  "version": "1.0.0",
+  "description": "Novel GA-inspired UUIDv8 algorithm benchmark against v4, v7, SHA-256 hash-derived, and Math.random baselines",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.scripts.json --noEmit",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix",
+    "format": "ultracite fix",
+    "format:check": "ultracite check",
+    "bench": "bun run scripts/bench.ts",
+    "test:stats": "bun run scripts/stats.ts",
+    "puppeteer": "bun run scripts/puppeteer.ts",
+    "verify-puppeteer": "bun run scripts/puppeteer-test.ts"
+  },
+  "devDependencies": {
+    "@types/jsdom": "^28.0.3",
+    "@types/node": "^22.20.1",
+    "jsdom": "^29.1.1",
+    "oxfmt": "^0.1.0",
+    "oxlint": "^1.74.0",
+    "puppeteer": "^25.3.0",
+    "typescript": "7.0.2",
+    "ultracite": "^7.9.4"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
