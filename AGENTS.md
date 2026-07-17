@@ -44,6 +44,8 @@ Novel GA-inspired UUIDv8 algorithm benchmark against v4, v7, SHA-256 hash-derive
 
 ## Agent workflow
 
+Always follow the [`mattpocock/skills@tdd`](https://skills.sh/mattpocock/skills/tdd) discipline: any new behavior or test is written **red → green** — write the failing test first, then only enough implementation to pass it. Confirm the public seam(s) under test before writing tests; tests verify behavior through public interfaces, never implementation details.
+
 After every change to any `.ts` file:
 1. Run `/thermo-nuclear-code-quality-review` (ambitious structural simplification: kill duplication, spaghetti, oversized files, redundant layers)
 2. Run `bun run lint` (check all `.ts` files with oxlint)
