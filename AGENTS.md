@@ -56,6 +56,22 @@ After every change to any `.ts` file:
 6. Run `bun run puppeteer` (browser/deployable check: confirm `dist/benchmark.js` + `index.html` run with `browserErrors: []`, the `GenoID-structured` entry present, and 0 collisions — i.e. deployable matches development behavior)
 7. Fix any errors from the above before continuing
 
+**Utilize multiple CPU cores whenever possible.** Any CPU-bound task whose
+units are independent (separate input files, separate samples, separate
+sub-tests) must be fanned out across all available cores rather than run
+strictly in series. Use the right primitive for the runtime:
+- **Child processes** (`execFile` + a bounded concurrency pool capped at `os.cpus().length`) — e.g. the dieharder battery.
+- **`worker_threads`** — for CPU-bound single-threaded JS (single-threaded JS
+  does **not** gain extra cores from `Promise.all`; a real thread/process pool
+  is required). The in-house `stats.ts` battery uses this (`stats-core.ts` +
+  `stats-worker.ts`).
+- **`ProcessPoolExecutor`** — for Python/numpy/scipy workloads (they release the
+  GIL), e.g. `nist-bridge.py`.
+
+Keep the output byte-for-byte identical to the serial run (same results, same
+order); only wall time should drop. Do not add parallelism that changes results
+or makes the code materially harder to reason about.
+
 **Push policy:** the agent never pushes to `origin` automatically. It commits
 changes locally (including release commits and tags) and then asks the user to
 push when a feature is complete. Do not run `git push` unless the user

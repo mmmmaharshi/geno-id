@@ -5,6 +5,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.12.6] - 2026-07-18
+
+### Summary
+
+Documentation-only addition to `AGENTS.md`: a standing rule to **utilize multiple
+CPU cores whenever possible** for any CPU-bound task whose units are independent
+(input files, samples, sub-tests). It names the right primitive per runtime —
+child-process pools (dieharder), `worker_threads` (single-threaded JS, which does
+**not** gain cores from `Promise.all`), and `ProcessPoolExecutor` (Python/numpy) —
+and requires output to stay byte-for-byte identical to the serial run. This
+formalizes the multi-core parallelism already in place across the randomness
+tooling (dieharder, `stats.ts`, `nist-bridge.py`).
+
+### Highlights
+
+#### 📝 Workflow rule added
+
+- `AGENTS.md` "Agent workflow" section now mandates fanning independent CPU-bound
+  work across all cores, with concrete guidance on `execFile` pools,
+  `worker_threads`, and `ProcessPoolExecutor`, and the invariant that results/order
+  must be unchanged.
+
+### Breaking Changes
+
+- None.
+
+### Upgrade Guide
+
+- No action required.
+
+### Known Issues
+
+- None.
+
+### Dependencies Updated
+
+- None.
+
 ## [1.12.5] - 2026-07-18
 
 ### Summary
