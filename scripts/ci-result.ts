@@ -13,6 +13,12 @@ export interface BenchEntry {
   name: string
   opsPerSec: number
   usPerOp: number
+  /** 95% confidence interval of opsPerSec across repeated trials. */
+  ci95: [number, number]
+  /** Sample standard deviation of opsPerSec across repeated trials. */
+  std: number
+  /** Number of repeated trials. */
+  trials: number
 }
 
 export interface CollisionEntry {

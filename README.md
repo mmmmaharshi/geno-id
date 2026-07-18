@@ -46,6 +46,13 @@ native v4 / v7 generators. Every baseline is verified by known-answer and
 structural tests (`scripts/baselines-verify.test.ts`) in addition to NIST and
 collision checks.
 
+Throughput is reported as the **mean of 10 repeated trials** with the sample
+standard deviation and a **95% confidence interval** (`benchRepeated` in
+`bench-core.ts`); the Node.js benchmark (`bun run bench`) additionally runs a
+**Welch t-test** (`compareBench`) and reports Cohen's *d*, so each "GenoID vs
+baseline" difference is stated as either statistically significant or not —
+not asserted from a single-run point estimate.
+
 Representative throughput below is from a Linux x64 CI run; absolute values
 vary by machine and runtime (see CI artifacts for per-environment numbers).
 

@@ -2,9 +2,10 @@ import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import {
-  benchSync,
+  benchRepeated,
   collisionTest,
 } from "../dist/bench-core.js"
+import type { BenchStats } from "../dist/bench-core.js"
 import {
   genPgUuidV8,
   genUlid,
@@ -42,13 +43,17 @@ function collectEnv(): EnvInfo {
 
 const nSync = 200_000
 const nColl = 1_000_000
+const TRIALS = 10
 
 function bench(name: string, fn: () => string): BenchEntry {
-  const r = benchSync(fn, nSync)
+  const r: BenchStats = benchRepeated(fn, nSync, TRIALS)
   return {
     name,
-    opsPerSec: Math.round(r.opsPerSec),
-    usPerOp: Number(((r.elapsed / r.n) * 1000).toFixed(4)),
+    opsPerSec: Math.round(r.mean),
+    usPerOp: Number(((1_000_000 / r.mean)).toFixed(4)),
+    ci95: [Math.round(r.ci95[0]), Math.round(r.ci95[1])],
+    std: Math.round(r.std),
+    trials: r.trials,
   }
 }
 
@@ -83,9 +88,13 @@ const output: CIBenchmarkResult = { environment: env, benchmarks, collisions }
 
 console.log("=== GenoID CI benchmark ===")
 console.log("Environment:", JSON.stringify(env, null, 2))
-console.log("\nBenchmarks (ops/sec):")
+console.log("\nBenchmarks (ops/sec, mean ± std, 95% CI):")
 for (const b of benchmarks) {
-  console.log(`  ${b.name.padEnd(14)} ${b.opsPerSec.toString().padStart(10)}  ${b.usPerOp} us/op`)
+  console.log(
+    `  ${b.name.padEnd(14)} ${b.opsPerSec.toString().padStart(10)} ± ${b.std
+      .toString()
+      .padStart(8)}  CI[${b.ci95[0]}–${b.ci95[1]}]`,
+  )
 }
 console.log("\nCollisions:")
 for (const c of collisions) {
