@@ -5,6 +5,45 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.12.8] - 2026-07-18
+
+### Summary
+
+**Bug fix** — the multi-trial dieharder driver (`run-dieharder.ts`, shipped in
+v1.12.4) calls `runExport(TARGET_BITS, k)` with a per-trial suffix, but the
+matching `trial` parameter on `runExport` in `dieharder-common.ts` was never
+committed — it lived only in the working tree. As a result every release from
+**v1.12.4 through v1.12.7 contained source that failed `bun run typecheck`**
+(TS2554: too many arguments) on a clean checkout, even though the working tree
+passed because the uncommitted change was present. The missing change is now
+committed, so the dieharder multi-trial feature typechecks and runs correctly
+from a fresh clone.
+
+### Highlights
+
+#### 🐛 Committed the missing `dieharder-common.ts` change
+
+- `runExport(targetBits, trial = -1)` now writes `dist/<gen>.trial<N>.dieharder.bin`
+  (and `exportFlat`/`exportStructured` accept a `suffix`), matching what
+  `run-dieharder.ts` expects for its per-trial sample files.
+
+### Breaking Changes
+
+- None.
+
+### Upgrade Guide
+
+- No action required. If you checked out v1.12.4–v1.12.7 and hit a typecheck
+  error in `run-dieharder.ts`, upgrade to v1.12.8.
+
+### Known Issues
+
+- None.
+
+### Dependencies Updated
+
+- None.
+
 ## [1.12.7] - 2026-07-18
 
 ### Summary
