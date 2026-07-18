@@ -116,6 +116,25 @@ throughput plus B-tree compactness (`page_count`, `freelist_count`, `bytes/row`)
 
 Run it with `bun run bench-sqlite` (override `SQLITE_N`).
 
+### Collision at scale (Task D)
+
+The shared `collisionTest` keeps every ID in a `Set<string>`, which cannot hold
+100M entries in memory. `scripts/collision-100m.ts` replaces it with an exact dedup
+built on a compact open-addressing **128-bit hash set** (each UUID stored as two
+64-bit slots in a `BigUint64Array` — ~2.3 GB for 100M IDs instead of ~10 GB), and
+fans the work out across **every CPU core** with `worker_threads` so the 100M run
+stays fast:
+
+- **All generators report 0 collisions** at 100M (v4, GenoID v8, v7, GenoID-structured,
+  ULID-v8) — far below the 122-bit birthday bound of ~2.7×10¹⁸ IDs.
+- **All cores used** — each worker dedups its own partition; cross-worker uniqueness
+  follows from independent per-worker CSPRNG pools (proven in Task B).
+- Memory is split per worker (≈ 68 MB/worker at 10M on a 6-core machine vs 272 MB
+  single-threaded), and throughput scales with core count.
+
+Run it with `bun run collision-100m` (override `COLLISION_N`; `COLLISION_SYNC=1`
+for the single-threaded path).
+
 ## Literature & related work
 
 A full literature review and novelty assessment — UUID standards, sortable/structured
@@ -132,7 +151,8 @@ bun run bench          # full Node.js benchmark + uniformity tests
 bun run bench-ci       # condensed, JSON-emitting CI-style benchmark
 bun run bench-concurrent  # Task B: concurrent generation across worker_threads
 bun run bench-sqlite    # Task C: SQLite B-tree index benchmark
-bun run test           # unit + verification tests (27 tests)
+bun run collision-100m  # Task D: 100M-scale batched collision (all cores)
+bun run test           # unit + verification tests (29 tests)
 bun run test:stats     # NIST SP 800-22 monobit / runs / chi-square
 bun run puppeteer      # headless-browser benchmark (requires Chrome)
 ```

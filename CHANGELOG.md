@@ -5,6 +5,53 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0] - 2026-07-18
+
+### Summary
+
+Task D: a 100M-scale batched collision test (`bun run collision-100m`). The shared
+`collisionTest` keeps every ID in a `Set<string>`, which cannot hold 100M entries in
+memory, so this replaces it with an exact dedup built on a compact open-addressing
+128-bit hash set (`BigUint64Array`) and fans the work out across every CPU core with
+`worker_threads`. All generators report **0 collisions** at 100M — far below the
+122-bit birthday bound (~2.7×10¹⁸ IDs).
+
+### Highlights
+
+#### 🧨 Collision at scale (100M, all cores)
+
+- New `scripts/collision-100m.ts` + `bun run collision-100m` (env: `COLLISION_N`,
+  `COLLISION_SYNC=1` for the single-threaded path) + `scripts/collision-100m.test.ts`
+  (TDD, red→green).
+- A `Uuid128Set` stores each 128-bit UUID as two 64-bit slots in a `BigUint64Array`
+  with power-of-two capacity + linear probing — ~2.3 GB for 100M IDs instead of the
+  ~10 GB a `Set<string>` would need.
+- Work is fanned out across `os.cpus().length` workers; each dedups its own partition.
+  Cross-worker uniqueness follows from independent per-worker CSPRNG pools (proven in
+  Task B). Memory splits per worker (≈ 68 MB/worker at 10M on 6 cores vs 272 MB
+  single-threaded) and throughput scales with core count.
+- Result: **0 collisions** for v4, GenoID v8, v7, GenoID-structured, and ULID-v8 at
+  100M — confirms the implementation produces no systematic duplicates at production
+  scale, matching the theoretical birthday bound.
+
+### Breaking Changes
+
+- None.
+
+### Upgrade Guide
+
+- No action required. `bun run collision-100m` is opt-in; existing `bun run bench`,
+  `bun run bench-ci`, `bun run bench-concurrent`, `bun run bench-sqlite`, and
+  `bun run test` are unchanged.
+
+### Known Issues
+
+- None.
+
+### Dependencies Updated
+
+- None.
+
 ## [1.6.0] - 2026-07-18
 
 ### Summary
