@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.11.3] - 2026-07-18
+
+### Summary
+
+Documentation sync: the README baseline comparison table now reflects the fresh
+v1.11.2 consolidated CI numbers (Ubuntu Bun column), and the artifact note points
+at the new single `ci-consolidated` artifact.
+
+### Highlights
+
+#### 📝 README baseline numbers refreshed
+
+- `README.md`: throughput column updated to the latest Ubuntu Bun run (v4 11.34M,
+  v7 3.98M, GenoID 7.72M, pg_uuid_v8 0.94M, ULID-v8 1.01M, ULID 0.50M, KSUID 0.34M,
+  Snowflake 3.06M). Throughput ordering corrected to v4 ≈ GenoID > v7 > Snowflake
+  > ULID-v8 > pg_uuid_v8 > ULID > KSUID. Artifact note references `ci-consolidated`.
+
+### Breaking Changes
+
+- None.
+
+### Upgrade Guide
+
+- No code changes. See `README.md` for current numbers.
+
+### Known Issues
+
+- None.
+
 ## [1.11.2] - 2026-07-18
 
 ### Summary

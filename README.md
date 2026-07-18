@@ -59,15 +59,15 @@ vary by machine and runtime (see CI artifacts for per-environment numbers).
 
 | Generator | Type | Throughput (ops/s) | 2M collisions | 10M collisions | NIST (payload) |
 |---|---|---:|---:|---:|---|
-| v4 (`crypto.randomUUID`) | Random (baseline) | 11.2M | 0 | 0 | — |
-| v7 (custom) | RFC 9562 timestamp | 5.2M | 0 | — | — |
-| GenoID (pooled v8) | GA-inspired v8 | 8.2M | 0 | 0 | — |
+| v4 (`crypto.randomUUID`) | Random (baseline) | 11.34M | 0 | 0 | — |
+| v7 (custom) | RFC 9562 timestamp | 3.98M | 0 | — | — |
+| GenoID (pooled v8) | GA-inspired v8 | 7.72M | 0 | 0 | — |
 | GenoID-structured (dbkey) | Declarative v8 layout | 0.7M | 0 | — | 15/15 PASS |
-| pg_uuid_v8 | Steganographic v4 (closest prior art) | 0.85M | 0 | 0 | 15/15 PASS |
-| ULID-v8 | Timestamped v8 (UUID-mapped) | 0.93M | 0 | 0 | 15/15 PASS |
-| ULID | 26-char Crockford base32 | 0.46M | 0 | — | — |
-| KSUID | 27-char base62 | 0.32M | 0 | — | — |
-| Snowflake | 64-bit integer | 3.0M | 0 | — | — |
+| pg_uuid_v8 | Steganographic v4 (closest prior art) | 0.94M | 0 | 0 | 15/15 PASS |
+| ULID-v8 | Timestamped v8 (UUID-mapped) | 1.01M | 0 | 0 | 15/15 PASS |
+| ULID | 26-char Crockford base32 | 0.50M | 0 | — | — |
+| KSUID | 27-char base62 | 0.34M | 0 | — | — |
+| Snowflake | 64-bit integer | 3.06M | 0 | — | — |
 
 Key findings:
 - **Collision safety holds at scale** — v4, GenoID, pg_uuid_v8, and ULID-v8
@@ -75,7 +75,7 @@ Key findings:
 - **Statistical quality is preserved** — the random payload bits of pg_uuid_v8
   and ULID-v8 pass all 15 NIST SP 800-22 tests (whole-UUID histograms are
   invalid for timestamped IDs, so payload-only monobit is used).
-- **Throughput ordering** — v4 ≈ GenoID (pooled) > Snowflake ≈ v7 > ULID-v8 >
+- **Throughput ordering** — v4 ≈ GenoID (pooled) > v7 > Snowflake > ULID-v8 >
   pg_uuid_v8 > ULID > KSUID; GenoID-structured is slower due to per-field
   composition but still production-viable.
 
@@ -89,9 +89,11 @@ every push via a GitHub Actions matrix:
 - Each job emits environment metadata (CPU, arch, runtime, memory), an ops/sec
   table, and a collision PASS/FAIL result.
 
-Results are uploaded per job as downloadable artifacts (`bench-ci-results.json`
-+ a rendered `ci-summary.md`). All environments report 0 collisions. Open the
-**Actions** tab → a run → **Artifacts** to inspect per-environment numbers.
+Results are uploaded as a single `ci-consolidated` artifact (one wide table
+with every environment side-by-side, plus `dist/all-results.json`) and as
+per-job artifacts (`bench-ci-results.json` + a rendered `ci-summary.md`). All
+environments report 0 collisions. Open the **Actions** tab → a run →
+**Artifacts** to inspect the consolidated table or per-environment numbers.
 
 ### Task B: Concurrent generation
 
