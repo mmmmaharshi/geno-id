@@ -71,7 +71,7 @@ Key findings:
   pg_uuid_v8 > ULID > KSUID; GenoID-structured is slower due to per-field
   composition but still production-viable.
 
-### Multi-environment validation
+### Multi-environment validation (Task A)
 
 To address single-machine validation concerns, the full benchmark runs on
 every push via a GitHub Actions matrix:
