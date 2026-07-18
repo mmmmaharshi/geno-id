@@ -2,14 +2,7 @@
 // `stats.ts`, which fans the 5 generator batteries out across all cores.
 import { parentPort, workerData } from "node:worker_threads"
 import path from "node:path"
-import { runBattery } from "./stats-core.ts"
-
-interface Job {
-  id: "genoid" | "v4" | "v7" | "mr" | "hash"
-  label: string
-  mask: number[]
-  n: number
-}
+import { runBattery, type RunDef } from "./stats-core.ts"
 
 const root = path.resolve(import.meta.dirname, "..")
 const algo = (await import(path.resolve(root, "dist/algo.js"))) as {
@@ -28,7 +21,7 @@ const FUNCS = {
   hash: algo.genHashUUID,
 } as const
 
-const { id, label, mask, n } = workerData as Job
+const { id, label, mask, n } = workerData as RunDef
 const fn = FUNCS[id]
 const res = await runBattery(label, fn, id === "hash", n, mask)
 parentPort!.postMessage(res, [])

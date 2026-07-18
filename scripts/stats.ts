@@ -1,6 +1,7 @@
 import { Worker } from "node:worker_threads"
 import os from "node:os"
-import { STANDARD_FREE_MASK, V7_FREE_MASK, type BatteryResult } from "./stats-core.ts"
+import { mapPool } from "./pool.ts"
+import { STANDARD_FREE_MASK, V7_FREE_MASK, type BatteryResult, type RunDef } from "./stats-core.ts"
 
 console.log("=== Statistical randomness test suite ===")
 console.log(
@@ -11,13 +12,6 @@ const N_MAIN = 1_000_000
 const N_LIGHT = 300_000
 const N_ASYNC = 20_000
 
-interface RunDef {
-  id: "genoid" | "v4" | "v7" | "mr" | "hash"
-  label: string
-  mask: number[]
-  n: number
-}
-
 const runs: RunDef[] = [
   { id: "genoid", label: "GenoID (proposed, GA-inspired, v8)", mask: STANDARD_FREE_MASK, n: N_MAIN },
   { id: "v4", label: "crypto.randomUUID (v4)", mask: STANDARD_FREE_MASK, n: N_LIGHT },
@@ -26,43 +20,29 @@ const runs: RunDef[] = [
   { id: "hash", label: "SHA-256 hash-derived (v5-style)", mask: STANDARD_FREE_MASK, n: N_ASYNC },
 ]
 
-// Fan each battery out to its own worker thread so the 5 generators run
-// concurrently across all CPU cores (the battery loop is CPU-bound single-thread
-// JS, so plain Promise.all would not use extra cores). Worker count is capped at
-// the core count; with 5 batteries on a >=5-core host they all run at once.
-async function runAll(defs: RunDef[]): Promise<BatteryResult[]> {
-  const maxWorkers = Math.max(1, os.cpus().length)
-  const results: BatteryResult[] = new Array(defs.length)
-  for (const r of defs) {
-    console.log(`Running battery on ${r.label} (n=${r.n.toLocaleString()})...`)
-  }
-  let cursor = 0
-  const worker = (): Promise<void> =>
-    new Promise((resolve, reject) => {
-      const i = cursor++
-      if (i >= defs.length) {
-        resolve()
-        return
-      }
-      const r = defs[i]
-      const w = new Worker(new URL("stats-worker.ts", import.meta.url), {
-        workerData: { id: r.id, label: r.label, mask: r.mask, n: r.n },
-      })
-      w.on("message", (res: BatteryResult) => {
-        results[i] = res
-        w.terminate()
-        resolve()
-      })
-      w.on("error", (err) => {
-        w.terminate()
-        reject(err)
-      })
+// Run one battery in its own worker thread. The battery loop is CPU-bound
+// single-thread JS, so worker threads (not Promise.all) are what actually use
+// extra cores — mapPool fans the batteries out across all of them.
+function runOneDef(r: RunDef): Promise<BatteryResult> {
+  return new Promise((resolve, reject) => {
+    const w = new Worker(new URL("stats-worker.ts", import.meta.url), {
+      workerData: { id: r.id, label: r.label, mask: r.mask, n: r.n },
     })
-  await Promise.all(Array.from({ length: Math.min(maxWorkers, defs.length) }, worker))
-  return results
+    w.on("message", (res: BatteryResult) => {
+      w.terminate()
+      resolve(res)
+    })
+    w.on("error", (err) => {
+      w.terminate()
+      reject(err)
+    })
+  })
 }
 
-const results = await runAll(runs)
+for (const r of runs) {
+  console.log(`Running battery on ${r.label} (n=${r.n.toLocaleString()})...`)
+}
+const results = await mapPool(runs, runOneDef, Math.max(1, os.cpus().length))
 
 function fmtP(p: number | null): string {
   return p === null ? "n/a" : p.toFixed(4)

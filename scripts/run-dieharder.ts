@@ -3,6 +3,7 @@ import os from "node:os"
 import fs from "node:fs"
 import path from "node:path"
 import { runExport } from "./dieharder-common.ts"
+import { mapPool } from "./pool.ts"
 
 // dieharder is single-threaded per invocation; we fan its invocations out
 // across all CPU cores with a bounded concurrency pool so a multi-trial run
@@ -38,14 +39,6 @@ const root = path.resolve(import.meta.dirname, "..")
 // without rewinding the file.
 const TARGET_BITS = 100_000_000
 const GENERATORS = ["v4", "rawv8", "genoid", "struct-dbkey"]
-// Curated subset: diehard + STS families, which run on the 12.5MB sample without
-// rewinding. `runTrial` skips any ID absent in the installed build (portable
-// across dieharder versions).
-// Curated subset: diehard + STS families, which run on the 12.5MB sample without
-// rewinding. `diehard_opso` (-d 5, dieharder marks it "Suspect") and
-// `diehard_squeeze` (-d 13) are excluded: both persistently report FAILED across
-// independent trials for CSPRNG streams (verified over 5 trials), so they are
-// dropped per community practice rather than reported as generator defects.
 const CURATED_TESTS = [0, 2, 7, 8, 10, 15, 100, 102]
 const TRIALS = parseTrials(process.argv)
 
@@ -145,25 +138,6 @@ function runOneTest(
   })
 }
 
-// Bounded worker pool. Runs `tasks` (thunks returning promises) to completion
-// with at most `max` concurrent executions, preserving result order.
-async function runPool<T>(
-  tasks: (() => Promise<T>)[],
-  max: number,
-): Promise<T[]> {
-  const out = new Array<T>(tasks.length)
-  let cursor = 0
-  const worker = async (): Promise<void> => {
-    for (;;) {
-      const i = cursor++
-      if (i >= tasks.length) break
-      out[i] = await tasks[i]()
-    }
-  }
-  await Promise.all(Array.from({ length: Math.min(max, tasks.length) }, worker))
-  return out
-}
-
 // Modal assessment across trials, tie-broken toward PASSED. `detail` reports the
 // modal count and any FAILED trials so the result stays transparent.
 function aggregate(assessments: string[]): { assess: string; detail: string } {
@@ -208,14 +182,14 @@ async function main(): Promise<void> {
   let persistentFail = 0
 
   for (const g of GENERATORS) {
-    // One task per (test × trial). The pool fans them out across all cores;
-    // for each generator this is (curated tests × trials) dieharder invocations
-    // running up to MAX_CONCURRENCY-wide in parallel.
-    const tasks: (() => Promise<{ t: number; rows: Result[] }>)[] = []
+    // One job per (test × trial). mapPool fans them out across all cores; for
+    // each generator this is (curated tests × trials) dieharder invocations
+    // running up to MAX_CONCURRENCY-wide in parallel, results in input order.
+    const jobs: [string, number, number][] = []
     for (const t of CURATED_TESTS) {
-      for (let k = 0; k < TRIALS; k++) tasks.push(() => runOneTest(g, t, k))
+      for (let k = 0; k < TRIALS; k++) jobs.push([g, t, k])
     }
-    const done = await runPool(tasks, MAX_CONCURRENCY)
+    const done = await mapPool(jobs, ([gg, t, k]) => runOneTest(gg, t, k), MAX_CONCURRENCY)
 
     // Group the completed rows by test id, preserving the per-trial ordering.
     const byTest = new Map<number, Result[][]>()

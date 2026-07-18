@@ -5,6 +5,48 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.12.7] - 2026-07-18
+
+### Summary
+
+Thermo-nuclear code-quality cleanup of the multi-core parallelism work (no
+behavior change — dieharder still reports 152 PASSED / 0 FAILED). The
+cursor-based bounded-concurrency pool was duplicated in `run-dieharder.ts`
+(`runPool`) and `stats.ts` (inline loop); it is now a single shared
+`scripts/pool.ts` (`mapPool`) used by both. A stale comment in
+`run-dieharder.ts` that re-stated the curated-subset rationale and referenced a
+deleted `runTrial` function was removed, and the worker's data contract is now
+the single `RunDef` type (was duplicated as `Job` in `stats-worker.ts`).
+
+### Highlights
+
+#### 🧹 Concurrency primitive centralized
+
+- New `scripts/pool.ts` exports `mapPool<T, R>(items, fn, max)`: runs `fn` over
+  `items` with at most `max` in flight, returning results in input order. Replaces
+  the two copy-pasted cursor loops.
+- `run-dieharder.ts` builds `(gen, test, trial)` job tuples and maps them through
+  `mapPool`; the dead comment block (lines referencing `runTrial`) is gone.
+- `stats.ts` uses `mapPool` for the per-generator worker fan-out; `RunDef` now
+  lives in `stats-core.ts` and is imported by both `stats.ts` and
+  `stats-worker.ts`, so the worker's data contract can't drift from the runner.
+
+### Breaking Changes
+
+- None (internal refactoring only; `pool.ts` is a script-local utility).
+
+### Upgrade Guide
+
+- No action required.
+
+### Known Issues
+
+- None.
+
+### Dependencies Updated
+
+- None.
+
 ## [1.12.6] - 2026-07-18
 
 ### Summary

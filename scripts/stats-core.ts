@@ -31,6 +31,14 @@ export const V7_FREE_MASK = [
   0xff, 0xff, 0xff,
 ]
 
+// Config for one battery run — also the data contract sent to `stats-worker.ts`.
+export interface RunDef {
+  id: "genoid" | "v4" | "v7" | "mr" | "hash"
+  label: string
+  mask: number[]
+  n: number
+}
+
 export function erfc(x: number): number {
   const z = Math.abs(x)
   const t = 1 / (1 + 0.5 * z)

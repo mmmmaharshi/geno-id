@@ -1,6 +1,6 @@
 {
   "name": "genoid",
-  "version": "1.12.6",
+  "version": "1.12.7",
   "description": "Novel GA-inspired UUIDv8 algorithm benchmark against v4, v7, SHA-256 hash-derived, and Math.random baselines",
   "type": "module",
   "scripts": {
