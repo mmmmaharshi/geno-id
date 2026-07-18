@@ -56,6 +56,11 @@ After every change to any `.ts` file:
 6. Run `bun run puppeteer` (browser/deployable check: confirm `dist/benchmark.js` + `index.html` run with `browserErrors: []`, the `GenoID-structured` entry present, and 0 collisions — i.e. deployable matches development behavior)
 7. Fix any errors from the above before continuing
 
+**Push policy:** the agent never pushes to `origin` automatically. It commits
+changes locally (including release commits and tags) and then asks the user to
+push when a feature is complete. Do not run `git push` unless the user
+explicitly requests it.
+
 ## Automatic versioning
 
 When a **worthy improvement** is completed and the Agent workflow gates (steps 1–7)
@@ -84,9 +89,12 @@ Automatic steps (run after the gates pass):
    Upgrade Guide, Known Issues, Dependencies Updated. Prepend above the previous release.
 4. Commit the bump (`package.json`, `CHANGELOG.md`, `.changeset/`).
 5. Tag locally: `git tag -a vX.Y.Z -m "genoid X.Y.Z"`.
-6. Push `main` and the new tag to `origin` when a remote is configured.
-7. Create the GitHub Release for `vX.Y.Z` with that version's `CHANGELOG.md`
-   section as notes (mark it latest):
+6. **Do NOT push automatically.** Commit the release locally (steps 1–5) and
+   stop. Ask the user before pushing `main` and the new tag to `origin` — the
+   push happens only when the user requests it (typically once a feature is
+   complete).
+7. Only after the user pushes, create the GitHub Release for `vX.Y.Z` with that
+   version's `CHANGELOG.md` section as notes (mark it latest):
    `gh release create vX.Y.Z --title "genoid X.Y.Z" --latest --notes-file <vX.Y.Z section>`.
    Tags alone do not create a Release page — this step is what makes the
    changelog visible on GitHub.
