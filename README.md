@@ -46,27 +46,28 @@ native v4 / v7 generators. Every baseline is verified by known-answer and
 structural tests (`scripts/baselines-verify.test.ts`) in addition to NIST and
 collision checks.
 
-Throughput is reported as the **mean of 10 repeated trials** with the sample
+Throughput is measured as the **mean of 10 repeated trials** with the sample
 standard deviation and a **95% confidence interval** (`benchRepeated` in
-`bench-core.ts`); the Node.js benchmark (`bun run bench`) additionally runs a
-**Welch t-test** (`compareBench`) and reports Cohen's *d*, so each "GenoID vs
-baseline" difference is stated as either statistically significant or not —
-not asserted from a single-run point estimate.
+`bench-core.ts`). The CI table below reports that per-algorithm mean from the
+Linux x64 run; running the Node.js benchmark locally (`bun run bench`) prints
+the full **± std, 95% CI**, and a **Welch t-test** (`compareBench`) with
+Cohen's *d* so each "GenoID vs baseline" difference is stated as statistically
+significant or not — not asserted from a single-run point estimate.
 
 Representative throughput below is from a Linux x64 CI run; absolute values
 vary by machine and runtime (see CI artifacts for per-environment numbers).
 
 | Generator | Type | Throughput (ops/s) | 2M collisions | 10M collisions | NIST (payload) |
 |---|---|---:|---:|---:|---|
-| v4 (`crypto.randomUUID`) | Random (baseline) | 7.9M | 0 | 0 | — |
-| v7 (custom) | RFC 9562 timestamp | 2.6M | 0 | — | — |
-| GenoID (pooled v8) | GA-inspired v8 | 6.5M | 0 | 0 | — |
+| v4 (`crypto.randomUUID`) | Random (baseline) | 11.2M | 0 | 0 | — |
+| v7 (custom) | RFC 9562 timestamp | 5.2M | 0 | — | — |
+| GenoID (pooled v8) | GA-inspired v8 | 8.2M | 0 | 0 | — |
 | GenoID-structured (dbkey) | Declarative v8 layout | 0.7M | 0 | — | 15/15 PASS |
-| pg_uuid_v8 | Steganographic v4 (closest prior art) | 0.8M | 0 | 0 | 15/15 PASS |
-| ULID-v8 | Timestamped v8 (UUID-mapped) | 1.0M | 0 | 0 | 15/15 PASS |
-| ULID | 26-char Crockford base32 | 0.4M | 0 | — | — |
-| KSUID | 27-char base62 | 0.3M | 0 | — | — |
-| Snowflake | 64-bit integer | 2.6M | 0 | — | — |
+| pg_uuid_v8 | Steganographic v4 (closest prior art) | 0.85M | 0 | 0 | 15/15 PASS |
+| ULID-v8 | Timestamped v8 (UUID-mapped) | 0.93M | 0 | 0 | 15/15 PASS |
+| ULID | 26-char Crockford base32 | 0.46M | 0 | — | — |
+| KSUID | 27-char base62 | 0.32M | 0 | — | — |
+| Snowflake | 64-bit integer | 3.0M | 0 | — | — |
 
 Key findings:
 - **Collision safety holds at scale** — v4, GenoID, pg_uuid_v8, and ULID-v8
