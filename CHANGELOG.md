@@ -5,6 +5,62 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-07-18
+
+### Summary
+
+Phase B: a literature review, related-work survey, and novelty assessment for
+GenoID, delivered as `sources/related-work.md`. It situates GenoID against the
+UUID standards (RFC 4122 → RFC 9562 v6–v8), the family of sortable/structured
+identifiers (ULID, KSUID, Snowflake, TypeID, xid, COMBGUID, ObjectID, CUID),
+steganographic UUIDs (the closest prior art, `pg_uuid_v8`), genetic/evolutionary
+computation, and high-throughput CSPRNG pooling.
+
+### Highlights
+
+#### 📚 Literature & related work
+
+- RFC 9562 (Davis, Peabody, Leach; May 2024) obsoletes RFC 4122 and adds v6/v7/v8;
+  v8 leaves 122 implementation-specific bits and is explicitly "not a replacement
+  for UUIDv4". The popular `uuid` JS package ships no `v8()` because the RFC defines
+  no algorithm — GenoID supplies that missing, declarative algorithm.
+- RFC 9562's Motivation surveyed 16 prior sortable-ID implementations (ULID,
+  KSUID, Snowflake, Flake, Sonyflake, COMBGUID, xid, ObjectID, CUID, …), all with
+  fixed, hand-coded layouts — none declarative.
+- `pg_uuid_v8` (PostgreSQL steganographic extension, May 2026) is the closest prior
+  art: v4-format-compliant UUIDs embedding an encrypted microsecond timestamp.
+  GenoID generalises this into a portable, declarative v8-layout framework with
+  field-boundary crossover and constraint-guided mutation as repair.
+
+#### 🧬 Novelty assessment
+
+- A literature survey (Semantic Scholar, arXiv, OpenAlex, web) confirms **no
+  academic paper applies genetic/evolutionary algorithms to UUID or identifier
+  generation**. GenoID is the first application of GA-style operators to v8 payload
+  *composition* (not entropy improvement) — consistent with the project's finding
+  that GA's value here is architectural, not statistical.
+- High-throughput secure generation: reusing/amortising CSPRNG draws (e.g. Go
+  `pscheid92/uuid` Pool ≈ 17 ns vs 247 ns stateless) motivates GenoID's pooled
+  64-UUIDs-per-call design.
+
+### Breaking Changes
+
+- None.
+
+### Upgrade Guide
+
+- No action required. The review is documentation only; the implementation is
+  unchanged from 1.3.0.
+
+### Known Issues
+
+- `sources/related-work.md` is the Phase B deliverable; later phases (C/D) will
+  extend the tech report (e.g. evaluation write-up, limitations).
+
+### Dependencies Updated
+
+- None.
+
 ## [1.3.0] - 2026-07-18
 
 ### Summary
