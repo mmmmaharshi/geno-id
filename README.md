@@ -85,6 +85,27 @@ Results are uploaded per job as downloadable artifacts (`bench-ci-results.json`
 + a rendered `ci-summary.md`). All environments report 0 collisions. Open the
 **Actions** tab → a run → **Artifacts** to inspect per-environment numbers.
 
+### Concurrent generation (Task B)
+
+GenoID is a pure, stateless function over the process-global CSPRNG pool, so it is
+safe to fan out across threads without coordination. `scripts/bench-concurrent.ts`
+spawns N `worker_threads`, each generating M UUIDs, then verifies globally:
+
+- **0 cross-worker collisions** (plain GenoID, 3×50k across workers)
+- **0 collisions and 0 structured-field constraint violations** (structured
+  `concurrent-dbkey` layout, 4×50k across workers) — the `tenant` enum
+  (allowed `0..7`) survives fan-out, confirming constraint repair is thread-safe.
+
+Run it with `bun run bench-concurrent` (override `CONCURRENT_WORKERS`,
+`CONCURRENT_PER_WORKER`, `CONCURRENT_MODE`).
+
+## Literature & related work
+
+A full literature review and novelty assessment — UUID standards, sortable/structured
+IDs, steganographic v8, genetic/evolutionary computation, and CSPRNG pooling — is in
+[`sources/related-work.md`](sources/related-work.md). It confirms the gap GenoID
+fills: **no prior work applies GA-style operators to UUID/identifier generation**.
+
 ## Quick Start
 
 ```bash
@@ -92,7 +113,8 @@ bun install
 bun run build          # compile TS to dist/
 bun run bench          # full Node.js benchmark + uniformity tests
 bun run bench-ci       # condensed, JSON-emitting CI-style benchmark
-bun run test           # unit + verification tests (22 tests)
+bun run bench-concurrent  # Task B: concurrent generation across worker_threads
+bun run test           # unit + verification tests (25 tests)
 bun run test:stats     # NIST SP 800-22 monobit / runs / chi-square
 bun run puppeteer      # headless-browser benchmark (requires Chrome)
 ```
