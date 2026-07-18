@@ -90,6 +90,7 @@ async function exportFlat(
   label: string,
   fn: () => string,
   targetBits: number,
+  suffix = "",
 ): Promise<void> {
   // free bits per standard-layout UUID (excl. version/variant)
   const bitsPerUuid = 122
@@ -97,7 +98,7 @@ async function exportFlat(
   const w = new BitWriter(n * bitsPerUuid)
   for (let i = 0; i < n; i++) writeUuidFreeBits(fn(), w)
   const packed = w.finish()
-  const filePath = path.resolve(root, "dist", `${label}.dieharder.bin`)
+  const filePath = path.resolve(root, "dist", `${label}${suffix}.dieharder.bin`)
   fs.writeFileSync(filePath, packed)
   console.log(
     `Wrote ${(packed.length / 1e6).toFixed(2)} MB (${n.toLocaleString()} UUIDs, ${w.bitPos.toLocaleString()} raw bits) -> ${filePath}`,
@@ -108,6 +109,7 @@ async function exportStructured(
   label: string,
   layout: V8Layout,
   targetBits: number,
+  suffix = "",
 ): Promise<void> {
   const randomBitsPerUuid = layout.fields
     .filter((f) => f.type === "random")
@@ -119,20 +121,22 @@ async function exportStructured(
     for (let j = 0; j < bits.length; j++) w.write(bits.codePointAt(j)! - 48)
   }
   const packed = w.finish()
-  const filePath = path.resolve(root, "dist", `${label}.dieharder.bin`)
+  const filePath = path.resolve(root, "dist", `${label}${suffix}.dieharder.bin`)
   fs.writeFileSync(filePath, packed)
   console.log(
     `Wrote ${(packed.length / 1e6).toFixed(2)} MB (${n.toLocaleString()} UUIDs, ${w.bitPos.toLocaleString()} raw bits) -> ${filePath}`,
   )
 }
 
-export async function runExport(targetBits: number): Promise<void> {
+export async function runExport(targetBits: number, trial = -1): Promise<void> {
+  const suffix = trial >= 0 ? `.trial${trial}` : ""
+  const tag = trial >= 0 ? ` (trial ${trial})` : ""
   console.log(
-    `Exporting dieharder bitstreams (${(targetBits / 1e6).toFixed(2)}M bits target per generator)...`,
+    `Exporting dieharder bitstreams${tag} (${(targetBits / 1e6).toFixed(2)}M bits target per generator)...`,
   )
-  await exportFlat("v4", genV4Native, targetBits)
-  await exportFlat("rawv8", genRawV8, targetBits)
-  await exportFlat("genoid", genGenoID, targetBits)
+  await exportFlat("v4", genV4Native, targetBits, suffix)
+  await exportFlat("rawv8", genRawV8, targetBits, suffix)
+  await exportFlat("genoid", genGenoID, targetBits, suffix)
 
   const dbkey = completeLayout("dbkey", [
     { name: "timestamp", start: 0, length: 48, type: "timestamp-ms" },
@@ -151,7 +155,7 @@ export async function runExport(targetBits: number): Promise<void> {
       constraint: { monotonic: true },
     },
   ])
-  await exportStructured("struct-dbkey", dbkey, targetBits)
+  await exportStructured("struct-dbkey", dbkey, targetBits, suffix)
 
   console.log("Done.")
 }
