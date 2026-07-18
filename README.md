@@ -38,7 +38,7 @@ CSPRNG-grade randomness in the remaining bits.
 | Statistical quality (NIST SP 800-22) | all 15 tests PASS for the dbkey, multitenant, and eventsourcing layouts |
 | Practical throughput (E6 + browser) | ≈0.53M structured UUIDs/s; ~3× slower than native `crypto.randomUUID` in-browser (base GenoID pool 7.5× faster than native v4) |
 
-### Phase A — baseline comparison
+### Baseline comparison
 
 GenoID is compared against four structured-ID baselines (pg_uuid_v8 is the
 closest prior art; ULID / KSUID / Snowflake are the broader landscape) and the
