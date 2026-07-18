@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.11.1] - 2026-07-18
+
+### Summary
+
+Bug fix for the CI `consolidate` job. `scripts/ci-consolidate.ts` wrote its
+outputs to `dist/` before that directory existed — the job does not run
+`bun run build` — so it crashed with `ENOENT: no such file or directory, open
+'dist/all-results.json'`. The script now creates `dist/` with
+`mkdirSync("dist", { recursive: true })` before writing.
+
+### Highlights
+
+#### 🐛 Fix CI consolidate crash
+
+- `scripts/ci-consolidate.ts`: create `dist/` in `main()` before writing
+  `dist/all-results.json` / `dist/all-summary.md`.
+
+### Breaking Changes
+
+- None.
+
+### Upgrade Guide
+
+- No action required. The `ci-consolidated` artifact is produced correctly on
+  the next CI run.
+
+### Known Issues
+
+- None.
+
 ## [1.11.0] - 2026-07-18
 
 ### Summary

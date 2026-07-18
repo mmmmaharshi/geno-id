@@ -93,6 +93,8 @@ function main(): void {
   const inputDir = process.argv[2] ?? "combined"
   const summaryPath = process.env.GITHUB_STEP_SUMMARY
 
+  fs.mkdirSync("dist", { recursive: true })
+
   const files = collectFiles(inputDir)
   const results = files.map(
     (f) => JSON.parse(fs.readFileSync(f, "utf-8")) as CIBenchmarkResult,
