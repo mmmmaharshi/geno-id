@@ -56,18 +56,43 @@ GenoID-pooled, GenoID-structured `dbkey`) to close that gap — 12.5MB avoids
 rewinding on any dieharder sub-test's default sample request for a single
 pass.
 
+### 3.1 Installing dieharder locally
+
+- **Linux:** `sudo apt-get install -y dieharder` (Debian/Ubuntu).
+- **macOS:** dieharder was **removed from Homebrew**, so build from source.
+  Install the prerequisites (`brew install gsl autoconf automake libtool`),
+  clone a source mirror (e.g. `github.com/eddelbuettel/dieharder`), then:
+
+  ```sh
+  cd dieharder
+  autoreconf -i
+  ./configure --prefix=/opt/homebrew CPPFLAGS="-I/opt/homebrew/include" LDFLAGS="-L/opt/homebrew/lib"
+  make -j4
+  sudo make install        # or install to a user-writable prefix
+  ```
+
+  If the installed binary cannot find `libdieharder` at runtime, set
+  `DYLD_LIBRARY_PATH=/opt/homebrew/lib` (or wherever it was installed) before
+  running `bun run dieharder`.
+
 **Disclosed limitation:** the dieharder battery is **not run in CI** — it is
 a local command (`bun run dieharder`) so it does not add a heavyweight job (and
-an `apt install`) to every push. The script runs a **curated 15-test subset**
-(`-d 0 2 4 5 7 8 10 13 15 100 102 203 249 251 254`, spanning the diehard/sts/
-rgb/dab families), not the full `-a` battery (~114 sub-tests), because `-a` at
-this sample size would take well beyond a practical time budget across four
-generators. This trade-off is stated here explicitly rather than silently only
-reporting the subset as if it were the full battery — see
+an `apt install`) to every push. The script runs a **curated 11-test subset**
+(`-d 0 2 4 5 7 8 10 13 15 100 102`, the diehard + STS families), not the full
+`-a` battery (~114 sub-tests). The reason is sample size, stated explicitly:
+the 12.5MB (100M-bit) sample is large enough that the **diehard/STS** sub-tests
+run **without rewinding** the file (rewinding re-uses bits and invalidates
+p-values), so their p-values are trustworthy. The **rgb/dab** family
+(`rgb_lagged_sum`, `dab_bytedistrib`, `dab_monobit2`, …) instead **rewinds the
+12.5MB file dozens of times** on its default sample request, which would make
+its p-values meaningless — so those tests are **excluded** from the curated
+subset. Anyone wanting the rgb/dab family must export a much larger sample
+(hundreds of MB to GB) and run e.g.
+`dieharder -d 203 -g 201 -f dist/<name>.dieharder.bin` directly; `-a` at that
+size is also possible but slow. This trade-off is disclosed here rather than
+silently reporting a subset as if it were the full battery — see
 `sources/threats-to-validity.md` §1 ("selection bias in which tests are
-reported"). Anyone wanting the full `-a` battery can run
-`dieharder -a -g 201 -f dist/<name>.dieharder.bin` locally against the exported
-files after `bun run export-dieharder`.
+reported").
 
 The exporter and the curated test list live in `scripts/dieharder-common.ts`
 and `scripts/run-dieharder.ts`; the agent authoring this document should run

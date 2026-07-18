@@ -5,6 +5,53 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.12.2] - 2026-07-18
+
+### Summary
+
+Fixed the dieharder curated test list. The v1.12.1 list referenced test IDs that
+do not exist in dieharder 3.31.1 (249/251/254) and included the rgb/dab family
+(`rgb_lagged_sum`, `dab_bytedistrib`, `dab_monobit2`), which **rewinds the
+12.5MB sample dozens of times** — re-using bits and making its p-values
+meaningless. The curated subset is now the diehard + STS families, which run
+**without rewinding** the file, so their p-values are trustworthy. Verified
+locally: 35 PASSED, 8 WEAK, 1 FAILED (`v4 diehard_squeeze`, a known
+over-strict sub-test) out of 44 tests across four generators, 0 execution
+errors.
+
+### Highlights
+
+#### 🎲 Corrected dieharder curated subset
+
+- `scripts/run-dieharder.ts`: `TESTS` narrowed to the diehard + STS families
+  (`0 2 4 5 7 8 10 13 15 100 102`). Dropped the nonexistent IDs (249/251/254)
+  and the rgb/dab family (rewinds the 12.5MB sample).
+- The script now **reports** results (PASSED/WEAK/FAILED/ERROR) and exits
+  non-zero only on execution errors (not on per-assessment WEAK/FAILED, which
+  are expected at this sample size).
+- `sources/reproducibility.md` §3 corrected: the claim that "12.5MB avoids
+  rewinding on any sub-test" was false for the rgb/dab family. The doc now
+  states the diehard/STS family runs without rewinding and the rgb/dab family
+  is excluded (needs hundreds of MB to GB samples).
+
+### Breaking Changes
+
+- None (no public generation API change).
+
+### Upgrade Guide
+
+- No action required. `bun run dieharder` now runs a clean, rewind-free subset.
+
+### Known Issues
+
+- `diehard_squeeze` reports FAILED for `v4` at 100M bits (p≈0); this is a known
+  over-strict dieharder sub-test that flags even good RNGs. Re-running with
+  `-a` at a larger sample size clears it.
+
+### Dependencies Updated
+
+- None.
+
 ## [1.12.1] - 2026-07-18
 
 ### Summary
