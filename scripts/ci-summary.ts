@@ -1,24 +1,10 @@
 import fs from "node:fs"
+import type { CIBenchmarkResult } from "./ci-result.ts"
 
 const summaryPath = process.env.GITHUB_STEP_SUMMARY
 const resultsPath = "dist/bench-ci-results.json"
 
-interface Result {
-  environment: {
-    runtime: string
-    bun: string | null
-    node: string
-    platform: string
-    arch: string
-    cpuModel: string
-    cpuCount: number
-    totalMemoryMB: number
-  }
-  benchmarks: { name: string; opsPerSec: number; usPerOp: number }[]
-  collisions: { name: string; n: number; collisions: number }[]
-}
-
-const r = JSON.parse(fs.readFileSync(resultsPath, "utf-8")) as Result
+const r = JSON.parse(fs.readFileSync(resultsPath, "utf-8")) as CIBenchmarkResult
 const e = r.environment
 
 let md = "## GenoID CI benchmark\n\n"

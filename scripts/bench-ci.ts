@@ -4,7 +4,6 @@ import path from "node:path"
 import {
   benchSync,
   collisionTest,
-  type BenchResult,
 } from "../dist/bench-core.js"
 import {
   genPgUuidV8,
@@ -13,6 +12,7 @@ import {
   genKsuid,
   genSnowflake,
 } from "./baselines.ts"
+import type { CIBenchmarkResult, EnvInfo, BenchEntry, CollisionEntry } from "./ci-result.ts"
 
 const __dirname = import.meta.dirname
 const root = path.resolve(__dirname, "..")
@@ -25,17 +25,6 @@ const { genV4Native, genV7, genMathRandom, genGenoID } =
     genMathRandom: () => string
     genGenoID: () => string
   }
-
-interface EnvInfo {
-  runtime: string
-  bun: string | null
-  node: string
-  platform: NodeJS.Platform
-  arch: string
-  cpuModel: string
-  cpuCount: number
-  totalMemoryMB: number
-}
 
 function collectEnv(): EnvInfo {
   const isBun = (globalThis as { Bun?: unknown }).Bun !== undefined
@@ -54,31 +43,13 @@ function collectEnv(): EnvInfo {
 const nSync = 200_000
 const nColl = 1_000_000
 
-interface BenchEntry {
-  name: string
-  opsPerSec: number
-  usPerOp: number
-}
-
-interface CollisionEntry {
-  name: string
-  n: number
-  collisions: number
-}
-
-function fmt(r: BenchResult): BenchEntry {
+function bench(name: string, fn: () => string): BenchEntry {
+  const r = benchSync(fn, nSync)
   return {
-    name: "",
+    name,
     opsPerSec: Math.round(r.opsPerSec),
     usPerOp: Number(((r.elapsed / r.n) * 1000).toFixed(4)),
   }
-}
-
-function bench(name: string, fn: () => string): BenchEntry {
-  const r = benchSync(fn, nSync)
-  const e = fmt(r)
-  e.name = name
-  return e
 }
 
 function coll(name: string, fn: () => string): CollisionEntry {
@@ -96,7 +67,7 @@ const benchmarks: BenchEntry[] = [
   bench("ulid", genUlid),
   bench("ulid-v8", genUlidV8),
   bench("ksuid", genKsuid),
-  bench("snowflake", () => genSnowflake()),
+  bench("snowflake", genSnowflake),
 ]
 
 const collisions: CollisionEntry[] = [
@@ -108,7 +79,7 @@ const collisions: CollisionEntry[] = [
   coll("ulid-v8", genUlidV8),
 ]
 
-const output = { environment: env, benchmarks, collisions }
+const output: CIBenchmarkResult = { environment: env, benchmarks, collisions }
 
 console.log("=== GenoID CI benchmark ===")
 console.log("Environment:", JSON.stringify(env, null, 2))
