@@ -5,6 +5,49 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2026-07-18
+
+### Summary
+
+Task C: a SQLite B-tree index benchmark (`bun:sqlite`) that proves structured,
+sortable IDs keep the primary-key index index-friendly. It bulk-inserts 100k IDs of
+each kind (v4, GenoID v8, v7, GenoID-structured `dbkey`, ULID-v8) into a fresh
+in-memory table with a `TEXT PRIMARY KEY`, then reports insert throughput and B-tree
+compactness (`page_count`, `freelist_count`, `bytes/row`).
+
+### Highlights
+
+#### 🗄️ B-tree index benchmark (SQLite)
+
+- New `scripts/bench-sqlite.ts` + `bun run bench-sqlite` + `scripts/bun-sqlite.d.ts`
+  (ambient type shim, no extra dependency — uses Bun's built-in `bun:sqlite`).
+- New `scripts/bench-sqlite.test.ts` (TDD, red→green): every ID type fills a clean
+  B-tree (`integrity_check = ok`) with **zero fragmentation** (`freelist_count = 0`),
+  and page counts across all types stay within 5% of each other — confirming leaf
+  packing is order-independent.
+- Key finding: page count is set by N and key size, **not** insertion order, so B-tree
+  depth is the same for random and sortable IDs. The structured-ID benefit is
+  index-friendliness — sortable IDs (v7, ULID-v8) match/exceed random IDs on insert
+  throughput **while preserving insertion-time order** for efficient time/tenant/shard
+  range scans.
+
+### Breaking Changes
+
+- None.
+
+### Upgrade Guide
+
+- No action required. `bun run bench-sqlite` is opt-in; existing `bun run bench`,
+  `bun run bench-ci`, `bun run bench-concurrent`, and `bun run test` are unchanged.
+
+### Known Issues
+
+- None.
+
+### Dependencies Updated
+
+- None.
+
 ## [1.5.0] - 2026-07-18
 
 ### Summary

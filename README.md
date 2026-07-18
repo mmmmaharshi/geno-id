@@ -99,6 +99,23 @@ spawns N `worker_threads`, each generating M UUIDs, then verifies globally:
 Run it with `bun run bench-concurrent` (override `CONCURRENT_WORKERS`,
 `CONCURRENT_PER_WORKER`, `CONCURRENT_MODE`).
 
+### B-tree index benchmark (Task C)
+
+Structured, sortable IDs keep the primary-key B-tree index-friendly. `scripts/bench-sqlite.ts`
+bulk-inserts 100k IDs of each kind (v4, GenoID v8, v7, GenoID-structured `dbkey`,
+ULID-v8) into a fresh in-memory SQLite table (`TEXT PRIMARY KEY`) and reports insert
+throughput plus B-tree compactness (`page_count`, `freelist_count`, `bytes/row`):
+
+- **All ID types produce a clean, unfragmented B-tree** (`integrity_check = ok`,
+  `freelist_count = 0`).
+- **Page count is order-independent** — SQLite packs leaf pages to the same density
+  regardless of whether keys are random or time-sorted, so B-tree depth depends on N
+  and key size, not insertion order. Sortable IDs (v7, ULID-v8) match or exceed random
+  IDs on insert throughput **while preserving insertion-time order** for efficient
+  time/tenant/shard range scans.
+
+Run it with `bun run bench-sqlite` (override `SQLITE_N`).
+
 ## Literature & related work
 
 A full literature review and novelty assessment — UUID standards, sortable/structured
@@ -114,7 +131,8 @@ bun run build          # compile TS to dist/
 bun run bench          # full Node.js benchmark + uniformity tests
 bun run bench-ci       # condensed, JSON-emitting CI-style benchmark
 bun run bench-concurrent  # Task B: concurrent generation across worker_threads
-bun run test           # unit + verification tests (25 tests)
+bun run bench-sqlite    # Task C: SQLite B-tree index benchmark
+bun run test           # unit + verification tests (27 tests)
 bun run test:stats     # NIST SP 800-22 monobit / runs / chi-square
 bun run puppeteer      # headless-browser benchmark (requires Chrome)
 ```
