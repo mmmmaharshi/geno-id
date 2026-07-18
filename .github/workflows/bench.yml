@@ -32,7 +32,9 @@ jobs:
         if: always()
         with:
           name: bench-bun-${{ matrix.os }}
-          path: dist/bench-ci-results.json
+          path: |
+            dist/bench-ci-results.json
+            dist/ci-summary.md
 
   node-matrix:
     name: node ${{ matrix.node-version }} on ubuntu
@@ -59,4 +61,6 @@ jobs:
         if: always()
         with:
           name: bench-node-${{ matrix.node-version }}-ubuntu
-          path: dist/bench-ci-results.json
+          path: |
+            dist/bench-ci-results.json
+            dist/ci-summary.md

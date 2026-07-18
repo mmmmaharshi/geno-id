@@ -3,11 +3,6 @@ import fs from "node:fs"
 const summaryPath = process.env.GITHUB_STEP_SUMMARY
 const resultsPath = "dist/bench-ci-results.json"
 
-if (!summaryPath) {
-  console.log("GITHUB_STEP_SUMMARY not set; skipping summary")
-  process.exit(0)
-}
-
 interface Result {
   environment: {
     runtime: string
@@ -34,5 +29,12 @@ md += "\n| Algorithm | n | collisions | PASS |\n|---|---:|---:|---|\n"
 for (const c of r.collisions)
   md += `| ${c.name} | ${c.n} | ${c.collisions} | ${c.collisions === 0 ? "PASS" : "FAIL"} |\n`
 
-fs.appendFileSync(summaryPath, md)
-console.log("Wrote job summary")
+// Always keep a copy in dist/ so it can be inspected as an artifact.
+fs.writeFileSync("dist/ci-summary.md", md)
+
+if (summaryPath) {
+  fs.appendFileSync(summaryPath, md)
+  console.log(`Wrote job summary to ${summaryPath}`)
+} else {
+  console.log("GITHUB_STEP_SUMMARY not set; wrote dist/ci-summary.md only")
+}
