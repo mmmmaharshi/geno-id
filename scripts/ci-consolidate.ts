@@ -12,7 +12,7 @@ import type { BenchEntry, CIBenchmarkResult, CollisionEntry, EnvInfo } from "./c
 
 export function envLabel(e: EnvInfo): string {
   if (e.runtime !== "bun") {
-    return `Node ${e.node} (Linux)`
+    return `Node ${e.node.split(".")[0]} (Linux)`
   }
   let os = "Windows"
   if (e.platform === "linux") os = "Ubuntu"
@@ -91,7 +91,6 @@ export function renderConsolidated(results: CIBenchmarkResult[]): string {
 
 function main(): void {
   const inputDir = process.argv[2] ?? "combined"
-  const summaryPath = process.env.GITHUB_STEP_SUMMARY
 
   fs.mkdirSync("dist", { recursive: true })
 
@@ -103,13 +102,6 @@ function main(): void {
   const md = renderConsolidated(results)
   fs.writeFileSync("dist/all-results.json", JSON.stringify(results, null, 2))
   fs.writeFileSync("dist/all-summary.md", md)
-
-  if (summaryPath) {
-    fs.appendFileSync(summaryPath, md)
-    console.log(`Wrote consolidated summary to ${summaryPath}`)
-  } else {
-    console.log("GITHUB_STEP_SUMMARY not set; wrote dist/all-summary.md only")
-  }
   console.log(`Merged ${results.length} environment runs.`)
 }
 

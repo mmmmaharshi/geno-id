@@ -5,6 +5,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.11.2] - 2026-07-18
+
+### Summary
+
+Two fixes to the consolidated CI report. The table was printed **twice** in the
+job summary because `scripts/ci-consolidate.ts` appended to
+`$GITHUB_STEP_SUMMARY` while the workflow also `cat`ed the file into it. The
+script no longer writes the summary itself; the workflow `cat` step is now the
+single source. Node columns also now show the major version only
+(`Node 20 (Linux)`) so the wide table stays compact.
+
+### Highlights
+
+#### 🐛 Dedupe and tighten the consolidated table
+
+- `scripts/ci-consolidate.ts`: drop the `$GITHUB_STEP_SUMMARY` append (write
+  only `dist/all-results.json` / `dist/all-summary.md`); `envLabel` now reports
+  `Node <major> (Linux)` instead of the full version string.
+
+### Breaking Changes
+
+- None.
+
+### Upgrade Guide
+
+- No action required. The `ci-consolidated` artifact and job summary now show
+  the table exactly once.
+
+### Known Issues
+
+- None.
+
 ## [1.11.1] - 2026-07-18
 
 ### Summary
