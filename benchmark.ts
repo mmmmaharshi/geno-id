@@ -88,7 +88,7 @@ const ALGOS: AlgoEntry[] = [
     async: false,
     entropy: 122,
     source:
-      "Pooled OS CSPRNG draws (64 UUIDs/call) + byte-level GA crossover/mutation",
+      "Pooled OS CSPRNG (refills every 256 UUIDs) + byte-level GA crossover/mutation",
     secLabel: "High (near-native speed)",
   },
   {

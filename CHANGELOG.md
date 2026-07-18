@@ -5,6 +5,53 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.0] - 2026-07-18
+
+### Summary
+
+Formal security analysis for the GenoID "Security class" labels. Turns the
+per-field bit counts in `algo.ts` into an explicit entropy budget, defines an
+adversarial model (passive observer, state compromise, structure inference), and
+benchmarks GenoID against RFC 9562 §8 security considerations — replacing the
+previously asserted labels with a grounded argument in
+[`sources/security-analysis.md`](sources/security-analysis.md). README now links
+the analysis, and the browser table's pool window is corrected to 256 UUIDs.
+
+### Highlights
+
+#### 🔐 Formal security argument (replaces asserted labels)
+
+- [`sources/security-analysis.md`](sources/security-analysis.md): per-field
+  **entropy accounting** (only random bits count; timestamp/counter/shard are
+  observable → 0 min-entropy), an explicit **adversarial model**, and a
+  **RFC 9562 §8 comparison**.
+- Min-entropy table: v4/GenoID v8 122 bit · v7/ULID-v8 74 bit · GenoID-structured
+  (dbkey) 50 bit · pg_uuid_v8 up to 122 bit (AES-steganographic) · Math.random 0 bit.
+- Two honest caveats now documented: (1) the **pool forward-secrecy window** —
+  an in-process pool refills every **256** UUIDs, so a state-compromise adversary
+  can predict at most 256 future UUIDs per refill; (2) **structured layouts leak
+  metadata by design** (timestamp ±1 ms, shard, counter, tenant) and are
+  distinguishable from random, consistent with RFC 9562 §8.2's v7-style warning.
+
+### Breaking Changes
+
+- None.
+
+### Upgrade Guide
+
+- No code changes required. Read `sources/security-analysis.md` for the security
+  rationale behind the evaluation tables.
+
+### Known Issues
+
+- No formal cryptographic reduction (entropy-bounding + adversarial reasoning
+  only). Pool epoch length (`GENO_POOL_N = 256`) is tunable for tighter forward
+  secrecy at a throughput cost.
+
+### Dependencies Updated
+
+- None.
+
 ## [1.7.0] - 2026-07-18
 
 ### Summary

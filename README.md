@@ -135,6 +135,23 @@ stays fast:
 Run it with `bun run collision-100m` (override `COLLISION_N`; `COLLISION_SYNC=1`
 for the single-threaded path).
 
+### Security analysis
+
+The "Security class" labels in the tables above are backed by a formal argument
+in [`sources/security-analysis.md`](sources/security-analysis.md): per-field
+**entropy accounting** (random bits only count; timestamp/counter/shard are
+observable), an explicit **adversarial model** (passive observer, state
+compromise, structure inference), and a comparison against **RFC 9562 §8 security
+considerations**. Key points:
+
+- **GenoID v8 rests on the OS CSPRNG** (every pool refill calls
+  `crypto.getRandomValues`), so its 122-bit min-entropy matches v4.
+- **Pool forward-secrecy caveat:** the in-process pool refills every **256** UUIDs,
+  so a process-memory adversary can predict at most 256 future UUIDs per refill.
+- **Structured layouts leak metadata by design** (timestamp ±1 ms, shard, counter,
+  tenant) — they are *distinguishable* from random and are not a confidentiality
+  primitive, consistent with RFC 9562 §8.2's warning about v7-style timestamps.
+
 ## Literature & related work
 
 A full literature review and novelty assessment — UUID standards, sortable/structured
