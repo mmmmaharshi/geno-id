@@ -5,6 +5,49 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2026-07-18
+
+### Summary
+
+Task B: a concurrent / multi-process generation simulation that proves GenoID is
+safe to fan out across `worker_threads`. GenoID is a pure, stateless function over
+the process-global CSPRNG pool, so a cluster of app servers or a bulk ETL pipeline can
+each mint IDs without coordination. The experiment spawns N worker threads, each
+generating `perWorker` UUIDs, then verifies globally: 0 cross-worker collisions, 0
+constraint violations in structured fields, and every UUID carries the RFC 9562 v8
+marker.
+
+### Highlights
+
+#### 🧵 Concurrent generation (worker_threads)
+
+- New `scripts/bench-concurrent.ts` + `bun run bench-concurrent`: spawns N workers
+  (configurable via `CONCURRENT_WORKERS`, `CONCURRENT_PER_WORKER`, `CONCURRENT_MODE`),
+  each calling `genGenoID` / `genStructuredGenoID`, and aggregates a global uniqueness
+  and constraint check.
+- New `scripts/bench-concurrent.test.ts` (TDD, red→green): across worker threads,
+  plain GenoID yields **0 collisions** (3×50k) and the structured `concurrent-dbkey`
+  layout yields **0 collisions and 0 tenant-constraint violations** (4×50k). The
+  `tenant` enum (allowed `0..7`) is preserved correctly under fan-out, confirming the
+  constraint-repair path is thread-safe.
+
+### Breaking Changes
+
+- None.
+
+### Upgrade Guide
+
+- No action required. `bun run bench-concurrent` is opt-in; existing `bun run bench`,
+  `bun run bench-ci`, and `bun run test` are unchanged.
+
+### Known Issues
+
+- None.
+
+### Dependencies Updated
+
+- None.
+
 ## [1.4.0] - 2026-07-18
 
 ### Summary
