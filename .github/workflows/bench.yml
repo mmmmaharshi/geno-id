@@ -27,19 +27,7 @@ jobs:
       - run: bun run bench-ci
       - name: Write job summary
         if: always()
-        run: |
-          bun -e '
-          const fs = require("fs");
-          const r = JSON.parse(fs.readFileSync("dist/bench-ci-results.json","utf8"));
-          const e = r.environment;
-          let md = "## GenoID CI benchmark\n\n";
-          md += `**Environment:** ${e.runtime} ${e.bun ?? e.node} | ${e.platform}/${e.arch} | ${e.cpuModel} (${e.cpuCount} cpus) | ${e.totalMemoryMB} MB\n\n`;
-          md += "| Algorithm | ops/sec | us/op |\n|---|---:|---:|\n";
-          for (const b of r.benchmarks) md += `| ${b.name} | ${b.opsPerSec} | ${b.usPerOp} |\n`;
-          md += "\n| Algorithm | n | collisions | PASS |\n|---|---:|---:|---|\n";
-          for (const c of r.collisions) md += `| ${c.name} | ${c.n} | ${c.collisions} | ${c.collisions === 0 ? "PASS" : "FAIL"} |\n`;
-          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, md);
-          '
+        run: bun run scripts/ci-summary.ts
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -66,19 +54,7 @@ jobs:
       - run: bun x tsx scripts/bench-ci.ts
       - name: Write job summary
         if: always()
-        run: |
-          bun -e '
-          const fs = require("fs");
-          const r = JSON.parse(fs.readFileSync("dist/bench-ci-results.json","utf8"));
-          const e = r.environment;
-          let md = "## GenoID CI benchmark\n\n";
-          md += `**Environment:** ${e.runtime} ${e.bun ?? e.node} | ${e.platform}/${e.arch} | ${e.cpuModel} (${e.cpuCount} cpus) | ${e.totalMemoryMB} MB\n\n`;
-          md += "| Algorithm | ops/sec | us/op |\n|---|---:|---:|\n";
-          for (const b of r.benchmarks) md += `| ${b.name} | ${b.opsPerSec} | ${b.usPerOp} |\n`;
-          md += "\n| Algorithm | n | collisions | PASS |\n|---|---:|---:|---|\n";
-          for (const c of r.collisions) md += `| ${c.name} | ${c.n} | ${c.collisions} | ${c.collisions === 0 ? "PASS" : "FAIL"} |\n`;
-          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, md);
-          '
+        run: bun x tsx scripts/ci-summary.ts
       - uses: actions/upload-artifact@v4
         if: always()
         with:
