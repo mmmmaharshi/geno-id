@@ -12,6 +12,7 @@
     "format": "ultracite fix",
     "format:check": "ultracite check",
     "bench": "bun run scripts/bench.ts",
+    "bench-ci": "bun run scripts/bench-ci.ts",
     "test:stats": "bun run scripts/stats.ts",
     "puppeteer": "bun run scripts/puppeteer.ts",
     "verify-puppeteer": "bun run scripts/puppeteer.dryrun.ts",
@@ -26,6 +27,7 @@
     "oxfmt": "^0.1.0",
     "oxlint": "^1.74.0",
     "puppeteer": "^25.3.0",
+    "tsx": "^4.23.1",
     "typescript": "7.0.2",
     "ultracite": "^7.9.4"
   },
