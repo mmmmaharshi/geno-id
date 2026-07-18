@@ -5,6 +5,58 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.0] - 2026-07-18
+
+### Summary
+
+Statistical significance testing for the benchmarks. Throughput is no longer a
+single-run point estimate: every generator is measured over **10 repeated
+trials** and reported with the sample standard deviation and a **95% confidence
+interval**, and generator-to-generator differences are tested with a **Welch
+t-test** (plus Cohen's *d* effect size) so each "GenoID vs baseline" claim is
+stated as statistically significant or not — addressing the prior gap of
+"NIST pass/fail only, no confidence intervals, no repeated-trial variance."
+
+### Highlights
+
+#### 📊 Repeated trials, confidence intervals, significance tests
+
+- `bench-core.ts`: new `benchRepeated` / `benchRepeatedAsync` wrap the existing
+  timing primitives in N repeated trials and return `BenchStats` (mean, std,
+  coefficient of variation, min/max, **95% CI**, raw samples). The CI critical
+  value is a small exact t-distribution lookup, so the browser-loaded harness
+  stays lean.
+- `scripts/significance.ts` (new, pure module): `welchTTest` + `cohensD` +
+  `compareBench` with a proper two-tailed Student-t p-value (regularized
+  incomplete beta via Lanczos log-gamma). Kept out of `bench-core.ts` so it is
+  not shipped to the browser.
+- `scripts/bench.ts`: every generator prints `mean ± std ops/sec (95% CI …)`
+  and a **Statistical significance** block (e.g. *GenoID vs v4: Δ=−35.4%,
+  Welch t=−16.91, p<0.0001, d=−7.56 — SIGNIFICANT*).
+- `scripts/bench-ci.ts` + `scripts/ci-result.ts`: CI now emits error-bounded
+  numbers (`ci95`, `std`, `trials`) per environment.
+- `scripts/bench-core.test.ts` + `scripts/significance.test.ts` (TDD, red→green)
+  cover the repeated-trial stats and the Welch/Cohen math.
+
+### Breaking Changes
+
+- None.
+
+### Upgrade Guide
+
+- No code changes required. Run `bun run bench` to see CIs and significance;
+  `bun run bench-ci` emits per-environment error-bounded throughput.
+
+### Known Issues
+
+- Throughput variance is reported for Node-side benchmarks only; the interactive
+  browser benchmark (`benchmark.ts`) still shows a single run (no repeated trials
+  in-browser yet).
+
+### Dependencies Updated
+
+- None.
+
 ## [1.8.0] - 2026-07-18
 
 ### Summary
