@@ -6,8 +6,10 @@ import scipy
 scipy.zeros = np.zeros
 
 import sys
+import os
 import json
 from pathlib import Path
+from concurrent.futures import ProcessPoolExecutor
 
 
 def load_bits(path: str) -> str:
@@ -19,22 +21,19 @@ def fmt(p: float) -> str:
     return f"{p:.6f}" if isinstance(p, float) else str(p)
 
 
-def run_battery(label: str, bits: str, json_out: bool = False) -> list:
+def run_battery(label: str, bits: str) -> list:
+    """Run all 15 NIST SP 800-22 tests on `bits`; return structured results.
+
+    Pure compute — no I/O. The caller decides how to present the results
+    (`format_battery` for the report, or `json.dumps` for machine output).
+    """
     bits_len = len(bits)
     results = []
 
     def record(name: str, p, ok):
-        p_str = fmt(p)
-        ok_str = "PASS" if ok else "FAIL"
-        results.append({"test": name, "p": p_str, "passed": bool(ok)})
-        if not json_out:
-            print(f"  {name}: p={p_str} {ok_str}")
+        results.append({"test": name, "p": fmt(p), "passed": bool(ok)})
 
-    if not json_out:
-        print(f"\n{'=' * 60}")
-        print(f"  NIST SP 800-22: {label}")
-        print(f"  Bits: {bits_len:,}")
-        print(f"{'=' * 60}")
+    # 1. Frequency (Monobit)
 
     # 1. Frequency (Monobit)
     from nist80022.FrequencyTest import FrequencyTest
@@ -150,6 +149,28 @@ def run_battery(label: str, bits: str, json_out: bool = False) -> list:
     return results
 
 
+def format_battery(label: str, bits_len: int, results: list) -> list[str]:
+    """Render a battery's results as the report's output lines."""
+    lines = [
+        "",
+        "=" * 60,
+        f"  NIST SP 800-22: {label}",
+        f"  Bits: {bits_len:,}",
+        "=" * 60,
+    ]
+    for r in results:
+        ok_str = "PASS" if r["passed"] else "FAIL"
+        lines.append(f"  {r['test']}: p={r['p']} {ok_str}")
+    return lines
+
+
+def _run_sample(job: tuple[str, str]) -> tuple[str, list, int]:
+    """Pool worker: load one sample, run its battery, return results + length."""
+    label, path = job
+    bits = load_bits(path)
+    return label, run_battery(label, bits), len(bits)
+
+
 def main():
     root = Path(__file__).resolve().parent.parent
     dist = root / "dist"
@@ -197,14 +218,21 @@ def main():
     if single_file:
         bits = load_bits(single_file)
         label = single_label if single_label else Path(single_file).stem
-        results = run_battery(label, bits, json_out)
+        results = run_battery(label, bits)
         if json_out:
             print(json.dumps(results, indent=2))
+        else:
+            print("\n".join(format_battery(label, len(bits), results)))
         return
 
-    for label, path in samples:
-        bits = load_bits(path)
-        run_battery(label, bits, False)
+    # Fan every sample's battery out across all CPU cores. numpy/scipy release
+    # the GIL during the heavy C-backed tests, so a process pool gives a near
+    # linear speedup over the serial loop; results are collected per sample and
+    # printed in the original sample order so the report is unchanged.
+    max_workers = os.cpu_count() or 1
+    with ProcessPoolExecutor(max_workers=max_workers) as ex:
+        for _label, results, bits_len in ex.map(_run_sample, samples):
+            print("\n".join(format_battery(_label, bits_len, results)))
 
 
 if __name__ == "__main__":

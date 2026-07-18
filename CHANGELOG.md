@@ -5,6 +5,58 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.12.5] - 2026-07-18
+
+### Summary
+
+Continued multi-core utilization across the randomness tooling (no algorithm or
+result change). The in-house battery (`scripts/stats.ts`) now runs each
+generator's battery in its own worker thread via a new `stats-core.ts` (pure
+compute) + `stats-worker.ts` split, and the full NIST SP 800-22 bridge
+(`scripts/nist-bridge.py`) fans every sample's battery out across a
+`ProcessPoolExecutor`. Both keep byte-for-byte identical output to the serial
+runs; only wall time drops.
+
+### Highlights
+
+#### ⚡ Parallel in-house battery (`stats.ts`)
+
+- Extracted `runBattery` + helpers + types into `scripts/stats-core.ts`; the
+  orchestrator (`scripts/stats.ts`) spawns one worker per generator
+  (`scripts/stats-worker.ts`), bounded to `os.cpus().length`. Single-threaded JS
+  can't use extra cores via `Promise.all`, so worker threads are required for a
+  real speedup.
+- `bun run test:stats` drops from ~6.0s to ~1.3s (~4.6× faster, 2–3 cores
+  saturated) with identical PASS/FAIL conclusions.
+
+#### ⚡ Parallel NIST SP 800-22 bridge (`nist-bridge.py`)
+
+- `run_battery` is now pure compute (returns structured results); presentation
+  moved to a new `format_battery` helper. The multi-sample loop uses a
+  `ProcessPoolExecutor` (workers = `os.cpu_count()`); numpy/scipy release the
+  GIL, so the speedup is near-linear. Output is collected per sample and printed
+  in the original sample order, so the report is unchanged.
+- The full ~18-sample battery drops from ~5 min to ~2.5 min on a 6-core host;
+  the `--file/--label/--json` single-sample path is unchanged.
+
+### Breaking Changes
+
+- None (no public generation API change; `stats-core.ts`/`stats-worker.ts` are
+  internal script modules).
+
+### Upgrade Guide
+
+- No action required. `bun run test:stats` and `python3 scripts/nist-bridge.py`
+  now use all cores automatically.
+
+### Known Issues
+
+- None.
+
+### Dependencies Updated
+
+- None.
+
 ## [1.12.4] - 2026-07-18
 
 ### Summary
