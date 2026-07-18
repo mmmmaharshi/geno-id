@@ -5,6 +5,98 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.12.0] - 2026-07-18
+
+### Summary
+
+Q1-submission bulletproofing pass, ahead of drafting the paper. Adds four new
+`sources/` documents (formal proofs, threats to validity, reproducibility
+package) and one CI job (extended dieharder randomness battery), plus the
+open-science basics (LICENSE, CITATION.cff) a Scopus Q1 artifact-evaluation
+committee expects to find.
+
+### Highlights
+
+#### 🧮 Formal proofs
+
+- `sources/formal-proofs.md`: formalizes the O(k) `repairConstraints`
+  complexity bound vs. O(64^k) rejection sampling (§1), and proves
+  field-boundary crossover preserves (neither reduces nor inflates) the
+  min-entropy of `random`-type fields via a uniform-mixture-of-uniforms
+  argument (§2), with an explicit scope note on what is *not* claimed
+  (structured/deterministic fields, cryptographic reduction proofs).
+
+#### 🎯 Threats to validity
+
+- `sources/threats-to-validity.md`: internal / external / construct /
+  conclusion validity, each with existing mitigations and disclosed residual
+  risk — written to be reused directly in a paper's Threats to Validity
+  section. Flags the single-language implementation and CI-runner-vs-production
+  hardware gap as the two largest external-validity threats.
+
+#### 📦 Reproducibility package
+
+- `sources/reproducibility.md`: one-command reproduction table for every
+  experiment cited in the README/CHANGELOG, environment pinning
+  (`bun.lock`, Node `>=22`, TypeScript 7.0.2), and an artifact-availability
+  statement. Discloses the one open gap: no long-term archival DOI (Zenodo)
+  has been minted yet.
+- Added `LICENSE` (MIT) and `CITATION.cff` — neither existed before this
+  release, and both are expected by artifact-evaluation committees.
+
+#### 🎲 Extended randomness battery (dieharder)
+
+- `scripts/export-dieharder.ts` (new): exports 100M-bit (12.5MB) raw binary
+  samples per generator (v4, raw-v8, GenoID-pooled, GenoID-structured
+  `dbkey`) — large enough that dieharder's harder sub-tests don't need to
+  rewind the file (which would reuse bits and invalidate p-values). NIST SP
+  800-22 (`nist-bridge.py`) validates ~1.22M-bit samples; this is
+  deliberately much larger and from an independent test-suite codebase.
+- `.github/workflows/bench.yml`: new `dieharder` job installs dieharder via
+  `apt` (root available on `ubuntu-latest` runners) and runs a curated
+  15-test subset (diehard/sts/rgb/dab families) across all four samples,
+  writing a markdown summary to the job summary and a `dieharder-results`
+  artifact. The full `-a` battery (~114 sub-tests) is not run in CI by
+  default — disclosed as a time-budget trade-off in
+  `sources/reproducibility.md` §3, not silently substituted for the full
+  battery.
+- **Known limitation:** this agent's sandbox had no root access to install
+  `dieharder` locally, so the CI job's actual output has not yet been
+  observed — verify on the next push before citing dieharder results in the
+  paper draft.
+
+#### 🔍 Adversarial novelty recheck
+
+- `sources/related-work.md` §7 (new): re-ran the novelty search ahead of
+  submission — 2024-2026 GA/UUID-adjacent literature and patent prior art
+  (GA-machine/genetic-programming patents, separately, three
+  identifier-generation patents using hashing/counters/coordination, never
+  both together). Novelty claim in §4 survives the recheck; residual risk
+  (absence of evidence ≠ evidence of absence) stated explicitly and
+  cross-referenced to `threats-to-validity.md` §3.
+
+### Breaking Changes
+
+None.
+
+### Upgrade Guide
+
+No code changes to the public generation API. Run `bun run export-dieharder`
+to produce the new `dist/*.dieharder.bin` samples locally if you want to run
+dieharder yourself before the next CI run confirms the job.
+
+### Known Issues
+
+- dieharder CI job not yet verified against a real GitHub Actions run (no
+  root in the authoring sandbox — see above).
+- No archival DOI minted yet (`sources/reproducibility.md` §4).
+
+### Dependencies Updated
+
+| Package | From | To | Reason |
+| --- | --- | --- | --- |
+| (none) | — | — | No dependency changes in this release |
+
 ## [1.11.3] - 2026-07-18
 
 ### Summary

@@ -91,3 +91,56 @@ jobs:
           path: |
             dist/all-results.json
             dist/all-summary.md
+
+  dieharder:
+    name: dieharder extended randomness battery
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install
+      - run: bun run build
+      - name: Export 12.5MB bitstreams per generator
+        run: bun run export-dieharder
+      - name: Install dieharder
+        run: sudo apt-get update && sudo apt-get install -y dieharder
+      - name: Run curated dieharder battery
+        run: |
+          set -e
+          # NIST SP 800-22 (scripts/nist-bridge.py) already validates all 15
+          # tests on ~1.22M-bit samples. dieharder is a stronger, independent
+          # battery from a different codebase/test family; this job is
+          # necessary-but-not-sufficient-beyond-NIST evidence, not a
+          # replacement for it. Full `-a` (~114 sub-tests) needs far more data
+          # than is practical to regenerate per CI run without hours of
+          # runtime, so this runs a curated subset spanning the diehard/sts/
+          # rgb/dab families on the 12.5MB (100M-bit) sample per generator.
+          TESTS="0 2 4 5 7 8 10 13 15 100 102 203 249 251 254"
+          echo "## dieharder extended randomness battery" > dieharder-summary.md
+          echo "" >> dieharder-summary.md
+          echo "12.5MB / 100M-bit sample per generator. Curated subset (not \`-a\`); see AGENTS note in workflow for rationale." >> dieharder-summary.md
+          echo "" >> dieharder-summary.md
+          echo "| Generator | Test | p-value | Assessment |" >> dieharder-summary.md
+          echo "|---|---|---:|---|" >> dieharder-summary.md
+          for f in v4 rawv8 genoid struct-dbkey; do
+            for t in $TESTS; do
+              out=$(dieharder -d "$t" -g 201 -f "dist/${f}.dieharder.bin" 2>/dev/null | tail -n 1)
+              name=$(echo "$out" | awk -F'\\|' '{print $1}' | xargs)
+              pval=$(echo "$out" | awk -F'\\|' '{print $(NF-1)}' | xargs)
+              assess=$(echo "$out" | awk -F'\\|' '{print $NF}' | xargs)
+              echo "| $f | ${name:-test $t} | ${pval:-n/a} | ${assess:-ERROR} |" >> dieharder-summary.md
+            done
+          done
+          cat dieharder-summary.md
+      - name: Write job summary
+        if: always()
+        run: cat dieharder-summary.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dieharder-results
+          path: |
+            dieharder-summary.md
+            dist/*.dieharder.bin

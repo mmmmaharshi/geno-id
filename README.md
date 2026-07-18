@@ -2,6 +2,7 @@
 
 [![CI bench](https://github.com/mmmmaharshi/geno-id/actions/workflows/bench.yml/badge.svg)](https://github.com/mmmmaharshi/geno-id/actions/workflows/bench.yml)
 [![Release](https://img.shields.io/github/v/release/mmmmaharshi/geno-id)](https://github.com/mmmmaharshi/geno-id/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ## Problem Statement
 UUIDs are opaque random blobs. Applications often need structure embedded in an
@@ -167,7 +168,30 @@ considerations**. Key points:
 A full literature review and novelty assessment — UUID standards, sortable/structured
 IDs, steganographic v8, genetic/evolutionary computation, and CSPRNG pooling — is in
 [`sources/related-work.md`](sources/related-work.md). It confirms the gap GenoID
-fills: **no prior work applies GA-style operators to UUID/identifier generation**.
+fills: **no prior work applies GA-style operators to UUID/identifier generation**
+(re-verified against 2024-2026 literature and patent prior art in the July 2026
+adversarial recheck, §7 of that document).
+
+## Formal proofs, threats to validity, and reproducibility
+
+Three additional documents formalize claims stated empirically elsewhere and are
+written to be reused directly in a paper submission:
+
+- [`sources/formal-proofs.md`](sources/formal-proofs.md) — the O(k) repair
+  complexity bound vs. O(64^k) rejection sampling, and an entropy-preservation
+  proof for field-boundary crossover on `random`-type fields.
+- [`sources/threats-to-validity.md`](sources/threats-to-validity.md) — internal,
+  external, construct, and conclusion validity, with mitigations already in place
+  and the residual risks that remain open.
+- [`sources/reproducibility.md`](sources/reproducibility.md) — a one-command
+  reproduction table for every experiment cited above, environment pinning, and
+  an artifact-availability statement (the one open item: a long-term archival
+  DOI has not yet been minted).
+
+An extended, independent randomness battery (dieharder, 100M-bit samples per
+generator — NIST SP 800-22 alone is necessary but not sufficient) runs as a CI
+job (`.github/workflows/bench.yml`, job `dieharder`); see
+`sources/reproducibility.md` §3 for the curated test subset and its rationale.
 
 ## Quick Start
 

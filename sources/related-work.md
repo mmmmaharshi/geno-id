@@ -143,6 +143,51 @@ repurposed as **constraint repair** rather than as a randomness improver.
    0.0053), NIST SP 800-22 (15/15 PASS on struct-dbkey / multitenant /
    eventsourcing), and deployability (browser + Node + multi-OS CI matrix).
 
+## 7. Adversarial recheck (July 2026)
+
+Re-run ahead of a Q1 submission push, specifically hunting for anything that
+would falsify §4's novelty claim or that a reviewer would find first: recent
+(2024-2026) GA/UUID-adjacent papers, and patent prior art using
+crossover/mutation-style bit recombination for *identifier* generation
+specifically (as opposed to GA as a general optimiser, already covered by
+§4).
+
+- **No 2024-2026 paper combines GA operators with UUID/identifier
+  generation.** Targeted search (web + arXiv) for "genetic algorithm... UUID
+  identifier generation" and "evolutionary computation unique identifier
+  generation distributed systems" returned GA-theory papers (crossover
+  surveys, LLM-assisted instruction synthesis) and identifier-generation
+  papers (distributed ID schemes, NHash) as **disjoint** literatures — no
+  paper sits at their intersection. This is consistent with, and strengthens,
+  the Phase B conclusion in §4.
+- **arXiv:2509.08969** (already cited as [12]) is the closest *comparative*
+  paper found — it benchmarks UUIDv4/v7/ULID for distributed systems
+  (collision probability, network overhead, generation speed) but contains no
+  composition framework and no GA-style operators; it is a measurement study
+  of existing schemes, not a new generation method. GenoID's contribution
+  (declarative multi-field v8 composition + GA-as-repair) is orthogonal to,
+  not overlapping with, that paper's contribution (comparative benchmarking
+  of existing schemes).
+- **Patent search** for crossover/mutation/bit-recombination identifier
+  generation surfaced only **GA-machine and genetic-programming patents**
+  (e.g. US5343554 "Non-linear genetic process for data encoding", US5970487
+  "Genetic algorithm machine... crossover templates with bit-by-bit shifting",
+  US6360191B1 "automated design of complex structures using genetic
+  programming") — these patent *general-purpose GA hardware/software
+  mechanisms*, not identifier/UUID generation. Separately, three
+  identifier-generation patents were found (distributed ID generation,
+  decentralized replica-ID generation, entity-ID generation in distributed
+  computing) but **none of the three uses genetic/evolutionary operators** —
+  they use hashing, counters, or coordination protocols. No patent combines
+  the two, matching the academic-literature finding above.
+- **Conclusion:** the novelty claim in §4 survives this recheck. The
+  intersection of "GA-style crossover/mutation" and "identifier/UUID
+  generation" remains, as far as a reasonably thorough disclosed search can
+  determine, unoccupied by both academic literature and patents. As stated
+  throughout this document, absence of evidence from a search — however
+  broad — is not proof of absence; see `sources/threats-to-validity.md` §3
+  for this residual risk stated as a construct-validity threat.
+
 ## References
 
 [1] K. Davis, B. Peabody, P. Leach, *Universally Unique IDentifiers (UUIDs)*,
