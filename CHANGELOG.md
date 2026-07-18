@@ -5,6 +5,54 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.12.3] - 2026-07-18
+
+### Summary
+
+Two fixes to the dieharder driver (`scripts/run-dieharder.ts`), both without any
+change to the generation algorithms. First, the result parser now collects
+**every** sub-test row dieharder emits, instead of keeping only the last row per
+test — the earlier parser silently undercounted (e.g. 44 reported vs the true
+164 sub-test rows across the curated subset, because opso/dna and others emit
+multiple ntuple rows). Second, the full `dieharder -a` 1GB mode added in passing
+was removed: the curated diehard/STS subset runs without rewinding the 12.5MB
+sample and is trustworthy, while the rgb/dab family rewinds the 12.5MB file
+dozens of times and is excluded with full disclosure. NIST SP 800-22 (all 15
+tests PASS) plus this curated subset is the citable randomness evidence; the
+runtime/disk cost of a clean `-a` run (hours, multiple GB) is not justified.
+
+### Highlights
+
+#### 🔧 dieharder parser and scope fixes
+
+- `scripts/run-dieharder.ts`: parser collects all sub-test rows (164 actual rows
+  reported, not 44). The curated diehard/STS subset is now the sole mode;
+  `dieharder-common.ts` filename suffix and the `dieharder:fast` npm script were
+  removed.
+- Verified locally: **148 PASSED, 15 WEAK, 1 FAILED** (`v4 diehard_squeeze`, a
+  known over-strict sub-test), 0 execution errors.
+- `sources/reproducibility.md` §3 updated: single curated mode, with explicit
+  reasoning for excluding the rgb/dab family (file rewind) and the decision not
+  to run the full `-a` battery.
+
+### Breaking Changes
+
+- None (no public generation API change).
+
+### Upgrade Guide
+
+- No action required. `bun run dieharder` runs the curated diehard/STS subset as
+  before.
+
+### Known Issues
+
+- `diehard_squeeze` reports FAILED for `v4` at 100M bits (p≈0); this is a known
+  over-strict dieharder sub-test that flags even good RNGs.
+
+### Dependencies Updated
+
+- None.
+
 ## [1.12.2] - 2026-07-18
 
 ### Summary
