@@ -5,6 +5,47 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.11.0] - 2026-07-18
+
+### Summary
+
+All CI benchmark results now land in a single place. A new `consolidate` job
+runs after the benchmark matrix, merges every per-environment
+`bench-ci-results.json` into one wide markdown table (one column per OS/runtime)
+and a single `dist/all-results.json`, then uploads them as one `ci-consolidated`
+artifact and writes the table to the run's job summary — so every environment's
+throughput and collision results can be copied in one go.
+
+### Highlights
+
+#### 🧩 One consolidated CI report
+
+- `.github/workflows/bench.yml`: added a `consolidate` job (`needs:
+  [bun-matrix, node-matrix]`) that downloads all `bench-*` artifacts and runs
+  the consolidation script.
+- `scripts/ci-consolidate.ts`: new script with a pure, tested
+  `renderConsolidated(results)` that renders a throughput table (mean ops/sec
+  per environment) and a collision table (PASS = 0 collisions), ordered
+  bun-first then Node by version.
+- `scripts/ci-consolidate.test.ts`: TDD coverage for environment labeling,
+  column ordering, and empty-input handling.
+- Uploads a single `ci-consolidated` artifact (`dist/all-results.json` +
+  `dist/all-summary.md`) and appends the table to `$GITHUB_STEP_SUMMARY`.
+
+### Breaking Changes
+
+- None.
+
+### Upgrade Guide
+
+- No code changes required. On the Actions run page, open the `consolidate CI
+  results` job summary (or download the `ci-consolidated` artifact) to see all
+  environments side-by-side.
+
+### Known Issues
+
+- None.
+
 ## [1.10.0] - 2026-07-18
 
 ### Summary
