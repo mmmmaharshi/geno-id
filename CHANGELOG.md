@@ -5,6 +5,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.0] - 2026-07-18
+
+### Summary
+
+Closes the 1.9.0 known issue: the interactive browser benchmark now reports
+repeated-trial statistics instead of a single-run point estimate. Each
+generator is measured over **10 trials** and the results table shows
+`mean ± std` with a **95% CI** column — matching the Node-side benchmark, so
+the in-browser numbers are now error-bounded too.
+
+### Highlights
+
+#### 🌐 Browser benchmark gains confidence intervals
+
+- `benchmark.ts`: `runAll` now uses `benchRepeated` / `benchRepeatedAsync`
+  (10 trials) from `bench-core.ts` and renders `mean ± std` plus a new
+  **95% CI** column in `#resultsTable`.
+- `index.html`: added the `95% CI` header to the results table.
+- The `nativeCallout` and per-row logging use the trial mean, consistent with
+  the Node benchmark output.
+
+### Breaking Changes
+
+- None.
+
+### Upgrade Guide
+
+- No code changes required. Open `index.html` and run the benchmark to see
+  in-browser CIs.
+
+### Known Issues
+
+- None.
+
+### Dependencies Updated
+
+- None.
+
 ## [1.9.0] - 2026-07-18
 
 ### Summary
