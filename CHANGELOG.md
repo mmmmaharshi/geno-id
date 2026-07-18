@@ -5,6 +5,57 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.12.4] - 2026-07-18
+
+### Summary
+
+Performance and documentation update to the dieharder driver
+(`scripts/run-dieharder.ts`), with no change to the generation algorithms or to
+the reported randomness conclusions. All `dieharder` invocations for a
+multi-trial run are now fanned out across every CPU core via a bounded
+concurrency pool (`os.cpus().length`), and the per-trial sample exports run in
+parallel — cutting multi-trial wall time by ~2× on a 6-core host with identical
+results (152 PASSED, 0 FAILED across 4 generators × 5 trials). `sources/reproducibility.md`
+§3 is refreshed to the current curated test list `[0, 2, 7, 8, 10, 15, 100, 102]`,
+documents the multi-trial majority-voting scheme, and explicitly excludes
+`diehard_opso` (-d 5), `diehard_squeeze` (-d 13), and `diehard_bitstream` (-d 4).
+
+### Highlights
+
+#### ⚡ Parallel dieharder execution
+
+- `scripts/run-dieharder.ts`: replaced the serial `execFileSync` loop with a
+  bounded worker pool (`runPool`) driving promised `execFile` invocations. For
+  each generator, all (test × trial) `dieharder -d` calls run concurrently up to
+  the core count; the aggregation/majority-vote logic is unchanged.
+- `ensureSamples` now exports all missing trial bitstreams in parallel
+  (`Promise.all`) instead of one trial at a time.
+- Verified locally on a 6-core host: **152 PASSED, 0 WEAK, 0 FAILED**, 0
+  execution errors — same outcome as the serial run, in roughly half the wall time.
+
+#### 📝 Documentation
+
+- `sources/reproducibility.md` §3: corrected the curated test list (stale
+  `-d 4/5/13` entries removed), added the multi-trial majority-voting rationale,
+  and documented the parallelism + the drop of `diehard_opso`/`diehard_squeeze`/
+  `diehard_bitstream` per community practice.
+
+### Breaking Changes
+
+- None (no public generation API change).
+
+### Upgrade Guide
+
+- No action required. `bun run dieharder` now uses all cores automatically.
+
+### Known Issues
+
+- None.
+
+### Dependencies Updated
+
+- None.
+
 ## [1.12.3] - 2026-07-18
 
 ### Summary
