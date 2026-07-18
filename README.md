@@ -71,7 +71,7 @@ Key findings:
   pg_uuid_v8 > ULID > KSUID; GenoID-structured is slower due to per-field
   composition but still production-viable.
 
-### Multi-environment validation (Task A)
+### Task A: Multi-environment validation
 
 To address single-machine validation concerns, the full benchmark runs on
 every push via a GitHub Actions matrix:
@@ -85,7 +85,7 @@ Results are uploaded per job as downloadable artifacts (`bench-ci-results.json`
 + a rendered `ci-summary.md`). All environments report 0 collisions. Open the
 **Actions** tab → a run → **Artifacts** to inspect per-environment numbers.
 
-### Concurrent generation (Task B)
+### Task B: Concurrent generation
 
 GenoID is a pure, stateless function over the process-global CSPRNG pool, so it is
 safe to fan out across threads without coordination. `scripts/bench-concurrent.ts`
@@ -99,7 +99,7 @@ spawns N `worker_threads`, each generating M UUIDs, then verifies globally:
 Run it with `bun run bench-concurrent` (override `CONCURRENT_WORKERS`,
 `CONCURRENT_PER_WORKER`, `CONCURRENT_MODE`).
 
-### B-tree index benchmark (Task C)
+### Task C: B-tree index benchmark
 
 Structured, sortable IDs keep the primary-key B-tree index-friendly. `scripts/bench-sqlite.ts`
 bulk-inserts 100k IDs of each kind (v4, GenoID v8, v7, GenoID-structured `dbkey`,
@@ -116,7 +116,7 @@ throughput plus B-tree compactness (`page_count`, `freelist_count`, `bytes/row`)
 
 Run it with `bun run bench-sqlite` (override `SQLITE_N`).
 
-### Collision at scale (Task D)
+### Task D: 100M collision test
 
 The shared `collisionTest` keeps every ID in a `Set<string>`, which cannot hold
 100M entries in memory. `scripts/collision-100m.ts` replaces it with an exact dedup
