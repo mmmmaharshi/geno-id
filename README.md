@@ -1,6 +1,6 @@
 # GenoID
 
-[![CI bench](https://github.com/mmmaharhi/geno-id/actions/workflows/bench.yml/badge.svg)](https://github.com/mmmaharhi/geno-id/actions/workflows/bench.yml)
+[![CI bench](https://github.com/mmmmaharshi/geno-id/actions/workflows/bench.yml/badge.svg)](https://github.com/mmmmaharshi/geno-id/actions/workflows/bench.yml)
 
 ## Problem Statement
 UUIDs are opaque random blobs. Applications often need structure embedded in an
