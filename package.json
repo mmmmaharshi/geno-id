@@ -1,6 +1,6 @@
 {
   "name": "genoid",
-  "version": "1.12.0",
+  "version": "1.12.1",
   "description": "Novel GA-inspired UUIDv8 algorithm benchmark against v4, v7, SHA-256 hash-derived, and Math.random baselines",
   "type": "module",
   "scripts": {
@@ -17,6 +17,7 @@
     "bench-sqlite": "bun run scripts/bench-sqlite.ts",
     "collision-100m": "bun run scripts/collision-100m.ts",
     "export-dieharder": "bun run scripts/export-dieharder.ts",
+    "dieharder": "bun run scripts/run-dieharder.ts",
     "test:stats": "bun run scripts/stats.ts",
     "puppeteer": "bun run scripts/puppeteer.ts",
     "verify-puppeteer": "bun run scripts/puppeteer.dryrun.ts",

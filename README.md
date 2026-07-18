@@ -189,9 +189,9 @@ written to be reused directly in a paper submission:
   DOI has not yet been minted).
 
 An extended, independent randomness battery (dieharder, 100M-bit samples per
-generator — NIST SP 800-22 alone is necessary but not sufficient) runs as a CI
-job (`.github/workflows/bench.yml`, job `dieharder`); see
-`sources/reproducibility.md` §3 for the curated test subset and its rationale.
+generator — NIST SP 800-22 alone is necessary but not sufficient) is available
+as a local command (`bun run dieharder`); see `sources/reproducibility.md` §3
+for the curated test subset and its rationale.
 
 ## Quick Start
 

@@ -5,6 +5,48 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.12.1] - 2026-07-18
+
+### Summary
+
+Moved the extended dieharder randomness battery out of CI and into a local
+command. The `.github/workflows/bench.yml` `dieharder` job (which installed
+dieharder via `apt` on every push and uploaded `dieharder-results`) was removed
+to keep CI lean; the same curated battery is now run on the host with
+`bun run dieharder`.
+
+### Highlights
+
+#### 🎲 dieharder is now a local command
+
+- Removed the `dieharder` CI job from `.github/workflows/bench.yml`.
+- `scripts/dieharder-common.ts` (new): shared exporter (BitWriter, free-bit
+  extraction, dbkey layout) extracted from `export-dieharder.ts` /
+  `export-dieharder-smoke.ts`, which are now thin drivers.
+- `scripts/run-dieharder.ts` (new) + `bun run dieharder`: checks `dieharder`
+  is installed on the host, exports the 100M-bit samples if missing, runs the
+  curated 15-test subset, and writes `dist/dieharder-results.md`. Exits
+  non-zero if any sub-test fails.
+- `README.md`, `sources/reproducibility.md` §3, and `CHANGELOG.md` updated to
+  describe the local workflow instead of the CI job.
+
+### Breaking Changes
+
+- None (no public generation API change; the dieharder battery is simply
+  invoked locally rather than in CI).
+
+### Upgrade Guide
+
+- `dieharder` is no longer run in CI. Install it on the host
+  (`brew install dieharder` / `sudo apt-get install -y dieharder`) and run
+  `bun run dieharder` to reproduce the extended randomness battery.
+
+### Known Issues
+
+- dieharder battery not yet run end-to-end by the authoring agent (no
+  `dieharder` binary in the sandbox — run `bun run dieharder` on a host with
+  `dieharder` installed before citing results).
+
 ## [1.12.0] - 2026-07-18
 
 ### Summary
