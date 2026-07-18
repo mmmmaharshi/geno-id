@@ -8,12 +8,12 @@ import {
   completeLayout,
 } from "./algo.js"
 import {
-  benchSync,
-  benchAsyncBatched,
+  benchRepeated,
+  benchRepeatedAsync,
   birthdayBound50,
   collisionTest,
   collisionTestAsync,
-  type BenchResult,
+  type BenchStats,
 } from "./bench-core.js"
 
 interface AlgoEntry {
@@ -150,6 +150,10 @@ function fmt(x: number): string {
   return x.toLocaleString(undefined, { maximumFractionDigits: 1 })
 }
 
+// Repeated trials per generator so the in-browser table can show a 95% CI
+// instead of a single-run point estimate (matches the Node-side benchmark).
+const TRIALS = 10
+
 async function runAll(): Promise<void> {
   const btn = document.getElementById("runBtn") as HTMLButtonElement
   if (!btn) return
@@ -171,16 +175,16 @@ async function runAll(): Promise<void> {
     10,
   )
 
-  const results: Record<string, BenchResult> = {}
+  const results: Record<string, BenchStats> = {}
   for (const a of ALGOS) {
     btn.textContent = `Running... (speed: ${a.name})`
-    log(`Benchmarking ${a.name} (n=${a.async ? nAsync : nSync})...`)
+    log(`Benchmarking ${a.name} (n=${a.async ? nAsync : nSync}, ${TRIALS} trials)...`)
     const r = a.async
-      ? await benchAsyncBatched(a.fn as () => Promise<string>, nAsync)
-      : await benchSync(a.fn as () => string, nSync)
+      ? await benchRepeatedAsync(a.fn as () => Promise<string>, nAsync, TRIALS)
+      : benchRepeated(a.fn as () => string, nSync, TRIALS)
     results[a.key] = r
     log(
-      `  -> ${fmt(r.opsPerSec)} ops/sec, ${((r.elapsed / r.n) * 1000).toFixed(3)} µs/op`,
+      `  -> ${fmt(r.mean)} ± ${fmt(r.std)} ops/sec (95% CI ${fmt(r.ci95[0])}–${fmt(r.ci95[1])})`,
     )
   }
 
@@ -193,8 +197,9 @@ async function runAll(): Promise<void> {
       const r = results[a.key]
       const tr = document.createElement("tr")
       tr.innerHTML = `<td>${a.name}</td>
-      <td>${fmt(r.opsPerSec)}</td>
-      <td>${((r.elapsed / r.n) * 1000).toFixed(3)} µs</td>
+      <td>${fmt(r.mean)} ± ${fmt(r.std)}</td>
+      <td>${((1e6 / r.mean)).toFixed(3)} µs</td>
+      <td>${fmt(r.ci95[0])}–${fmt(r.ci95[1])}</td>
       <td>${a.entropy}</td>
       <td>${a.source}</td>
       <td>${a.secLabel}</td>`
@@ -232,9 +237,9 @@ async function runAll(): Promise<void> {
   const poolR = results["geno"]
   const stR = results["geno-struct"]
   if (v4r && poolR && stR) {
-    const v4 = v4r.opsPerSec
-    const pool = poolR.opsPerSec
-    const st = stR.opsPerSec
+    const v4 = v4r.mean
+    const pool = poolR.mean
+    const st = stR.mean
     const box = document.getElementById("nativeCallout") as HTMLDivElement
     if (box) {
       box.innerHTML = `<p>Native baseline throughput (this browser engine):
