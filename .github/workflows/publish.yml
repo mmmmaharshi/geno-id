@@ -1,9 +1,13 @@
 name: publish
 
-# Automatic npm publishing. Runs when a version tag (vX.Y.Z) is pushed,
-# keeping publishes tied to the repo's release cadence (tag -> Release -> npm).
-# Requires a repo secret NPM_TOKEN (npm automation token, publish rights to
-# the @manohar_maharshi scope).
+# Automatic npm publishing via npm Trusted Publishers (OIDC) — no long-lived
+# token. Runs when a version tag (vX.Y.Z) is pushed, keeping publishes tied to
+# the repo's release cadence (tag -> npm -> GitHub Release).
+#
+# One-time npm setup: Access -> Publish -> Trusted Publishers, add:
+#   Repository:  mmmmaharshi/geno-id
+#   Workflow:    publish.yml
+#   (npm derives job_workflow_ref = mmmmaharshi/geno-id/.github/workflows/publish.yml@refs/tags/v*)
 
 on:
   push:
@@ -13,6 +17,7 @@ on:
 
 permissions:
   contents: write
+  id-token: write # required for npm Trusted Publisher OIDC token
 
 jobs:
   publish:
@@ -36,10 +41,8 @@ jobs:
       - run: bun run typecheck
       - run: bun run test
 
-      - name: Publish to npm
-        run: npm publish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Publish to npm (Trusted Publisher / OIDC)
+        run: npm publish --provenance --access public
 
       - name: Extract CHANGELOG section for this version
         id: notes
