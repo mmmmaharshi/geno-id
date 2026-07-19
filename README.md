@@ -6,7 +6,77 @@
 
 Declarative RFC 9562 v8 UUID composition framework. Embed structure (shard, tenant, counter, timestamp) in an ID without rejection sampling.
 
-## 1. Problem
+## 1. Install & use
+
+Published on npm as **`@manohar_maharshi/genoid`** (scoped; the unscoped `genoid` name is blocked by npm's similarity rule against `nanoid`).
+
+**Requirements:** Node ≥ 22, ESM `import` (the package is ESM-only, no `require` build). No runtime dependencies — everything uses the built-in `crypto`. Types are bundled.
+
+```bash
+npm i @manohar_maharshi/genoid        # or: bun add / pnpm add / yarn add
+```
+
+### Generate a simple GenoID (v8 UUID)
+
+```ts
+import { genGenoID } from "@manohar_maharshi/genoid"
+
+console.log(genGenoID())
+```
+
+```text
+c550c9b2-e2b0-8d8c-93b9-58c2b9379970
+```
+
+The `8` in the third group (`-8d8c-`) is the RFC 9562 v8 version nibble; the variant bits are `10xx`.
+
+### Declarative structured v8 layout
+
+Embed a shard (1–5), a monotonic counter, and a timestamp in the ID — no rejection sampling:
+
+```ts
+import { genStructuredGenoID, completeLayout, readStructured, type Layout } from "@manohar_maharshi/genoid"
+
+const dbkey: Layout = completeLayout("dbkey", [
+  { name: "timestamp", start: 0, length: 48, type: "timestamp-ms" },
+  { name: "shard", start: 52, length: 8, type: "shard", constraint: { allowed: [1, 2, 3, 4, 5] } },
+  { name: "counter", start: 66, length: 16, type: "counter", constraint: { monotonic: true } },
+])
+
+const uuid = genStructuredGenoID(dbkey)
+console.log(uuid)
+
+// read the embedded fields back out
+console.log(readStructured(uuid, dbkey))
+```
+
+```text
+019f7aaf-3299-8017-8000-6a76e5d8a0f2
+{ "timestamp": 1784469729945, "shard": 1, "counter": 1, "rand_60": 7, "rand_82": 46690150686962 }
+```
+
+`shard` is always within the allowed set `{1..5}` and `counter` is monotonic — guaranteed by constraint-guided repair, not by rejection.
+
+### Multi-tenant layout
+
+```ts
+import { genStructuredGenoID, completeLayout } from "@manohar_maharshi/genoid"
+
+const multitenant = completeLayout("multitenant", [
+  { name: "tenant", start: 0, length: 12, type: "shard", constraint: { allowed: [1, 2, 3, 4, 5, 6, 7, 8] } },
+  { name: "region", start: 52, length: 8, type: "shard", constraint: { allowed: [1, 2, 3, 4] } },
+])
+
+console.log(genStructuredGenoID(multitenant))
+```
+
+```text
+0024c64c-bcd1-8045-82a2-815be75fbefa
+```
+
+`genHashUUID()` is async (uses `crypto.subtle`); all other exports are sync.
+
+## 2. Problem
 
 Standard generators give no composition mechanism:
 - v4 — fully random, opaque.
@@ -15,7 +85,7 @@ Standard generators give no composition mechanism:
 
 Forcing structure naively (rejection sample until field lands in allowed set) costs **64^k trials** (k=6 → 6.9×10¹⁰). Exponential. Unusable.
 
-## 2. Build a GenoID (how it works)
+## 3. Build a GenoID (how it works)
 
 Declare a layout (`V8Layout` / `V8Field`): which bits are timestamp, shard from allowed set, monotonic counter, tenant, or random CSPRNG. Then:
 
@@ -27,7 +97,7 @@ Output: valid v8 UUID carrying your structure, CSPRNG-grade randomness in remain
 
 Win: repair is **linear (≈k·8 ops)** vs naive **64^k rejection**. 1.5M structured-field checks → **0 mismatches, 0 constraint violations**.
 
-## 3. Proof it works
+## 4. Proof it works
 
 | Experiment | Result | Win |
 |---|---|---|
@@ -37,7 +107,7 @@ Win: repair is **linear (≈k·8 ops)** vs naive **64^k rejection**. 1.5M struct
 | NIST SP 800-22 | dbkey, multitenant, eventsourcing | all 15 tests PASS |
 | Throughput (E6 + browser) | structured ≈0.53M/s | ~3× slower than native `crypto.randomUUID` in-browser; base GenoID pool 7.5× faster than native v4 (browser: Chromium/Firefox/WebKit via Playwright, see Task E) |
 
-## 4. Baseline comparison
+## 5. Baseline comparison
 
 Compared against pg_uuid_v8 (closest prior art), ULID / KSUID / Snowflake (broader landscape), and native v4 / v7. Every baseline verified by known-answer + structural tests (`scripts/baselines-verify.test.ts`) plus NIST + collision checks.
 
@@ -64,7 +134,7 @@ Key findings:
 
 Reproduce: run `bun run bench` → full ±std, 95% CI, Welch t-test (`compareBench`) with Cohen's d. Difference stated significant or not — not from single-run point estimate.
 
-## 5. Tasks (validated claims)
+## 6. Tasks (validated claims)
 
 ### Task A: Multi-environment validation
 Single-machine doubt? Full benchmark runs every push via GitHub Actions matrix:
@@ -105,7 +175,7 @@ Do: `bun run collision-100m` (override `COLLISION_N`; `COLLISION_SYNC=1` for sin
 
 Do: `bun run playwright` (all engines) or `bun run playwright --browser=firefox`; `bun x playwright install` first.
 
-## 6. Security analysis
+## 7. Security analysis
 
 "Security class" labels backed by formal argument in [`sources/security-analysis.md`](sources/security-analysis.md): per-field entropy accounting (random bits only count; timestamp/counter/shard observable), explicit adversarial model (passive observer, state compromise, structure inference), comparison vs RFC 9562 §8.
 
@@ -114,7 +184,7 @@ Verified facts:
 2. **Pool forward-secrecy caveat** — pool refills every **256** UUIDs; process-memory adversary predicts at most 256 future UUIDs per refill.
 3. **Structured layouts leak metadata by design** (timestamp ±1 ms, shard, counter, tenant) — distinguishable from random, not a confidentiality primitive. Consistent with RFC 9562 §8.2 warning on v7-style timestamps.
 
-## 7. Literature & formal docs
+## 8. Literature & formal docs
 
 Read for depth:
 - [`sources/related-work.md`](sources/related-work.md) — literature review + novelty: **no prior work applies GA-style operators to UUID/identifier generation** (re-verified 2024–2026 + patent prior art, July 2026 adversarial recheck §7).
@@ -123,38 +193,6 @@ Read for depth:
 - [`sources/reproducibility.md`](sources/reproducibility.md) — one-command reproduction table, env pinning, artifact statement (open item: archival DOI not yet minted).
 
 Extended randomness battery (dieharder, 100M-bit samples/generator): `bun run dieharder`. Rationale in `sources/reproducibility.md` §3.
-
-## 8. Install & use
-
-Published on npm as **`@manohar_maharshi/genoid`** (scoped; the unscoped `genoid` name is blocked by npm's similarity rule against `nanoid`).
-
-**Requirements:** Node ≥ 22, ESM `import` (the package is ESM-only, no `require` build). No runtime dependencies — everything uses the built-in `crypto`. Types are bundled.
-
-```bash
-npm i @manohar_maharshi/genoid        # or: bun add / pnpm add / yarn add
-```
-
-```ts
-import {
-  genGenoID,
-  genStructuredGenoID,
-  completeLayout,
-  type Layout,
-} from "@manohar_maharshi/genoid"
-
-// Simple GenoID (v8 UUID)
-console.log(genGenoID())
-
-// Declarative structured v8 layout
-const dbkey: Layout = completeLayout("dbkey", [
-  { name: "timestamp", start: 0, length: 48, type: "timestamp-ms" },
-  { name: "shard", start: 52, length: 8, type: "shard", constraint: { allowed: [1, 2, 3, 4, 5] } },
-  { name: "counter", start: 66, length: 16, type: "counter", constraint: { monotonic: true } },
-])
-console.log(genStructuredGenoID(dbkey))
-```
-
-`genHashUUID()` is async (uses `crypto.subtle`); all other exports are sync.
 
 ## 9. Quick start
 
@@ -171,7 +209,7 @@ console.log(genStructuredGenoID(dbkey))
 
 Browser UI: open `index.html` (loads `dist/benchmark.js`).
 
-## 9. Applications
+## 10. Applications
 
 IDs both unique *and* self-describing. Use for:
 1. **Sharded DB / partition keys** — embed shard ID in PK; router locates node direct, no lookup table.
