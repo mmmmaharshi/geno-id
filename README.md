@@ -25,65 +25,7 @@ Published on npm as **`@manohar_maharshi/genoid`** (scoped; the unscoped `genoid
 npm i @manohar_maharshi/genoid        # or: bun add / pnpm add / yarn add
 ```
 
-### Generate a simple GenoID (v8 UUID)
-
-```ts
-import { genGenoID } from "@manohar_maharshi/genoid"
-
-console.log(genGenoID())
-```
-
-```text
-c550c9b2-e2b0-8d8c-93b9-58c2b9379970
-```
-
-The `8` in the third group (`-8d8c-`) is the RFC 9562 v8 version nibble; the variant bits are `10xx`.
-
-### Declarative structured v8 layout
-
-Embed a shard (1–5), a monotonic counter, and a timestamp in the ID — no rejection sampling:
-
-```ts
-import { genStructuredGenoID, completeLayout, readStructured, type Layout } from "@manohar_maharshi/genoid"
-
-const dbkey: Layout = completeLayout("dbkey", [
-  { name: "timestamp", start: 0, length: 48, type: "timestamp-ms" },
-  { name: "shard", start: 52, length: 8, type: "shard", constraint: { allowed: [1, 2, 3, 4, 5] } },
-  { name: "counter", start: 66, length: 16, type: "counter", constraint: { monotonic: true } },
-])
-
-const uuid = genStructuredGenoID(dbkey)
-console.log(uuid)
-
-// read the embedded fields back out
-console.log(readStructured(uuid, dbkey))
-```
-
-```text
-019f7aaf-3299-8017-8000-6a76e5d8a0f2
-{ "timestamp": 1784469729945, "shard": 1, "counter": 1, "rand_60": 7, "rand_82": 46690150686962 }
-```
-
-`shard` is always within the allowed set `{1..5}` and `counter` is monotonic — guaranteed by constraint-guided repair, not by rejection.
-
-### Multi-tenant layout
-
-```ts
-import { genStructuredGenoID, completeLayout } from "@manohar_maharshi/genoid"
-
-const multitenant = completeLayout("multitenant", [
-  { name: "tenant", start: 0, length: 12, type: "shard", constraint: { allowed: [1, 2, 3, 4, 5, 6, 7, 8] } },
-  { name: "region", start: 52, length: 8, type: "shard", constraint: { allowed: [1, 2, 3, 4] } },
-])
-
-console.log(genStructuredGenoID(multitenant))
-```
-
-```text
-0024c64c-bcd1-8045-82a2-815be75fbefa
-```
-
-`genHashUUID()` is async (uses `crypto.subtle`); all other exports are sync.
+Note: `genHashUUID()` is async (`crypto.subtle`); all other exports are sync.
 
 ## 2. Quick start
 
@@ -99,6 +41,65 @@ console.log(genStructuredGenoID(multitenant))
 10. `bun run playwright` — headless-browser benchmark across Chromium/Firefox/WebKit (`bun x playwright install` first).
 
 Browser UI: open `index.html` (loads `dist/benchmark.js`).
+
+### Examples
+
+#### Simple GenoID (v8 UUID)
+
+```ts
+import { genGenoID } from "@manohar_maharshi/genoid"
+
+console.log(genGenoID())
+```
+
+```text
+c550c9b2-e2b0-8d8c-93b9-58c2b9379970
+```
+
+The `8` in `-8d8c-` is the RFC 9562 v8 version nibble.
+
+#### Declarative structured dbkey layout
+
+Embed a shard (1–5), a monotonic counter, and a timestamp — no rejection sampling.
+
+```ts
+import { genStructuredGenoID, completeLayout, readStructured, type Layout } from "@manohar_maharshi/genoid"
+
+const dbkey: Layout = completeLayout("dbkey", [
+  { name: "timestamp", start: 0, length: 48, type: "timestamp-ms" },
+  { name: "shard", start: 52, length: 8, type: "shard", constraint: { allowed: [1, 2, 3, 4, 5] } },
+  { name: "counter", start: 66, length: 16, type: "counter", constraint: { monotonic: true } },
+])
+
+const uuid = genStructuredGenoID(dbkey)
+console.log(uuid)
+
+console.log(readStructured(uuid, dbkey))
+```
+
+```text
+019f7aaf-3299-8017-8000-6a76e5d8a0f2
+{ "timestamp": 1784469729945, "shard": 1, "counter": 1, "rand_60": 7, "rand_82": 46690150686962 }
+```
+
+`shard` ∈ `{1..5}`, `counter` monotonic — guaranteed by constraint-guided repair, not rejection.
+
+#### Multi-tenant variant
+
+```ts
+import { genStructuredGenoID, completeLayout } from "@manohar_maharshi/genoid"
+
+const multitenant = completeLayout("multitenant", [
+  { name: "tenant", start: 0, length: 12, type: "shard", constraint: { allowed: [1, 2, 3, 4, 5, 6, 7, 8] } },
+  { name: "region", start: 52, length: 8, type: "shard", constraint: { allowed: [1, 2, 3, 4] } },
+])
+
+console.log(genStructuredGenoID(multitenant))
+```
+
+```text
+0024c64c-bcd1-8045-82a2-815be75fbefa
+```
 
 ## 3. Proof it works
 
