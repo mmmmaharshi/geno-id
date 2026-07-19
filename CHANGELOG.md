@@ -5,6 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.13.1] - 2026-07-19
+
+### Summary
+
+**Documentation** — the README now documents the cross-engine browser
+validation shipped in v1.13.0 as **Task E** (Chromium / Firefox / WebKit, each
+asserting `browserErrors: []`, `GenoID-structured` present, and 0 collisions),
+and the stale unit-test count is corrected (29 → 41).
+
+### Highlights
+
+#### 📝 README
+
+- New **Task E: Cross-engine browser validation** subsection describing the
+  three-engine Playwright deployable check and how it works (local HTTP server
+  for ES-module loading, macrotask-scheduled `runAll()`).
+- §3 throughput row notes the browser results come from Chromium/Firefox/WebKit
+  via Playwright.
+- Quick-start test count fixed to 41.
+
+### Breaking Changes
+
+None.
+
+### Upgrade Guide
+
+No action required.
+
+### Known Issues
+
+None.
+
+### Dependencies Updated
+
+None.
+
 ## [1.13.0] - 2026-07-19
 
 ### Summary

@@ -35,7 +35,7 @@ Win: repair is **linear (≈k·8 ops)** vs naive **64^k rejection**. 1.5M struct
 | Repair beats rejection (E2) | GA repairs/UUID ≈ k | linear O(k·8) vs 64^k trials |
 | Collision + uniformity (E3–E5) | 2M UUIDs | 0 collisions (50%-bound n ≈ 2.7×10¹⁸); max dev 0.0053 |
 | NIST SP 800-22 | dbkey, multitenant, eventsourcing | all 15 tests PASS |
-| Throughput (E6 + browser) | structured ≈0.53M/s | ~3× slower than native `crypto.randomUUID` in-browser; base GenoID pool 7.5× faster than native v4 |
+| Throughput (E6 + browser) | structured ≈0.53M/s | ~3× slower than native `crypto.randomUUID` in-browser; base GenoID pool 7.5× faster than native v4 (browser: Chromium/Firefox/WebKit via Playwright, see Task E) |
 
 ## 4. Baseline comparison
 
@@ -96,6 +96,13 @@ Do: `bun run bench-sqlite` (override `SQLITE_N`).
 
 Do: `bun run collision-100m` (override `COLLISION_N`; `COLLISION_SYNC=1` for single-threaded).
 
+### Task E: Cross-engine browser validation
+`scripts/playwright.ts` runs the in-browser benchmark across **all three engines** — Chromium (V8), Firefox (SpiderMonkey), WebKit (JavaScriptCore) — so deployable behaviour is checked beyond a single JS engine:
+- **Each engine asserts** `browserErrors: []`, the `GenoID-structured` entry present, and **0 collisions** — all three PASS.
+- Repo is served over local HTTP (Firefox/WebKit block ES-module loading over `file://`); `runAll()` is triggered via a scheduled macrotask so the synchronous benchmark loop does not stall the automation.
+
+Do: `bun run playwright` (all engines) or `bun run playwright --browser=firefox`; `bun x playwright install` first.
+
 ## 6. Security analysis
 
 "Security class" labels backed by formal argument in [`sources/security-analysis.md`](sources/security-analysis.md): per-field entropy accounting (random bits only count; timestamp/counter/shard observable), explicit adversarial model (passive observer, state compromise, structure inference), comparison vs RFC 9562 §8.
@@ -124,7 +131,7 @@ Extended randomness battery (dieharder, 100M-bit samples/generator): `bun run di
 5. `bun run bench-concurrent` — Task B concurrent generation.
 6. `bun run bench-sqlite` — Task C SQLite B-tree benchmark.
 7. `bun run collision-100m` — Task D 100M batched collision (all cores).
-8. `bun run test` — unit + verification tests (29 tests).
+8. `bun run test` — unit + verification tests (41 tests).
 9. `bun run test:stats` — NIST SP 800-22 monobit / runs / chi-square.
 10. `bun run playwright` — headless-browser benchmark across Chromium/Firefox/WebKit (`bun x playwright install` first).
 
