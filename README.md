@@ -25,13 +25,6 @@ Node ≥ 22, ESM-only, zero runtime deps.
 npm i @manohar_maharshi/genoid
 ```
 
-Then:
-
-1. `bun install` (~10s)
-2. `bun run build` (~2s)
-3. `bun run bench` (~30s) — full benchmark + uniformity
-
-Browser: open `index.html`.
 
 ## 2. Quick start
 
