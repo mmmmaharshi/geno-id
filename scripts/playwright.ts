@@ -49,6 +49,14 @@ function startServer(): Promise<{ close: () => Promise<void>; origin: string }> 
 type BrowserName = "chromium" | "firefox" | "webkit"
 const BROWSERS: BrowserName[] = ["chromium", "firefox", "webkit"]
 
+// Console errors that are benign for this static benchmark page and must not
+// fail the deployable gate. Mirrors the "Allowed Exceptions" pattern from
+// Playwright best practices (fail on unexpected console errors only).
+// Currently empty — the benchmark emits none — but kept as an explicit seam
+// so a benign error (e.g. favicon 404) can be allowlisted without weakening
+// the check for real errors.
+const ALLOWED_CONSOLE_ERRORS: RegExp[] = []
+
 function parseArgs(argv: string[]): Record<string, string | boolean> {
   const args: Record<string, string | boolean> = {}
   for (const raw of argv) {
@@ -127,10 +135,16 @@ async function runBenchmark(
   const page = await browserInstance.newPage()
 
   const browserErrors: string[] = []
-  page.on("pageerror", (err: unknown) => browserErrors.push(String(err)))
+  const isAllowed = (text: string) =>
+    ALLOWED_CONSOLE_ERRORS.some((pattern) => pattern.test(text))
+  page.on("pageerror", (err: unknown) => {
+    const text = String(err)
+    if (!isAllowed(text)) browserErrors.push(text)
+  })
   page.on("console", (msg) => {
     if (msg.type() === "error") {
-      browserErrors.push(msg.text())
+      const text = msg.text()
+      if (!isAllowed(text)) browserErrors.push(text)
     }
   })
 
