@@ -46,14 +46,16 @@ Throughput = **mean of 10 trials** with sample std dev and **95% CI** (`benchRep
 | Generator | Type | Throughput (ops/s) | 2M collisions | 10M collisions | NIST (payload) |
 |---|---|---:|---:|---:|---|
 | v4 (`crypto.randomUUID`) | Random (baseline) | 11.34M | 0 | 0 | — |
-| v7 (custom) | RFC 9562 timestamp | 3.98M | 0 | — | — |
+| v7 (custom) | RFC 9562 timestamp | 3.98M | 0 | 0 | — |
 | GenoID (pooled v8) | GA-inspired v8 | 7.72M | 0 | 0 | — |
-| GenoID-structured (dbkey) | Declarative v8 layout | 0.7M | 0 | — | 15/15 PASS |
+| GenoID-structured (dbkey) | Declarative v8 layout | 0.7M | 0 | 0 | 15/15 PASS |
 | pg_uuid_v8 | Steganographic v4 (closest prior art) | 0.94M | 0 | 0 | 15/15 PASS |
 | ULID-v8 | Timestamped v8 (UUID-mapped) | 1.01M | 0 | 0 | 15/15 PASS |
-| ULID | 26-char Crockford base32 | 0.50M | 0 | — | — |
-| KSUID | 27-char base62 | 0.34M | 0 | — | — |
-| Snowflake | 64-bit integer | 3.06M | 0 | — | — |
+| ULID | 26-char Crockford base32 | 0.50M | 0 | n/a | n/a |
+| KSUID | 27-char base62 | 0.34M | 0 | n/a | n/a |
+| Snowflake | 64-bit integer | 3.06M | 0 | n/a | n/a |
+
+`n/a` = not applicable / not measured: ULID, KSUID, Snowflake are non-UUID-shaped (base32/base62 string, 64-bit int) so a whole-UUID NIST payload test is invalid and a 10M hex-BigInt collision pass does not apply; their 2M collision is exact (string Set). NIST payload (15/15) was run only on the UUID-shaped structured baselines (pg_uuid_v8, ULID-v8, GenoID-structured); v4/v7/GenoID-pooled are fully/partially random or timestamped where payload-only monobit is the relevant check (see §4).
 
 Key findings:
 - **Collision safety holds at scale** — v4, GenoID, pg_uuid_v8, ULID-v8 all 0 collisions in 10M (exact BigInt check).

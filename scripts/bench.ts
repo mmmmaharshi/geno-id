@@ -22,14 +22,22 @@ const __dirname = import.meta.dirname
 const root = path.resolve(__dirname, "..")
 
 const algo = await import(path.resolve(root, "dist/algo.js"))
-const { genV4Native, genV7, genMathRandom, genHashUUID, genGenoID } =
+const { genV4Native, genV7, genMathRandom, genHashUUID, genGenoID, genStructuredGenoID, completeLayout } =
   algo as {
     genV4Native: () => string
     genV7: () => string
     genMathRandom: () => string
     genHashUUID: () => Promise<string>
     genGenoID: () => string
+    genStructuredGenoID: (l: unknown) => string
+    completeLayout: (name: string, core: unknown[]) => unknown
   }
+
+const DBKEY_LAYOUT = completeLayout("dbkey", [
+  { name: "timestamp", start: 0, length: 48, type: "timestamp-ms" },
+  { name: "shard", start: 52, length: 8, type: "shard", constraint: { allowed: [1, 2, 3, 4, 5] } },
+  { name: "counter", start: 66, length: 16, type: "counter", constraint: { monotonic: true } },
+]) as unknown
 
 function validateFormat(uuid: string, expectedVersionNibble: string): boolean {
   const re = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
@@ -249,5 +257,33 @@ console.log("\n--- Large-scale collision (n=10M, exact BigInt) ---")
 const nLarge = 10_000_000
 console.log(`v4 native, n=${nLarge}:`, collisionTestBigInt(genV4Native, nLarge), "collisions")
 console.log(`GenoID, n=${nLarge}:`, collisionTestBigInt(genGenoID, nLarge), "collisions")
+console.log(`v7 (RFC 9562), n=${nLarge}:`, collisionTestBigInt(genV7, nLarge), "collisions")
+console.log(
+  `GenoID-structured (dbkey), n=${nLarge}:`,
+  collisionTestBigInt(() => genStructuredGenoID(DBKEY_LAYOUT), nLarge),
+  "collisions",
+)
 console.log(`pg_uuid_v8, n=${nLarge}:`, collisionTestBigInt(genPgUuidV8, nLarge), "collisions")
 console.log(`ULID-v8, n=${nLarge}:`, collisionTestBigInt(genUlidV8, nLarge), "collisions")
+
+// Non-UUID-shaped IDs (ULID/KSUID are base32/base62 strings, Snowflake is a
+// 64-bit int) cannot be parsed as hex UUIDs, so they use an exact string Set.
+function collisionTestStrings(fn: () => string, n: number): number {
+  const set = new Set<string>()
+  let collisions = 0
+  for (let i = 0; i < n; i++) {
+    const v = fn()
+    if (set.has(v)) collisions++
+    else set.add(v)
+  }
+  return collisions
+}
+
+console.log("\n--- Baseline collision (non-UUID-shaped, n=2M, exact string Set) ---")
+console.log(`ULID, n=${nColl}:`, collisionTestStrings(genUlid, nColl), "collisions")
+console.log(`KSUID, n=${nColl}:`, collisionTestStrings(genKsuid, nColl), "collisions")
+console.log(
+  `Snowflake, n=${nColl}:`,
+  collisionTestStrings(() => genSnowflake(), nColl),
+  "collisions",
+)
