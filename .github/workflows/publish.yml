@@ -21,7 +21,6 @@ jobs:
   publish:
     name: build + test + npm publish
     runs-on: ubuntu-latest
-    environment: manohar
     steps:
       - uses: actions/checkout@v4
 
