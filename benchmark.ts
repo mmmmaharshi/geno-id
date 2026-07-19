@@ -5,7 +5,7 @@ import {
   genHashUUID,
   genGenoID,
   genStructuredGenoID,
-  completeLayout,
+  DBKEY_LAYOUT,
 } from "./algo.js"
 import {
   benchRepeated,
@@ -25,24 +25,6 @@ interface AlgoEntry {
   source: string
   secLabel: string
 }
-
-const DBKEY_LAYOUT = completeLayout("dbkey", [
-  { name: "timestamp", start: 0, length: 48, type: "timestamp-ms" },
-  {
-    name: "shard",
-    start: 52,
-    length: 8,
-    type: "shard",
-    constraint: { allowed: [1, 2, 3, 4, 5] },
-  },
-  {
-    name: "counter",
-    start: 66,
-    length: 16,
-    type: "counter",
-    constraint: { monotonic: true },
-  },
-])
 
 const ALGOS: AlgoEntry[] = [
   {

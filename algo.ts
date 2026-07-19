@@ -548,3 +548,32 @@ export function genStructuredGenoID(layout: V8Layout): string {
   }
   return p.strs[p.idx++]
 }
+
+// ---------------------------------------------------------------------------
+// Canonical structured layouts (single source of truth).
+//
+// These are the layouts used across the benchmark/export/research scripts and
+// the browser runner. They are defined once here — the module that owns
+// `completeLayout` and the structured framework — so every consumer imports
+// the identical object instead of re-declaring it inline (the dbkey layout was
+// previously copy-pasted into 11 sites).
+// ---------------------------------------------------------------------------
+
+/** 48-bit timestamp + 8-bit shard (1-5) + 16-bit monotonic counter. */
+export const DBKEY_LAYOUT: V8Layout = completeLayout("dbkey", [
+  { name: "timestamp", start: 0, length: 48, type: "timestamp-ms" },
+  { name: "shard", start: 52, length: 8, type: "shard", constraint: { allowed: [1, 2, 3, 4, 5] } },
+  { name: "counter", start: 66, length: 16, type: "counter", constraint: { monotonic: true } },
+])
+
+/** 12-bit tenant (1-8) + 8-bit region (1-4). */
+export const MULTITENANT_LAYOUT: V8Layout = completeLayout("multitenant", [
+  { name: "tenant", start: 0, length: 12, type: "shard", constraint: { allowed: [1, 2, 3, 4, 5, 6, 7, 8] } },
+  { name: "region", start: 52, length: 8, type: "shard", constraint: { allowed: [1, 2, 3, 4] } },
+])
+
+/** 16-bit stream node + 24-bit monotonic sequence. */
+export const EVENTSOURCING_LAYOUT: V8Layout = completeLayout("eventsourcing", [
+  { name: "stream", start: 0, length: 16, type: "node" },
+  { name: "seq", start: 66, length: 24, type: "counter", constraint: { monotonic: true } },
+])

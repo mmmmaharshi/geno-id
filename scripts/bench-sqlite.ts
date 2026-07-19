@@ -22,28 +22,11 @@ const algo = (await import(
   genV7: () => string
   genGenoID: () => string
   genStructuredGenoID: (l: V8Layout) => string
-  completeLayout: (name: string, fields: V8Layout["fields"]) => V8Layout
+  DBKEY_LAYOUT: V8Layout
 }
 
-// Mirrors the dbkey layout shipped in benchmark.ts (kept local so this script
-// is self-contained, matching the existing scripts convention).
-export const DBKEY_LAYOUT: V8Layout = algo.completeLayout("dbkey", [
-  { name: "timestamp", start: 0, length: 48, type: "timestamp-ms" },
-  {
-    name: "shard",
-    start: 52,
-    length: 8,
-    type: "shard",
-    constraint: { allowed: [1, 2, 3, 4, 5] },
-  },
-  {
-    name: "counter",
-    start: 66,
-    length: 16,
-    type: "counter",
-    constraint: { monotonic: true },
-  },
-])
+// Canonical dbkey layout, shared from the core module (single source of truth).
+export const DBKEY_LAYOUT: V8Layout = algo.DBKEY_LAYOUT
 
 export interface SqliteResult {
   name: string

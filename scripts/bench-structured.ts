@@ -21,6 +21,7 @@ const {
   getFieldValue,
   completeLayout,
   uuidToRandomBits,
+  DBKEY_LAYOUT,
 } = algo as {
   genStructuredParent: (l: V8Layout, mask: number[]) => Uint8Array
   composeStructured: (l: V8Layout, a: Uint8Array, b: Uint8Array, fs: number) => Uint8Array
@@ -31,16 +32,13 @@ const {
   getFieldValue: (b: Uint8Array, f: V8Field) => number
   completeLayout: (name: string, core: V8Field[]) => V8Layout
   uuidToRandomBits: (uuid: string, layout: V8Layout) => string
+  DBKEY_LAYOUT: V8Layout
 }
 
 // ---------------- E1: Composition correctness (RQ1) ----------------
 function e1(): void {
   console.log("\n=== E1: Composition correctness (RQ1) ===")
-  const layout = completeLayout("dbkey", [
-    { name: "timestamp", start: 0, length: 48, type: "timestamp-ms" },
-    { name: "shard", start: 52, length: 8, type: "shard", constraint: { allowed: [1, 2, 3, 4, 5] } },
-    { name: "counter", start: 66, length: 16, type: "counter", constraint: { monotonic: true } },
-  ])
+  const layout = DBKEY_LAYOUT
   const structIdx = layout.fields
     .map((f, i) => ({ f, i }))
     .filter(({ f }) => f.type !== "random")
@@ -143,11 +141,7 @@ function e2(): void {
 // ---------------- E3/E4/E5: quality (RQ3) ----------------
 function e3e4e5(): void {
   console.log("\n=== E3/E4/E5: collision + uniformity (RQ3) ===")
-  const layout = completeLayout("dbkey", [
-    { name: "timestamp", start: 0, length: 48, type: "timestamp-ms" },
-    { name: "shard", start: 52, length: 8, type: "shard", constraint: { allowed: [1, 2, 3, 4, 5] } },
-    { name: "counter", start: 66, length: 16, type: "counter", constraint: { monotonic: true } },
-  ])
+  const layout = DBKEY_LAYOUT
   const nColl = 2_000_000
   const c = collisionTest(() => genStructuredGenoID(layout), nColl)
   console.log(`  dbkey layout, n=${nColl}: ${c} collisions`)
@@ -173,11 +167,7 @@ function e3e4e5(): void {
 // ---------------- E6: Throughput (RQ4) ----------------
 function e6(): void {
   console.log("\n=== E6: Throughput (RQ4) ===")
-  const layout = completeLayout("dbkey", [
-    { name: "timestamp", start: 0, length: 48, type: "timestamp-ms" },
-    { name: "shard", start: 52, length: 8, type: "shard", constraint: { allowed: [1, 2, 3, 4, 5] } },
-    { name: "counter", start: 66, length: 16, type: "counter", constraint: { monotonic: true } },
-  ])
+  const layout = DBKEY_LAYOUT
   const nSync = 500_000
   const rGeno = benchSync(() => genStructuredGenoID(layout), nSync)
   const rBase = benchSync(() => genGenoID(), nSync)

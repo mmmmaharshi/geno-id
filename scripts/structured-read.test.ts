@@ -14,11 +14,13 @@ const {
   readStructured,
   genStructuredGenoID,
   uuidToBytes,
+  DBKEY_LAYOUT,
 } = algo as {
   completeLayout: (name: string, core: V8Field[]) => V8Layout
   readStructured: (uuid: string, layout: V8Layout) => Record<string, number>
   genStructuredGenoID: (l: V8Layout) => string
   uuidToBytes: (uuid: string) => Uint8Array
+  DBKEY_LAYOUT: V8Layout
 }
 
 // Independent uuid<->bytes codec (does NOT use algo) so expected values are
@@ -55,11 +57,7 @@ test("readStructured reads full >32-bit fields (regression guard for truncation)
 })
 
 test("readStructured keys match field names and respect constraints on real UUIDs", () => {
-  const layout = completeLayout("dbkey", [
-    { name: "timestamp", start: 0, length: 48, type: "timestamp-ms" },
-    { name: "shard", start: 52, length: 8, type: "shard", constraint: { allowed: [1, 2, 3, 4, 5] } },
-    { name: "counter", start: 66, length: 16, type: "counter", constraint: { monotonic: true } },
-  ])
+  const layout = DBKEY_LAYOUT
   const uuid = genStructuredGenoID(layout)
   const got = readStructured(uuid, layout)
   assert.deepEqual(Object.keys(got).toSorted(), layout.fields.map((f) => f.name).toSorted())

@@ -1,6 +1,6 @@
 import path from "node:path"
 import fs from "node:fs"
-import type { V8Field, V8Layout } from "../dist/algo.js"
+import type { V8Layout } from "../dist/algo.js"
 
 // Shared exporter for the dieharder randomness battery. Both
 // `export-dieharder.ts` (full 12.5MB samples) and `export-dieharder-smoke.ts`
@@ -20,15 +20,15 @@ const {
   genGenoID,
   toUuidString,
   genStructuredGenoID,
-  completeLayout,
   uuidToRandomBits,
+  DBKEY_LAYOUT,
 } = algo as {
   genV4Native: () => string
   genGenoID: () => string
   toUuidString: (b: Uint8Array) => string
   genStructuredGenoID: (l: V8Layout) => string
-  completeLayout: (name: string, core: V8Field[]) => V8Layout
   uuidToRandomBits: (uuid: string, layout: V8Layout) => string
+  DBKEY_LAYOUT: V8Layout
 }
 
 function genRawV8(): string {
@@ -138,23 +138,7 @@ export async function runExport(targetBits: number, trial = -1): Promise<void> {
   await exportFlat("rawv8", genRawV8, targetBits, suffix)
   await exportFlat("genoid", genGenoID, targetBits, suffix)
 
-  const dbkey = completeLayout("dbkey", [
-    { name: "timestamp", start: 0, length: 48, type: "timestamp-ms" },
-    {
-      name: "shard",
-      start: 52,
-      length: 8,
-      type: "shard",
-      constraint: { allowed: [1, 2, 3, 4, 5] },
-    },
-    {
-      name: "counter",
-      start: 66,
-      length: 16,
-      type: "counter",
-      constraint: { monotonic: true },
-    },
-  ])
+  const dbkey = DBKEY_LAYOUT
   await exportStructured("struct-dbkey", dbkey, targetBits, suffix)
 
   console.log("Done.")

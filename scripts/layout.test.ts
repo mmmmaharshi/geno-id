@@ -18,6 +18,7 @@ const {
   uuidToBytes,
   uuidToRandomBits,
   genStructuredGenoID,
+  DBKEY_LAYOUT,
 } = algo as {
   completeLayout: (name: string, core: V8Field[]) => V8Layout
   composeStructured: (l: V8Layout, a: Uint8Array, b: Uint8Array, fs: number) => Uint8Array
@@ -27,13 +28,10 @@ const {
   uuidToBytes: (uuid: string) => Uint8Array
   uuidToRandomBits: (uuid: string, layout: V8Layout) => string
   genStructuredGenoID: (l: V8Layout) => string
+  DBKEY_LAYOUT: V8Layout
 }
 
-const dbkey = completeLayout("dbkey", [
-  { name: "timestamp", start: 0, length: 48, type: "timestamp-ms" },
-  { name: "shard", start: 52, length: 8, type: "shard", constraint: { allowed: [1, 2, 3, 4, 5] } },
-  { name: "counter", start: 66, length: 16, type: "counter", constraint: { monotonic: true } },
-])
+const dbkey = DBKEY_LAYOUT
 
 const totalBits = dbkey.fields
   .filter((f) => f.type === "random")
