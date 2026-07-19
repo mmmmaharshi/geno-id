@@ -48,6 +48,10 @@ instead of the `V8*` names if you adopt the structured API.
 
 None.
 
+### npm
+
+Published to npm as **`@maharshi/genoid`** (scoped). The unscoped `genoid` name is blocked by npm's package-similarity rule against `nanoid`; the scoped name is owned and published under `publishConfig.access: public`. Install with `npm i @maharshi/genoid`.
+
 ### Dependencies Updated
 
 None.

@@ -124,7 +124,39 @@ Read for depth:
 
 Extended randomness battery (dieharder, 100M-bit samples/generator): `bun run dieharder`. Rationale in `sources/reproducibility.md` §3.
 
-## 8. Quick start
+## 8. Install & use
+
+Published on npm as **`@maharshi/genoid`** (scoped; the unscoped `genoid` name is blocked by npm's similarity rule against `nanoid`).
+
+**Requirements:** Node ≥ 22, ESM `import` (the package is ESM-only, no `require` build). No runtime dependencies — everything uses the built-in `crypto`. Types are bundled.
+
+```bash
+npm i @maharshi/genoid        # or: bun add / pnpm add / yarn add
+```
+
+```ts
+import {
+  genGenoID,
+  genStructuredGenoID,
+  completeLayout,
+  type Layout,
+} from "@maharshi/genoid"
+
+// Simple GenoID (v8 UUID)
+console.log(genGenoID())
+
+// Declarative structured v8 layout
+const dbkey: Layout = completeLayout("dbkey", [
+  { name: "timestamp", start: 0, length: 48, type: "timestamp-ms" },
+  { name: "shard", start: 52, length: 8, type: "shard", constraint: { allowed: [1, 2, 3, 4, 5] } },
+  { name: "counter", start: 66, length: 16, type: "counter", constraint: { monotonic: true } },
+])
+console.log(genStructuredGenoID(dbkey))
+```
+
+`genHashUUID()` is async (uses `crypto.subtle`); all other exports are sync.
+
+## 9. Quick start
 
 1. `bun install` — deps (~10s).
 2. `bun run build` — compile TS to dist/ (~2s).
