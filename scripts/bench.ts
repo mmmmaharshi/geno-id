@@ -267,23 +267,13 @@ console.log(`pg_uuid_v8, n=${nLarge}:`, collisionTestBigInt(genPgUuidV8, nLarge)
 console.log(`ULID-v8, n=${nLarge}:`, collisionTestBigInt(genUlidV8, nLarge), "collisions")
 
 // Non-UUID-shaped IDs (ULID/KSUID are base32/base62 strings, Snowflake is a
-// 64-bit int) cannot be parsed as hex UUIDs, so they use an exact string Set.
-function collisionTestStrings(fn: () => string, n: number): number {
-  const set = new Set<string>()
-  let collisions = 0
-  for (let i = 0; i < n; i++) {
-    const v = fn()
-    if (set.has(v)) collisions++
-    else set.add(v)
-  }
-  return collisions
-}
-
+// 64-bit int) use the canonical string-Set collisionTest (not the hex-BigInt
+// path, which only applies to 128-bit UUIDs).
 console.log("\n--- Baseline collision (non-UUID-shaped, n=2M, exact string Set) ---")
-console.log(`ULID, n=${nColl}:`, collisionTestStrings(genUlid, nColl), "collisions")
-console.log(`KSUID, n=${nColl}:`, collisionTestStrings(genKsuid, nColl), "collisions")
+console.log(`ULID, n=${nColl}:`, collisionTest(genUlid, nColl), "collisions")
+console.log(`KSUID, n=${nColl}:`, collisionTest(genKsuid, nColl), "collisions")
 console.log(
   `Snowflake, n=${nColl}:`,
-  collisionTestStrings(() => genSnowflake(), nColl),
+  collisionTest(() => genSnowflake(), nColl),
   "collisions",
 )
