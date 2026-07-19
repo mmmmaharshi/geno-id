@@ -23,6 +23,7 @@ Novel GA-inspired UUIDv8 algorithm benchmark against v4, v7, SHA-256 hash-derive
 | `bun run lint` | Check all `.ts` files with oxlint | `bun install` |
 | `bun run lint:fix` | Auto-fix lint issues | `bun install` |
 | `bun run bench` | Full Node.js benchmark + uniformity tests | `bun install` |
+| `bun run bench-ci` | Condensed CI-shaped benchmark + collisions (local equivalent of the CI matrix step; writes `dist/bench-ci-results.json`) | `bun install` |
 | `bun run test:stats` | NIST SP 800-22 monobit, runs, chi-square, pairwise correlation | `bun install` |
 | `bun run playwright` | Automated browser benchmark via Playwright (Chromium/Firefox/WebKit; `--browser=name` or `all`) | `bun install` + `bun x playwright install` |
 | `bun run verify-playwright` | Dry-run test of Playwright script with jsdom | `bun install` |
@@ -59,8 +60,20 @@ After every change to any `.ts` file:
 3. Run `bun run typecheck` (typecheck both root + scripts tsconfigs)
 4. Run `bun run test` (Bun's test runner over `scripts/*.test.ts`)
 5. Run `bun run build` (compiles to dist/)
-6. Run `bun run playwright` (browser/deployable check across Chromium/Firefox/WebKit: confirm each run of `dist/benchmark.js` + `index.html` has `browserErrors: []`, the `GenoID-structured` entry present, and 0 collisions — i.e. deployable matches development behavior)
-7. Fix any errors from the above before continuing
+6. Run `bun run bench-ci` (condensed CI-shaped benchmark + collisions: this is the exact command the CI matrix runs per environment, so it is the local equivalent of the GitHub Actions `bun-matrix` / `node-matrix` steps — confirm 0 collisions and a clean `dist/bench-ci-results.json`). `bun run bench` is the full verbose equivalent.
+7. Run `bun run playwright` (browser/deployable check across Chromium/Firefox/WebKit: confirm each run of `dist/benchmark.js` + `index.html` has `browserErrors: []`, the `GenoID-structured` entry present, and 0 collisions — i.e. deployable matches development behavior)
+8. Fix any errors from the above before continuing
+
+**Verification before completion (Iron Law).** Always apply the
+[`obra/superpowers@verification-before-completion`](https://github.com/obra/superpowers)
+skill: **no completion, "passing", "fixed", or "done" claim without fresh
+verification evidence produced in the same turn.** Before asserting any status —
+or committing, tagging, releasing, or delegating — run the exact command that
+proves the claim, read its full output and exit code, and state the claim *with*
+that evidence. A prior run, "should pass", linter-only output, or an agent's
+self-reported success are never sufficient. Skipping this is dishonesty, not
+efficiency. Applies to exact phrases, paraphrases, and any wording implying
+success.
 
 **Utilize multiple CPU cores whenever possible.** Any CPU-bound task whose
 units are independent (separate input files, separate samples, separate

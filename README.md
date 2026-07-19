@@ -74,6 +74,8 @@ Single-machine doubt? Full benchmark runs every push via GitHub Actions matrix:
 
 Do: open **Actions** tab → a run → **Artifacts**. Inspect `ci-consolidated` (one wide table, all envs side-by-side + `dist/all-results.json`) or per-job (`bench-ci-results.json` + `ci-summary.md`). All envs report 0 collisions.
 
+Local mirror (same logic CI runs per environment): `bun run bench-ci` produces `dist/bench-ci-results.json` and `dist/ci-summary.md` on your machine — run it before pushing to confirm 0 collisions without waiting on the matrix. The CI matrix still adds OS/Node-version breadth that a single local run cannot replicate.
+
 ### Task B: Concurrent generation
 GenoID is pure, stateless over process-global CSPRNG pool — safe to fan out across threads, no coordination. `scripts/bench-concurrent.ts` spawns N `worker_threads`, each M UUIDs, verifies globally:
 - **0 cross-worker collisions** (plain GenoID, 3×50k).
