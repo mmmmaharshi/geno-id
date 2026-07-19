@@ -12,8 +12,8 @@ Novel GA-inspired UUIDv8 algorithm benchmark against v4, v7, SHA-256 hash-derive
 | `index.html` | Loads `dist/benchmark.js` via `<script type="module">` and calls `init()`. |
 | `scripts/bench.ts` | Node.js benchmark + GenoID experimental variants (Fast v1–v3). Imports from `dist/bench-core.js` and `dist/algo.js`. |
 | `scripts/stats.ts` | NIST SP 800-22 monobit, runs, chi-square, pairwise correlation. Imports from `dist/algo.js`. |
-| `scripts/puppeteer.ts` | Puppeteer automation (launches Chrome, runs benchmark, scrapes results). Exports `runBenchmark` with injectable `launch` factory. |
-| `scripts/puppeteer.dryrun.ts` | Dry-run test with JSDOM mock. Calls `init()` after import (no global patching needed). |
+| `scripts/playwright.ts` | Playwright automation (launches Chromium/Firefox/WebKit, runs benchmark, scrapes results). Exports `runBenchmark` with injectable `launch` factory. |
+| `scripts/playwright.dryrun.ts` | Dry-run test with JSDOM mock. Calls `init()` after import (no global patching needed). |
 
 ## Running benchmarks
 
@@ -24,8 +24,8 @@ Novel GA-inspired UUIDv8 algorithm benchmark against v4, v7, SHA-256 hash-derive
 | `bun run lint:fix` | Auto-fix lint issues | `bun install` |
 | `bun run bench` | Full Node.js benchmark + uniformity tests | `bun install` |
 | `bun run test:stats` | NIST SP 800-22 monobit, runs, chi-square, pairwise correlation | `bun install` |
-| `bun run puppeteer` | Automated browser benchmark via Puppeteer (see `--help`) | `bun install` |
-| `bun run verify-puppeteer` | Dry-run test of Puppeteer script with jsdom | `bun install` |
+| `bun run playwright` | Automated browser benchmark via Playwright (Chromium/Firefox/WebKit; `--browser=name` or `all`) | `bun install` + `bun x playwright install` |
+| `bun run verify-playwright` | Dry-run test of Playwright script with jsdom | `bun install` |
 | `bun run typecheck` | Typecheck all `.ts` files (root + scripts) | `bun install` |
 | `bun run test` | Run all unit tests (`scripts/*.test.ts`) via Bun's built-in test runner | `bun install` |
 | `open index.html` | Interactive browser benchmark | Any browser |
@@ -59,7 +59,7 @@ After every change to any `.ts` file:
 3. Run `bun run typecheck` (typecheck both root + scripts tsconfigs)
 4. Run `bun run test` (Bun's test runner over `scripts/*.test.ts`)
 5. Run `bun run build` (compiles to dist/)
-6. Run `bun run puppeteer` (browser/deployable check: confirm `dist/benchmark.js` + `index.html` run with `browserErrors: []`, the `GenoID-structured` entry present, and 0 collisions — i.e. deployable matches development behavior)
+6. Run `bun run playwright` (browser/deployable check across Chromium/Firefox/WebKit: confirm each run of `dist/benchmark.js` + `index.html` has `browserErrors: []`, the `GenoID-structured` entry present, and 0 collisions — i.e. deployable matches development behavior)
 7. Fix any errors from the above before continuing
 
 **Utilize multiple CPU cores whenever possible.** Any CPU-bound task whose
@@ -147,7 +147,7 @@ GA genuinely helps UUIDs only through *composition*, not randomness. Implemented
 | RQ2 GA repair vs rejection | E2: constrained fields k=1..6 | GA repairs/UUID ≈ k (O(k·8)); rejection = 64^k trials (k=6 → 6.9e10) |
 | RQ3 statistical quality | E3/E4/E5: dbkey, 2M UUIDs | 0 collisions (p=0.5 at n=2.71e18); uniformity max dev 0.0053 |
 | RQ3 NIST | struct-dbkey / multitenant / eventsourcing | all 15 SP 800-22 tests PASS |
-| RQ4 throughput | E6 + browser | Node: v4 7.3M/s, GenoID-structured 0.4M/s (≈19× slower). Browser (Chrome V8, Puppeteer): v4 1.65M/s, GenoID-structured 0.52M/s (≈3× slower vs v4 in-browser; ≈24× slower vs base GenoID pool). Native `crypto.randomUUID` is far slower in-browser, narrowing the gap; base GenoID pool stays fastest. |
+| RQ4 throughput | E6 + browser | Node: v4 7.3M/s, GenoID-structured 0.4M/s (≈19× slower). Browser (Chrome V8, Playwright): v4 1.65M/s, GenoID-structured 0.52M/s (≈3× slower vs v4 in-browser; ≈24× slower vs base GenoID pool). Native `crypto.randomUUID` is far slower in-browser, narrowing the gap; base GenoID pool stays fastest. |
 
 **Two critical bugs found and fixed during implementation:**
 1. *32-bit truncation* — `getFieldValue`/`setFieldBytes` used 32-bit integer math, so any field

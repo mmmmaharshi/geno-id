@@ -126,7 +126,7 @@ Extended randomness battery (dieharder, 100M-bit samples/generator): `bun run di
 7. `bun run collision-100m` — Task D 100M batched collision (all cores).
 8. `bun run test` — unit + verification tests (29 tests).
 9. `bun run test:stats` — NIST SP 800-22 monobit / runs / chi-square.
-10. `bun run puppeteer` — headless-browser benchmark (requires Chrome).
+10. `bun run playwright` — headless-browser benchmark across Chromium/Firefox/WebKit (`bun x playwright install` first).
 
 Browser UI: open `index.html` (loads `dist/benchmark.js`).
 

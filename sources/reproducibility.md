@@ -34,7 +34,7 @@ compatible semver ranges.
 | Baseline generators (pg_uuid_v8, ULID, ULID-v8, KSUID, Snowflake) known-answer tests | `bun test scripts/baselines.test.ts` and `scripts/baselines-verify.test.ts` | pass/fail per generator |
 | Full unit test suite | `bun run test` | pass/fail (29 tests as of v1.11.x) |
 | Browser benchmark (interactive, with 95% CI table) | `bun run build && open index.html`, click "Run All" | in-page results table |
-| Automated headless-browser check (deployable = development parity) | `bun run puppeteer` | stdout, `browserErrors: []` expected |
+| Automated headless-browser check (deployable = development parity) | `bun run playwright` (Chromium/Firefox/WebKit) | stdout, `browserErrors: []` per engine expected |
 | Multi-OS / multi-runtime matrix + consolidated report | Push to a branch / open a PR (runs `.github/workflows/bench.yml`); or run any single `bun run bench-ci` locally per OS | `ci-consolidated` GitHub Actions artifact |
 
 All of the above are deterministic in *procedure* (same script, same inputs)

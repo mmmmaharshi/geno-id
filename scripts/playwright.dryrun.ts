@@ -2,26 +2,25 @@ import fs from "node:fs"
 import path from "node:path"
 import { pathToFileURL } from "node:url"
 import { JSDOM } from "jsdom"
-import type { Browser } from "puppeteer"
+import type { Browser, LaunchOptions } from "playwright"
 
 const __dirname = import.meta.dirname
 const root = path.resolve(__dirname, "..")
 
 interface MockPage {
-  _pendingRunAll: Promise<void> | null
   $$eval: <T>(selector: string, fn: (els: Element[]) => T) => Promise<T>
   $eval: <T,>(
     selector: string,
     fn: (el: Element, ...args: unknown[]) => T,
     ...args: unknown[]
   ) => Promise<T>
-  click: (selector: string) => Promise<void>
   evaluate: <T>(fn: () => T) => Promise<T>
-  goto: () => Promise<void>
+  goto: (_url: string, _opts?: unknown) => Promise<void>
   on: () => void
   screenshot: () => Promise<void>
   waitForFunction: (
     fn: () => boolean,
+    _arg?: unknown,
     opts?: { timeout?: number },
   ) => Promise<boolean>
 }
@@ -65,11 +64,14 @@ async function makeMockBrowser(): Promise<MockBrowser> {
     configurable: true,
     value: window.document,
   })
+  Object.defineProperty(globalThis, "window", {
+    configurable: true,
+    value: window,
+  })
 
   benchModule.init(window as unknown as Window & typeof globalThis)
 
   const page: MockPage = {
-    _pendingRunAll: null,
     async $$eval<T,>(selector: string, fn: (els: Element[]) => T): Promise<T> {
       const els = [...window.document.querySelectorAll(selector)]
       return fn(els)
@@ -82,11 +84,8 @@ async function makeMockBrowser(): Promise<MockBrowser> {
       const el = window.document.querySelector(selector)!
       return fn(el, ...args)
     },
-    async click(selector: string): Promise<void> {
-      if (selector === "#runBtn") {
-        page._pendingRunAll = (window as any).runAll()
-      }
-    },
+    // runBenchmark triggers runAll via page.evaluate(setTimeout(runAll)); the
+    // scheduled macrotask fires while waitForFunction polls for "Done.".
     async evaluate<T,>(fn: () => T): Promise<T> {
       return fn()
     },
@@ -95,6 +94,7 @@ async function makeMockBrowser(): Promise<MockBrowser> {
     async screenshot(): Promise<void> {},
     async waitForFunction(
       fn: () => boolean,
+      _arg?: unknown,
       opts: { timeout?: number } = {},
     ): Promise<boolean> {
       const timeout = opts.timeout || 30000
@@ -118,7 +118,7 @@ async function makeMockBrowser(): Promise<MockBrowser> {
   return browser
 }
 
-const { runBenchmark } = await import("./puppeteer.js")
+const { runBenchmark } = await import("./playwright.js")
 ;(async () => {
   const args: Record<string, string> = {
     "n-async": "200",
@@ -127,10 +127,9 @@ const { runBenchmark } = await import("./puppeteer.js")
     out: "/tmp/dry_run_results.json",
   }
   const output = await runBenchmark(args, {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    launch: ((_opts: Record<string, unknown>) =>
+    launch: (async (_opts: LaunchOptions) =>
       makeMockBrowser()) as unknown as (
-      opts: Record<string, unknown>,
+      opts: LaunchOptions,
     ) => Promise<Browser>,
   })
 
@@ -166,7 +165,7 @@ const { runBenchmark } = await import("./puppeteer.js")
     !output.rawLog.includes("Done.") ||
     !namesMatch
   ) {
-    console.error("DRY RUN FAILED \u2014 see checks above")
+    console.error("DRY RUN FAILED — see checks above")
     process.exit(1)
   }
   console.log("\nDRY RUN PASSED.")
