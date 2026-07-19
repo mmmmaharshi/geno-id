@@ -5,6 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.13.5] - 2026-07-19
+
+### Summary
+
+**Workflow + README** — adds an npm-publish prompt to the agent workflow, a `bun run publish` convenience script, and rewrites the README following the research-paper-spj skill (one-idea hook, problem-before-solution, related-work-after-technical, refutable claims) combined with i-have-adhd structure (lead with install action, numbered steps, visible-wins table).
+
+### Highlights
+
+#### 🚀 Workflow
+
+- AGENTS.md step 9: after any change that passes gates 1–8, the agent now asks the user if they want to `npm publish`.
+- `package.json` script `"publish": "bun run build && bun publish"`.
+
+#### 📝 README
+
+- Restructured per SPJ: Problem (§3) moved before solution (§4), baseline comparison (§6) after technical content, refutable claims table (§5), no road-map paragraph.
+- Applied Dreyer (conflict-resolution, old-before-new, stress position) and Knuth (say-it-twice: code + prose, examples after definitions).
+- ADHD structure: lead with install action, numbered steps with time estimates, visible-wins TL;DR table.
+
+### Breaking Changes
+
+None.
+
+### Upgrade Guide
+
+No action required.
+
+### Known Issues
+
+None.
+
+### Dependencies Updated
+
+None.
+
 ## [1.13.2] - 2026-07-19
 
 ### Summary
