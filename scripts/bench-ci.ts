@@ -102,8 +102,12 @@ for (const c of collisions) {
 }
 
 const outPath = path.resolve(root, "dist/bench-ci-results.json")
-fs.writeFileSync(outPath, JSON.stringify(output, null, 2))
-console.log(`\nWrote ${outPath}`)
+try {
+  fs.writeFileSync(outPath, JSON.stringify(output, null, 2))
+  console.log(`\nWrote ${outPath}`)
+} catch (error) {
+  console.error(`Failed to write ${outPath}: ${(error as Error).message}`)
+}
 
 const anyCollision = collisions.some((c) => c.collisions > 0)
 if (anyCollision) {

@@ -1,6 +1,6 @@
 {
   "name": "@manohar_maharshi/genoid",
-  "version": "1.13.6",
+  "version": "1.14.0",
   "description": "GenoID — a declarative RFC 9562 v8 UUID library: GA-inspired pooled-CSPRNG generation plus structured layouts (shard, tenant, counter, timestamp) with constraint-guided repair, no rejection sampling",
   "type": "module",
   "main": "./dist/index.js",

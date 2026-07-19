@@ -59,10 +59,14 @@ async function generateSamples(
     allBits += uuidToFreeBits(fn())
   }
   const filePath = path.resolve(root, "dist", `${label}.bits.txt`)
-  fs.writeFileSync(filePath, allBits, "utf-8")
-  console.log(
-    `Wrote ${(allBits.length / 1000000).toFixed(1)}M bits to ${filePath}`,
-  )
+  try {
+    fs.writeFileSync(filePath, allBits, "utf-8")
+    console.log(
+      `Wrote ${(allBits.length / 1000000).toFixed(1)}M bits to ${filePath}`,
+    )
+  } catch (error) {
+    console.error(`Failed to write ${filePath}: ${(error as Error).message}`)
+  }
   return filePath
 }
 

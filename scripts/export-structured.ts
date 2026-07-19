@@ -31,9 +31,13 @@ for (const layout of layouts) {
   for (let i = 0; i < n; i++) all += uuidToRandomBits(genStructuredGenoID(layout), layout)
   all = all.slice(0, TARGET_BITS)
   const filePath = path.resolve(root, "dist", `struct-${layout.name}.bits.txt`)
-  fs.writeFileSync(filePath, all, "utf-8")
-  console.log(
-    `Wrote ${(all.length / 1e6).toFixed(2)}M random bits (${n.toLocaleString()} UUIDs) -> ${filePath}`,
-  )
+  try {
+    fs.writeFileSync(filePath, all, "utf-8")
+    console.log(
+      `Wrote ${(all.length / 1e6).toFixed(2)}M random bits (${n.toLocaleString()} UUIDs) -> ${filePath}`,
+    )
+  } catch (error) {
+    console.error(`Failed to write ${filePath}: ${(error as Error).message}`)
+  }
 }
 console.log("Done.")

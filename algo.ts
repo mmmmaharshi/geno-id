@@ -3,6 +3,7 @@ const HEX16: string[] = Array.from({ length: 65536 }, (_, i) =>
 )
 
 export function toUuidString(b: Uint8Array): string {
+  if (b.length < 16) throw new Error(`toUuidString: expected 16 bytes, got ${b.length}`)
   const w0 = (b[0] << 8) | b[1],
     w1 = (b[2] << 8) | b[3],
     w2 = (b[4] << 8) | b[5],
@@ -31,18 +32,20 @@ export function genV4Native(): string {
   return crypto.randomUUID()
 }
 
+const _v7Rnd = new Uint8Array(10)
+const _v7Bytes = new Uint8Array(16)
+
 export function genV7(): string {
-  const rnd = new Uint8Array(10)
-  crypto.getRandomValues(rnd)
+  crypto.getRandomValues(_v7Rnd)
   const ts = Date.now()
-  const bytes = new Uint8Array(16)
+  const bytes = _v7Bytes
   bytes[0] = (ts / 2 ** 40) & 0xff
   bytes[1] = (ts / 2 ** 32) & 0xff
   bytes[2] = (ts / 2 ** 24) & 0xff
   bytes[3] = (ts / 2 ** 16) & 0xff
   bytes[4] = (ts / 2 ** 8) & 0xff
   bytes[5] = ts & 0xff
-  bytes.set(rnd, 6)
+  bytes.set(_v7Rnd, 6)
   bytes[6] = (bytes[6] & 0x0f) | 0x70
   bytes[8] = (bytes[8] & 0x3f) | 0x80
   return toUuidString(bytes)
@@ -62,7 +65,12 @@ export function genMathRandom(): string {
 export async function genHashUUID(): Promise<string> {
   const seed = new Uint8Array(32)
   crypto.getRandomValues(seed)
-  const digest = await crypto.subtle.digest("SHA-256", seed)
+  let digest: ArrayBuffer
+  try {
+    digest = await crypto.subtle.digest("SHA-256", seed)
+  } catch (error) {
+    throw new Error(`genHashUUID: SubtleCrypto unavailable — ${(error as Error).message}`, { cause: error })
+  }
   const bytes = new Uint8Array(digest).slice(0, 16)
   bytes[6] = (bytes[6] & 0x0f) | 0x50
   bytes[8] = (bytes[8] & 0x3f) | 0x80
@@ -76,43 +84,41 @@ const _genoStrs = new Array<string>(GENO_POOL_N)
 let _genoIdx = GENO_POOL_N
 const _child = new Uint8Array(16)
 const _child16 = new Uint16Array(_child.buffer)
-const HEX16_VIEW: string[] = Array.from({ length: 65536 })
-{
-  const probe = new Uint8Array(2)
-  const probeView = new Uint16Array(probe.buffer)
-  for (let hi = 0; hi < 256; hi++) {
-    for (let lo = 0; lo < 256; lo++) {
-      probe[0] = hi
-      probe[1] = lo
-      HEX16_VIEW[probeView[0]] =
-        hi.toString(16).padStart(2, "0") + lo.toString(16).padStart(2, "0")
-    }
+const HEX16_VIEW: string[] = Array.from({ length: 65536 }, (_, i) =>
+  (i & 0xff).toString(16).padStart(2, "0") + ((i >> 8) & 0xff).toString(16).padStart(2, "0"),
+)
+
+function refillGenoPool(): void {
+  const t = HEX16_VIEW, g = _genoPool, e = GENO_ENTRY_BYTES
+  crypto.getRandomValues(g)
+  for (let i = 0; i < GENO_POOL_N; i++) {
+    const off = i * e
+    const cut = g[off + 32] & 15
+    const mutPos = g[off + 33] & 15
+    let j = 0
+    for (; j < cut; j++) _child[j] = g[off + j]
+    for (; j < 16; j++) _child[j] = g[off + 16 + j]
+    _child[mutPos] ^= g[off + ((mutPos + 1) & 15)]
+    _child[6] = (_child[6] & 0x0f) | 0x80
+    _child[8] = (_child[8] & 0x3f) | 0x80
+    const v = _child16
+    _genoStrs[i] =
+      t[v[0]] + t[v[1]] + "-" +
+      t[v[2]] + "-" +
+      t[v[3]] + "-" +
+      t[v[4]] + "-" +
+      t[v[5]] + t[v[6]] + t[v[7]]
   }
+  _genoIdx = 0
 }
+
+// Pre-warm the GenoID pool at module init so the first call is never cold.
+// Same pattern as _csprngBuf pre-fill.
+refillGenoPool()
 
 export function genGenoID(): string {
   if (_genoIdx >= GENO_POOL_N) {
-    const t = HEX16_VIEW, g = _genoPool, e = GENO_ENTRY_BYTES
-    crypto.getRandomValues(g)
-    for (let i = 0; i < GENO_POOL_N; i++) {
-      const off = i * e
-      const cut = g[off + 32] & 15
-      const mutPos = g[off + 33] & 15
-      let j = 0
-      for (; j < cut; j++) _child[j] = g[off + j]
-      for (; j < 16; j++) _child[j] = g[off + 16 + j]
-      _child[mutPos] ^= g[off + ((mutPos + 1) & 15)]
-      _child[6] = (_child[6] & 0x0f) | 0x80
-      _child[8] = (_child[8] & 0x3f) | 0x80
-      const v = _child16
-      _genoStrs[i] =
-        t[v[0]] + t[v[1]] + "-" +
-        t[v[2]] + "-" +
-        t[v[3]] + "-" +
-        t[v[4]] + "-" +
-        t[v[5]] + t[v[6]] + t[v[7]]
-    }
-    _genoIdx = 0
+    refillGenoPool()
   }
   return _genoStrs[_genoIdx++]
 }
@@ -199,6 +205,7 @@ export function validateLayout(layout: V8Layout): void {
 }
 
 export function getFieldValue(bytes: Uint8Array, f: V8Field): bigint {
+  if (f.start + f.length > 128) throw new Error(`getFieldValue: field ${f.name} exceeds 128-bit UUID`)
   let v = 0n
   for (let i = 0; i < f.length; i++) {
     const pos = f.start + i
@@ -217,6 +224,7 @@ function setFieldBytes(
   f: V8Field,
   value: number,
 ): void {
+  if (f.start + f.length > 128) throw new Error(`setFieldBytes: field ${f.name} exceeds 128-bit UUID`)
   let v = value
   const n = f.length
   for (let k = 0; k < n; k++) {
@@ -238,24 +246,62 @@ export function copyField(
   src: Uint8Array,
   f: V8Field,
 ): void {
-  for (let i = 0; i < f.length; i++) {
-    const sp = f.start + i
-    const bit = (src[sp >> 3] >> (7 - (sp & 7))) & 1
-    const dp = f.start + i
-    const dByte = dp >> 3
-    const dBit = 7 - (dp & 7)
-    if (bit) dst[dByte] |= 1 << dBit
-    else dst[dByte] &= ~(1 << dBit)
+  if (f.start + f.length > 128) throw new Error(`copyField: field ${f.name} exceeds 128-bit UUID`)
+  const end = f.start + f.length
+  const startByte = f.start >> 3
+  const endByte = (end + 7) >> 3
+  const leadBits = f.start & 7
+  const trailBits = end & 7
+
+  // Leading partial byte
+  if (leadBits !== 0) {
+    const count = Math.min(8 - leadBits, f.length)
+    for (let i = 0; i < count; i++) {
+      const pos = f.start + i
+      const bit = (src[pos >> 3] >> (7 - (pos & 7))) & 1
+      const dByte = pos >> 3
+      const dBit = 7 - (pos & 7)
+      if (bit) dst[dByte] |= 1 << dBit
+      else dst[dByte] &= ~(1 << dBit)
+    }
+  }
+
+  // Bulk-copy full middle bytes
+  const midStart = startByte + (leadBits !== 0 ? 1 : 0)
+  const midEnd = endByte - (trailBits !== 0 ? 1 : 0)
+  if (midEnd > midStart) {
+    if (dst.buffer === src.buffer && dst.byteOffset !== src.byteOffset) {
+      for (let i = midStart; i < midEnd; i++) dst[i] = src[i]
+    } else {
+      dst.set(src.subarray(midStart, midEnd), midStart)
+    }
+  }
+
+  // Trailing partial byte
+  if (trailBits !== 0) {
+    const startBitInField = f.length - trailBits
+    for (let i = startBitInField; i < f.length; i++) {
+      const pos = f.start + i
+      const bit = (src[pos >> 3] >> (7 - (pos & 7))) & 1
+      const dByte = pos >> 3
+      const dBit = 7 - (pos & 7)
+      if (bit) dst[dByte] |= 1 << dBit
+      else dst[dByte] &= ~(1 << dBit)
+    }
   }
 }
 
 export function forceVersionVariant(bytes: Uint8Array): void {
+  if (bytes.length < 9) throw new Error(`forceVersionVariant: expected ≥9 bytes, got ${bytes.length}`)
   bytes[6] = (bytes[6] & 0x0f) | 0x80
   bytes[8] = (bytes[8] & 0x3f) | 0x80
 }
 
 export function uuidToBytes(uuid: string): Uint8Array {
   const h = uuid.replaceAll("-", "")
+  if (!/^[0-9a-fA-F]{32}$/.test(h)) {
+    throw new Error(`uuidToBytes: invalid UUID hex string "${uuid}"`)
+  }
   const b = new Uint8Array(16)
   for (let j = 0; j < 16; j++) b[j] = Number.parseInt(h.slice(j * 2, j * 2 + 2), 16)
   return b
@@ -317,25 +363,45 @@ export function completeLayout(name: string, fields: V8Field[]): V8Layout {
 }
 
 function csprngInt(maxExclusive: number): number {
-  if (_csprngPos + 6 > _csprngBuf.length) {
+  if (maxExclusive <= 256) {
+    if (_csprngPos >= _csprngBuf.length) {
+      crypto.getRandomValues(_csprngBuf)
+      _csprngPos = 0
+    }
+    return _csprngBuf[_csprngPos++] % maxExclusive
+  }
+  const need = maxExclusive <= 65536 ? 2 : 6
+  if (_csprngPos + need > _csprngBuf.length) {
     crypto.getRandomValues(_csprngBuf)
     _csprngPos = 0
   }
   let v = 0
-  for (let i = 0; i < 6; i++) v = v * 256 + _csprngBuf[_csprngPos++]
+  for (let i = 0; i < need; i++) v = v * 256 + _csprngBuf[_csprngPos++]
   return v % maxExclusive
 }
 
 const _counters = new Map<string, number>()
 const _lastValues = new Map<string, number>()
 const _csprngBuf = new Uint8Array(256)
+crypto.getRandomValues(_csprngBuf)
 let _csprngPos = 0
+
+const _fieldMod = new WeakMap<V8Field, number>()
+
+function fieldMod(f: V8Field): number {
+  let m = _fieldMod.get(f)
+  if (m === undefined) {
+    m = f.length < 32 ? 1 << f.length : 2 ** f.length
+    _fieldMod.set(f, m)
+  }
+  return m
+}
 
 // All structured field values fit in a Number (< 2^53; validateLayout caps
 // structured fields at 48 bits), so plain Number arithmetic is exact and far
 // cheaper than BigInt on the generation hot path.
 function structuredValue(layout: V8Layout, f: V8Field): number {
-  const mod = Math.pow(2, f.length)
+  const mod = fieldMod(f)
   switch (f.type) {
     case "timestamp-ms": {
       return Date.now() % mod
@@ -490,21 +556,22 @@ export function repairConstraints(layout: V8Layout, bytes: Uint8Array): number {
 
 const STRUCT_POOL_N = 256
 const STRUCT_ENTRY = 34
+const _structChild = new Uint8Array(16)
 const _structPools = new Map<
   string,
-  { pool: Uint8Array<ArrayBuffer>; strs: string[]; idx: number }
+  { pool: Uint8Array<ArrayBuffer>; strs: string[]; idx: number; needsRepair: boolean }
 >()
 
-function getStructPool(layout: V8Layout) {
-  let p = _structPools.get(layout.name)
-  if (!p) {
-    p = {
-      pool: new Uint8Array(STRUCT_ENTRY * STRUCT_POOL_N),
-      strs: new Array(STRUCT_POOL_N),
-      idx: STRUCT_POOL_N,
-    }
-    _structPools.set(layout.name, p)
+function getStructPool(layout: V8Layout): { pool: Uint8Array<ArrayBuffer>; strs: string[]; idx: number; needsRepair: boolean } {
+  const existing = _structPools.get(layout.name)
+  if (existing) return existing
+  const p = {
+    pool: new Uint8Array(STRUCT_ENTRY * STRUCT_POOL_N),
+    strs: new Array(STRUCT_POOL_N),
+    idx: STRUCT_POOL_N,
+    needsRepair: layout.fields.some((f) => f.type === "random" && f.constraint),
   }
+  _structPools.set(layout.name, p)
   return p
 }
 
@@ -520,10 +587,7 @@ export function genStructuredGenoID(layout: V8Layout): string {
   const p = getStructPool(layout)
   // Repair only matters for random fields that carry a constraint (allowed /
   // min / max) — structured fields are generated valid in both parents, so
-  // crossover can never violate them.
-  const needsRepair = layout.fields.some(
-    (f) => f.type === "random" && f.constraint,
-  )
+  // crossover can never violate them. needsRepair is cached in the pool entry.
   if (p.idx >= STRUCT_POOL_N) {
     crypto.getRandomValues(p.pool)
     for (let n = 0; n < STRUCT_POOL_N; n++) {
@@ -535,12 +599,12 @@ export function genStructuredGenoID(layout: V8Layout): string {
       // field-boundary crossover can pick either without producing garbage.
       applyStructuredFields(A, layout)
       applyStructuredFields(B, layout)
-      const child = new Uint8Array(16)
+      const child = _structChild
       for (const [fi, f] of layout.fields.entries()) {
         const takeA = ((fieldSelect >> fi) & 1) === 1
         copyField(child, takeA ? A : B, f)
       }
-      if (needsRepair) repairConstraints(layout, child)
+      if (p.needsRepair) repairConstraints(layout, child)
       forceVersionVariant(child)
       p.strs[n] = toUuidString(child)
     }

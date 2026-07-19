@@ -330,8 +330,12 @@ async function main(): Promise<void> {
   const outPath = path.resolve(
     typeof args.out === "string" ? args.out : "benchmark_results.json",
   )
-  fs.writeFileSync(outPath, JSON.stringify({ runs }, null, 2))
-  console.log(`\nFull JSON written to ${outPath}`)
+  try {
+    fs.writeFileSync(outPath, JSON.stringify({ runs }, null, 2))
+    console.log(`\nFull JSON written to ${outPath}`)
+  } catch (error) {
+    console.error(`Failed to write ${outPath}: ${(error as Error).message}`)
+  }
 
   if (failed) {
     process.exitCode = 1

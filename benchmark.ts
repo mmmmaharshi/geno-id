@@ -99,25 +99,29 @@ async function copyToClipboard(
   }, 1200)
 }
 
-function copyTableToClipboard(tableId: string, btn: HTMLButtonElement): void {
+async function copyTableToClipboard(tableId: string, btn: HTMLButtonElement): Promise<void> {
   const table = document.getElementById(tableId) as HTMLTableElement
   const rows = [...table.querySelectorAll("tr")].map((tr) =>
     [...tr.children].map((cell) => (cell.textContent ?? "").trim()).join("\t"),
   )
-  copyToClipboard(rows.join("\n"), btn)
+  await copyToClipboard(rows.join("\n"), btn)
 }
 
 async function showSamples(): Promise<void> {
   const box = document.getElementById("samples") as HTMLDivElement
   if (!box) return
   box.innerHTML = "Loading samples..."
-  let html = ""
-  for (const a of ALGOS) {
-    const val = a.async ? await a.fn() : a.fn() as string
-    const escaped = val.replace(/'/g, "\\'")
-    html += `<div><b>${a.name}:</b> <code>${val}</code> <button onclick="copyToClipboard('${escaped}', this)">Copy</button></div>`
+  try {
+    let html = ""
+    for (const a of ALGOS) {
+      const val = a.async ? await a.fn() : a.fn() as string
+      const escaped = val.replace(/'/g, "\\'")
+      html += `<div><b>${a.name}:</b> <code>${val}</code> <button onclick="copyToClipboard('${escaped}', this)">Copy</button></div>`
+    }
+    box.innerHTML = html
+  } catch (error) {
+    box.innerHTML = `<p>Error loading samples: ${(error as Error).message}</p>`
   }
-  box.innerHTML = html
 }
 
 function log(msg: string): void {
@@ -158,16 +162,23 @@ async function runAll(): Promise<void> {
   )
 
   const results: Record<string, BenchStats> = {}
-  for (const a of ALGOS) {
-    btn.textContent = `Running... (speed: ${a.name})`
-    log(`Benchmarking ${a.name} (n=${a.async ? nAsync : nSync}, ${TRIALS} trials)...`)
-    const r = a.async
-      ? await benchRepeatedAsync(a.fn as () => Promise<string>, nAsync, TRIALS)
-      : benchRepeated(a.fn as () => string, nSync, TRIALS)
-    results[a.key] = r
-    log(
-      `  -> ${fmt(r.mean)} ± ${fmt(r.std)} ops/sec (95% CI ${fmt(r.ci95[0])}–${fmt(r.ci95[1])})`,
-    )
+  try {
+    for (const a of ALGOS) {
+      btn.textContent = `Running... (speed: ${a.name})`
+      log(`Benchmarking ${a.name} (n=${a.async ? nAsync : nSync}, ${TRIALS} trials)...`)
+      const r = a.async
+        ? await benchRepeatedAsync(a.fn as () => Promise<string>, nAsync, TRIALS)
+        : benchRepeated(a.fn as () => string, nSync, TRIALS)
+      results[a.key] = r
+      log(
+        `  -> ${fmt(r.mean)} ± ${fmt(r.std)} ops/sec (95% CI ${fmt(r.ci95[0])}–${fmt(r.ci95[1])})`,
+      )
+    }
+  } catch (error) {
+    log(`Error during speed benchmark: ${(error as Error).message}`)
+    btn.textContent = origLabel
+    btn.disabled = false
+    return
   }
 
   const tbody = document.querySelector(
@@ -190,25 +201,32 @@ async function runAll(): Promise<void> {
   }
 
   log(`Running collision test, n=${nColl} per algorithm...`)
-  const collTbody = document.querySelector(
-    "#collTable tbody",
-  ) as HTMLTableSectionElement
-  if (collTbody) {
-    collTbody.innerHTML = ""
-    for (const a of ALGOS) {
-      btn.textContent = `Running... (collisions: ${a.name})`
-      const n = a.async ? Math.min(nColl, 50000) : nColl
-      const colls = a.async
-        ? await collisionTestAsync(a.fn as () => Promise<string>, n)
-        : collisionTest(a.fn as () => string, n)
-      const bound = birthdayBound50(a.entropy)
-      const tr = document.createElement("tr")
-      tr.innerHTML = `<td>${a.name}</td><td>${n.toLocaleString()}${
-        a.async ? " (reduced, async cost)" : ""
-      }</td><td>${colls}</td><td>${fmt(bound)}</td>`
-      collTbody.appendChild(tr)
-      log(`  ${a.name}: ${colls} collisions in ${n.toLocaleString()} samples`)
+  try {
+    const collTbody = document.querySelector(
+      "#collTable tbody",
+    ) as HTMLTableSectionElement
+    if (collTbody) {
+      collTbody.innerHTML = ""
+      for (const a of ALGOS) {
+        btn.textContent = `Running... (collisions: ${a.name})`
+        const n = a.async ? Math.min(nColl, 50000) : nColl
+        const colls = a.async
+          ? await collisionTestAsync(a.fn as () => Promise<string>, n)
+          : collisionTest(a.fn as () => string, n)
+        const bound = birthdayBound50(a.entropy)
+        const tr = document.createElement("tr")
+        tr.innerHTML = `<td>${a.name}</td><td>${n.toLocaleString()}${
+          a.async ? " (reduced, async cost)" : ""
+        }</td><td>${colls}</td><td>${fmt(bound)}</td>`
+        collTbody.appendChild(tr)
+        log(`  ${a.name}: ${colls} collisions in ${n.toLocaleString()} samples`)
+      }
     }
+  } catch (error) {
+    log(`Error during collision test: ${(error as Error).message}`)
+    btn.textContent = origLabel
+    btn.disabled = false
+    return
   }
 
   log("Done.")

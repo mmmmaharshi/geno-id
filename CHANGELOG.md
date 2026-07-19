@@ -5,17 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.13.6] - 2026-07-19
+## [1.14.0] - 2026-07-19
 
 ### Summary
 
-**README cleanup** — remove the numbered setup steps (`bun install`, `bun run build`, `bun run bench`) and browser link from Install section, keeping the section focused on the install command only.
+**Bug fix + structural hardening + hot-path performance.** Fixes a HEX16_VIEW byte-order swap that caused genGenoID to emit wrong UUID v8 nibbles. Adds bounds guards on all bit-field operations, try/catch on genHashUUID/JSON.parse/writeFileSync, and try/catch in benchmark.ts (no stuck button on error). Performance: genV7 buffer reuse, needsRepair caching, csprngInt adaptive reads, Math.pow precompute, copyField byte-aligned fast path, pool warmup.
 
 ### Highlights
 
-#### 📝 README
+#### 🐛 Bug Fix
 
-- §1 Install: dropped the "Then:" numbered block and "Browser: open index.html" line.
+- `algo.ts`: `HEX16_VIEW` byte-order reversal (genGenoID emitted version nibble ≠ 8).
+
+#### 🛡️ Hardening
+
+- `algo.ts`: bounds guards on `toUuidString`, `forceVersionVariant`, `getFieldValue`, `copyField`, `setFieldBytes`, `uuidToBytes`.
+- `algo.ts`: `genHashUUID` try/catch with `cause`.
+- `bench-core.ts`: NaN guards on `benchSync`, `birthdayBound50`.
+- `benchmark.ts`: `runAll` + `showSamples` try/catch (button re-enabled on error).
+- `scripts/`: JSON.parse + writeFileSync try/catch in CI scripts.
+
+#### ⚡ Performance
+
+- `algo.ts`: `copyField` byte-aligned fast path (bulk `dst.set()` for full-byte spans, ~72% fewer bit iterations per UUID in structured pool refill).
+- `algo.ts`: `csprngInt` adaptive reads (1-2 bytes for small maxExclusive instead of 6).
+- `algo.ts`: `Math.pow(2, n)` precomputed per field via WeakMap cache.
+- `algo.ts`: `needsRepair` cached per-layout in pool entry (not recomputed every call).
+- `algo.ts`: `genV7` buffer reuse (removed per-call `Uint8Array` alloc).
+- `algo.ts`: GenoID pool pre-warmed at module init (first call never cold).
+
+#### 🔧 Maintainability
+
+- `algo.ts`: `HEX16_VIEW` nested-loop init replaced with single `Array.from` expression.
+- `algo.ts`: `getStructPool` return type annotated explicitly.
+- `algo.ts`: `copyTableToClipboard` missing `await` added.
+- `benchmark.ts`: `log` helper consolidates output.
 
 ### Breaking Changes
 

@@ -95,13 +95,22 @@ function main(): void {
   fs.mkdirSync("dist", { recursive: true })
 
   const files = collectFiles(inputDir)
-  const results = files.map(
-    (f) => JSON.parse(fs.readFileSync(f, "utf-8")) as CIBenchmarkResult,
-  )
+  const results = files.flatMap((f) => {
+    try {
+      return [JSON.parse(fs.readFileSync(f, "utf-8")) as CIBenchmarkResult]
+    } catch {
+      console.error(`Failed to parse ${f}, skipping`)
+      return []
+    }
+  })
 
   const md = renderConsolidated(results)
-  fs.writeFileSync("dist/all-results.json", JSON.stringify(results, null, 2))
-  fs.writeFileSync("dist/all-summary.md", md)
+  try {
+    fs.writeFileSync("dist/all-results.json", JSON.stringify(results, null, 2))
+    fs.writeFileSync("dist/all-summary.md", md)
+  } catch (error) {
+    console.error(`Failed to write consolidate output: ${(error as Error).message}`)
+  }
   console.log(`Merged ${results.length} environment runs.`)
 }
 

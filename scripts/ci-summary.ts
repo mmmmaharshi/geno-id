@@ -4,7 +4,13 @@ import type { CIBenchmarkResult } from "./ci-result.ts"
 const summaryPath = process.env.GITHUB_STEP_SUMMARY
 const resultsPath = "dist/bench-ci-results.json"
 
-const r = JSON.parse(fs.readFileSync(resultsPath, "utf-8")) as CIBenchmarkResult
+let r: CIBenchmarkResult
+try {
+  r = JSON.parse(fs.readFileSync(resultsPath, "utf-8")) as CIBenchmarkResult
+} catch {
+  console.error(`Failed to read or parse ${resultsPath}`)
+  process.exit(1)
+}
 const e = r.environment
 
 let md = "## GenoID CI benchmark\n\n"
@@ -16,7 +22,11 @@ for (const c of r.collisions)
   md += `| ${c.name} | ${c.n} | ${c.collisions} | ${c.collisions === 0 ? "PASS" : "FAIL"} |\n`
 
 // Always keep a copy in dist/ so it can be inspected as an artifact.
-fs.writeFileSync("dist/ci-summary.md", md)
+try {
+  fs.writeFileSync("dist/ci-summary.md", md)
+} catch (error) {
+  console.error(`Failed to write dist/ci-summary.md: ${(error as Error).message}`)
+}
 
 if (summaryPath) {
   fs.appendFileSync(summaryPath, md)

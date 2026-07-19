@@ -5,6 +5,7 @@ export interface BenchResult {
 }
 
 export function benchSync(fn: () => string, n: number): BenchResult {
+  if (n <= 0) return { n, elapsed: 0, opsPerSec: 0 }
   const start = performance.now()
   for (let i = 0; i < n; i++) {
     fn()
@@ -30,6 +31,7 @@ export async function benchAsyncBatched(
 }
 
 export function birthdayBound50(entropyBits: number): number {
+  if (entropyBits <= 0) return 0
   const N = Math.pow(2, entropyBits)
   return 1.1774 * Math.sqrt(N)
 }
