@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   publish:
@@ -40,3 +40,27 @@ jobs:
         run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Extract CHANGELOG section for this version
+        id: notes
+        run: |
+          VERSION="${{ github.ref_name }}"
+          VER="${VERSION#v}"
+          awk -v ver="$VER" '
+            /^## \[/ {
+              if (found) exit
+              if ($0 ~ "^## \\[" ver "\\]") { found=1; next }
+              next
+            }
+            found { print }
+          ' CHANGELOG.md > release-notes.md
+          echo "notes-file=release-notes.md" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${{ github.ref_name }}" \
+            --title "genoid ${{ github.ref_name }}" \
+            --latest \
+            --notes-file "${{ steps.notes.outputs.notes-file }}"
