@@ -65,6 +65,7 @@ After every change to any `.ts` file:
 6. Run `bun run bench-ci` (condensed CI-shaped benchmark + collisions: this is the exact command the CI matrix runs per environment, so it is the local equivalent of the GitHub Actions `bun-matrix` / `node-matrix` steps — confirm 0 collisions and a clean `dist/bench-ci-results.json`). `bun run bench` is the full verbose equivalent.
 7. Run `bun run playwright` (browser/deployable check across Chromium/Firefox/WebKit: confirm each run of `dist/benchmark.js` + `index.html` has `browserErrors: []`, the `GenoID-structured` entry present, and 0 collisions — i.e. deployable matches development behavior)
 8. Fix any errors from the above before continuing
+9. **After any change** (code, docs, config, or otherwise) that passes gates 1–8, **ask the user** if they want to `npm publish`. Do not publish without explicit confirmation. Run `bun run build` first if publishing.
 
 **Verification before completion (Iron Law).** Always apply the
 [`obra/superpowers@verification-before-completion`](https://github.com/obra/superpowers)

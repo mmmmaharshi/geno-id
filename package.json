@@ -37,6 +37,7 @@
     "test:stats": "bun run scripts/stats.ts",
     "playwright": "tsx scripts/playwright.ts",
     "verify-playwright": "tsx scripts/playwright.dryrun.ts",
+    "publish": "bun run build && bun publish",
     "changeset": "changeset",
     "version-packages": "changeset version"
   },
