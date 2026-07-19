@@ -56,6 +56,28 @@ Published to npm as **`@manohar_maharshi/genoid`** (scoped). The unscoped `genoi
 
 None.
 
+## [1.13.3] - 2026-07-19
+
+### Summary
+
+**Packaging** — improved the published npm package description to describe GenoID as a UUID library (declarative RFC 9562 v8 generation + structured layouts with constraint-guided repair) instead of the research benchmark. No code or API change.
+
+### Breaking Changes
+
+None.
+
+### Upgrade Guide
+
+No action required.
+
+### Known Issues
+
+None.
+
+### Dependencies Updated
+
+None.
+
 ## [1.13.1] - 2026-07-19
 
 ### Summary
