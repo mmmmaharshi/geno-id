@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.13.6] - 2026-07-19
+
+### Summary
+
+**README cleanup** — remove the numbered setup steps (`bun install`, `bun run build`, `bun run bench`) and browser link from Install section, keeping the section focused on the install command only.
+
+### Highlights
+
+#### 📝 README
+
+- §1 Install: dropped the "Then:" numbered block and "Browser: open index.html" line.
+
+### Breaking Changes
+
+None.
+
+### Upgrade Guide
+
+No action required.
+
+### Known Issues
+
+None.
+
+### Dependencies Updated
+
+None.
+
 ## [1.13.5] - 2026-07-19
 
 ### Summary
