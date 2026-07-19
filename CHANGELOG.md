@@ -56,6 +56,38 @@ Published to npm as **`@manohar_maharshi/genoid`** (scoped). The unscoped `genoi
 
 None.
 
+## [1.13.4] - 2026-07-19
+
+### Summary
+
+**CI + docs** — add `.github/workflows/publish.yml` (automatic npm publish + GitHub Release on version-tag push, gated behind build/lint/typecheck/test) and move install + runnable code examples with real sample outputs to the top of the README.
+
+### Highlights
+
+#### 🤖 CI
+
+- New `publish.yml` triggers on `v*` tag push: builds, lints, typechecks, tests, then `npm publish` (scoped public via `publishConfig.access: public`) and creates the GitHub Release from the matching CHANGELOG section.
+
+#### 📝 README
+
+- §1 "Install & use" now at the top: requirements, install command, and three examples (simple GenoID, structured `dbkey` layout with `readStructured` round-trip, multi-tenant) each with a real sample output.
+
+### Breaking Changes
+
+None.
+
+### Upgrade Guide
+
+No action required.
+
+### Known Issues
+
+None.
+
+### Dependencies Updated
+
+None.
+
 ## [1.13.3] - 2026-07-19
 
 ### Summary
