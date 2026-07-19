@@ -5,6 +5,62 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.13.0] - 2026-07-19
+
+### Summary
+
+**Browser harness migrated from Puppeteer to Playwright**, and the
+browser/deployable check now runs across a **Chromium / Firefox / WebKit**
+matrix instead of Chromium only. Each engine independently loads
+`dist/benchmark.js` + `index.html`, runs the full benchmark, and is asserted to
+have `browserErrors: []`, the `GenoID-structured` entry present, and 0
+collisions. This closes the "single-engine" external-validity gap called out in
+`sources/threats-to-validity.md` — SpiderMonkey (Firefox) and JavaScriptCore
+(WebKit) CSPRNG/JIT behaviour is now exercised alongside V8.
+
+### Highlights
+
+#### 🌐 Cross-engine deployable check (Chromium / Firefox / WebKit)
+
+- `scripts/playwright.ts` replaces `scripts/puppeteer.ts`. `bun run playwright`
+  runs all three engines (`--browser=chromium|firefox|webkit` or `all`).
+- The harness serves the repo root over a local HTTP server, because Firefox and
+  WebKit refuse to load ES modules over `file://` (cross-origin module fetch is
+  blocked); Chromium works either way.
+- `runAll()` is triggered via a scheduled macrotask rather than `page.click`,
+  which would block waiting for the long synchronous benchmark handler to settle.
+
+#### 🧰 Tooling
+
+- Runs via `tsx` (Node) instead of `bun`, because bun + Playwright's
+  `--remote-debugging-pipe` transport hangs on Windows.
+- Landed `oxlint` + `@types/node` as devDeps so `bun run lint` and
+  `bun run typecheck` gates run out of the box.
+
+### Breaking Changes
+
+- `bun run puppeteer` / `bun run verify-puppeteer` are removed. Use
+  `bun run playwright` / `bun run verify-playwright`.
+- The `puppeteer` dependency is dropped in favour of `playwright`. Consumers must
+  run `bun x playwright install` (or `npx playwright install`) to fetch the
+  browser binaries.
+- `benchmark_results.json` now has the shape `{ runs: BenchOutput[] }` (one entry
+  per browser engine) instead of a single flat object.
+
+### Upgrade Guide
+
+1. `bun install`
+2. `bun x playwright install chromium firefox webkit`
+3. Replace any `bun run puppeteer` usage with `bun run playwright`.
+
+### Known Issues
+
+- On Windows, the Playwright script must run under Node (`tsx`), not bun.
+
+### Dependencies Updated
+
+- Added `playwright`, `oxlint`, `@types/node`; removed `puppeteer`.
+
 ## [1.12.8] - 2026-07-18
 
 ### Summary
