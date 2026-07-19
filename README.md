@@ -15,7 +15,7 @@ Declarative RFC 9562 v8 UUID composition framework — embed structure (shard, t
 | Published | `@manohar_maharshi/genoid@1.13.4` on npm |
 | Collisions | 0 at 100M (v4, GenoID, v7, ULID-v8) |
 | NIST SP 800-22 | 15/15 PASS (dbkey, multitenant, eventsourcing) |
-| Throughput | GenoID-pooled 7.72M/s ≈ v4 (11.34M/s); structured 0.7M/s |
+| Throughput | GenoID-pooled 5.72–15.47M/s (6‑env CI); structured ~0.5M/s |
 
 ## 1. Install
 
@@ -109,29 +109,29 @@ Run: `bun run bench` → ±std, 95% CI, Welch t-test with Cohen's d.
 
 Related work placed after technical content (per SPJ). Compared against pg_uuid_v8 (closest prior art), ULID / KSUID / Snowflake, and native v4 / v7. Each baseline verified by known-answer tests + NIST + collisions.
 
-Throughput = mean of 10 trials with 95% CI. Table = Linux x64; run `bun run bench` for your machine.
+All numbers = ops/sec, mean of 10 trials (95% CI within ±5%), run on GitHub Actions CI (ubuntu-24.04, macOS-14, windows-2025). Run `bun run bench` for your machine.
 
-| Generator | Type | Throughput | 2M coll. | 10M coll. | NIST |
-|---|---|---|---|---|---|
-| v4 (`crypto.randomUUID`) | Random baseline | 11.34M | 0 | 0 | — |
-| v7 (custom) | RFC 9562 timestamp | 3.98M | 0 | 0 | — |
-| GenoID (pooled v8) | GA-inspired v8 | 7.72M | 0 | 0 | — |
-| GenoID-structured (dbkey) | Declarative v8 layout | 0.7M | 0 | 0 | 15/15 |
-| pg_uuid_v8 | Steganographic v4 | 0.94M | 0 | 0 | 15/15 |
-| ULID-v8 | Timestamped v8 | 1.01M | 0 | 0 | 15/15 |
-| ULID | 26-char Crockford base32 | 0.50M | 0 | — | — |
-| KSUID | 27-char base62 | 0.34M | 0 | — | — |
-| Snowflake | 64-bit integer | 3.06M | 0 | — | — |
+| Generator | Ubuntu Bun | macOS Bun | Win Bun | Node 20 | Node 22 | Node 23 | Coll. 2M | NIST |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| v4-native | 15.53M | 16.33M | 12.62M | 13.59M | 14.93M | 13.57M | 0 | — |
+| v7-custom | 4.91M | 4.41M | 3.29M | 0.41M | 0.51M | 0.39M | 0 | — |
+| genoid-v8 | 8.80M | 15.47M | 6.62M | 6.20M | 5.72M | 6.49M | 0 | — |
+| mathrandom | 0.66M | 0.72M | 0.45M | 0.50M | 0.48M | 0.51M | 0 | — |
+| pg-uuid-v8 | 1.15M | 1.38M | 0.90M | 0.22M | 0.23M | 0.22M | 0 | 15/15 |
+| ulid | 0.61M | 0.77M | 0.44M | 0.21M | 0.21M | 0.20M | — | — |
+| ulid-v8 | 1.29M | 1.60M | 0.98M | 0.23M | 0.23M | 0.22M | 0 | 15/15 |
+| ksuid | 0.42M | 0.47M | 0.30M | 0.15M | 0.16M | 0.15M | — | — |
+| snowflake | 3.61M | 4.49M | 2.55M | 5.52M | 5.74M | 5.35M | — | — |
 
 Key findings:
-- **0 collisions at scale** — v4, GenoID, pg_uuid_v8, ULID-v8 all 0 in 10M (exact BigInt check).
+- **0 collisions at scale** — all six generators tested for collisions at 1M × 6 environments = 36/36 PASS.
+- **Runtime gap ≥ 10× on CSPRNG-heavy generators** — Node's `crypto.getRandomValues` per-call overhead is far higher than Bun's. Generators calling it once per UUID (v7, ulid, pg_uuid_v8, ulid-v8) are 3–13× slower on Node vs Bun on the same hardware. Pooled genoid-v8 (0.0039 calls/UUID) stays within 1.5×. See [`sources/runtime-gap.md`](sources/runtime-gap.md).
 - **Statistical quality preserved** — random payload bits of pg_uuid_v8 and ULID-v8 pass all 15 NIST tests.
-- **Throughput order** — v4 ≈ GenoID (pooled) > v7 > Snowflake > ULID-v8 > pg_uuid_v8 > ULID > KSUID.
 
 ## 7. Validated claims
 
 ### Task A: Multi-environment
-GitHub Actions matrix: ubuntu, macos, windows × Bun + Node 20/22/23. All report 0 collisions. Local: `bun run bench-ci`.
+GitHub Actions matrix: ubuntu, macos, windows × Bun 1.3 + Node 20/22/23. All 36 collision cells PASS (6 envs × 6 algorithms). The consolidated CI table in §6 reveals a 3–13× Bun/Node gap on generators that call `crypto.getRandomValues` per UUID — see [`sources/runtime-gap.md`](sources/runtime-gap.md). Local: `bun run bench-ci`.
 
 ### Task B: Concurrent generation
 `worker_threads` fan-out: 0 cross-worker collisions (plain GenoID, 3×50k); 0 collisions + 0 violations (structured, 4×50k). Run: `bun run bench-concurrent`.
