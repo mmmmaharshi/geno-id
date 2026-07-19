@@ -5,6 +5,6 @@
     "rootDir": ".",
     "declaration": true
   },
-  "include": ["algo.ts", "benchmark.ts", "bench-core.ts"],
+  "include": ["algo.ts", "benchmark.ts", "bench-core.ts", "index.ts"],
   "exclude": ["dist", "scripts", "node_modules"]
 }

@@ -1,8 +1,24 @@
 {
   "name": "genoid",
-  "version": "1.13.1",
+  "version": "1.13.2",
   "description": "Novel GA-inspired UUIDv8 algorithm benchmark against v4, v7, SHA-256 hash-derived, and Math.random baselines",
   "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist/index.js",
+    "dist/index.d.ts",
+    "dist/algo.js",
+    "dist/algo.d.ts",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.scripts.json --noEmit",
@@ -38,5 +54,8 @@
   },
   "engines": {
     "node": ">=22"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

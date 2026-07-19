@@ -5,6 +5,53 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.13.2] - 2026-07-19
+
+### Summary
+
+**Packaging** — the published `genoid` npm surface is now curated to ship only
+GenoID. The four comparison baselines (`genV4Native`, `genV7`, `genMathRandom`,
+`genHashUUID`) and the NIST-only `uuidToRandomBits` helper are no longer exported
+from the public barrel, and the RFC 9562 v8 layout types are aliased to neutral
+names (`V8Layout` → `Layout`, `V8Field` → `Field`, `V8FieldConstraint` →
+`FieldConstraint`). A TDD regression test guards the public contract.
+
+### Highlights
+
+#### 📦 Public API
+
+- New `index.ts` barrel re-exports only the supported surface:
+  `genGenoID`, `genStructuredGenoID`, `completeLayout`, `readStructured`,
+  `toUuidString`, `uuidToBytes` (+ types `Layout`, `Field`, `FieldConstraint`,
+  `FieldType`).
+- `package.json` `main`/`types`/`exports` now point at `dist/index.js`; the
+  `./bench-core` subpath is dropped from the published `files` allowlist.
+
+#### 🧪 Tests
+
+- `scripts/public-api.test.ts` — 8 tests over the public barrel only (v8
+  validity, 100k-collision, 128-bit layout coverage, structured round-trip,
+  >32-bit `readStructured`, codec identity, type-alias resolution, and a leak
+  test asserting research/internals are not exported).
+
+### Breaking Changes
+
+None for consumers — the public barrel is new; prior consumers imported from
+`dist/algo.js` directly (still available, unchanged).
+
+### Upgrade Guide
+
+No action required. Import from `genoid` and use `Layout`/`Field`/`FieldConstraint`
+instead of the `V8*` names if you adopt the structured API.
+
+### Known Issues
+
+None.
+
+### Dependencies Updated
+
+None.
+
 ## [1.13.1] - 2026-07-19
 
 ### Summary
