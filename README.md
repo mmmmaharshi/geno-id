@@ -126,12 +126,12 @@ Extended randomness battery (dieharder, 100M-bit samples/generator): `bun run di
 
 ## 8. Install & use
 
-Published on npm as **`@maharshi/genoid`** (scoped; the unscoped `genoid` name is blocked by npm's similarity rule against `nanoid`).
+Published on npm as **`@manohar_maharshi/genoid`** (scoped; the unscoped `genoid` name is blocked by npm's similarity rule against `nanoid`).
 
 **Requirements:** Node ≥ 22, ESM `import` (the package is ESM-only, no `require` build). No runtime dependencies — everything uses the built-in `crypto`. Types are bundled.
 
 ```bash
-npm i @maharshi/genoid        # or: bun add / pnpm add / yarn add
+npm i @manohar_maharshi/genoid        # or: bun add / pnpm add / yarn add
 ```
 
 ```ts
@@ -140,7 +140,7 @@ import {
   genStructuredGenoID,
   completeLayout,
   type Layout,
-} from "@maharshi/genoid"
+} from "@manohar_maharshi/genoid"
 
 // Simple GenoID (v8 UUID)
 console.log(genGenoID())

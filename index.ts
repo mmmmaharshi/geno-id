@@ -1,4 +1,4 @@
-// Public API barrel for the published `@maharshi/genoid` package.
+// Public API barrel for the published `@manohar_maharshi/genoid` package.
 //
 // This is the curated consumer surface. `algo.ts` keeps additional exports that
 // the repository's research/benchmark scripts (E1-E6, layout.test.ts) reach into
