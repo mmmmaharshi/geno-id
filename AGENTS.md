@@ -43,6 +43,12 @@ Novel GA-inspired UUIDv8 algorithm benchmark against v4, v7, SHA-256 hash-derive
 
 `bench-core.ts` holds the shared benchmark harness consumed by both `benchmark.ts` (browser) and `scripts/bench.ts` (Node.js).
 
+## Response style
+
+Always apply the `i-have-adhd` skill when responding to any user message (coding tasks, debugging, explanations, planning, casual conversation). Lead with the next concrete action, number multi-step work, externalize state across turns, suppress tangents, give specific time estimates, make wins visible, and use a matter-of-fact tone. Apply it even on casual messages and even when the user did not explicitly ask for brevity.
+
+Always apply the `caveman` skill (juliusbrussee/caveman, **full** level) on every response. Terse caveman output: drop articles/filler/pleasantries, fragments OK, short synonyms, no tool-call narration, no decorative tables/emoji, no long raw error-log dumps unless asked. Keep all technical substance, code, API names, CLI commands, exact error strings verbatim. No self-reference or style announcement. Level persist until "stop caveman" / "normal mode". Code, commits, and PRs written normally. (Auto-clarity: use full sentences for security warnings, irreversible-action confirmations, or where compression creates ambiguity.)
+
 ## Agent workflow
 
 Always follow the [`mattpocock/skills@tdd`](https://skills.sh/mattpocock/skills/tdd) discipline: any new behavior or test is written **red → green** — write the failing test first, then only enough implementation to pass it. Confirm the public seam(s) under test before writing tests; tests verify behavior through public interfaces, never implementation details.

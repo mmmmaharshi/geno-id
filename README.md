@@ -4,59 +4,44 @@
 [![Release](https://img.shields.io/github/v/release/mmmmaharshi/geno-id)](https://github.com/mmmmaharshi/geno-id/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-## Problem Statement
-UUIDs are opaque random blobs. Applications often need structure embedded in an
-ID — a shard, a tenant, a monotonic counter, a timestamp — but standard
-generators give no composition mechanism: v4 is fully random, v7 bakes in one
-fixed timestamp layout, and hash-derived UUIDs are order-dependent and slow.
-Worse, forcing structure the naive way (rejection sampling until a field lands
-in an allowed set) becomes exponentially expensive as constraints accumulate.
+Declarative RFC 9562 v8 UUID composition framework. Embed structure (shard, tenant, counter, timestamp) in an ID without rejection sampling.
 
-## Proposed Approach
-GenoID is a declarative RFC 9562 v8 UUID composition framework. You declare a
-layout (`V8Layout` / `V8Field`): which bits are a timestamp, a shard from an
-allowed set, a monotonic counter, a tenant, or random CSPRNG. GenoID then:
-- generates two pooled parent UUIDs, each with every structured field
-  independently populated;
-- combines them with **field-boundary crossover** (each child field inherited
-  from one parent);
-- applies **constraint-guided mutation** (`repairConstraints`) to fix any field
-  that violates its allowed / min / max / monotonic rule in O(field length) —
-  no rejection sampling.
+## 1. Problem
 
-The output is a valid v8 UUID that carries your structure while keeping
-CSPRNG-grade randomness in the remaining bits.
+Standard generators give no composition mechanism:
+- v4 — fully random, opaque.
+- v7 — one fixed timestamp layout.
+- hash-derived — order-dependent, slow.
 
-## Evaluation
+Forcing structure naively (rejection sample until field lands in allowed set) costs **64^k trials** (k=6 → 6.9×10¹⁰). Exponential. Unusable.
 
-### GenoID structured framework
+## 2. Build a GenoID (how it works)
 
-| Experiment | Result |
-|---|---|
-| Composition correctness (E1) | 1.5M structured-field checks → 0 mismatches, 0 constraint violations |
-| Repair beats rejection (E2) | GA repairs/UUID ≈ k (linear, O(k·8) ops); naive rejection needs 64^k trials (k=6 → 6.9×10¹⁰) |
-| Collision + uniformity safety (E3–E5) | 0 collisions in 2M UUIDs (50%-collision n ≈ 2.7×10¹⁸); uniformity max deviation 0.0053 |
-| Statistical quality (NIST SP 800-22) | all 15 tests PASS for the dbkey, multitenant, and eventsourcing layouts |
-| Practical throughput (E6 + browser) | ≈0.53M structured UUIDs/s; ~3× slower than native `crypto.randomUUID` in-browser (base GenoID pool 7.5× faster than native v4) |
+Declare a layout (`V8Layout` / `V8Field`): which bits are timestamp, shard from allowed set, monotonic counter, tenant, or random CSPRNG. Then:
 
-### Baseline comparison
+1. Generate **two pooled parent UUIDs** — every structured field independently populated in both.
+2. Combine via **field-boundary crossover** — each child field inherited from one parent.
+3. Apply **constraint-guided mutation** (`repairConstraints`) — fix any field violating allowed/min/max/monotonic in **O(field length)**. No rejection.
 
-GenoID is compared against four structured-ID baselines (pg_uuid_v8 is the
-closest prior art; ULID / KSUID / Snowflake are the broader landscape) and the
-native v4 / v7 generators. Every baseline is verified by known-answer and
-structural tests (`scripts/baselines-verify.test.ts`) in addition to NIST and
-collision checks.
+Output: valid v8 UUID carrying your structure, CSPRNG-grade randomness in remaining bits.
 
-Throughput is measured as the **mean of 10 repeated trials** with the sample
-standard deviation and a **95% confidence interval** (`benchRepeated` in
-`bench-core.ts`). The CI table below reports that per-algorithm mean from the
-Linux x64 run; running the Node.js benchmark locally (`bun run bench`) prints
-the full **± std, 95% CI**, and a **Welch t-test** (`compareBench`) with
-Cohen's *d* so each "GenoID vs baseline" difference is stated as statistically
-significant or not — not asserted from a single-run point estimate.
+Win: repair is **linear (≈k·8 ops)** vs naive **64^k rejection**. 1.5M structured-field checks → **0 mismatches, 0 constraint violations**.
 
-Representative throughput below is from a Linux x64 CI run; absolute values
-vary by machine and runtime (see CI artifacts for per-environment numbers).
+## 3. Proof it works
+
+| Experiment | Result | Win |
+|---|---|---|
+| Composition correctness (E1) | 1.5M field checks | 0 mismatches, 0 violations |
+| Repair beats rejection (E2) | GA repairs/UUID ≈ k | linear O(k·8) vs 64^k trials |
+| Collision + uniformity (E3–E5) | 2M UUIDs | 0 collisions (50%-bound n ≈ 2.7×10¹⁸); max dev 0.0053 |
+| NIST SP 800-22 | dbkey, multitenant, eventsourcing | all 15 tests PASS |
+| Throughput (E6 + browser) | structured ≈0.53M/s | ~3× slower than native `crypto.randomUUID` in-browser; base GenoID pool 7.5× faster than native v4 |
+
+## 4. Baseline comparison
+
+Compared against pg_uuid_v8 (closest prior art), ULID / KSUID / Snowflake (broader landscape), and native v4 / v7. Every baseline verified by known-answer + structural tests (`scripts/baselines-verify.test.ts`) plus NIST + collision checks.
+
+Throughput = **mean of 10 trials** with sample std dev and **95% CI** (`benchRepeated` in `bench-core.ts`). CI table below = Linux x64 mean; run locally for your machine's numbers.
 
 | Generator | Type | Throughput (ops/s) | 2M collisions | 10M collisions | NIST (payload) |
 |---|---|---:|---:|---:|---|
@@ -71,157 +56,83 @@ vary by machine and runtime (see CI artifacts for per-environment numbers).
 | Snowflake | 64-bit integer | 3.06M | 0 | — | — |
 
 Key findings:
-- **Collision safety holds at scale** — v4, GenoID, pg_uuid_v8, and ULID-v8
-  all report 0 collisions in 10M UUIDs (exact BigInt check).
-- **Statistical quality is preserved** — the random payload bits of pg_uuid_v8
-  and ULID-v8 pass all 15 NIST SP 800-22 tests (whole-UUID histograms are
-  invalid for timestamped IDs, so payload-only monobit is used).
-- **Throughput ordering** — v4 ≈ GenoID (pooled) > v7 > Snowflake > ULID-v8 >
-  pg_uuid_v8 > ULID > KSUID; GenoID-structured is slower due to per-field
-  composition but still production-viable.
+- **Collision safety holds at scale** — v4, GenoID, pg_uuid_v8, ULID-v8 all 0 collisions in 10M (exact BigInt check).
+- **Statistical quality preserved** — random payload bits of pg_uuid_v8 and ULID-v8 pass all 15 NIST SP 800-22 (payload-only monobit; whole-UUID histograms invalid for timestamped IDs).
+- **Throughput order** — v4 ≈ GenoID (pooled) > v7 > Snowflake > ULID-v8 > pg_uuid_v8 > ULID > KSUID. GenoID-structured slower (per-field composition) but production-viable.
+
+Reproduce: run `bun run bench` → full ±std, 95% CI, Welch t-test (`compareBench`) with Cohen's d. Difference stated significant or not — not from single-run point estimate.
+
+## 5. Tasks (validated claims)
 
 ### Task A: Multi-environment validation
+Single-machine doubt? Full benchmark runs every push via GitHub Actions matrix:
+- **OS:** ubuntu, macos, windows.
+- **Runtimes:** Bun (all OS) + Node 20/22/23 (Linux).
+- Each job emits env metadata (CPU, arch, runtime, memory), ops/sec table, collision PASS/FAIL.
 
-To address single-machine validation concerns, the full benchmark runs on
-every push via a GitHub Actions matrix:
-
-- **Operating systems:** ubuntu, macos, windows
-- **Runtimes:** Bun (all OSes) + Node 20 / 22 / 23 (Linux)
-- Each job emits environment metadata (CPU, arch, runtime, memory), an ops/sec
-  table, and a collision PASS/FAIL result.
-
-Results are uploaded as a single `ci-consolidated` artifact (one wide table
-with every environment side-by-side, plus `dist/all-results.json`) and as
-per-job artifacts (`bench-ci-results.json` + a rendered `ci-summary.md`). All
-environments report 0 collisions. Open the **Actions** tab → a run →
-**Artifacts** to inspect the consolidated table or per-environment numbers.
+Do: open **Actions** tab → a run → **Artifacts**. Inspect `ci-consolidated` (one wide table, all envs side-by-side + `dist/all-results.json`) or per-job (`bench-ci-results.json` + `ci-summary.md`). All envs report 0 collisions.
 
 ### Task B: Concurrent generation
+GenoID is pure, stateless over process-global CSPRNG pool — safe to fan out across threads, no coordination. `scripts/bench-concurrent.ts` spawns N `worker_threads`, each M UUIDs, verifies globally:
+- **0 cross-worker collisions** (plain GenoID, 3×50k).
+- **0 collisions + 0 constraint violations** (structured `concurrent-dbkey`, 4×50k) — `tenant` enum (0..7) survives fan-out; repair thread-safe.
 
-GenoID is a pure, stateless function over the process-global CSPRNG pool, so it is
-safe to fan out across threads without coordination. `scripts/bench-concurrent.ts`
-spawns N `worker_threads`, each generating M UUIDs, then verifies globally:
-
-- **0 cross-worker collisions** (plain GenoID, 3×50k across workers)
-- **0 collisions and 0 structured-field constraint violations** (structured
-  `concurrent-dbkey` layout, 4×50k across workers) — the `tenant` enum
-  (allowed `0..7`) survives fan-out, confirming constraint repair is thread-safe.
-
-Run it with `bun run bench-concurrent` (override `CONCURRENT_WORKERS`,
-`CONCURRENT_PER_WORKER`, `CONCURRENT_MODE`).
+Do: `bun run bench-concurrent` (override `CONCURRENT_WORKERS`, `CONCURRENT_PER_WORKER`, `CONCURRENT_MODE`).
 
 ### Task C: B-tree index benchmark
+Sortable IDs keep PK B-tree friendly. `scripts/bench-sqlite.ts` bulk-inserts 100k IDs each (v4, GenoID v8, v7, GenoID-structured `dbkey`, ULID-v8) into fresh in-memory SQLite (`TEXT PRIMARY KEY`); reports insert throughput + B-tree compactness (`page_count`, `freelist_count`, `bytes/row`):
+- **All types clean B-tree** (`integrity_check = ok`, `freelist_count = 0`).
+- **Page count order-independent** — SQLite packs leaf pages same density random or time-sorted; depth depends on N + key size, not insertion order. Sortable (v7, ULID-v8) match/exceed random insert throughput **while preserving insertion-time order** for range scans.
 
-Structured, sortable IDs keep the primary-key B-tree index-friendly. `scripts/bench-sqlite.ts`
-bulk-inserts 100k IDs of each kind (v4, GenoID v8, v7, GenoID-structured `dbkey`,
-ULID-v8) into a fresh in-memory SQLite table (`TEXT PRIMARY KEY`) and reports insert
-throughput plus B-tree compactness (`page_count`, `freelist_count`, `bytes/row`):
-
-- **All ID types produce a clean, unfragmented B-tree** (`integrity_check = ok`,
-  `freelist_count = 0`).
-- **Page count is order-independent** — SQLite packs leaf pages to the same density
-  regardless of whether keys are random or time-sorted, so B-tree depth depends on N
-  and key size, not insertion order. Sortable IDs (v7, ULID-v8) match or exceed random
-  IDs on insert throughput **while preserving insertion-time order** for efficient
-  time/tenant/shard range scans.
-
-Run it with `bun run bench-sqlite` (override `SQLITE_N`).
+Do: `bun run bench-sqlite` (override `SQLITE_N`).
 
 ### Task D: 100M collision test
+`collisionTest` keeps every ID in `Set<string>` — cannot hold 100M. `scripts/collision-100m.ts` replaces with exact dedup on compact open-addressing **128-bit hash set** (two 64-bit slots in `BigUint64Array` — ~2.3 GB for 100M vs ~10 GB), fanned across **every CPU core** via `worker_threads`:
+- **All generators 0 collisions** at 100M (v4, GenoID v8, v7, GenoID-structured, ULID-v8) — far below 122-bit birthday bound ~2.7×10¹⁸.
+- **All cores used** — per-worker dedup; cross-worker uniqueness from independent per-worker CSPRNG pools (proven Task B).
+- Memory split per worker (~68 MB/worker at 10M on 6-core vs 272 MB single-threaded); throughput scales with cores.
 
-The shared `collisionTest` keeps every ID in a `Set<string>`, which cannot hold
-100M entries in memory. `scripts/collision-100m.ts` replaces it with an exact dedup
-built on a compact open-addressing **128-bit hash set** (each UUID stored as two
-64-bit slots in a `BigUint64Array` — ~2.3 GB for 100M IDs instead of ~10 GB), and
-fans the work out across **every CPU core** with `worker_threads` so the 100M run
-stays fast:
+Do: `bun run collision-100m` (override `COLLISION_N`; `COLLISION_SYNC=1` for single-threaded).
 
-- **All generators report 0 collisions** at 100M (v4, GenoID v8, v7, GenoID-structured,
-  ULID-v8) — far below the 122-bit birthday bound of ~2.7×10¹⁸ IDs.
-- **All cores used** — each worker dedups its own partition; cross-worker uniqueness
-  follows from independent per-worker CSPRNG pools (proven in Task B).
-- Memory is split per worker (≈ 68 MB/worker at 10M on a 6-core machine vs 272 MB
-  single-threaded), and throughput scales with core count.
+## 6. Security analysis
 
-Run it with `bun run collision-100m` (override `COLLISION_N`; `COLLISION_SYNC=1`
-for the single-threaded path).
+"Security class" labels backed by formal argument in [`sources/security-analysis.md`](sources/security-analysis.md): per-field entropy accounting (random bits only count; timestamp/counter/shard observable), explicit adversarial model (passive observer, state compromise, structure inference), comparison vs RFC 9562 §8.
 
-### Security analysis
+Verified facts:
+1. **GenoID v8 rests on OS CSPRNG** — every pool refill calls `crypto.getRandomValues`; 122-bit min-entropy matches v4.
+2. **Pool forward-secrecy caveat** — pool refills every **256** UUIDs; process-memory adversary predicts at most 256 future UUIDs per refill.
+3. **Structured layouts leak metadata by design** (timestamp ±1 ms, shard, counter, tenant) — distinguishable from random, not a confidentiality primitive. Consistent with RFC 9562 §8.2 warning on v7-style timestamps.
 
-The "Security class" labels in the tables above are backed by a formal argument
-in [`sources/security-analysis.md`](sources/security-analysis.md): per-field
-**entropy accounting** (random bits only count; timestamp/counter/shard are
-observable), an explicit **adversarial model** (passive observer, state
-compromise, structure inference), and a comparison against **RFC 9562 §8 security
-considerations**. Key points:
+## 7. Literature & formal docs
 
-- **GenoID v8 rests on the OS CSPRNG** (every pool refill calls
-  `crypto.getRandomValues`), so its 122-bit min-entropy matches v4.
-- **Pool forward-secrecy caveat:** the in-process pool refills every **256** UUIDs,
-  so a process-memory adversary can predict at most 256 future UUIDs per refill.
-- **Structured layouts leak metadata by design** (timestamp ±1 ms, shard, counter,
-  tenant) — they are *distinguishable* from random and are not a confidentiality
-  primitive, consistent with RFC 9562 §8.2's warning about v7-style timestamps.
+Read for depth:
+- [`sources/related-work.md`](sources/related-work.md) — literature review + novelty: **no prior work applies GA-style operators to UUID/identifier generation** (re-verified 2024–2026 + patent prior art, July 2026 adversarial recheck §7).
+- [`sources/formal-proofs.md`](sources/formal-proofs.md) — O(k) repair bound vs O(64^k) rejection; entropy-preservation proof for crossover on `random`-type fields.
+- [`sources/threats-to-validity.md`](sources/threats-to-validity.md) — internal/external/construct/conclusion validity + mitigations + residual risk.
+- [`sources/reproducibility.md`](sources/reproducibility.md) — one-command reproduction table, env pinning, artifact statement (open item: archival DOI not yet minted).
 
-## Literature & related work
+Extended randomness battery (dieharder, 100M-bit samples/generator): `bun run dieharder`. Rationale in `sources/reproducibility.md` §3.
 
-A full literature review and novelty assessment — UUID standards, sortable/structured
-IDs, steganographic v8, genetic/evolutionary computation, and CSPRNG pooling — is in
-[`sources/related-work.md`](sources/related-work.md). It confirms the gap GenoID
-fills: **no prior work applies GA-style operators to UUID/identifier generation**
-(re-verified against 2024-2026 literature and patent prior art in the July 2026
-adversarial recheck, §7 of that document).
+## 8. Quick start
 
-## Formal proofs, threats to validity, and reproducibility
+1. `bun install` — deps (~10s).
+2. `bun run build` — compile TS to dist/ (~2s).
+3. `bun run bench` — full Node.js benchmark + uniformity (~30s).
+4. `bun run bench-ci` — condensed JSON-emitting CI-style benchmark.
+5. `bun run bench-concurrent` — Task B concurrent generation.
+6. `bun run bench-sqlite` — Task C SQLite B-tree benchmark.
+7. `bun run collision-100m` — Task D 100M batched collision (all cores).
+8. `bun run test` — unit + verification tests (29 tests).
+9. `bun run test:stats` — NIST SP 800-22 monobit / runs / chi-square.
+10. `bun run puppeteer` — headless-browser benchmark (requires Chrome).
 
-Three additional documents formalize claims stated empirically elsewhere and are
-written to be reused directly in a paper submission:
+Browser UI: open `index.html` (loads `dist/benchmark.js`).
 
-- [`sources/formal-proofs.md`](sources/formal-proofs.md) — the O(k) repair
-  complexity bound vs. O(64^k) rejection sampling, and an entropy-preservation
-  proof for field-boundary crossover on `random`-type fields.
-- [`sources/threats-to-validity.md`](sources/threats-to-validity.md) — internal,
-  external, construct, and conclusion validity, with mitigations already in place
-  and the residual risks that remain open.
-- [`sources/reproducibility.md`](sources/reproducibility.md) — a one-command
-  reproduction table for every experiment cited above, environment pinning, and
-  an artifact-availability statement (the one open item: a long-term archival
-  DOI has not yet been minted).
+## 9. Applications
 
-An extended, independent randomness battery (dieharder, 100M-bit samples per
-generator — NIST SP 800-22 alone is necessary but not sufficient) is available
-as a local command (`bun run dieharder`); see `sources/reproducibility.md` §3
-for the curated test subset and its rationale.
-
-## Quick Start
-
-```bash
-bun install
-bun run build          # compile TS to dist/
-bun run bench          # full Node.js benchmark + uniformity tests
-bun run bench-ci       # condensed, JSON-emitting CI-style benchmark
-bun run bench-concurrent  # Task B: concurrent generation across worker_threads
-bun run bench-sqlite    # Task C: SQLite B-tree index benchmark
-bun run collision-100m  # Task D: 100M-scale batched collision (all cores)
-bun run test           # unit + verification tests (29 tests)
-bun run test:stats     # NIST SP 800-22 monobit / runs / chi-square
-bun run puppeteer      # headless-browser benchmark (requires Chrome)
-```
-
-The browser UI is served by opening `index.html` (it loads `dist/benchmark.js`).
-
-## Applications
-The framework targets systems that need IDs to be both unique *and*
-self-describing:
-- **Sharded databases / partition keys** — embed the shard ID in the primary
-  key so a router can locate the node directly from the ID, with no lookup
-  table.
-- **Multi-tenant systems** — carry the tenant ID in the UUID for prefix-based
-  isolation and row-level security without an extra indexed column.
-- **Event sourcing / audit logs** — a monotonic counter plus timestamp yields
-  globally ordered, collision-free event IDs with no central sequencer.
-- **Sortable time-series IDs** — timestamp bits give natural chronological
-  ordering (like v7) while remaining composable with shard/tenant/counter fields.
-- **Debuggability** — because fields are declared, an ID is self-describing:
-  operators can read shard, tenant, and sequence straight from the bits instead
-  of treating it as an opaque random string.
+IDs both unique *and* self-describing. Use for:
+1. **Sharded DB / partition keys** — embed shard ID in PK; router locates node direct, no lookup table.
+2. **Multi-tenant systems** — carry tenant ID for prefix isolation + row-level security, no extra indexed column.
+3. **Event sourcing / audit logs** — monotonic counter + timestamp → globally ordered, collision-free event IDs, no central sequencer.
+4. **Sortable time-series IDs** — timestamp bits give chronological order (like v7) + composable with shard/tenant/counter.
+5. **Debuggability** — declared fields readable from bits; operators read shard/tenant/sequence instead of opaque random string.
