@@ -1,5 +1,6 @@
 import path from "node:path"
 import { performance } from "node:perf_hooks"
+import { pathToFileURL } from "node:url"
 import {
   benchSync,
   collisionTest,
@@ -10,7 +11,7 @@ import type { V8Field, V8Layout } from "../dist/algo.js"
 const __dirname = import.meta.dirname
 const root = path.resolve(__dirname, "..")
 
-const algo = await import(path.resolve(root, "dist/algo.js"))
+const algo = await import(pathToFileURL(path.resolve(root, "dist/algo.js")).href)
 const {
   genStructuredParent,
   composeStructured,

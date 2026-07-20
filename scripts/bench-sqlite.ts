@@ -10,13 +10,14 @@
 // Test: bun test scripts/bench-sqlite.test.ts
 
 import path from "node:path"
+import { pathToFileURL } from "node:url"
 import { Database } from "bun:sqlite"
 import type { V8Layout } from "../dist/algo.js"
 import { genUlidV8 } from "./baselines.ts"
 
 const root = path.resolve(import.meta.dirname, "..")
 const algo = (await import(
-  path.resolve(root, "dist/algo.js")
+  pathToFileURL(path.resolve(root, "dist/algo.js")).href
 )) as {
   genV4Native: () => string
   genV7: () => string

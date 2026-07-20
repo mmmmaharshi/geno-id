@@ -1,10 +1,11 @@
 import path from "node:path"
 import fs from "node:fs"
+import { pathToFileURL } from "node:url"
 
 const __dirname = import.meta.dirname
 const root = path.resolve(__dirname, "..")
 
-const algo = await import(path.resolve(root, "dist/algo.js"))
+const algo = await import(pathToFileURL(path.resolve(root, "dist/algo.js")).href)
 const { genV4Native, genGenoID, toUuidString } = algo as {
   genV4Native: () => string
   genGenoID: () => string

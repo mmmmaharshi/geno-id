@@ -1,5 +1,6 @@
 import { test } from "node:test"
 import assert from "node:assert/strict"
+import { pathToFileURL } from "node:url"
 import path from "node:path"
 
 import {
@@ -115,7 +116,7 @@ test("public type aliases resolve for the layout API", () => {
 })
 
 test("public barrel does NOT leak research/internal symbols", async () => {
-  const pkg = await import(path.resolve(root, "dist/index.js"))
+  const pkg = await import(pathToFileURL(path.resolve(root, "dist/index.js")).href)
   const leaked = [
     "uuidToRandomBits",
     "genV4Native",

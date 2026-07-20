@@ -16,6 +16,7 @@
 // Test: bun test scripts/collision-100m.test.ts
 
 import os from "node:os"
+import { pathToFileURL } from "node:url"
 import path from "node:path"
 import { isMainThread, parentPort, workerData, Worker } from "node:worker_threads"
 import { birthdayBound50 } from "../dist/bench-core.js"
@@ -25,7 +26,7 @@ import { genUlidV8 } from "./baselines.ts"
 const scriptPath = path.join(import.meta.dirname, "collision-100m.ts")
 const root = path.resolve(import.meta.dirname, "..")
 const algo = (await import(
-  path.resolve(root, "dist/algo.js")
+  pathToFileURL(path.resolve(root, "dist/algo.js")).href
 )) as {
   genV4Native: () => string
   genV7: () => string

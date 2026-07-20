@@ -7,6 +7,7 @@
 //   2. the detector actually catches real duplicates (sanity check).
 
 import assert from "node:assert/strict"
+import { pathToFileURL } from "node:url"
 import path from "node:path"
 import { test } from "node:test"
 // oxlint false-positive: does not track `import type` usage inside `as` casts.
@@ -17,7 +18,7 @@ import { collisionTestScaled, DBKEY_LAYOUT } from "./collision-100m.ts"
 
 const root = path.resolve(import.meta.dirname, "..")
 const algo = (await import(
-  path.resolve(root, "dist/algo.js")
+  pathToFileURL(path.resolve(root, "dist/algo.js")).href
 )) as {
   genV4Native: () => string
   genV7: () => string

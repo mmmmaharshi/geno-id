@@ -15,13 +15,14 @@
 // CONCURRENT_WORKERS, CONCURRENT_PER_WORKER.
 
 import os from "node:os"
+import { pathToFileURL } from "node:url"
 import path from "node:path"
 import { isMainThread, parentPort, workerData, Worker } from "node:worker_threads"
 import type { V8Layout } from "../dist/algo.js"
 
 const scriptPath = path.join(import.meta.dirname, "bench-concurrent.ts")
 const root = path.resolve(import.meta.dirname, "..")
-const algo = await import(path.resolve(root, "dist/algo.js"))
+const algo = await import(pathToFileURL(path.resolve(root, "dist/algo.js")).href)
 
 const { completeLayout, genGenoID, genStructuredGenoID, readStructured } = algo
 

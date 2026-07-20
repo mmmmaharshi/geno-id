@@ -1,5 +1,6 @@
 import path from "node:path"
 import fs from "node:fs"
+import { pathToFileURL } from "node:url"
 import type { V8Layout } from "../dist/algo.js"
 
 // Shared exporter for the dieharder randomness battery. Both
@@ -14,7 +15,7 @@ import type { V8Layout } from "../dist/algo.js"
 const __dirname = import.meta.dirname
 const root = path.resolve(__dirname, "..")
 
-const algo = await import(path.resolve(root, "dist/algo.js"))
+const algo = await import(pathToFileURL(path.resolve(root, "dist/algo.js")).href)
 const {
   genV4Native,
   genGenoID,

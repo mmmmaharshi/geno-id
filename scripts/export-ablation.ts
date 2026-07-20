@@ -1,10 +1,11 @@
 import path from "node:path"
 import fs from "node:fs"
+import { pathToFileURL } from "node:url"
 
 const __dirname = import.meta.dirname
 const root = path.resolve(__dirname, "..")
 
-const algo = await import(path.resolve(root, "dist/algo.js"))
+const algo = await import(pathToFileURL(path.resolve(root, "dist/algo.js")).href)
 const { toUuidString } = algo as { toUuidString: (b: Uint8Array) => string }
 
 const HEX_STARTS = [0, 2, 4, 6, 9, 11, 14, 16, 19, 21, 24, 26, 28, 30, 32, 34]

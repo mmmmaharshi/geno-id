@@ -1,5 +1,6 @@
 import { test } from "node:test"
 import assert from "node:assert/strict"
+import { pathToFileURL } from "node:url"
 import path from "node:path"
 
 // oxlint false-positive: it does not track `import type` usage inside `as` casts.
@@ -8,7 +9,7 @@ import type { V8Field, V8Layout } from "../dist/algo.js"
 
 const __dirname = import.meta.dirname
 const root = path.resolve(__dirname, "..")
-const algo = await import(path.resolve(root, "dist/algo.js"))
+const algo = await import(pathToFileURL(path.resolve(root, "dist/algo.js")).href)
 const {
   completeLayout,
   composeStructured,

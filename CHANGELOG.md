@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.3] - 2026-07-20
+
+### Summary
+
+**Windows CI path fix.** Running Node-side scripts via `tsx` on Windows failed with `ERR_UNSUPPORTED_ESM_URL_SCHEME` because `await import()` received a bare absolute path (`D:\...`) instead of a `file://` URL. All `scripts/*.ts` dynamic imports of `dist/*.js` now wrap the path in `pathToFileURL(...).href`. This unblocks the `node-matrix` Windows job (it was failing on `bench-ci.ts`).
+
+### Highlights
+
+#### 🐛 Bug Fix
+
+- `scripts/*.ts`: replace `await import(path.resolve(root, "dist/*.js"))` with `await import(pathToFileURL(path.resolve(root, "dist/*.js")).href)` across 18 Node-side scripts (the Deno ports already used relative specifiers and were unaffected).
+
+### Breaking Changes
+
+- None.
+
+### Upgrade Guide
+
+- No action required.
+
+### Known Issues
+
+- None.
+
+### Dependencies Updated
+
+- None.
+
 ## [1.15.2] - 2026-07-20
 
 ### Summary

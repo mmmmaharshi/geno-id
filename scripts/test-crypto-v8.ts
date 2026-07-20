@@ -1,11 +1,12 @@
 import path from "node:path"
 import assert from "node:assert/strict"
+import { pathToFileURL } from "node:url"
 import { describe, it } from "node:test"
 
 const __dirname = import.meta.dirname
 const root = path.resolve(__dirname, "..")
 
-const algo = await import(path.resolve(root, "dist/algo.js"))
+const algo = await import(pathToFileURL(path.resolve(root, "dist/algo.js")).href)
 const { genGenoID } = algo as { genGenoID: () => string }
 
 const V8_RE =
