@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.17.1] - 2026-07-20
+
+### Summary
+
+**Fix an entropy regression in structured-field generation.** The pool-reuse performance change in `1.17.0` left `structuredValue` drawing a single byte per field, silently capping any structured field wider than 8 bits at 256 values. The 16-bit `EVENTSOURCING.stream` field collapsed to 0–255. Fields now draw width-matched entropy, restoring the full declared keyspace. No public API changed.
+
+### Highlights
+
+#### 🐛 Bug fix
+
+- `structuredValue` now uses `drawValue` (multi-byte accumulation) and `pickFrom` (unbiased allowed-set pick) so `node`/`process`/`shard` fields wider than 8 bits keep their full entropy.
+- Added a regression test asserting wide fields span their full declared range (guards against any future single-byte cap).
+
+### Breaking Changes
+
+- None.
+
+### Upgrade Guide
+
+- Drop-in patch. No API or layout changes.
+
+### Known Issues
+
+- None.
+
+### Dependencies Updated
+
+- None.
+
 ## [1.17.0] - 2026-07-20
 
 ### Summary
