@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.17.0] - 2026-07-20
+
+### Summary
+
+**Ship the P1/P2 experiment sources that 1.16.0 missed.** The 1.16.0 npm publish was README-only and omitted `scripts/bench-pg-uuid-v8.ts`, `scripts/export-rank-scan.ts`, and `docs/literature-review.md`. This release publishes the full local state so the evidence scripts are actually distributed.
+
+### Highlights
+
+#### 📦 Packaging fix
+
+- `scripts/bench-pg-uuid-v8.ts` (P1 head-to-head vs pg_uuid_v8) now shipped.
+- `scripts/export-rank-scan.ts` + `dist/rank-scan.csv` (P2 NIST draw-size scan) now shipped.
+- `docs/literature-review.md` (C1/C2 refutable claims) now shipped.
+
+### Breaking Changes
+
+- None.
+
+### Upgrade Guide
+
+- No action required.
+
+### Known Issues
+
+- None.
+
 ## [1.16.0] - 2026-07-20
 
 ### Summary
