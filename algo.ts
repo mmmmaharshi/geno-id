@@ -297,6 +297,34 @@ export function forceVersionVariant(bytes: Uint8Array): void {
   bytes[8] = (bytes[8] & 0x3f) | 0x80
 }
 
+// Precomputed per-byte masks for a field (cached per V8Field). Each entry says
+// "within byte `byte`, these bits (mask) belong to this field." Used to assemble
+// a child UUID by masking+ORing parent bytes — replaces the per-bit copyField
+// loop on the composition hot path with a small fixed number of byte ops.
+interface ByteMask {
+  byte: number
+  mask: number
+}
+const _fieldByteMasks = new WeakMap<V8Field, ByteMask[]>()
+function fieldByteMasks(f: V8Field): ByteMask[] {
+  let m = _fieldByteMasks.get(f)
+  if (m) return m
+  m = []
+  const start = f.start
+  const end = f.start + f.length
+  const endByte = (end + 7) >> 3
+  for (let b = start >> 3; b < endByte; b++) {
+    let mask = 0
+    for (let bit = 0; bit < 8; bit++) {
+      const pos = b * 8 + bit
+      if (pos >= start && pos < end) mask |= 1 << (7 - bit)
+    }
+    if (mask) m.push({ byte: b, mask })
+  }
+  _fieldByteMasks.set(f, m)
+  return m
+}
+
 export function uuidToBytes(uuid: string): Uint8Array {
   const h = uuid.replaceAll("-", "")
   if (!/^[0-9a-fA-F]{32}$/.test(h)) {
@@ -584,10 +612,22 @@ const STRUCT_ENTRY = 34
 const _structChild = new Uint8Array(16)
 const _structPools = new Map<
   string,
-  { pool: Uint8Array<ArrayBuffer>; strs: string[]; idx: number; needsRepair: boolean }
+  {
+    pool: Uint8Array<ArrayBuffer>
+    strs: string[]
+    idx: number
+    needsRepair: boolean
+    plan: ByteMask[][]
+  }
 >()
 
-function getStructPool(layout: V8Layout): { pool: Uint8Array<ArrayBuffer>; strs: string[]; idx: number; needsRepair: boolean } {
+function getStructPool(layout: V8Layout): {
+  pool: Uint8Array<ArrayBuffer>
+  strs: string[]
+  idx: number
+  needsRepair: boolean
+  plan: ByteMask[][]
+} {
   const existing = _structPools.get(layout.name)
   if (existing) return existing
   const p = {
@@ -595,6 +635,9 @@ function getStructPool(layout: V8Layout): { pool: Uint8Array<ArrayBuffer>; strs:
     strs: new Array(STRUCT_POOL_N),
     idx: STRUCT_POOL_N,
     needsRepair: layout.fields.some((f) => f.type === "random" && f.constraint),
+    // Precomputed per-field byte masks — built once per layout, reused for all
+    // 256 pool entries so the hot child-assembly loop never touches bits.
+    plan: layout.fields.map(fieldByteMasks),
   }
   _structPools.set(layout.name, p)
   return p
@@ -629,10 +672,15 @@ export function genStructuredGenoID(layout: V8Layout): string {
       // syscall, same entropy as before.
       applyStructuredFields(A, layout, undefined, poolRng(p.pool, off, off + 16))
       applyStructuredFields(B, layout, undefined, poolRng(p.pool, off + 16, off + 32))
+      // Assemble the child by masking+ORing parent bytes per precomputed field
+      // plan — replaces the per-bit copyField loop with a fixed set of byte ops.
       const child = _structChild
+      child.fill(0)
       for (let fi = 0; fi < nf; fi++) {
-        const takeA = ((fieldSelect >> fi) & 1) === 1
-        copyField(child, takeA ? A : B, fields[fi])
+        const src = ((fieldSelect >> fi) & 1) === 1 ? A : B
+        for (const mk of p.plan[fi]) {
+          child[mk.byte] |= src[mk.byte] & mk.mask
+        }
       }
       if (p.needsRepair) repairConstraints(layout, child)
       forceVersionVariant(child)
