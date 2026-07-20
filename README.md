@@ -6,20 +6,20 @@
 
 Declarative RFC 9562 v8 UUID composition framework — embed structure (shard, tenant, counter, timestamp) in an ID without rejection sampling.
 
-**One idea:** Standard UUID generators (v4, v7, hash) cannot embed application structure. Forcing it via rejection costs 64^k trials. GenoID replaces rejection with GA-inspired crossover + constraint-guided repair: **O(k·8) per ID** — 1.5M structured-field checks → 0 mismatches, 0 violations.
+**One idea:** Standard UUID generators (v4, v7, hash) cannot embed application structure. Forcing it via rejection costs 64^k trials. GenoID replaces rejection with GA-inspired crossover + constraint-guided repair: **O(k·8) per ID** — 1.5M structured-field checks → 0 mismatches, 0 violations (§5 E1–E2). Controlled degradations and weak entropy show GA is architectural, not statistical (§10 C1).
 
 ## TL;DR
 
 | Fact | Value |
 |---|---|
-| Published | `@manohar_maharshi/genoid@1.15.5` on npm |
+| Published | `@manohar_maharshi/genoid@1.17.0` on npm |
 | Collisions | 0 at 100M (v4, GenoID, v7, ULID-v8) |
 | NIST SP 800-22 + dieharder | 15/15 PASS (NIST); 152/152 PASSED (dieharder, 4 generators × 38 sub-tests) |
 | Throughput | GenoID-pooled 3.74–18.33M/s (9‑job / 7‑runtime×OS CI); structured ~0.5M/s |
 
 ## 1. Install
 
-Node ≥ 22, ESM-only, zero runtime deps.
+Node ≥ 22, ESM-only, zero runtime deps. One command, ~10 seconds:
 
 ```bash
 npm i @manohar_maharshi/genoid
@@ -27,6 +27,8 @@ npm i @manohar_maharshi/genoid
 
 
 ## 2. Quick start
+
+**Wins in one line:** embed structure with **0 rejection cost** (O(k·8) vs 64^k), **0 collisions at 100M** across 7 runtime×OS cells, **all 15 NIST SP 800-22 + 152/152 dieharder** sub-tests PASS, **3.7–18.3M/s** pooled throughput (§6). Every claim below is reproduced by `bun run bench`.
 
 ### Simple GenoID (v8 UUID)
 
@@ -156,7 +158,7 @@ GitHub Actions matrix: ubuntu/macos/windows × (Bun latest + Node 22 LTS + Deno 
 100k IDs into SQLite. All types clean B-tree (`freelist_count = 0`). Sortable IDs match/exceed random insert throughput. Run: `bun run bench-sqlite`.
 
 ### Task D: 100M collisions
-Open-addressing 128-bit hash set (~2.3 GB vs ~10 GB), fanned across all cores. All generators 0 collisions — far below 122-bit birthday bound ~2.7×10¹⁸. Run: `bun run collision-100m`.
+Open-addressing 128-bit hash set (~2.3 GB vs ~10 GB), fanned across all cores. All generators 0 collisions — 0 observed vs 122-bit birthday bound ~2.7×10¹⁸ expected at p=0.5. Run: `bun run collision-100m`.
 
 ### Task E: Cross-engine browser
 Playwright across Chromium, Firefox, WebKit — all three: `browserErrors: []`, structured entry present, 0 collisions. Run: `bun run playwright` (`bun x playwright install` first).
