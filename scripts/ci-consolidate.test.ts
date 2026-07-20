@@ -44,6 +44,11 @@ test("envLabel labels deno environments distinctly", () => {
     envLabel({ runtime: "deno", node: "deno-2.9.3", platform: "darwin" } as EnvInfo),
     "Deno 2.9.3 (macOS)",
   )
+  // Deno reports `windows` (not `win32` like Node/Bun) on Windows.
+  assert.equal(
+    envLabel({ runtime: "deno", node: "deno-2.9.3", platform: "windows" } as EnvInfo),
+    "Deno 2.9.3 (Windows)",
+  )
 })
 
 test("envLabel labels node environments by real OS, not hardcoded Linux", () => {
@@ -106,6 +111,19 @@ test("renderConsolidated orders node columns by OS within a version", () => {
 test("renderConsolidated orders deno columns by OS", () => {
   const md = renderConsolidated([
     makeResult({ runtime: "deno", node: "deno-2.9.3", platform: "win32" }, 1),
+    makeResult({ runtime: "deno", node: "deno-2.9.3", platform: "darwin" }, 1),
+    makeResult({ runtime: "deno", node: "deno-2.9.3", platform: "linux" }, 1),
+  ])
+  const idxLinux = md.indexOf("Deno 2.9.3 (Linux)")
+  const idxMacos = md.indexOf("Deno 2.9.3 (macOS)")
+  const idxWindows = md.indexOf("Deno 2.9.3 (Windows)")
+  assert.ok(idxLinux < idxMacos)
+  assert.ok(idxMacos < idxWindows)
+})
+
+test("renderConsolidated orders deno columns by OS using deno's 'windows' platform value", () => {
+  const md = renderConsolidated([
+    makeResult({ runtime: "deno", node: "deno-2.9.3", platform: "windows" }, 1),
     makeResult({ runtime: "deno", node: "deno-2.9.3", platform: "darwin" }, 1),
     makeResult({ runtime: "deno", node: "deno-2.9.3", platform: "linux" }, 1),
   ])

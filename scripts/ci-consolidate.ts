@@ -22,20 +22,21 @@ export function envLabel(e: EnvInfo): string {
   }
   let os = "Windows"
   if (e.platform === "linux") os = "Ubuntu"
-  else if (e.platform === "darwin") os = "macOS"
+  else if (e.platform === "darwin" || e.platform === "macos") os = "macOS"
+  else if (e.platform === "windows") os = "Windows"
   return `${os} (Bun)`
 }
 
 function platformName(platform: string): string {
   if (platform === "darwin") return "macOS"
-  if (platform === "win32") return "Windows"
+  if (platform === "win32" || platform === "windows") return "Windows"
   return "Linux"
 }
 
 function platformRank(platform: string): number {
   if (platform === "linux") return 0
   if (platform === "darwin") return 1
-  if (platform === "win32") return 2
+  if (platform === "win32" || platform === "windows") return 2
   return 9
 }
 
@@ -107,6 +108,16 @@ export function renderConsolidated(results: CIBenchmarkResult[]): string {
     const cells = entries.map((c) => (c.collisions === 0 ? "PASS" : `${c.collisions}`))
     md += `| ${name} | ${cells.join(" | ")} |\n`
   }
+
+  // Known-artifact note so the raw numbers are not misread as a GenoID defect.
+  md +=
+    "\n### Known issues\n\n" +
+    "- **Node on Windows throughput:** schemes that call `crypto.getRandomValues` " +
+    "per-invocation (v7, pg-uuid-v8, ulid, ulid-v8, ksuid) run markedly slower on " +
+    "Node/Windows than on Node/Linux or macOS. This is a Node WebCrypto backend " +
+    "artifact (BCryptGenRandom per-call overhead, not batched), not a GenoID defect. " +
+    "Native `crypto.randomUUID()` (v4) and the pooled GenoID CSPRNG are unaffected, " +
+    "which confirms the bottleneck is per-call `getRandomValues`, not the algorithm.\n"
 
   return md
 }

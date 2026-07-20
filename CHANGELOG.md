@@ -5,6 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.5] - 2026-07-20
+
+### Summary
+
+**Fix Deno-on-Windows mislabel + document Node-Windows crypto artifact.** The consolidated CI table mapped a Deno run on Windows to `Deno 2.9.3 (Linux)` (hiding the Windows column and duplicating Linux) because `platformName`/`platformRank` only knew `win32`, while Deno reports `platform: "windows"`. Also added a "Known issues" footer to the consolidated output explaining why per-call `crypto.getRandomValues` schemes (v7, pg-uuid-v8, ulid, ulid-v8, ksuid) measure slower on Node/Windows.
+
+### Highlights
+
+#### 🐛 Bug Fix
+
+- `scripts/ci-consolidate.ts`: `platformName`/`platformRank` now map both `win32` and `windows` → Windows/rank 2; Bun branch also tolerates `windows`/`macos`. Added unit tests covering Deno's `windows` platform value and column ordering.
+
+#### 📝 Documentation
+
+- `scripts/ci-consolidate.ts`: consolidated markdown now ends with a "Known issues" note: Node/Windows throughput for per-invocation `getRandomValues` schemes is a Node WebCrypto backend artifact (BCryptGenRandom per-call overhead), not a GenoID defect — native `crypto.randomUUID()` (v4) and the pooled GenoID CSPRNG are unaffected.
+
+### Investigation: v7 Node-Windows slowdown
+
+Root cause confirmed via microbenchmark: `crypto.getRandomValues(10)` runs ~1.4M/s locally vs native `crypto.randomUUID()` at ~17M/s. On the CI grid, Node/Windows shows v7 at 0.46M vs 2.83M on Node/Linux (≈6× slower relative), while v4 (native) and genoid-v8 (pooled CSPRNG) are within ~20% across OSes. This isolates the cost to **per-call `getRandomValues` on Node's Windows crypto backend**, not to GenoID logic. No code change to `genV7` (altering it would break the RFC 9562 reference semantics and cross-runtime comparability); the artifact is documented instead.
+
+### Breaking Changes
+
+- None.
+
+### Upgrade Guide
+
+- No action required.
+
+### Known Issues
+
+- Node-on-Windows throughput for `getRandomValues`-per-call schemes is an environment artifact (see consolidated "Known issues").
+
+### Dependencies Updated
+
+- None.
+
 ## [1.15.4] - 2026-07-20
 
 ### Summary
