@@ -1,150 +1,185 @@
 # GenoID
 
-Novel GA-inspired UUIDv8 algorithm benchmark against v4, v7, SHA-256 hash-derived, and Math.random baselines.
+Novel GA-inspired UUIDv8 algorithm benchmarked against v4, v7, SHA-256 hash-derived, and Math.random baselines.
 
-## Source files
+## Start here (next action)
 
-| File | Responsibility |
-|---|---|
-| `algo.ts` | Pure algorithm implementations (authoritative). No DOM or I/O. |
-| `bench-core.ts` | Shared benchmark harness: `benchSync`, `benchAsyncBatched`, `birthdayBound50`, `collisionTest`, `collisionTestAsync`. No DOM, no I/O. |
-| `benchmark.ts` | Browser benchmark runner. Imports from `algo.ts` and `bench-core.ts`. Exports `init(host?)` (call to wire up DOM + window hooks) and `runAll`, `copyToClipboard`, `copyTableToClipboard`. No module-level side effects. |
-| `index.html` | Loads `dist/benchmark.js` via `<script type="module">` and calls `init()`. |
-| `scripts/bench.ts` | Node.js benchmark + GenoID experimental variants (Fast v1–v3). Imports from `dist/bench-core.js` and `dist/algo.js`. |
-| `scripts/stats.ts` | NIST SP 800-22 monobit, runs, chi-square, pairwise correlation. Imports from `dist/algo.js`. |
-| `scripts/playwright.ts` | Playwright automation (launches Chromium/Firefox/WebKit, runs benchmark, scrapes results). Exports `runBenchmark` with injectable `launch` factory. |
-| `scripts/playwright.dryrun.ts` | Dry-run test with JSDOM mock. Calls `init()` after import (no global patching needed). |
+1. Pick the task. Implement code → run the **Quality gates** (below). Docs/config only → run gate 9 (verify) + ask before publish.
+2. After any `.ts` change, the quality gates are the contract: lint → typecheck → test → build → bench-ci → playwright. Zero errors before continuing.
+3. Never push or publish without explicit confirmation.
 
-## Running benchmarks
+## Project Overview
 
-| Command | What | Requires |
-|---|---|---|
-| `bun run build` | Compile TypeScript to `dist/` | `bun install` |
-| `bun run lint` | Check all `.ts` files with oxlint | `bun install` |
-| `bun run lint:fix` | Auto-fix lint issues | `bun install` |
-| `bun run bench` | Full Node.js benchmark + uniformity tests | `bun install` |
-| `bun run bench-ci` | Condensed CI-shaped benchmark + collisions (local equivalent of the CI matrix step; writes `dist/bench-ci-results.json`) | `bun install` |
-| `bun run test:stats` | NIST SP 800-22 monobit, runs, chi-square, pairwise correlation | `bun install` |
-| `bun run playwright` | Automated browser benchmark via Playwright (Chromium/Firefox/WebKit; `--browser=name` or `all`) | `bun install` + `bun x playwright install` |
-| `bun run verify-playwright` | Dry-run test of Playwright script with jsdom | `bun install` |
-| `deno run --allow-read --allow-write --allow-env --allow-sys scripts/deno/bench-ci.ts` | CI-shaped Deno benchmark + collisions (CI-only research runtime) | `deno` installed |
-| `deno run --allow-read --allow-env --allow-sys scripts/deno/collision-100m.ts` | Deno 100M collision test (fanned across cores) | `deno` installed |
-| `deno run --allow-read --allow-write --allow-env --allow-sys scripts/deno/stats.ts` | Deno NIST SP 800-22 battery (monobit, runs, chi-square, correlation) | `deno` installed |
-| `deno check scripts/deno/bench-ci.ts scripts/deno/collision-100m.ts scripts/deno/stats.ts` | Type-check the 3 Deno CI entry ports | `deno` installed |
-| `bun run typecheck` | Typecheck all `.ts` files (root + scripts) | `bun install` |
-| `bun run test` | Run all unit tests (`scripts/*.test.ts`) via Bun's built-in test runner | `bun install` |
-| `open index.html` | Interactive browser benchmark | Any browser |
+GenoID is a TypeScript RFC 9562 v8 UUID library + CLI + browser benchmark. The proposed algorithm (`geno`) is a pooled CSPRNG with byte-level GA crossover/mutation. The research contribution is the **structured (declarative v8 layout) framework** — GA helps UUIDs through *composition*, not randomness (see Research findings).
 
-## Architecture
-
-5 algorithms benchmarked in `algo.ts`:
+**Architecture — 5 algorithms benchmarked in `algo.ts`:**
 - `v4` — `crypto.randomUUID()` (native baseline)
 - `v7` — RFC 9562 UUIDv7 (48-bit timestamp + 74 random bits)
 - `hash` — SHA-256 hash-derived (v5-style, async via SubtleCrypto)
 - `mr` — Math.random (Xorshift128+, insecure baseline)
-- `geno` — GenoID (proposed: pooled CSPRNG + byte-level GA crossover/mutation, RFC 9562 v8)
+- `geno` — GenoID (pooled CSPRNG + byte-level GA crossover/mutation, RFC 9562 v8)
 
-`scripts/bench.ts` contains additional GenoID variants (Fast v1–v3, pooled, buffer-reuse) used during development — the browser version only ships the final `genGenoID` implementation.
+`scripts/bench.ts` holds extra GenoID variants (Fast v1–v3) used in development; the browser ships only `genGenoID`. `bench-core.ts` is the shared harness used by both `benchmark.ts` (browser) and `scripts/bench.ts` (Node).
 
-`bench-core.ts` holds the shared benchmark harness consumed by both `benchmark.ts` (browser) and `scripts/bench.ts` (Node.js).
+**Key tech:** Bun (runtime/build/test/lint/typecheck/publish), Node 22+ (CI), Deno 2.9.3 (CI-only research runtime), Playwright (browser benchmark), oxlint, changesets.
 
-## Response style
+## Setup Commands
 
-Always apply the `i-have-adhd` skill when responding to any user message (coding tasks, debugging, explanations, planning, casual conversation). Lead with the next concrete action, number multi-step work, externalize state across turns, suppress tangents, give specific time estimates, make wins visible, and use a matter-of-fact tone. Apply it even on casual messages and even when the user did not explicitly ask for brevity. When the user asks to apply this skill's structure to repository docs (e.g. README), translate its intent (lead with action, number steps, externalize state, surface estimates, make wins visible) into doc organization — keep professional tone, do not use caveman chat style in docs.
+- Install deps: `bun install`
+- Compile to `dist/`: `bun run build` (~5s)
+- Install Playwright browsers: `bun x playwright install` (for `bun run playwright`)
+- Deno (CI-only): install from https://deno.com
 
-**README.md must always follow the `research-paper-spj` skill + `i-have-adhd` skill.** SPJ rules: one-idea hook, TL;DR as 4-sentence abstract, concrete example within first 2 paragraphs (Quick start), problem statement before solution, related work (baseline comparison) after technical content, refutable claims with evidence, no road-map paragraph. Apply Dreyer (conflict-resolution, old-before-new, stress position), Knuth (say-it-twice: code + prose, examples after definitions), and i-have-adhd (lead with install action, numbered steps, time estimates, visible-wins table). Kill weak intensifiers. Omit personal journey. README is a research pitch + user manual, not a dev notebook.
+## Development Workflow
 
-Always apply the `caveman` skill (juliusbrussee/caveman, **full** level) on every response. Terse caveman output: drop articles/filler/pleasantries, fragments OK, short synonyms, no tool-call narration, no decorative tables/emoji, no long raw error-log dumps unless asked. Keep all technical substance, code, API names, CLI commands, exact error strings verbatim. No self-reference or style announcement. Level persist until "stop caveman" / "normal mode". Code, commits, and PRs written normally. (Auto-clarity: use full sentences for security warnings, irreversible-action confirmations, or where compression creates ambiguity.)
+| Command | What | Time | Requires |
+|---|---|---|---|
+| `bun run build` | Compile TypeScript to `dist/` | ~5s | `bun install` |
+| `bun run lint` | oxlint over all `.ts` | ~3s | `bun install` |
+| `bun run lint:fix` | Auto-fix lint issues | ~3s | `bun install` |
+| `bun run typecheck` | Typecheck root + scripts tsconfigs | ~10s | `bun install` |
+| `bun run test` | Run all unit tests (`scripts/*.test.ts`) | ~4s | `bun install` |
+| `bun run bench-ci` | Condensed CI-shaped benchmark + collisions → `dist/bench-ci-results.json` | ~30s | `bun install` |
+| `bun run bench` | Full Node.js benchmark + uniformity | ~2min | `bun install` |
+| `bun run test:stats` | NIST SP 800-22 monobit/runs/chi-square/correlation | ~30s | `bun install` |
+| `bun run playwright` | Browser benchmark (Chromium/Firefox/WebKit; `--browser=name`/`all`) | ~3min | `bun install` + `bun x playwright install` |
+| `bun run verify-playwright` | Dry-run Playwright with jsdom | ~5s | `bun install` |
+| `open index.html` | Interactive browser benchmark | manual | Any browser |
+| `deno run --allow-read --allow-write --allow-env --allow-sys scripts/deno/bench-ci.ts` | CI-shaped Deno benchmark + collisions | ~30s | `deno` |
+| `deno run --allow-read --allow-env --allow-sys scripts/deno/collision-100m.ts` | Deno 100M collision test (fanned across cores) | ~1min | `deno` |
+| `deno run --allow-read --allow-write --allow-env --allow-sys scripts/deno/stats.ts` | Deno NIST SP 800-22 battery | ~30s | `deno` |
+| `deno check scripts/deno/bench-ci.ts scripts/deno/collision-100m.ts scripts/deno/stats.ts` | Type-check Deno CI entry ports | ~5s | `deno` |
 
-## Agent workflow
+**Source files:**
 
-Always follow the [`mattpocock/skills@tdd`](https://skills.sh/mattpocock/skills/tdd) discipline: any new behavior or test is written **red → green** — write the failing test first, then only enough implementation to pass it. Confirm the public seam(s) under test before writing tests; tests verify behavior through public interfaces, never implementation details.
+| File | Responsibility |
+|---|---|
+| `algo.ts` | Pure algorithm implementations (authoritative). No DOM or I/O. |
+| `bench-core.ts` | Shared harness: `benchSync`, `benchAsyncBatched`, `birthdayBound50`, `collisionTest`, `collisionTestAsync`. No DOM, no I/O. |
+| `benchmark.ts` | Browser runner. Exports `init(host?)` + `runAll`, `copyToClipboard`, `copyTableToClipboard`. No module-level side effects. |
+| `index.html` | Loads `dist/benchmark.js` via `<script type="module">` and calls `init()`. |
+| `scripts/bench.ts` | Node.js benchmark + GenoID experimental variants (Fast v1–v3). |
+| `scripts/stats.ts` | NIST SP 800-22 monobit, runs, chi-square, pairwise correlation. |
+| `scripts/playwright.ts` | Playwright automation. Exports `runBenchmark` with injectable `launch` factory. |
+| `scripts/playwright.dryrun.ts` | Dry-run with JSDOM mock. Calls `init()` after import. |
 
-After every change to any `.ts` file:
-1. Run `/thermo-nuclear-code-quality-review` (ambitious structural simplification: kill duplication, spaghetti, oversized files, redundant layers)
-2. Run `bun run lint` (check all `.ts` files with oxlint)
-3. Run `bun run typecheck` (typecheck both root + scripts tsconfigs)
-4. Run `bun run test` (Bun's test runner over `scripts/*.test.ts`)
-5. Run `bun run build` (compiles to dist/)
-6. Run `bun run bench-ci` (condensed CI-shaped benchmark + collisions: this is the exact command the CI matrix runs per environment, so it is the local equivalent of the GitHub Actions `bun-matrix` / `node-matrix` steps — confirm 0 collisions and a clean `dist/bench-ci-results.json`). `bun run bench` is the full verbose equivalent.
-7. Run `bun run playwright` (browser/deployable check across Chromium/Firefox/WebKit: confirm each run of `dist/benchmark.js` + `index.html` has `browserErrors: []`, the `GenoID-structured` entry present, and 0 collisions — i.e. deployable matches development behavior)
-8. Fix any errors from the above before continuing
-9. **After any change** (code, docs, config, or otherwise) that passes gates 1–8, **ask the user** if they want to `npm publish`. Do not publish without explicit confirmation. Run `bun run build` first if publishing.
+## Testing Instructions
 
-**Verification before completion (Iron Law).** Always apply the
-[`obra/superpowers@verification-before-completion`](https://github.com/obra/superpowers)
-skill: **no completion, "passing", "fixed", or "done" claim without fresh
-verification evidence produced in the same turn.** Before asserting any status —
-or committing, tagging, releasing, or delegating — run the exact command that
-proves the claim, read its full output and exit code, and state the claim *with*
-that evidence. A prior run, "should pass", linter-only output, or an agent's
-self-reported success are never sufficient. Skipping this is dishonesty, not
-efficiency. Applies to exact phrases, paraphrases, and any wording implying
-success.
+- Run all tests: `bun run test` (~4s; Bun runner over `scripts/*.test.ts`)
+- Run a subset: `bun test scripts/algo.test.ts`
+- Typecheck (not a test but a gate): `bun run typecheck`
+- e2e (browser): `bun run playwright` — asserts `browserErrors: []`, `GenoID-structured` present, 0 collisions
+- Coverage expectation: **`NN pass, 0 fail`** before continuing.
 
-**Utilize multiple CPU cores whenever possible.** Any CPU-bound task whose
-units are independent (separate input files, separate samples, separate
-sub-tests) must be fanned out across all available cores rather than run
-strictly in series. Use the right primitive for the runtime:
-- **Child processes** (`execFile` + a bounded concurrency pool capped at `os.cpus().length`) — e.g. the dieharder battery.
-- **`worker_threads`** — for CPU-bound single-threaded JS (single-threaded JS
-  does **not** gain extra cores from `Promise.all`; a real thread/process pool
-  is required). The in-house `stats.ts` battery uses this (`stats-core.ts` +
-  `stats-worker.ts`).
-- **`ProcessPoolExecutor`** — for Python/numpy/scipy workloads (they release the
-  GIL), e.g. `nist-bridge.py`.
+**TDD discipline:** follow [`mattpocock/skills@tdd`](https://skills.sh/mattpocock/skills/tdd) — write the failing test first (red), then only enough implementation to pass (green). Confirm the public seam under test; tests verify behavior through public interfaces, never implementation details.
 
-Keep the output byte-for-byte identical to the serial run (same results, same
-order); only wall time should drop. Do not add parallelism that changes results
-or makes the code materially harder to reason about.
+## Code Style
 
-**Push policy:** the agent never pushes to `origin` automatically. It commits
-changes locally (including release commits and tags) and then asks the user to
-push when a feature is complete. Do not run `git push` unless the user
-explicitly requests it.
+- **Lint/format:** `bun run lint` (oxlint). `bun run lint:fix` auto-fixes.
+- **No comments unless asked** (project convention).
+- **File org:** `algo.ts` (pure, no DOM/I/O) + `bench-core.ts` (harness) + `scripts/*` (Node/Deno entry points, dynamically import `dist/*.js`).
+- **Imports/exports:** `scripts/*.ts` dynamically import the compiled `dist/algo.js` directly — no shim.
+- **Naming/version:** GenoID version nibble is `0x8` (RFC 9562 custom/experimental), not `0x4`.
 
-## Automatic versioning
+**Response style (for this agent):**
+- Follow the `/i-have-adhd` skill when responding: lead with the next concrete action, number multi-step work, externalize state across turns, suppress tangents, give specific time estimates, make wins visible, matter-of-fact tone.
+- Always apply the `caveman` skill (full level) on every response: terse fragments, drop filler, no tool-call narration, no decorative tables/emoji, keep technical substance (API names, CLI commands, exact error strings) verbatim. Code/commits/PRs written normally.
+- `README.md` must follow `research-paper-spj` + `i-have-adhd`: one-idea hook, 4-sentence TL;DR, concrete example in first 2 paragraphs, problem before solution, related work after technical content, refutable claims with evidence. Keep professional tone (no caveman style) in docs.
 
-When a **worthy improvement** is completed and the Agent workflow gates (steps 1–7)
-are green, the agent must proactively cut a release with the changesets workflow — do
-**not** leave `package.json` stale. This is automatic; do not wait to be asked.
+## Build and Deployment
 
-A change is *worthy* if it is any of: a new feature / new public API, a completed
-experiment phase (Phase A/B/C/D), a bug fix, or a significant results/documentation
-addition. Trivial formatting-, lint-only, or comment-only changes are not worthy on
-their own (they may ride along in the next changeset).
+- **Build:** `bun run build` → `dist/` (gitignored; rebuild after changing `algo.ts`/`benchmark.ts`/`bench-core.ts`).
+- **Browser benchmark (deployable):** `open index.html` or serve `dist/`. `index.html` loads `dist/benchmark.js` (ES module) and calls `init()`.
+- **CI/CD:** `.github/workflows/bench.yml` runs a matrix: `bun-matrix` (ubuntu/macos/windows), `node-matrix` (Node 22 × 3 OS), `deno-matrix` (Deno 2.9.3 × 3 OS), then a `consolidate` job merging per-env `bench-ci-results.json` into one table. Deno is CI-only.
+- **Release:** changesets (metadata + git tags only; no npm registry). See Automatic versioning.
 
-Bump type (semver):
-- **major** — breaking change to a public API or to the on-disk/sample format.
-- **minor** — new feature, new public function, new baseline/experiment, or a newly
-  documented result.
-- **patch** — bug fix, documentation correction, or behavior-preserving refactor.
+## Quality Gates (Agent workflow)
 
-Automatic steps (run after the gates pass):
-1. `bun x changeset add` (or write `.changeset/<name>.md`) with the correct type and a
-   one-line summary.
-2. `bun run version-packages` — bumps `package.json` and consumes the changeset.
-   CHANGELOG generation is disabled (`changelog: false` in `.changeset/config.json`),
-   so the entry is authored manually in the next step.
-3. Add the `CHANGELOG.md` entry for `vX.Y.Z` in **Keep a Changelog** style (see the
-   `changelog-automation` skill): Summary, Highlights (with emoji), Breaking Changes,
-   Upgrade Guide, Known Issues, Dependencies Updated. Prepend above the previous release.
+After every change to any `.ts` file, run in order. **Stop and fix on any failure — do not continue.**
+
+1. `/thermo-nuclear-code-quality-review` — kill duplication, spaghetti, oversized files, redundant layers.
+2. `bun run lint` — oxlint over all `.ts`.
+3. `bun run typecheck` — both root + scripts tsconfigs.
+4. `bun run test` — Bun test runner over `scripts/*.test.ts`.
+5. `bun run build` — compiles to `dist/`.
+6. `bun run bench-ci` — condensed CI-shaped benchmark + collisions (exact command the CI matrix runs per environment). **Confirm 0 collisions + clean `dist/bench-ci-results.json`.**
+7. `bun run playwright` — browser/deployable check. **Confirm** `browserErrors: []`, `GenoID-structured` present, 0 collisions.
+8. Fix any errors from above before continuing.
+9. **After any change** that passes gates 1–8, **ask the user** if they want `npm publish`. Do not publish without explicit confirmation.
+
+### Visible wins (what "green" looks like)
+
+| Gate | Pass condition |
+|---|---|
+| lint | `oxlint` exits 0 |
+| typecheck | both `tsc` configs exit 0 |
+| test | `NN pass, 0 fail` |
+| bench-ci | all collision rows `PASS`, `dist/bench-ci-results.json` written |
+| playwright | every browser `browserErrors: []`, `GenoID-structured` present, 0 collisions |
+
+## Verification before completion (Iron Law)
+
+No completion, "passing", "fixed", or "done" claim without **fresh verification evidence produced in the same turn**. Before asserting any status — or committing, tagging, releasing, or delegating — run the exact command that proves the claim, read its full output and exit code, and state the claim *with* that evidence. A prior run, "should pass", linter-only output, or an agent's self-reported success are never sufficient.
+
+## Utilize multiple CPU cores
+
+Any CPU-bound task with independent units (separate files/samples/sub-tests) must be fanned out across all cores, not run strictly in series. Keep output byte-for-byte identical to the serial run (same results, same order); only wall time drops. Use the right primitive:
+- **Child processes** (`execFile` + pool capped at `os.cpus().length`) — e.g. dieharder.
+- **`worker_threads`** — CPU-bound single-threaded JS (single-threaded JS does **not** gain cores from `Promise.all`). The `stats.ts` battery uses this (`stats-core.ts` + `stats-worker.ts`).
+- **`ProcessPoolExecutor`** — Python/numpy/scipy (releases GIL), e.g. `nist-bridge.py`.
+
+## Push Policy
+
+The agent never pushes to `origin` automatically. Commit changes locally (incl. release commits + tags), then ask the user to push when a feature is complete. Do not run `git push` unless explicitly requested.
+
+## Automatic Versioning
+
+When a **worthy improvement** is completed and gates 1–7 are green, proactively cut a release with changesets — do **not** leave `package.json` stale.
+
+**Worthy** = new feature/public API, completed experiment phase, bug fix, or significant results/docs addition. Trivial formatting/lint-only/comment-only changes are not worthy alone.
+
+| Bump | When |
+|---|---|
+| **major** | breaking change to a public API or on-disk/sample format |
+| **minor** | new feature, new public function, new baseline/experiment, or newly documented result |
+| **patch** | bug fix, documentation correction, or behavior-preserving refactor |
+
+1. `bun x changeset add` (or write `.changeset/<name>.md`) with type + one-line summary.
+2. `bun run version-packages` — bumps `package.json`, consumes the changeset (CHANGELOG generation disabled via `changelog: false`).
+3. Add the `CHANGELOG.md` entry for `vX.Y.Z` in **Keep a Changelog** style: Summary, Highlights (emoji), Breaking Changes, Upgrade Guide, Known Issues, Dependencies Updated. Prepend above previous release.
 4. Commit the bump (`package.json`, `CHANGELOG.md`, `.changeset/`).
 5. Tag locally: `git tag -a vX.Y.Z -m "genoid X.Y.Z"`.
-6. **Do NOT push automatically.** Commit the release locally (steps 1–5) and
-   stop. Ask the user before pushing `main` and the new tag to `origin` — the
-   push happens only when the user requests it (typically once a feature is
-   complete).
-7. Only after the user pushes, create the GitHub Release for `vX.Y.Z` with that
-   version's `CHANGELOG.md` section as notes (mark it latest):
-   `gh release create vX.Y.Z --title "genoid X.Y.Z" --latest --notes-file <vX.Y.Z section>`.
-   Tags alone do not create a Release page — this step is what makes the
-   changelog visible on GitHub.
+6. **Do NOT push automatically.** Ask the user before pushing `main` + tag to `origin`.
+7. Only after the user pushes, create the GitHub Release: `gh release create vX.Y.Z --title "genoid X.Y.Z" --latest --notes-file <vX.Y.Z section>`.
 
-Example: Phase A (new comparison baselines + 10M collision scaling + NIST on baselines)
-was a **minor** addition → bump to `1.2.0`.
+Example: Phase A (new baselines + 10M collision scaling + NIST on baselines) → **minor** bump to `1.2.0`.
 
-## Research findings
+## Pull Request / Commit Guidelines
+
+- Commit message: concise, matches repo style; never commit secrets.
+- Title format: `[component] Brief description`.
+- Required checks before submission: `bun run lint`, `bun run typecheck`, `bun run test`, `bun run build`, `bun run bench-ci` (and `bun run playwright` for browser/deployable changes).
+- Do not update git config, skip hooks, or force-push unless explicitly requested.
+- Tags alone do not create a Release page — use `gh release create` after push.
+
+## Security Considerations
+
+- **Never** introduce code that exposes or logs secrets/keys. Never commit secrets or keys to the repository.
+- `hash` uses `crypto.subtle` (WebCrypto) — async; Node 22+ required.
+- `mr` (Math.random) is an **insecure baseline** — documented as such; do not present it as production-safe.
+- Publishing/`npm publish` requires explicit user confirmation (gate 9). Releases are metadata + git tags only (no registry).
+- Use full sentences for security warnings and irreversible-action confirmations (auto-clarity exception to caveman style).
+
+## Debugging and Troubleshooting
+
+- **`dist/` missing/stale:** always `bun run build` after editing `algo.ts`/`benchmark.ts`/`bench-core.ts`; `dist/` is gitignored.
+- **Node version:** `crypto.randomUUID()` + `crypto.subtle` need Node 22+.
+- **Deno CI-only:** Deno ports (`scripts/deno/*`) mirror Bun/Node for cross-runtime comparison; excluded from `oxlint` + `tsconfig.scripts.json`, import types from source.
+- **Version nibble:** GenoID uses `0x8`, not `0x4`.
+- **Playwright:** install browsers once (`bun x playwright install`); `verify-playwright` dry-runs with jsdom if browsers unavailable.
+- **Slow CI on Node/Windows:** per-call `getRandomValues` schemes (v7, pg-uuid-v8, ulid, ulid-v8, ksuid) are slower on Node/Windows — a BCryptGenRandom backend artifact, not a GenoID defect. Pooled GenoID CSPRNG + native v4 are unaffected.
+
+## Research Findings
 
 | Finding | Detail |
 |---|---|
@@ -152,14 +187,11 @@ was a **minor** addition → bump to `1.2.0`.
 | GA cannot be assessed on weak entropy at 1.2M bits | Math.random (Xorshift128+) passes all 15 NIST tests at 1.22M bits — no failures to "rescue". 100M+ bits needed to see Xorshift128+ weaknesses. |
 | GA cannot rescue controlled degradations | Across 5 degraded sources (biased, correlation, range-restricted, periodic, LCG), GA failed to fix any core structural failures. In 2 cases, GA worsened quality. |
 | GA is architectural, not statistical | The GA framework's value is in v8 UUID composition (pooling, parallelism, structured data embedding). It does not improve, and occasionally degrades, statistical randomness. |
-| 34B > 16B for CSPRNG samples | **Corrected by scan (`scripts/export-rank-scan.ts`, T=60 trials/size, 1M bits/trial):** `binary_matrix_rank` false-positive rate is ~1.7% and roughly *uniform* across draw sizes 16/20/24/28/32/34B (16B: 1/60, 24B: 1/60, 28B: 1/60; 20/32/34B: 0). This matches the expected Type II/α noise (~1% at p<0.01), NOT a draw-size effect. The earlier "raw-v8 16B occasionally fails, 34B none" anecdote was a small-sample artifact. Draw size does not drive NIST rank stability at this scale; both 16B and 34B are statistically equivalent under `binary_matrix_rank`. |
+| 34B > 16B for CSPRNG samples | **Corrected by scan (`scripts/export-rank-scan.ts`, T=60 trials/size, 1M bits/trial):** `binary_matrix_rank` false-positive rate is ~1.7% and roughly *uniform* across draw sizes 16/20/24/28/32/34B. Matches expected Type II/α noise (~1% at p<0.01), NOT a draw-size effect. |
 
 ## Structured (declarative v8 layout) framework — GenoID v2 direction
 
-GA genuinely helps UUIDs only through *composition*, not randomness. Implemented in `algo.ts`
-(`V8Layout`/`V8Field` types, `genStructuredGenoID`, `composeStructured`, `repairConstraints`,
-`copyField`, `getFieldValue`, `forceVersionVariant`) and validated in `scripts/bench-structured.ts`
-(E1–E6) + `scripts/export-structured.ts` + `scripts/nist-bridge.py`.
+GA genuinely helps UUIDs only through *composition*, not randomness. Implemented in `algo.ts` (`V8Layout`/`V8Field`, `genStructuredGenoID`, `composeStructured`, `repairConstraints`, `copyField`, `getFieldValue`, `forceVersionVariant`) and validated in `scripts/bench-structured.ts` (E1–E6) + `scripts/export-structured.ts` + `scripts/nist-bridge.py`.
 
 | RQ | Experiment | Result |
 |---|---|---|
@@ -167,74 +199,54 @@ GA genuinely helps UUIDs only through *composition*, not randomness. Implemented
 | RQ2 GA repair vs rejection | E2: constrained fields k=1..6 | GA repairs/UUID ≈ k (O(k·8)); rejection = 64^k trials (k=6 → 6.9e10) |
 | RQ3 statistical quality | E3/E4/E5: dbkey, 2M UUIDs | 0 collisions (p=0.5 at n=2.71e18); uniformity max dev 0.0053 |
 | RQ3 NIST | struct-dbkey / multitenant / eventsourcing | all 15 SP 800-22 tests PASS |
-| RQ4 throughput | E6 + browser | Node: v4 7.3M/s, GenoID-structured 0.4M/s (≈19× slower). Browser (Chrome V8, Playwright): v4 1.65M/s, GenoID-structured 0.52M/s (≈3× slower vs v4 in-browser; ≈24× slower vs base GenoID pool). Native `crypto.randomUUID` is far slower in-browser, narrowing the gap; base GenoID pool stays fastest. |
+| RQ4 throughput | E6 + browser | Node: v4 7.3M/s, GenoID-structured 0.4M/s (≈19× slower). Browser (Playwright): v4 1.65M/s, GenoID-structured 0.52M/s (≈3× slower vs v4 in-browser; ≈24× slower vs base GenoID pool). Native `crypto.randomUUID` far slower in-browser, narrowing the gap. |
 
-**Two critical bugs found and fixed during implementation:**
-1. *32-bit truncation* — `getFieldValue`/`setFieldBytes` used 32-bit integer math, so any field
-   >32 bits (all random fillers: `rand_66`=62, `rand_82`=46) lost its high bits → catastrophic
-   NIST bias (multitenant hit 19.6% ones). Fixed with bit-by-bit `Number` arithmetic
-   (`copyField`, rewritten `setFieldBytes`/`structuredValue`); `getFieldValue` kept BigInt for
-   benchmark correctness.
-2. *Single-parent population* — structured fields were written to only one pooled parent while
-   `fieldSelect` could pick either parent, so ~50% of children inherited unpopulated CSPRNG garbage
-   (e.g. `tenant`=3239 instead of ≤8). Fixed by populating every structured field in **both**
-   parents (each independently generated) so field-boundary crossover always yields a valid value.
+**Two critical bugs found and fixed:**
+1. *32-bit truncation* — `getFieldValue`/`setFieldBytes` used 32-bit integer math; fields >32 bits lost high bits → catastrophic NIST bias (multitenant hit 19.6% ones). Fixed with bit-by-bit `Number` arithmetic.
+2. *Single-parent population* — structured fields written to only one pooled parent while `fieldSelect` could pick either → ~50% of children inherited garbage (e.g. `tenant`=3239 instead of ≤8). Fixed by populating every structured field in **both** parents.
 
-**Prior art:** no academic GA-for-UUID paper exists; `pg_uuid_v8` (May 2026, steganographic
-timestamps via XOR/AES, code-only, no framework) is the closest. Contribution = declarative
-RFC 9562 v8 layout composition + constraint-guided mutation as repair.
+**Prior art:** no academic GA-for-UUID paper exists; `pg_uuid_v8` (May 2026, steganographic timestamps via XOR/AES, code-only) is closest. Contribution = declarative RFC 9562 v8 layout composition + constraint-guided mutation as repair.
 
-## Scripts reference
+## Scripts Reference
 
 | Script | Purpose |
 |---|---|
-| `scripts/export-samples.ts` | Export CSPRNG sample files (v4, rawv8, genoid) for NIST |
-| `scripts/export-ablation.ts` | Export CSPRNG ablation variants (rawv8, full, xonly, monly) |
-| `scripts/export-weak-entropy.ts` | Export Math.random variants (mr-raw, mr-genoid, mr-xonly, mr-monly) |
-| `scripts/export-degraded.ts` | Export 5 controlled-entropy degraded sources × (raw + GA) for NIST rescue testing |
-| `scripts/export-structured.ts` | Export structured-layout samples (dbkey, multitenant, eventsourcing) for NIST |
+| `scripts/export-samples.ts` | Export CSPRNG samples (v4, rawv8, genoid) for NIST |
+| `scripts/export-ablation.ts` | Export ablation variants (rawv8, full, xonly, monly) |
+| `scripts/export-weak-entropy.ts` | Export Math.random variants |
+| `scripts/export-degraded.ts` | Export 5 degraded sources × (raw + GA) for NIST |
+| `scripts/export-structured.ts` | Export structured-layout samples for NIST |
 | `scripts/bench-structured.ts` | E1–E6: composition, repair-vs-rejection, collision/uniformity, throughput |
-| `scripts/baselines.ts` | Phase A comparison baselines: `genPgUuidV8` (closest prior art), `genUlid`/`genUlidV8`, `genKsuid`, `genSnowflake` + `extractRandomBits` (payload-only uniformity) |
-| `scripts/baselines.test.ts` | TDD unit tests for the baseline generators |
-| `scripts/export-baselines.ts` | Export random-payload bit streams of UUID-shaped baselines for NIST SP 800-22 |
-| `scripts/nist-bridge.py` | Run full 15-test NIST SP 800-22 battery on all sample files |
+| `scripts/baselines.ts` | Phase A baselines: `genPgUuidV8`, `genUlid`/`genUlidV8`, `genKsuid`, `genSnowflake` + `extractRandomBits` |
+| `scripts/baselines.test.ts` | TDD unit tests for baseline generators |
+| `scripts/export-baselines.ts` | Export random-payload bit streams of UUID-shaped baselines |
+| `scripts/nist-bridge.py` | Full 15-test NIST SP 800-22 battery |
 | `scripts/test-crypto-v8.ts` | Node.js crypto test suite adapted for v8 (4 tests) |
 | `scripts/stats.ts` | In-house monobit, runs, chi-square, pairwise correlation, entropy |
-| `scripts/bench.ts` | Speed benchmark, collision test, uniformity validation |
 
-### Deno ports (`scripts/deno/*`, CI-only research runtime)
-
-16 Deno ports mirror the Node/Bun scripts so UUID quality, throughput, and collisions are comparable across Bun + Node + Deno. They are **CI-only**: the project runtime is Bun (build/test/lint/typecheck/publish). Deno can't resolve `.d.ts` from `dist/*.js`, so these ports import types from source (`algo.ts`/`bench-core.ts`) and use `ReturnType<...>` for harness stats. They are excluded from `oxlint` and `tsconfig.scripts.json`.
+### Deno ports (`scripts/deno/*`, CI-only)
 
 | Script | Purpose |
 |---|---|
-| `scripts/deno/bench-ci.ts` | CI-shaped benchmark + collisions (Deno entry point for `deno-matrix`) |
-| `scripts/deno/bench.ts` | Full Deno speed benchmark + Welch significance (inlines `compareBench`) |
-| `scripts/deno/bench-structured.ts` | E1–E6 structured composition/repair/collision/throughput on Deno |
-| `scripts/deno/stats.ts` | NIST SP 800-22 battery (monobit, runs, chi-square, correlation, entropy) |
-| `scripts/deno/stats-core.ts` | Per-position chi-square + correlation core for `stats.ts` |
-| `scripts/deno/stats-worker.ts` | Web Worker running `stats-core` per generator |
-| `scripts/deno/collision-100m.ts` | 100M collision test, fanned across cores via workers |
-| `scripts/deno/collision-100m-worker.ts` | Worker: exact dedup of one shard of the 100M run |
+| `scripts/deno/bench-ci.ts` | CI-shaped benchmark + collisions (Deno `deno-matrix`) |
+| `scripts/deno/bench.ts` | Full Deno speed benchmark + Welch significance |
+| `scripts/deno/bench-structured.ts` | E1–E6 structured on Deno |
+| `scripts/deno/stats.ts` | NIST SP 800-22 battery |
+| `scripts/deno/stats-core.ts` / `stats-worker.ts` | Per-position chi-square + correlation core / worker |
+| `scripts/deno/collision-100m.ts` / `collision-100m-worker.ts` | 100M collision test fanned across cores |
 | `scripts/deno/pool.ts` | CSPRNG pool (Deno `crypto.getRandomValues`) |
-| `scripts/deno/deno-io.ts` | Deno `writeBitsFile`/`readBitsFile` helpers (no Node `fs` API) |
-| `scripts/deno/export-samples.ts` | Export CSPRNG samples (v4, rawv8, genoid) for NIST |
-| `scripts/deno/export-ablation.ts` | Export ablation variants (rawv8, full, xonly, monly) |
-| `scripts/deno/export-weak-entropy.ts` | Export Math.random variants |
-| `scripts/deno/export-degraded.ts` | Export 5 controlled-entropy degraded sources × (raw + GA) |
-| `scripts/deno/export-structured.ts` | Export structured-layout samples for NIST |
-| `scripts/deno/export-baselines.ts` | Export random-payload bit streams of UUID-shaped baselines |
+| `scripts/deno/deno-io.ts` | Deno `writeBitsFile`/`readBitsFile` helpers |
+| `scripts/deno/export-samples.ts` / `export-ablation.ts` / `export-weak-entropy.ts` / `export-degraded.ts` / `export-structured.ts` / `export-baselines.ts` | Deno export mirrors |
 
-## Key constraints
+## Key Constraints
 
-- **Deno is CI-only.** The project runtime is Bun (build/test/lint/typecheck/publish). Deno ports under `scripts/deno/*` exist solely to compare benchmark/collision/NIST results across Bun + Node + Deno in the `deno-matrix` CI job. Deno cannot resolve `.d.ts` from `dist/*.js`, so those ports import types from source and are excluded from `oxlint` + `tsconfig.scripts.json`.
+- **Deno is CI-only.** Runtime is Bun (build/test/lint/typecheck/publish). Deno ports excluded from `oxlint` + `tsconfig.scripts.json`.
 - Node 22+ required (`crypto.randomUUID()` and `crypto.subtle`).
-- GenoID version nibble is `0x8` (RFC 9562 custom/experimental), not `0x4`.
-- `scripts/*.ts` dynamically imports the compiled `dist/algo.js` directly — no shim needed.
-- `dist/` is gitignored; run `bun run build` after changing `algo.ts`, `benchmark.ts`, or `bench-core.ts`.
-- `benchmark.ts` has no module-level side effects — call `init(host?)` to wire up DOM and window hooks.
-- `index.html` loads `dist/benchmark.js` via `<script type="module">` and calls `init()`.
-- `tsconfig.json` extends `tsconfig.base.json`. `tsconfig.scripts.json` extends the same base for script typechecking.
+- GenoID version nibble is `0x8` (not `0x4`).
+- `scripts/*.ts` dynamically import compiled `dist/algo.js` directly — no shim.
+- `dist/` is gitignored; rebuild after changing core modules.
+- `benchmark.ts` has no module-level side effects — call `init(host?)`.
+- `tsconfig.json` / `tsconfig.scripts.json` extend `tsconfig.base.json`.
 
 ## Releasing
 
@@ -242,10 +254,8 @@ GenoID uses [changesets](https://github.com/changesets/changesets) for version m
 
 | Command | What |
 |---|---|
-| `bun x changeset add` | Describe a change (major/minor/patch + summary) → writes a file in `.changeset/` |
-| `bun run version-packages` (`changeset version`) | Bumps `package.json` and consumes the changeset (CHANGELOG generation is disabled via `changelog: false`) |
-| `git tag -a vX.Y.Z -m "genoid X.Y.Z"` | Tag the release locally (we skip `changeset publish` — no registry) |
+| `bun x changeset add` | Describe a change → writes a file in `.changeset/` |
+| `bun run version-packages` | Bumps `package.json`, consumes the changeset |
+| `git tag -a vX.Y.Z -m "genoid X.Y.Z"` | Tag locally (skip `changeset publish`) |
 
-Workflow: add a changeset per logical change → run `version-packages` → write the `CHANGELOG.md` entry manually in Keep a Changelog style (see `changelog-automation` skill) → commit the bump (`package.json`, `CHANGELOG.md`, `.changeset/`) → tag. `commit: false` is set in `.changeset/config.json`, so changesets never auto-commits.
-
-`CHANGELOG.md` is hand-maintained in **Keep a Changelog** format (the `changelog-automation` skill assists with prose); changesets handles version bumps only.
+Workflow: add changeset → `version-packages` → write `CHANGELOG.md` entry manually (Keep a Changelog) → commit bump → tag. `commit: false` in `.changeset/config.json`, so changesets never auto-commits.
