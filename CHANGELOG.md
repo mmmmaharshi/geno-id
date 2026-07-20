@@ -5,6 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.18.0] - 2026-07-20
+
+### Summary
+
+**Extend the CI matrix to cover the structured-generation contribution and refresh published results.** The 7-environment benchmark now includes `genoid-structured` (dbkey layout) in the speed table, and collision-checks the two previously-untested baselines `ulid` and `ksuid` (both PASS, 0 collisions at 1M). `snowflake` is intentionally excluded from the collision gate — it is a 64-bit time+sequence ID (12-bit sequence that wraps within a millisecond), so tight-loop 1M generation collides by design, not as a defect; it remains in the speed benchmark. `README.md` §6 refreshed with the latest consolidated numbers; `AGENTS.md` restructured to the official agents.md/ format with the `/i-have-adhd` discipline. No public API changed since 1.17.0.
+
+### Highlights
+
+#### 🧪 CI / results
+
+- `genoid-structured` (dbkey) added to the 7-env speed table — ~0.54–0.78M ops/s across runtimes/OSes.
+- Collision gate extended: `ulid` + `ksuid` now PASS (0 collisions at 1M); total 9 collision-tested generators × 7 envs = 63/63 PASS.
+- `snowflake` excluded from the collision gate with a documented rationale (sequence-based, not entropy-based).
+
+#### 📝 Docs
+
+- `README.md` §6 baseline table refreshed with latest CI numbers + `genoid-structured` row (NIST 15/15).
+- `AGENTS.md` restructured to official agents.md/ sections while keeping the `/i-have-adhd` lead-with-action / numbered-gates / visible-wins structure.
+
+### Breaking Changes
+
+- None.
+
+### Upgrade Guide
+
+- Drop-in minor. No API or layout changes.
+
+### Known Issues
+
+- None.
+
+### Dependencies Updated
+
+- None.
+
 ## [1.17.1] - 2026-07-20
 
 ### Summary
