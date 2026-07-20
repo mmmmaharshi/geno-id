@@ -115,7 +115,7 @@ async function showSamples(): Promise<void> {
     let html = ""
     for (const a of ALGOS) {
       const val = a.async ? await a.fn() : a.fn() as string
-      const escaped = val.replace(/'/g, "\\'")
+      const escaped = val.replace(/\\/g, "\\\\").replace(/'/g, "\\'")
       html += `<div><b>${a.name}:</b> <code>${val}</code> <button onclick="copyToClipboard('${escaped}', this)">Copy</button></div>`
     }
     box.innerHTML = html
