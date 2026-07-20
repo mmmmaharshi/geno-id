@@ -5,8 +5,99 @@ import {
   collisionTest,
   collisionTestAsync,
 } from "../../dist/bench-core.js"
-import { compareBench } from "../significance.ts"
-import { type BenchStats } from "../../dist/bench-core.js"
+type BenchStats = ReturnType<typeof benchRepeated>
+
+// Local Welch t-test compare (port of scripts/significance.ts) so this Deno
+// port has no dependency on the Node-only significance.ts module.
+function meanOf(xs: number[]): number {
+  return xs.reduce((a, b) => a + b, 0) / xs.length
+}
+function varianceOf(xs: number[]): number {
+  const n = xs.length
+  if (n < 2) return 0
+  const m = meanOf(xs)
+  return xs.reduce((a, x) => a + (x - m) ** 2, 0) / (n - 1)
+}
+function lgamma(x: number): number {
+  if (x < 0.5) return Math.log(Math.PI / Math.sin(Math.PI * x)) - lgamma(1 - x)
+  const y = x - 1
+  let a = 0.99999999999980993
+  const t = y + 7.5
+  const LANCZOS = [
+    676.5203681218851, -1259.1392167224028, 771.32342877765313,
+    -176.61502916214059, 12.507343278686905, -0.13857109526572012,
+    9.9843695780195716e-6, 1.5056327351493116e-7,
+  ]
+  for (let i = 1; i < 9; i++) a += LANCZOS[i - 1] / (y + i)
+  return 0.5 * Math.log(2 * Math.PI) + (y + 0.5) * Math.log(t) - t + Math.log(a)
+}
+function betacf(x: number, a: number, b: number): number {
+  const MAXIT = 200
+  const EPS = 3e-12
+  const FPMIN = 1e-300
+  const qab = a + b
+  const qap = a + 1
+  const qam = a - 1
+  let c = 1
+  let d = 1 - (qab * x) / qap
+  if (Math.abs(d) < FPMIN) d = FPMIN
+  d = 1 / d
+  let h = d
+  for (let m = 1; m <= MAXIT; m++) {
+    const m2 = 2 * m
+    let aa = (m * (b - m) * x) / ((qam + m2) * (a + m2))
+    d = 1 + aa * d
+    if (Math.abs(d) < FPMIN) d = FPMIN
+    c = 1 + aa / c
+    if (Math.abs(c) < FPMIN) c = FPMIN
+    d = 1 / d
+    h *= d * c
+    aa = (-(a + m) * (qab + m) * x) / ((a + m2) * (qap + m2))
+    d = 1 + aa * d
+    if (Math.abs(d) < FPMIN) d = FPMIN
+    c = 1 + aa / c
+    if (Math.abs(c) < FPMIN) c = FPMIN
+    d = 1 / d
+    const del = d * c
+    h *= del
+    if (Math.abs(del - 1) < EPS) break
+  }
+  return h
+}
+function betai(x: number, a: number, b: number): number {
+  if (x <= 0) return 0
+  if (x >= 1) return 1
+  const pf =
+    Math.exp(Math.log(x) * a + Math.log(1 - x) * b - lgamma(a) - lgamma(b) + lgamma(a + b)) / a
+  return pf * betacf(x, a, b)
+}
+function studentTwoTailedP(t: number, df: number): number {
+  return betai(df / (df + t * t), df / 2, 0.5)
+}
+function compareBench(a: BenchStats, b: BenchStats): {
+  t: number
+  df: number
+  p: number
+  d: number
+} {
+  const na = a.samples.length
+  const nb = b.samples.length
+  const ma = meanOf(a.samples)
+  const mb = meanOf(b.samples)
+  const va = varianceOf(a.samples)
+  const vb = varianceOf(b.samples)
+  if (va + vb === 0) return { t: 0, df: Math.max(1, na + nb - 2), p: 1, d: 0 }
+  const se = Math.sqrt(va / na + vb / nb)
+  const t = (ma - mb) / se
+  const df = (va / na + vb / nb) ** 2 /
+    ((va / na) ** 2 / (na - 1) + (vb / nb) ** 2 / (nb - 1))
+  const pooled = Math.sqrt(
+    ((na - 1) * va + (nb - 1) * vb) / (na + nb - 2),
+  )
+  const d = pooled === 0 ? 0 : (ma - mb) / pooled
+  return { t, df, p: studentTwoTailedP(t, df), d }
+}
+
 import {
   genPgUuidV8,
   genUlid,

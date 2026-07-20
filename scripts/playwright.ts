@@ -206,15 +206,15 @@ async function runBenchmark(
     )
 
     async function scrapeTable(id: string): Promise<string[][]> {
-      return page.$$eval(`#${id} tbody tr`, (rows) =>
-        rows.map((tr) =>
+      return page.$$eval(`#${id} tbody tr`, (rows: Element[]) =>
+        rows.map((tr: Element) =>
           [...tr.children].map((td) => (td as HTMLElement).textContent!.trim()),
         ),
       )
     }
     const headersOf = (id: string): Promise<string[]> =>
-      page.$$eval(`#${id} thead th`, (ths) =>
-        ths.map((th) => (th as HTMLElement).textContent!.trim()),
+      page.$$eval(`#${id} thead th`, (ths: Element[]) =>
+        ths.map((th: Element) => (th as HTMLElement).textContent!.trim()),
       )
 
     const resultsHeaders = await headersOf("resultsTable")
@@ -236,15 +236,15 @@ async function runBenchmark(
       inputs: {
         nAsync: await page.$eval(
           "#nAsync",
-          (el) => (el as HTMLInputElement).value,
+          (el: Element) => (el as HTMLInputElement).value,
         ),
         nColl: await page.$eval(
           "#nColl",
-          (el) => (el as HTMLInputElement).value,
+          (el: Element) => (el as HTMLInputElement).value,
         ),
         nSync: await page.$eval(
           "#nSync",
-          (el) => (el as HTMLInputElement).value,
+          (el: Element) => (el as HTMLInputElement).value,
         ),
       },
       rawLog: logText,

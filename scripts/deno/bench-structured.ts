@@ -3,7 +3,7 @@ import {
   collisionTest,
   birthdayBound50,
 } from "../../dist/bench-core.js"
-import { type V8Field, type V8Layout } from "../../dist/algo.js"
+import { type V8Field, type V8Layout } from "../../algo.ts"
 
 const algo = (await import("../../dist/algo.js")) as {
   genStructuredParent: (l: V8Layout, mask: number[]) => Uint8Array
@@ -12,7 +12,7 @@ const algo = (await import("../../dist/algo.js")) as {
   genStructuredGenoID: (l: V8Layout) => string
   genGenoID: () => string
   forceVersionVariant: (b: Uint8Array) => void
-  getFieldValue: (b: Uint8Array, f: V8Field) => number
+  getFieldValue: (b: Uint8Array, f: V8Field) => bigint
   completeLayout: (name: string, core: V8Field[]) => V8Layout
   uuidToRandomBits: (uuid: string, layout: V8Layout) => string
   DBKEY_LAYOUT: V8Layout

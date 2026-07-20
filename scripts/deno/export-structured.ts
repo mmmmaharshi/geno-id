@@ -1,4 +1,4 @@
-import { type V8Layout } from "../../dist/algo.js"
+import { type V8Layout } from "../../algo.ts"
 import { writeBitsFile } from "./deno-io.ts"
 
 const algo = (await import("../../dist/algo.js")) as {

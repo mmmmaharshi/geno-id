@@ -19,7 +19,8 @@ const FUNCS = {
 } as const
 
 // Deno Web Workers receive data via postMessage (no workerData/parentPort).
-self.addEventListener("message", (e: MessageEvent<RunDef>) => {
+const ctx = self as unknown as Worker
+ctx.addEventListener("message", (e: MessageEvent<RunDef>) => {
   const { id, label, mask, n } = e.data
   if (!Object.hasOwn(FUNCS, id)) {
     return
@@ -30,6 +31,6 @@ self.addEventListener("message", (e: MessageEvent<RunDef>) => {
   }
   runBattery(label, fn, id === "hash", n, mask).then((res) => {
     // oxlint-disable-next-line unicorn/require-post-message-target-origin
-    self.postMessage(res)
+    ctx.postMessage(res)
   })
 })

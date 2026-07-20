@@ -1,7 +1,6 @@
 import {
   benchRepeated,
   collisionTest,
-  type BenchStats,
 } from "../../dist/bench-core.js"
 import {
   genPgUuidV8,
@@ -44,7 +43,7 @@ const nColl = 1_000_000
 const TRIALS = 10
 
 function bench(name: string, fn: () => string): BenchEntry {
-  const r: BenchStats = benchRepeated(fn, nSync, TRIALS)
+  const r: ReturnType<typeof benchRepeated> = benchRepeated(fn, nSync, TRIALS)
   return {
     name,
     opsPerSec: Math.round(r.mean),

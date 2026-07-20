@@ -5,6 +5,40 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.0] - 2026-07-20
+
+### Summary
+
+**Deno as a CI-only research benchmark runtime.** Adds a 16-port Deno parity suite under `scripts/deno/*` and a `deno-matrix` GitHub Actions job so UUID quality, throughput, collision, and NIST results are comparable across Node, Bun, and Deno. Bun remains the project runtime (build/test/lint/typecheck); Deno is validated only in CI via `deno check` + `bench-ci.ts` + `collision-100m.ts`. Also fixes a pre-existing implicit-any typecheck error in `scripts/playwright.ts`.
+
+### Highlights
+
+#### 🆕 New
+
+- `scripts/deno/*`: 16 Deno ports mirroring the Node/Bun benchmark + NIST + export scripts (`bench-ci`, `bench`, `bench-structured`, `stats` + `stats-core`/`stats-worker`, `collision-100m` + `collision-100m-worker`, `pool`, `deno-io`, and the 6 `export-*` samplers).
+- `.github/workflows/bench.yml`: new `deno-matrix` job (ubuntu + macos, Deno 2.9.x) running `deno check` on the 3 entry ports, `bench-ci.ts`, and `collision-100m.ts`; results uploaded as `bench-deno-*` artifacts and folded into `consolidate`.
+
+#### 🛠️ Tooling / Fixes
+
+- `scripts/playwright.ts`: fixed pre-existing implicit-any errors in `$$eval`/`$eval` callbacks (now fully typecheck-clean).
+- `AGENTS.md`, `oxlint.config.ts`, `tsconfig.scripts.json`: documented Deno CI-only scope and excluded `scripts/deno/**` from oxlint + scripts typecheck.
+
+### Breaking Changes
+
+- None. Deno is CI-only; no public API or on-disk format changed.
+
+### Upgrade Guide
+
+- No action required. To run Deno locally: `brew install deno`, then e.g. `deno run --allow-read --allow-write --allow-env --allow-sys scripts/deno/bench-ci.ts`.
+
+### Known Issues
+
+- Deno cannot resolve `.d.ts` types from `dist/*.js`; Deno ports import types from source `algo.ts`/`bench-core.ts` and use `ReturnType<...>` for harness stats. This is by design and does not affect Bun/Node.
+
+### Dependencies Updated
+
+- None (Deno is invoked via `denoland/setup-deno@v2`, no new npm dependency).
+
 ## [1.14.0] - 2026-07-19
 
 ### Summary

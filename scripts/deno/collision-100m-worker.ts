@@ -1,6 +1,7 @@
 // Worker (Deno Web Worker): dedup a partition of N UUIDs in isolation.
 // Driven by `collision-100m.ts`, which fans the work across all cores.
-import { type V8Layout } from "../../dist/algo.js"
+import { type V8Layout } from "../../algo.ts"
+import { genUlidV8 } from "../baselines.ts"
 
 const algo = (await import("../../dist/algo.js")) as {
   genV4Native: () => string
@@ -50,6 +51,10 @@ class Uuid128Set {
     this.keysLo[idx] = lo
     return false
   }
+
+  get capacity(): number {
+    return this.cap
+  }
 }
 
 const MODES: Record<string, () => string> = {
@@ -57,6 +62,7 @@ const MODES: Record<string, () => string> = {
   "genoid-v8": genGenoID,
   "v7": genV7,
   "genoid-structured": () => genStructuredGenoID(DBKEY_LAYOUT),
+  "ulid-v8": genUlidV8,
 }
 
 interface WorkerData {
@@ -65,17 +71,18 @@ interface WorkerData {
 }
 
 // Deno Web Workers receive data via postMessage (no workerData/parentPort).
-self.addEventListener("message", (e: MessageEvent<WorkerData>) => {
+const ctx = self as unknown as Worker
+ctx.addEventListener("message", (e: MessageEvent<WorkerData>) => {
   const { mode, n } = e.data
   if (!Object.prototype.hasOwnProperty.call(MODES, mode)) {
     // oxlint-disable-next-line unicorn/require-post-message-target-origin
-    self.postMessage({ error: `Unsupported mode: ${mode}`, n })
+    ctx.postMessage({ error: `Unsupported mode: ${mode}`, n })
     return
   }
   const gen = MODES[mode]
   if (typeof gen !== "function") {
     // oxlint-disable-next-line unicorn/require-post-message-target-origin
-    self.postMessage({ error: `Invalid generator for mode: ${mode}`, n })
+    ctx.postMessage({ error: `Invalid generator for mode: ${mode}`, n })
     return
   }
   const set = new Uuid128Set(n)
@@ -86,5 +93,5 @@ self.addEventListener("message", (e: MessageEvent<WorkerData>) => {
   }
   const tableMB = (set.capacity * 8 * 2 + set.capacity) / (1024 * 1024)
   // oxlint-disable-next-line unicorn/require-post-message-target-origin
-  self.postMessage({ collisions, n, tableMB })
+  ctx.postMessage({ collisions, n, tableMB })
 })
