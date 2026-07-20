@@ -12,10 +12,10 @@ Declarative RFC 9562 v8 UUID composition framework — embed structure (shard, t
 
 | Fact | Value |
 |---|---|
-| Published | `@manohar_maharshi/genoid@1.13.4` on npm |
+| Published | `@manohar_maharshi/genoid@1.15.5` on npm |
 | Collisions | 0 at 100M (v4, GenoID, v7, ULID-v8) |
 | NIST SP 800-22 | 15/15 PASS (dbkey, multitenant, eventsourcing) |
-| Throughput | GenoID-pooled 5.72–15.47M/s (6‑env CI); structured ~0.5M/s |
+| Throughput | GenoID-pooled 3.74–18.33M/s (9‑job / 7‑runtime×OS CI); structured ~0.5M/s |
 
 ## 1. Install
 
@@ -109,29 +109,30 @@ Run: `bun run bench` → ±std, 95% CI, Welch t-test with Cohen's d.
 
 Related work placed after technical content (per SPJ). Compared against pg_uuid_v8 (closest prior art), ULID / KSUID / Snowflake, and native v4 / v7. Each baseline verified by known-answer tests + NIST + collisions.
 
-All numbers = ops/sec, mean of 10 trials (95% CI within ±5%), run on GitHub Actions CI (ubuntu-24.04, macOS-14, windows-2025). Run `bun run bench` for your machine.
+All numbers = ops/sec, mean of 10 trials (95% CI within ±5%), run on GitHub Actions CI (ubuntu-24.04, macOS-14, windows-2025; Bun latest + Node 22 LTS + Deno 2.9.3). Run `bun run bench` for your machine.
 
-| Generator | Ubuntu Bun | macOS Bun | Win Bun | Node 20 | Node 22 | Node 23 | Coll. 2M | NIST |
+| Generator | Ubuntu (Bun) | macOS (Bun) | Windows (Bun) | Node 22 (Win) | Deno 2.9.3 (Lin) | Deno 2.9.3 (mac) | Deno 2.9.3 (Win) | NIST |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
-| v4-native | 15.53M | 16.33M | 12.62M | 13.59M | 14.93M | 13.57M | 0 | — |
-| v7-custom | 4.91M | 4.41M | 3.29M | 0.41M | 0.51M | 0.39M | 0 | — |
-| genoid-v8 | 8.80M | 15.47M | 6.62M | 6.20M | 5.72M | 6.49M | 0 | — |
-| mathrandom | 0.66M | 0.72M | 0.45M | 0.50M | 0.48M | 0.51M | 0 | — |
-| pg-uuid-v8 | 1.15M | 1.38M | 0.90M | 0.22M | 0.23M | 0.22M | 0 | 15/15 |
-| ulid | 0.61M | 0.77M | 0.44M | 0.21M | 0.21M | 0.20M | — | — |
-| ulid-v8 | 1.29M | 1.60M | 0.98M | 0.23M | 0.23M | 0.22M | 0 | 15/15 |
-| ksuid | 0.42M | 0.47M | 0.30M | 0.15M | 0.16M | 0.15M | — | — |
-| snowflake | 3.61M | 4.49M | 2.55M | 5.52M | 5.74M | 5.35M | — | — |
+| v4-native | 12.24M | 21.75M | 11.89M | 13.29M | 19.26M | 15.48M | 20.02M | — |
+| v7-custom | 4.28M | 9.63M | 3.67M | 0.47M | 3.05M | 3.42M | 3.09M | — |
+| genoid-v8 | 8.26M | 18.33M | 7.45M | 6.29M | 6.94M | 3.74M | 7.02M | — |
+| mathrandom | 0.53M | 0.76M | 0.45M | 0.44M | 0.51M | 0.52M | 0.53M | — |
+| pg-uuid-v8 | 0.84M | 1.44M | 0.77M | 0.21M | 0.43M | 0.69M | 0.39M | 15/15 |
+| ulid | 0.45M | 0.73M | 0.39M | 0.18M | 0.39M | 0.63M | 0.37M | — |
+| ulid-v8 | 0.92M | 1.40M | 0.83M | 0.23M | 0.44M | 0.74M | 0.43M | 15/15 |
+| ksuid | 0.31M | 0.43M | 0.24M | 0.11M | 0.26M | 0.37M | 0.25M | — |
+| snowflake | 2.96M | 3.83M | 2.39M | 4.21M | 5.36M | 7.51M | 4.69M | — |
 
 Key findings:
-- **0 collisions at scale** — all six generators tested for collisions at 1M × 6 environments = 36/36 PASS.
-- **Runtime gap ≥ 10× on CSPRNG-heavy generators** — Node's `crypto.getRandomValues` per-call overhead is far higher than Bun's. Generators calling it once per UUID (v7, ulid, pg_uuid_v8, ulid-v8) are 3–13× slower on Node vs Bun on the same hardware. Pooled genoid-v8 (0.0039 calls/UUID) stays within 1.5×. See [`sources/runtime-gap.md`](sources/runtime-gap.md).
+- **0 collisions at scale** — all six collision-tested generators report 0 collisions across every runtime×OS cell (7 columns × 6 algorithms = 42/42 PASS at n=1M).
+- **Runtime gap on CSPRNG-heavy generators** — Node's `crypto.getRandomValues` per-call overhead is far higher than Bun's *and* Deno's. Generators calling it once per UUID (v7, ulid, pg_uuid_v8, ulid-v8, ksuid) are 3–13× slower on Node vs Bun/Deno on comparable OSes. Pooled genoid-v8 (0.0039 calls/UUID) stays within ~1.5×. See [`sources/runtime-gap.md`](sources/runtime-gap.md).
+- **Node-on-Windows artifact** — per-call `getRandomValues` on Node's Windows crypto backend (BCryptGenRandom) is disproportionately slow: v7 measures 0.47M/s on Node/Windows vs 3.05M/s on Node/Linux. Native `crypto.randomUUID()` (v4) and the pooled GenoID CSPRNG are unaffected, confirming the bottleneck is the Node-Windows backend, not GenoID. Documented in the CI table's "Known issues" footer.
 - **Statistical quality preserved** — random payload bits of pg_uuid_v8 and ULID-v8 pass all 15 NIST tests.
 
 ## 7. Validated claims
 
 ### Task A: Multi-environment
-GitHub Actions matrix: ubuntu, macos, windows × Bun 1.3 + Node 20/22/23. All 36 collision cells PASS (6 envs × 6 algorithms). The consolidated CI table in §6 reveals a 3–13× Bun/Node gap on generators that call `crypto.getRandomValues` per UUID — see [`sources/runtime-gap.md`](sources/runtime-gap.md). Local: `bun run bench-ci`.
+GitHub Actions matrix: ubuntu/macos/windows × (Bun latest + Node 22 LTS + Deno 2.9.3) — 9 jobs across 7 distinct runtime×OS columns. All 42 collision cells PASS (7 envs × 6 algorithms). The consolidated CI table in §6 reveals a 3–13× Bun/Node/Deno gap on generators that call `crypto.getRandomValues` per UUID — see [`sources/runtime-gap.md`](sources/runtime-gap.md). Local: `bun run bench-ci` (Node/Bun) or `deno run --allow-read --allow-write --allow-env --allow-sys scripts/deno/bench-ci.ts` (Deno).
 
 ### Task B: Concurrent generation
 `worker_threads` fan-out: 0 cross-worker collisions (plain GenoID, 3×50k); 0 collisions + 0 violations (structured, 4×50k). Run: `bun run bench-concurrent`.

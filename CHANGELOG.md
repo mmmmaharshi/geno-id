@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.6] - 2026-07-20
+
+### Summary
+
+**Docs: reflect the Deno CI runtime + current benchmark grid.** README §6 baseline table now shows the live 7-column grid (Ubuntu/macOS/Windows × Bun, Node 22, Deno 2.9.3), version string bumped to 1.15.5, and the Node-Windows `getRandomValues` artifact documented. AGENTS.md gains the 16 `scripts/deno/*` ports, their run commands, and the "Deno is CI-only" constraint.
+
+### Highlights
+
+#### 📝 Documentation
+
+- `README.md`: §6 table rebuilt from the consolidated CI run (7 columns, 42/42 collision cells PASS); TL;DR version + env-count corrected; Task A describes the 9-job / 7-column matrix; Node-Windows `getRandomValues` backend artifact called out (matches the consolidated "Known issues" footer).
+- `AGENTS.md`: added Deno run commands to the benchmark table, a full `scripts/deno/*` reference subsection, and a "Deno is CI-only" key constraint.
+
+### Breaking Changes
+
+- None.
+
+### Upgrade Guide
+
+- No action required.
+
+### Known Issues
+
+- None new (see v1.15.5 for the Node-Windows crypto artifact note).
+
+### Dependencies Updated
+
+- None.
+
 ## [1.15.5] - 2026-07-20
 
 ### Summary

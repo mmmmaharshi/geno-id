@@ -27,6 +27,10 @@ Novel GA-inspired UUIDv8 algorithm benchmark against v4, v7, SHA-256 hash-derive
 | `bun run test:stats` | NIST SP 800-22 monobit, runs, chi-square, pairwise correlation | `bun install` |
 | `bun run playwright` | Automated browser benchmark via Playwright (Chromium/Firefox/WebKit; `--browser=name` or `all`) | `bun install` + `bun x playwright install` |
 | `bun run verify-playwright` | Dry-run test of Playwright script with jsdom | `bun install` |
+| `deno run --allow-read --allow-write --allow-env --allow-sys scripts/deno/bench-ci.ts` | CI-shaped Deno benchmark + collisions (CI-only research runtime) | `deno` installed |
+| `deno run --allow-read --allow-env --allow-sys scripts/deno/collision-100m.ts` | Deno 100M collision test (fanned across cores) | `deno` installed |
+| `deno run --allow-read --allow-write --allow-env --allow-sys scripts/deno/stats.ts` | Deno NIST SP 800-22 battery (monobit, runs, chi-square, correlation) | `deno` installed |
+| `deno check scripts/deno/bench-ci.ts scripts/deno/collision-100m.ts scripts/deno/stats.ts` | Type-check the 3 Deno CI entry ports | `deno` installed |
 | `bun run typecheck` | Typecheck all `.ts` files (root + scripts) | `bun install` |
 | `bun run test` | Run all unit tests (`scripts/*.test.ts`) via Bun's built-in test runner | `bun install` |
 | `open index.html` | Interactive browser benchmark | Any browser |
@@ -198,8 +202,32 @@ RFC 9562 v8 layout composition + constraint-guided mutation as repair.
 | `scripts/stats.ts` | In-house monobit, runs, chi-square, pairwise correlation, entropy |
 | `scripts/bench.ts` | Speed benchmark, collision test, uniformity validation |
 
+### Deno ports (`scripts/deno/*`, CI-only research runtime)
+
+16 Deno ports mirror the Node/Bun scripts so UUID quality, throughput, and collisions are comparable across Bun + Node + Deno. They are **CI-only**: the project runtime is Bun (build/test/lint/typecheck/publish). Deno can't resolve `.d.ts` from `dist/*.js`, so these ports import types from source (`algo.ts`/`bench-core.ts`) and use `ReturnType<...>` for harness stats. They are excluded from `oxlint` and `tsconfig.scripts.json`.
+
+| Script | Purpose |
+|---|---|
+| `scripts/deno/bench-ci.ts` | CI-shaped benchmark + collisions (Deno entry point for `deno-matrix`) |
+| `scripts/deno/bench.ts` | Full Deno speed benchmark + Welch significance (inlines `compareBench`) |
+| `scripts/deno/bench-structured.ts` | E1–E6 structured composition/repair/collision/throughput on Deno |
+| `scripts/deno/stats.ts` | NIST SP 800-22 battery (monobit, runs, chi-square, correlation, entropy) |
+| `scripts/deno/stats-core.ts` | Per-position chi-square + correlation core for `stats.ts` |
+| `scripts/deno/stats-worker.ts` | Web Worker running `stats-core` per generator |
+| `scripts/deno/collision-100m.ts` | 100M collision test, fanned across cores via workers |
+| `scripts/deno/collision-100m-worker.ts` | Worker: exact dedup of one shard of the 100M run |
+| `scripts/deno/pool.ts` | CSPRNG pool (Deno `crypto.getRandomValues`) |
+| `scripts/deno/deno-io.ts` | Deno `writeBitsFile`/`readBitsFile` helpers (no Node `fs` API) |
+| `scripts/deno/export-samples.ts` | Export CSPRNG samples (v4, rawv8, genoid) for NIST |
+| `scripts/deno/export-ablation.ts` | Export ablation variants (rawv8, full, xonly, monly) |
+| `scripts/deno/export-weak-entropy.ts` | Export Math.random variants |
+| `scripts/deno/export-degraded.ts` | Export 5 controlled-entropy degraded sources × (raw + GA) |
+| `scripts/deno/export-structured.ts` | Export structured-layout samples for NIST |
+| `scripts/deno/export-baselines.ts` | Export random-payload bit streams of UUID-shaped baselines |
+
 ## Key constraints
 
+- **Deno is CI-only.** The project runtime is Bun (build/test/lint/typecheck/publish). Deno ports under `scripts/deno/*` exist solely to compare benchmark/collision/NIST results across Bun + Node + Deno in the `deno-matrix` CI job. Deno cannot resolve `.d.ts` from `dist/*.js`, so those ports import types from source and are excluded from `oxlint` + `tsconfig.scripts.json`.
 - Node 22+ required (`crypto.randomUUID()` and `crypto.subtle`).
 - GenoID version nibble is `0x8` (RFC 9562 custom/experimental), not `0x4`.
 - `scripts/*.ts` dynamically imports the compiled `dist/algo.js` directly — no shim needed.
