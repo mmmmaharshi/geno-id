@@ -5,3 +5,8 @@ dist/
 !results/
 *_failure.png
 /tmp/
+
+# playwright/bun test artifacts
+test-results/
+playwright-report/
+scripts/__pycache__/
