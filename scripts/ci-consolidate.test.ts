@@ -46,6 +46,21 @@ test("envLabel labels deno environments distinctly", () => {
   )
 })
 
+test("envLabel labels node environments by real OS, not hardcoded Linux", () => {
+  assert.equal(
+    envLabel({ runtime: "node", node: "22", platform: "linux" } as EnvInfo),
+    "Node 22 (Linux)",
+  )
+  assert.equal(
+    envLabel({ runtime: "node", node: "22", platform: "darwin" } as EnvInfo),
+    "Node 22 (macOS)",
+  )
+  assert.equal(
+    envLabel({ runtime: "node", node: "22", platform: "win32" } as EnvInfo),
+    "Node 22 (Windows)",
+  )
+})
+
 test("renderConsolidated renders a header and one column per environment", () => {
   const md = renderConsolidated([
     makeResult({ runtime: "node", node: "22", bun: null, platform: "linux" }, 12_500_000),
@@ -73,6 +88,32 @@ test("renderConsolidated orders columns bun-first then node by version", () => {
   assert.ok(idxUbuntu < idxMacos)
   assert.ok(idxMacos < idxNode20)
   assert.ok(idxNode20 < idxNode23)
+})
+
+test("renderConsolidated orders node columns by OS within a version", () => {
+  const md = renderConsolidated([
+    makeResult({ runtime: "node", node: "22", bun: null, platform: "win32" }, 1),
+    makeResult({ runtime: "node", node: "22", bun: null, platform: "darwin" }, 1),
+    makeResult({ runtime: "node", node: "22", bun: null, platform: "linux" }, 1),
+  ])
+  const idxLinux = md.indexOf("Node 22 (Linux)")
+  const idxMacos = md.indexOf("Node 22 (macOS)")
+  const idxWindows = md.indexOf("Node 22 (Windows)")
+  assert.ok(idxLinux < idxMacos)
+  assert.ok(idxMacos < idxWindows)
+})
+
+test("renderConsolidated orders deno columns by OS", () => {
+  const md = renderConsolidated([
+    makeResult({ runtime: "deno", node: "deno-2.9.3", platform: "win32" }, 1),
+    makeResult({ runtime: "deno", node: "deno-2.9.3", platform: "darwin" }, 1),
+    makeResult({ runtime: "deno", node: "deno-2.9.3", platform: "linux" }, 1),
+  ])
+  const idxLinux = md.indexOf("Deno 2.9.3 (Linux)")
+  const idxMacos = md.indexOf("Deno 2.9.3 (macOS)")
+  const idxWindows = md.indexOf("Deno 2.9.3 (Windows)")
+  assert.ok(idxLinux < idxMacos)
+  assert.ok(idxMacos < idxWindows)
 })
 
 test("renderConsolidated handles an empty result set", () => {

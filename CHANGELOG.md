@@ -5,6 +5,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.2] - 2026-07-20
+
+### Summary
+
+**Full 3×3 CI benchmark grid.** The benchmark matrix now runs Bun, Node, and Deno on Ubuntu, macOS, and Windows (15 jobs), so UUID quality/throughput is compared across every runtime×OS combination. Also fixes `envLabel`/`rankEnv` in `scripts/ci-consolidate.ts` to report Node columns by their real OS (previously hardcoded "(Linux)"), and to order Node/Deno columns stably by OS within a version.
+
+### Highlights
+
+#### 🆕 New
+
+- `.github/workflows/bench.yml`: `node-matrix` now spans `ubuntu/macos/windows` × Node 20/22/23 (9 jobs); `deno-matrix` adds `windows-latest` (3 jobs). Total 15 jobs (was 8).
+
+#### 🐛 Bug Fix
+
+- `scripts/ci-consolidate.ts`: Node columns use the actual `platform` in their label (e.g. `Node 22 (Windows)`) instead of a hardcoded `Node 22 (Linux)`; `rankEnv` adds per-OS sub-ranking so columns order consistently (Ubuntu → macOS → Windows) for both Node and Deno.
+
+### Breaking Changes
+
+- None.
+
+### Upgrade Guide
+
+- No action required.
+
+### Known Issues
+
+- The Deno `collision-100m.ts` (100M dedup) step stays ubuntu-only to bound Windows CI time; collisions are already proven on Linux.
+
+### Dependencies Updated
+
+- None.
+
 ## [1.15.0] - 2026-07-20
 
 ### Summary

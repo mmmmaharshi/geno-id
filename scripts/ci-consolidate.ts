@@ -13,13 +13,12 @@ import type { BenchEntry, CIBenchmarkResult, CollisionEntry, EnvInfo } from "./c
 export function envLabel(e: EnvInfo): string {
   if (e.runtime === "deno") {
     const v = e.node.replace(/^deno-/, "")
-    let osName = "Linux"
-    if (e.platform === "darwin") osName = "macOS"
-    else if (e.platform === "win32") osName = "Windows"
+    const osName = platformName(e.platform)
     return `Deno ${v} (${osName})`
   }
   if (e.runtime !== "bun") {
-    return `Node ${e.node.split(".")[0]} (Linux)`
+    const osName = platformName(e.platform)
+    return `Node ${e.node.split(".")[0]} (${osName})`
   }
   let os = "Windows"
   if (e.platform === "linux") os = "Ubuntu"
@@ -27,14 +26,27 @@ export function envLabel(e: EnvInfo): string {
   return `${os} (Bun)`
 }
 
+function platformName(platform: string): string {
+  if (platform === "darwin") return "macOS"
+  if (platform === "win32") return "Windows"
+  return "Linux"
+}
+
+function platformRank(platform: string): number {
+  if (platform === "linux") return 0
+  if (platform === "darwin") return 1
+  if (platform === "win32") return 2
+  return 9
+}
+
 function rankEnv(e: EnvInfo): number {
   if (e.runtime === "deno") {
-    return 20
+    return 20 + platformRank(e.platform)
   }
   if (e.runtime === "bun") {
     return { linux: 0, darwin: 1, win32: 2 }[e.platform] ?? 9
   }
-  return 10 + (parseInt(e.node, 10) - 20)
+  return 10 + (parseInt(e.node, 10) - 20) * 3 + platformRank(e.platform)
 }
 
 function mops(x: number): string {
