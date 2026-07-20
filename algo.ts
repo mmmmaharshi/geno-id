@@ -386,6 +386,20 @@ const _csprngBuf = new Uint8Array(256)
 crypto.getRandomValues(_csprngBuf)
 let _csprngPos = 0
 
+// Entropy source abstraction for structured-field population. The pool refill
+// path reuses the ALREADY-CSPRNG pool bytes (one getRandomValues per 256 IDs)
+// instead of issuing a fresh syscall per field — same entropy, no per-field
+// syscall. genStructuredParent (no pool) falls back to the csprng buffer.
+type Rng = () => number
+
+function poolRng(buf: Uint8Array, start: number, end: number): Rng {
+  let i = start
+  return () => {
+    if (i >= end) i = start
+    return buf[i++]
+  }
+}
+
 const _fieldMod = new WeakMap<V8Field, number>()
 
 function fieldMod(f: V8Field): number {
@@ -400,7 +414,7 @@ function fieldMod(f: V8Field): number {
 // All structured field values fit in a Number (< 2^53; validateLayout caps
 // structured fields at 48 bits), so plain Number arithmetic is exact and far
 // cheaper than BigInt on the generation hot path.
-function structuredValue(layout: V8Layout, f: V8Field): number {
+function structuredValue(layout: V8Layout, f: V8Field, rng: Rng): number {
   const mod = fieldMod(f)
   switch (f.type) {
     case "timestamp-ms": {
@@ -417,12 +431,12 @@ function structuredValue(layout: V8Layout, f: V8Field): number {
     }
     case "shard": {
       const a = f.constraint?.allowed
-      if (a && a.length > 0) return a[csprngInt(a.length)] % mod
-      return csprngInt(mod)
+      if (a && a.length > 0) return a[rng() % a.length] % mod
+      return rng() % mod
     }
     case "node":
     case "process": {
-      return csprngInt(mod)
+      return rng() % mod
     }
     default: {
       return 0
@@ -448,12 +462,23 @@ function applyStructuredFields(
   bytes: Uint8Array,
   layout: V8Layout,
   mask?: number[],
+  rng: Rng = () => csprngInt(256),
 ): void {
-  const maskSet = mask ? new Set(mask) : null
-  for (const [fi, f] of layout.fields.entries()) {
-    if (maskSet && !maskSet.has(fi)) continue
-    if (f.type === "fixed") setFieldBytes(bytes, f, f.value ?? 0)
-    else if (f.type !== "random") setFieldBytes(bytes, f, structuredValue(layout, f))
+  const fields = layout.fields
+  const nf = fields.length
+  if (mask) {
+    for (let fi = 0; fi < nf; fi++) {
+      const f = fields[fi]
+      if (!mask.includes(fi)) continue
+      if (f.type === "fixed") setFieldBytes(bytes, f, f.value ?? 0)
+      else if (f.type !== "random") setFieldBytes(bytes, f, structuredValue(layout, f, rng))
+    }
+  } else {
+    for (let fi = 0; fi < nf; fi++) {
+      const f = fields[fi]
+      if (f.type === "fixed") setFieldBytes(bytes, f, f.value ?? 0)
+      else if (f.type !== "random") setFieldBytes(bytes, f, structuredValue(layout, f, rng))
+    }
   }
 }
 
@@ -589,6 +614,8 @@ export function genStructuredGenoID(layout: V8Layout): string {
   // min / max) — structured fields are generated valid in both parents, so
   // crossover can never violate them. needsRepair is cached in the pool entry.
   if (p.idx >= STRUCT_POOL_N) {
+    const fields = layout.fields
+    const nf = fields.length
     crypto.getRandomValues(p.pool)
     for (let n = 0; n < STRUCT_POOL_N; n++) {
       const off = n * STRUCT_ENTRY
@@ -597,12 +624,15 @@ export function genStructuredGenoID(layout: V8Layout): string {
       const fieldSelect = p.pool[off + 32] | (p.pool[off + 33] << 8)
       // Every structured field populated independently in both parents, so
       // field-boundary crossover can pick either without producing garbage.
-      applyStructuredFields(A, layout)
-      applyStructuredFields(B, layout)
+      // Entropy comes from the ALREADY-CSPRNG pool bytes (one getRandomValues
+      // per 256 IDs) via disjoint cursor regions per parent — no per-field
+      // syscall, same entropy as before.
+      applyStructuredFields(A, layout, undefined, poolRng(p.pool, off, off + 16))
+      applyStructuredFields(B, layout, undefined, poolRng(p.pool, off + 16, off + 32))
       const child = _structChild
-      for (const [fi, f] of layout.fields.entries()) {
+      for (let fi = 0; fi < nf; fi++) {
         const takeA = ((fieldSelect >> fi) & 1) === 1
-        copyField(child, takeA ? A : B, f)
+        copyField(child, takeA ? A : B, fields[fi])
       }
       if (p.needsRepair) repairConstraints(layout, child)
       forceVersionVariant(child)
