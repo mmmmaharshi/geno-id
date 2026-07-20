@@ -16,7 +16,11 @@ const algo = (await import("../../dist/algo.js")) as {
   genV7: () => string
   genMathRandom: () => string
   genGenoID: () => string
+  genStructuredGenoID: (layout: unknown) => string
+  DBKEY_LAYOUT: unknown
 }
+
+const genDbkey = (): string => algo.genStructuredGenoID(algo.DBKEY_LAYOUT)
 
 function normalizeArch(arch: string): string {
   if (arch === "aarch64") return "arm64"
@@ -70,15 +74,20 @@ const benchmarks: BenchEntry[] = [
   bench("ulid-v8", genUlidV8),
   bench("ksuid", genKsuid),
   bench("snowflake", genSnowflake),
+  bench("genoid-structured", genDbkey),
 ]
 
 const collisions: CollisionEntry[] = [
   coll("v4-native", algo.genV4Native),
   coll("v7-custom", algo.genV7),
   coll("genoid-v8", algo.genGenoID),
+  coll("genoid-structured", genDbkey),
   coll("mathrandom", algo.genMathRandom),
   coll("pg-uuid-v8", genPgUuidV8),
   coll("ulid-v8", genUlidV8),
+  coll("ulid", genUlid),
+  coll("ksuid", genKsuid),
+  coll("snowflake", genSnowflake),
 ]
 
 const output: CIBenchmarkResult = { environment: env, benchmarks, collisions }
