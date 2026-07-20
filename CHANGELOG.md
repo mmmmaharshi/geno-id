@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.4] - 2026-07-20
+
+### Summary
+
+**CI matrix simplification.** The Node benchmark matrix now runs a single LTS version (Node 22) across Ubuntu/macOS/Windows instead of 3 versions (20/22/23). Node-version differences are near-identical V8 noise; the OS axis is the meaningful one for runtime comparison. Total CI jobs drop from 15 to 9 (Bun 3 + Node 3 + Deno 3).
+
+### Highlights
+
+#### 🔧 CI / Tooling
+
+- `.github/workflows/bench.yml`: `node-matrix` `node-version` reduced to `["22"]` (was `[20, 22, 23]`), still spanning all 3 OSes.
+
+### Breaking Changes
+
+- None.
+
+### Upgrade Guide
+
+- No action required.
+
+### Known Issues
+
+- None.
+
+### Dependencies Updated
+
+- None.
+
 ## [1.15.3] - 2026-07-20
 
 ### Summary
