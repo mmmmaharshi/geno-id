@@ -3,7 +3,7 @@ import core from "ultracite/oxlint/core"
 
 export default defineConfig({
   extends: [core],
-  ignorePatterns: [...core.ignorePatterns],
+  ignorePatterns: [...core.ignorePatterns, "scripts/deno/**"],
   rules: {
     "no-bitwise": "off",
     "no-plusplus": "off",

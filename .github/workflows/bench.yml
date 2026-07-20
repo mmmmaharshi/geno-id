@@ -65,10 +65,41 @@ jobs:
             dist/bench-ci-results.json
             dist/ci-summary.md
 
+  deno-matrix:
+    name: deno ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install
+      - run: bun run build
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: "2.9.3"
+      - name: Type-check Deno benchmark ports
+        run: deno check scripts/deno/bench-ci.ts scripts/deno/collision-100m.ts scripts/deno/stats.ts
+      - name: CI benchmark (Deno)
+        run: deno run --allow-read --allow-write --allow-env --allow-sys scripts/deno/bench-ci.ts
+      - name: 100M collision test (Deno, ubuntu only)
+        if: matrix.os == 'ubuntu-latest'
+        run: deno run --allow-read --allow-env --allow-sys scripts/deno/collision-100m.ts
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bench-deno-${{ matrix.os }}
+          path: |
+            dist/bench-ci-results.json
+
   consolidate:
     name: consolidate CI results
     runs-on: ubuntu-latest
-    needs: [bun-matrix, node-matrix]
+    needs: [bun-matrix, node-matrix, deno-matrix]
     if: always()
     steps:
       - uses: actions/checkout@v4
