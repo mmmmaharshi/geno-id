@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.7] - 2026-07-20
+
+### Summary
+
+**Docs: Dieharder battery results in README.** Re-ran the dieharder curated subset fresh (4 generators × 38 sub-tests × 5 trials = 152 sub-tests) — all PASSED, 0 WEAK/FAILED/ERROR. Added a "Dieharder battery" subsection to README §6 with a per-generator summary table and a TL;DR line noting 152/152 PASSED.
+
+### Highlights
+
+#### 📝 Documentation
+
+- `README.md`: new "Dieharder battery" subsection (v4, rawv8, genoid-v8, struct-dbkey — 38 sub-tests each, all PASSED; non-5/5 trial counts noted as statistical noise). TL;DR now reports dieharder 152/152 alongside NIST 15/15.
+
+### Breaking Changes
+
+- None.
+
+### Upgrade Guide
+
+- No action required.
+
+### Known Issues
+
+- None.
+
+### Dependencies Updated
+
+- None.
+
 ## [1.15.6] - 2026-07-20
 
 ### Summary

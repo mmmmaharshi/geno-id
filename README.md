@@ -14,7 +14,7 @@ Declarative RFC 9562 v8 UUID composition framework — embed structure (shard, t
 |---|---|
 | Published | `@manohar_maharshi/genoid@1.15.5` on npm |
 | Collisions | 0 at 100M (v4, GenoID, v7, ULID-v8) |
-| NIST SP 800-22 | 15/15 PASS (dbkey, multitenant, eventsourcing) |
+| NIST SP 800-22 + dieharder | 15/15 PASS (NIST); 152/152 PASSED (dieharder, 4 generators × 38 sub-tests) |
 | Throughput | GenoID-pooled 3.74–18.33M/s (9‑job / 7‑runtime×OS CI); structured ~0.5M/s |
 
 ## 1. Install
@@ -128,6 +128,19 @@ Key findings:
 - **Runtime gap on CSPRNG-heavy generators** — Node's `crypto.getRandomValues` per-call overhead is far higher than Bun's *and* Deno's. Generators calling it once per UUID (v7, ulid, pg_uuid_v8, ulid-v8, ksuid) are 3–13× slower on Node vs Bun/Deno on comparable OSes. Pooled genoid-v8 (0.0039 calls/UUID) stays within ~1.5×. See [`sources/runtime-gap.md`](sources/runtime-gap.md).
 - **Node-on-Windows artifact** — per-call `getRandomValues` on Node's Windows crypto backend (BCryptGenRandom) is disproportionately slow: v7 measures 0.47M/s on Node/Windows vs 3.05M/s on Node/Linux. Native `crypto.randomUUID()` (v4) and the pooled GenoID CSPRNG are unaffected, confirming the bottleneck is the Node-Windows backend, not GenoID. Documented in the CI table's "Known issues" footer.
 - **Statistical quality preserved** — random payload bits of pg_uuid_v8 and ULID-v8 pass all 15 NIST tests.
+
+### Dieharder battery
+
+Beyond NIST SP 800-22, the four baseline/composition generators are run through the [dieharder](https://webhome.phy.duke.edu/~rgb/General/dieharder.php) curated subset (birthdays, rank_32x32, dna, count_1s_str, parking_lot, runs, sts_monobit, sts_serial) on a 12.5 MB / 100M-bit sample, 5 independent trials each. Per sub-test the modal assessment across trials is reported; a single test flipping PASSED/WEAK/FAILED is statistical noise. `diehard_opso`, `diehard_squeeze`, and the rgb/dab family are excluded (they rewind the sample or persistently fail good CSPRNG streams — see [`sources/reproducibility.md`](sources/reproducibility.md) §3).
+
+| Generator | Sub-tests (5 trials) | Assessments | Non-5/5 trials | Result |
+|---|---:|---|---:|---|
+| v4 (native) | 38 | all PASSED | 6 | PASS |
+| rawv8 (RFC 9562 v8, no GA) | 38 | all PASSED | 7 | PASS |
+| genoid-v8 (GA + pool) | 38 | all PASSED | 11 | PASS |
+| struct-dbkey (structured) | 38 | all PASSED | 5 | PASS |
+
+Full per-sub-test p-values: [`dist/dieharder-results.md`](dist/dieharder-results.md). Local: `bun x tsx scripts/run-dieharder.ts` (requires the `dieharder` binary on the host).
 
 ## 7. Validated claims
 
