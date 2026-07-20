@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.9] - 2026-07-20
+
+### Summary
+
+**Refresh browser benchmark results.** `results/benchmark_results.json` regenerated from a current Playwright cross-engine run (Chromium, Firefox, WebKit): all three engines report `browserErrors: []`, 0 collisions across all 6 algorithms, and the `GenoID-structured` entry present. Confirms deployable behavior matches development.
+
+### Highlights
+
+#### 📝 Data refresh
+
+- `results/benchmark_results.json`: 3 runs (chromium/firefox/webkit), 6 algos each, 0 collisions, `browserErrors: []`.
+
+### Breaking Changes
+
+- None.
+
+### Upgrade Guide
+
+- No action required.
+
+### Known Issues
+
+- None.
+
+### Dependencies Updated
+
+- None.
+
 ## [1.15.8] - 2026-07-20
 
 ### Summary
