@@ -179,6 +179,25 @@ test("wide (>32-bit) random filler carries real high-bit entropy across generati
   assert.ok(seen.size > 10, "filler entropy collapsed — expected variation")
 })
 
+// ---- wide node/process/shard entropy (8-bit cap regression guard) ----
+
+test("wide node/process/shard fields span their full declared range (no 8-bit cap)", () => {
+  // Regression guard for the pool-reuse entropy regression: structuredValue
+  // must draw width-matched bytes so a field wider than 8 bits keeps its full
+  // keyspace. A single-byte rng() % mod would silently cap e.g. the 16-bit
+  // EVENTSOURCING `stream` at 256 values.
+  const layout = EVENTSOURCING_LAYOUT as { fields: { name: string; length: number; type: string }[] }
+  const stream = layout.fields.find((f) => f.name === "stream")!
+  assert.equal(stream.length, 16, "stream must be declared 16-bit for this guard")
+  const seen = new Set<number>()
+  for (let i = 0; i < 5000; i++) {
+    const fields = readStructured(genStructuredGenoID(EVENTSOURCING_LAYOUT), EVENTSOURCING_LAYOUT)
+    seen.add(fields.stream)
+  }
+  assert.ok(seen.size > 256, `stream entropy collapsed to ${seen.size} values — 8-bit cap regression`)
+  assert.ok([...seen].some((v) => v > 255), "stream never exceeded 255 — high byte never drawn")
+})
+
 test("readStructured round-trips every field of a generated dbkey UUID", () => {
   const layout = DBKEY_LAYOUT as { fields: { name: string; start: number; length: number; type: string }[] }
   for (let i = 0; i < 200; i++) {

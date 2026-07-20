@@ -428,6 +428,37 @@ function poolRng(buf: Uint8Array, start: number, end: number): Rng {
   }
 }
 
+// Draw a width-matched unsigned integer from `rng` in [0, mod). Consumes
+// ceil(log2(mod)/8) bytes so a 16-bit field gets 2 bytes, a 24-bit field 3,
+// etc. — preserving the FULL declared field entropy (the original per-field
+// csprngInt path did the same). A single-byte rng() would silently cap any
+// field > 8 bits at 256 values, so we always accumulate enough bytes.
+function drawValue(rng: Rng, mod: number): number {
+  if (mod <= 256) return rng() % mod
+  let need = 1
+  while ((1 << (need * 8)) < mod) need++
+  let v = 0
+  for (let i = 0; i < need; i++) v = v * 256 + rng()
+  return v % mod
+}
+
+// Unbiased pick from a small `allowed` set (Lemire-style, avoids modulo bias
+// when allowed.length does not divide the byte range).
+function pickFrom(rng: Rng, allowed: number[]): number {
+  const n = allowed.length
+  if (n === 1) return allowed[0]
+  const frac = 0.00392156862745098
+  let x = rng()
+  let prod = frac
+  let i = 256
+  while (true) {
+    if (x < i * n * prod) return allowed[Math.floor((x / (i * prod)) | 0)]
+    x = (x - i * n * prod) * 256
+    i *= 256
+    prod *= frac
+  }
+}
+
 const _fieldMod = new WeakMap<V8Field, number>()
 
 function fieldMod(f: V8Field): number {
@@ -459,12 +490,12 @@ function structuredValue(layout: V8Layout, f: V8Field, rng: Rng): number {
     }
     case "shard": {
       const a = f.constraint?.allowed
-      if (a && a.length > 0) return a[rng() % a.length] % mod
-      return rng() % mod
+      if (a && a.length > 0) return pickFrom(rng, a) % mod
+      return drawValue(rng, mod)
     }
     case "node":
     case "process": {
-      return rng() % mod
+      return drawValue(rng, mod)
     }
     default: {
       return 0
