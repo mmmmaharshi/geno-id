@@ -12,6 +12,9 @@ export {
   readStructured,
   completeLayout,
   genStructuredGenoID,
+  DBKEY_LAYOUT,
+  MULTITENANT_LAYOUT,
+  EVENTSOURCING_LAYOUT,
 } from "./algo.js"
 
 export type {
