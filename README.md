@@ -102,8 +102,9 @@ Output: valid v8 UUID carrying your structure, CSPRNG randomness in remaining bi
 | Collision + uniformity (E3–E5) | 2M UUIDs | 0 collisions; max dev 0.0053 |
 | NIST SP 800-22 (E3–E5) | 3 structured layouts | all 15 tests PASS |
 | Throughput (E6) | structured 0.53M/s | ~3× slower than native in-browser; base pool 7.5× faster |
+| Draw-size NIST stability (P2) | 360 `binary_matrix_rank` trials (6 sizes × 60) | FAIL rate ~uniform 1.7% across 16–34B; matches α-noise, not a draw-size effect |
 
-Run: `bun run bench` → ±std, 95% CI, Welch t-test with Cohen's d.
+Run: `bun run bench` → ±std, 95% CI, Welch t-test with Cohen's d. Sample export: `bun x tsx scripts/export-rank-scan.ts` → `dist/rank-scan.csv`.
 
 ## 6. Baseline comparison
 
@@ -128,6 +129,7 @@ Key findings:
 - **Runtime gap on CSPRNG-heavy generators** — Node's `crypto.getRandomValues` per-call overhead is far higher than Bun's *and* Deno's. Generators calling it once per UUID (v7, ulid, pg_uuid_v8, ulid-v8, ksuid) are 3–13× slower on Node vs Bun/Deno on comparable OSes. Pooled genoid-v8 (0.0039 calls/UUID) stays within ~1.5×. See [`sources/runtime-gap.md`](sources/runtime-gap.md).
 - **Node-on-Windows artifact** — per-call `getRandomValues` on Node's Windows crypto backend (BCryptGenRandom) is disproportionately slow: v7 measures 0.47M/s on Node/Windows vs 3.05M/s on Node/Linux. Native `crypto.randomUUID()` (v4) and the pooled GenoID CSPRNG are unaffected, confirming the bottleneck is the Node-Windows backend, not GenoID. Documented in the CI table's "Known issues" footer.
 - **Statistical quality preserved** — random payload bits of pg_uuid_v8 and ULID-v8 pass all 15 NIST tests.
+- **pg_uuid_v8 is the only code-level prior art** — head-to-head (`scripts/bench-pg-uuid-v8.ts`, n=2M): both 0 collisions; GenoID-structured uniformity dev 0.0051 vs pg_uuid_v8 0.0066; GenoID-structured 1.01M/s vs pg_uuid_v8 1.77M/s (GenoID ~1.7× slower). pg_uuid_v8 wins on speed (cheap XOR steganography vs GA repair) but is fixed-layout (timestamp only); GenoID is declarative (arbitrary fields). Both pass NIST. Win: GenoID = composition flexibility, not speed.
 
 ### Dieharder battery
 
@@ -179,5 +181,6 @@ Full analysis: [`sources/security-analysis.md`](sources/security-analysis.md).
 - [`sources/formal-proofs.md`](sources/formal-proofs.md) — O(k) repair bound vs O(64^k) rejection; entropy-preservation proof.
 - [`sources/threats-to-validity.md`](sources/threats-to-validity.md) — internal/external/construct/conclusion validity.
 - [`sources/reproducibility.md`](sources/reproducibility.md) — one-command reproduction table, env pinning.
+- [`docs/literature-review.md`](docs/literature-review.md) — full survey (5 themes, 25+ sources). Two refutable claims: (C1) GA is architectural, not statistical; (C2) declarative RFC 9562 v8 layout composition is novel vs pg_uuid_v8.
 
 Extended randomness battery: `bun run dieharder`.

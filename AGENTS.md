@@ -152,7 +152,7 @@ was a **minor** addition → bump to `1.2.0`.
 | GA cannot be assessed on weak entropy at 1.2M bits | Math.random (Xorshift128+) passes all 15 NIST tests at 1.22M bits — no failures to "rescue". 100M+ bits needed to see Xorshift128+ weaknesses. |
 | GA cannot rescue controlled degradations | Across 5 degraded sources (biased, correlation, range-restricted, periodic, LCG), GA failed to fix any core structural failures. In 2 cases, GA worsened quality. |
 | GA is architectural, not statistical | The GA framework's value is in v8 UUID composition (pooling, parallelism, structured data embedding). It does not improve, and occasionally degrades, statistical randomness. |
-| 34B > 16B for CSPRNG samples | raw-v8 (16B CSPRNG) occasionally shows false-positive NIST failures (1 binary_matrix_rank FAIL at p=0.001). GenoID (34B, with GA) showed none. Likely statistical, but 34B draws avoid the low end of the rank distribution. |
+| 34B > 16B for CSPRNG samples | **Corrected by scan (`scripts/export-rank-scan.ts`, T=60 trials/size, 1M bits/trial):** `binary_matrix_rank` false-positive rate is ~1.7% and roughly *uniform* across draw sizes 16/20/24/28/32/34B (16B: 1/60, 24B: 1/60, 28B: 1/60; 20/32/34B: 0). This matches the expected Type II/α noise (~1% at p<0.01), NOT a draw-size effect. The earlier "raw-v8 16B occasionally fails, 34B none" anecdote was a small-sample artifact. Draw size does not drive NIST rank stability at this scale; both 16B and 34B are statistically equivalent under `binary_matrix_rank`. |
 
 ## Structured (declarative v8 layout) framework — GenoID v2 direction
 

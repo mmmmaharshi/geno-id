@@ -5,6 +5,43 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.16.0] - 2026-07-20
+
+### Summary
+
+**Two new evidence experiments (P1, P2) hardening the core claims.** P1 adds a head-to-head against `pg_uuid_v8` (closest prior art); P2 runs a 360-trial NIST `binary_matrix_rank` draw-size scan that corrects a prior small-sample anecdote. README §5/§6/§10 and `docs/literature-review.md` updated with the evidence.
+
+### Highlights
+
+#### 🔬 P1 — pg_uuid_v8 head-to-head
+
+- `scripts/bench-pg-uuid-v8.ts`: GenoID-structured vs `pg_uuid_v8`, n=2M. Both 0 collisions; uniformity dev 0.0051 (GenoID) vs 0.0066 (pg_uuid_v8).
+- `pg-uuid-v8` is now a permanent bench baseline (`bench-ci` + `playwright`).
+- Finding: pg_uuid_v8 faster (cheap XOR steganography, 1.77M/s) but fixed-layout (timestamp only); GenoID declarative (arbitrary fields, 1.01M/s). Win = composition flexibility, not speed.
+
+#### 📊 P2 — NIST draw-size scan
+
+- `scripts/export-rank-scan.ts` + `dist/rank-scan.csv`: 360 `binary_matrix_rank` trials across 16/20/24/28/32/34-byte draws (60 each, 1M bits/trial).
+- FAIL rate ~uniform 1.7% across all sizes — matches α-noise, **not** a draw-size effect.
+- Corrects prior "raw-v8 16B occasionally fails, 34B none" anecdote (small-sample artifact).
+
+#### 📚 Docs
+
+- `docs/literature-review.md` (new): 5 themes, 25+ sources; refutable claims C1 (GA architectural, not statistical) and C2 (declarative RFC 9562 v8 layout composition is novel vs pg_uuid_v8).
+- README §5 adds P2 row; §6 adds pg_uuid_v8 head-to-head finding; §10 links the lit review.
+
+### Breaking Changes
+
+- None.
+
+### Upgrade Guide
+
+- No action required.
+
+### Known Issues
+
+- None.
+
 ## [1.15.9] - 2026-07-20
 
 ### Summary

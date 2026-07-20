@@ -205,6 +205,9 @@ def main():
     for label, fn in structured_samples:
         samples.append((label, str(dist / fn)))
 
+    # P1: pg_uuid_v8 (closest prior art) head-to-head sample
+    samples.append(("pg-uuid-v8 (steganographic, prior art)", str(dist / "pg-uuid-v8.bits.txt")))
+
     # CLI: --file path --label "name" --json
     json_out = "--json" in sys.argv
     single_file = None
