@@ -169,7 +169,7 @@ async function main(): Promise<void> {
     `Running dieharder curated subset (${(TARGET_BITS / 1e6).toFixed(0)}M bits/sample, ${TRIALS} trials)...`,
   )
 
-  const outPath = path.resolve(root, "dist", "dieharder-results.md")
+  const outPath = path.resolve(root, "results", "dieharder-results.md")
   let md = `## dieharder curated subset (${TRIALS} trials)\n\n`
   md += `12.5MB / 100M-bit sample per generator per trial. Curated diehard + STS subset (no file rewind at this size); see sources/reproducibility.md §3. ` +
     `Each sub-test's modal assessment across ${TRIALS} independent trials is reported (NIST-style multiple P-values); a single test that flips between PASSED/WEAK/FAILED is statistical noise.\n\n`

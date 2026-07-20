@@ -140,7 +140,7 @@ Beyond NIST SP 800-22, the four baseline/composition generators are run through 
 | genoid-v8 (GA + pool) | 38 | all PASSED | 11 | PASS |
 | struct-dbkey (structured) | 38 | all PASSED | 5 | PASS |
 
-Full per-sub-test p-values: [`dist/dieharder-results.md`](dist/dieharder-results.md). Local: `bun x tsx scripts/run-dieharder.ts` (requires the `dieharder` binary on the host).
+Full per-sub-test p-values: [`results/dieharder-results.md`](results/dieharder-results.md). Local: `bun x tsx scripts/run-dieharder.ts` (requires the `dieharder` binary on the host).
 
 ## 7. Validated claims
 

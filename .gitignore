@@ -2,5 +2,6 @@ node_modules/
 dist/
 *results.json
 !benchmark_results.json
+!results/
 *_failure.png
 /tmp/

@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.8] - 2026-07-20
+
+### Summary
+
+**Track result artifacts in `results/`.** `dieharder-results.md` and `benchmark_results.json` moved out of the gitignored `dist/` into a committed `results/` directory. `scripts/run-dieharder.ts` and `scripts/playwright.ts` now write there by default; `.gitignore` tracks `results/`. The README Dieharder link already points at `results/dieharder-results.md`.
+
+### Highlights
+
+#### 🔧 CI / Tooling
+
+- New tracked `results/` dir: `dieharder-results.md` (152/152 PASSED, re-generated) + `benchmark_results.json` (browser cross-engine runs).
+- `scripts/run-dieharder.ts`: `outPath` → `results/dieharder-results.md`.
+- `scripts/playwright.ts`: default `out` → `results/benchmark_results.json`.
+- `.gitignore`: added `!results/` negation so the dir is tracked despite the `*results.json` rule.
+
+### Breaking Changes
+
+- None (output path change only affects where artifacts land; `--out` flag still overrides).
+
+### Upgrade Guide
+
+- No action required.
+
+### Known Issues
+
+- None.
+
+### Dependencies Updated
+
+- None.
+
 ## [1.15.7] - 2026-07-20
 
 ### Summary

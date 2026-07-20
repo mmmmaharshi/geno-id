@@ -328,7 +328,7 @@ async function main(): Promise<void> {
   }
 
   const outPath = path.resolve(
-    typeof args.out === "string" ? args.out : "benchmark_results.json",
+    typeof args.out === "string" ? args.out : "results/benchmark_results.json",
   )
   try {
     fs.writeFileSync(outPath, JSON.stringify({ runs }, null, 2))
