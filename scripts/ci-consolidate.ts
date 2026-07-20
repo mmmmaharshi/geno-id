@@ -11,6 +11,13 @@ import path from "node:path"
 import type { BenchEntry, CIBenchmarkResult, CollisionEntry, EnvInfo } from "./ci-result.ts"
 
 export function envLabel(e: EnvInfo): string {
+  if (e.runtime === "deno") {
+    const v = e.node.replace(/^deno-/, "")
+    let osName = "Linux"
+    if (e.platform === "darwin") osName = "macOS"
+    else if (e.platform === "win32") osName = "Windows"
+    return `Deno ${v} (${osName})`
+  }
   if (e.runtime !== "bun") {
     return `Node ${e.node.split(".")[0]} (Linux)`
   }
@@ -21,6 +28,9 @@ export function envLabel(e: EnvInfo): string {
 }
 
 function rankEnv(e: EnvInfo): number {
+  if (e.runtime === "deno") {
+    return 20
+  }
   if (e.runtime === "bun") {
     return { linux: 0, darwin: 1, win32: 2 }[e.platform] ?? 9
   }

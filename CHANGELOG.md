@@ -39,6 +39,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - None (Deno is invoked via `denoland/setup-deno@v2`, no new npm dependency).
 
+## [1.15.1] - 2026-07-20
+
+### Summary
+
+**Bug fix:** the CI consolidated benchmark table mislabeled Deno runs as "Node deno-2 (Linux)", collapsing both Deno columns under a Node header. `envLabel`/`rankEnv` in `scripts/ci-consolidate.ts` now render Deno distinctly (e.g. `Deno 2.9.3 (Linux)`) and order it after the Node columns. Covered by a new unit test.
+
+### Highlights
+
+#### 🐛 Bug Fix
+
+- `scripts/ci-consolidate.ts`: handle `runtime: "deno"` in `envLabel` + `rankEnv` (was falling through to the Node branch, producing `Node deno-2`).
+
+### Breaking Changes
+
+- None.
+
+### Upgrade Guide
+
+- No action required.
+
+### Known Issues
+
+- None.
+
+### Dependencies Updated
+
+- None.
+
 ## [1.14.0] - 2026-07-19
 
 ### Summary

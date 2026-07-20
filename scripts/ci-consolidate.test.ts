@@ -35,6 +35,17 @@ test("envLabel labels node environments with version", () => {
   )
 })
 
+test("envLabel labels deno environments distinctly", () => {
+  assert.equal(
+    envLabel({ runtime: "deno", node: "deno-2.9.3", platform: "linux" } as EnvInfo),
+    "Deno 2.9.3 (Linux)",
+  )
+  assert.equal(
+    envLabel({ runtime: "deno", node: "deno-2.9.3", platform: "darwin" } as EnvInfo),
+    "Deno 2.9.3 (macOS)",
+  )
+})
+
 test("renderConsolidated renders a header and one column per environment", () => {
   const md = renderConsolidated([
     makeResult({ runtime: "node", node: "22", bun: null, platform: "linux" }, 12_500_000),
