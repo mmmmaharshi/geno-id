@@ -19,6 +19,10 @@ export interface BenchEntry {
   std: number
   /** Number of repeated trials. */
   trials: number
+  /** Two-tailed Welch t-test p-value vs the baseline generator (CIBenchmarkResult.baselineName). */
+  welchP?: number
+  /** Cohen's d effect size vs the baseline generator (positive = faster than baseline). */
+  cohensD?: number
 }
 
 export interface CollisionEntry {
@@ -29,6 +33,8 @@ export interface CollisionEntry {
 
 export interface CIBenchmarkResult {
   environment: EnvInfo
+  /** Generator each benchmark's Welch p / Cohen's d is computed against. */
+  baselineName?: string
   benchmarks: BenchEntry[]
   collisions: CollisionEntry[]
 }

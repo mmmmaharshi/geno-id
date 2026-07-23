@@ -89,7 +89,16 @@ export interface BenchStats {
   samples: number[]
 }
 
-export function benchRepeated(fn: () => string, n: number, trials = 10): BenchStats {
+export function benchRepeated(
+  fn: () => string,
+  n: number,
+  trials = 10,
+  warmupTrials = 1,
+): BenchStats {
+  // Discard warmup pass(es): the first run pays JIT compilation (and any
+  // lazy one-time allocation) which would inflate variance and bias the mean
+  // low. Only the steady-state trials are summarized.
+  for (let i = 0; i < warmupTrials; i++) benchSync(fn, n)
   const samples = Array.from({ length: trials }, () => benchSync(fn, n).opsPerSec)
   return summarize(samples, n, trials)
 }

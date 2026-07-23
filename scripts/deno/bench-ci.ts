@@ -2,6 +2,7 @@ import {
   benchRepeated,
   collisionTest,
 } from "../../dist/bench-core.js"
+import type { BenchStats } from "../../dist/bench-core.js"
 import {
   genPgUuidV8,
   genUlid,
@@ -9,6 +10,7 @@ import {
   genKsuid,
   genSnowflake,
 } from "../baselines.ts"
+import { compareBench } from "../significance.ts"
 import type { CIBenchmarkResult, EnvInfo, BenchEntry, CollisionEntry } from "../ci-result.ts"
 
 const algo = (await import("../../dist/algo.js")) as {
@@ -46,17 +48,20 @@ const nSync = 200_000
 const nColl = 1_000_000
 const TRIALS = 10
 
-function bench(name: string, fn: () => string): BenchEntry {
-  const r: ReturnType<typeof benchRepeated> = benchRepeated(fn, nSync, TRIALS)
-  return {
-    name,
-    opsPerSec: Math.round(r.mean),
-    usPerOp: Number(((1_000_000 / r.mean)).toFixed(4)),
-    ci95: [Math.round(r.ci95[0]), Math.round(r.ci95[1])],
-    std: Math.round(r.std),
-    trials: r.trials,
-  }
-}
+const BASELINE = "v4-native"
+
+const specs: [string, () => string][] = [
+  ["v4-native", algo.genV4Native],
+  ["v7-custom", algo.genV7],
+  ["genoid-v8", algo.genGenoID],
+  ["mathrandom", algo.genMathRandom],
+  ["pg-uuid-v8", genPgUuidV8],
+  ["ulid", genUlid],
+  ["ulid-v8", genUlidV8],
+  ["ksuid", genKsuid],
+  ["snowflake", genSnowflake],
+  ["genoid-structured", genDbkey],
+]
 
 function coll(name: string, fn: () => string): CollisionEntry {
   return { name, n: nColl, collisions: collisionTest(fn, nColl) }
@@ -64,18 +69,25 @@ function coll(name: string, fn: () => string): CollisionEntry {
 
 const env = await collectEnv()
 
-const benchmarks: BenchEntry[] = [
-  bench("v4-native", algo.genV4Native),
-  bench("v7-custom", algo.genV7),
-  bench("genoid-v8", algo.genGenoID),
-  bench("mathrandom", algo.genMathRandom),
-  bench("pg-uuid-v8", genPgUuidV8),
-  bench("ulid", genUlid),
-  bench("ulid-v8", genUlidV8),
-  bench("ksuid", genKsuid),
-  bench("snowflake", genSnowflake),
-  bench("genoid-structured", genDbkey),
-]
+const statsByName = new Map<string, BenchStats>()
+for (const [name, fn] of specs) statsByName.set(name, benchRepeated(fn, nSync, TRIALS))
+
+const baseStats = statsByName.get(BASELINE)
+if (!baseStats) throw new Error(`baseline ${BASELINE} was not benchmarked`)
+const benchmarks: BenchEntry[] = specs.map(([name]) => {
+  const r = statsByName.get(name) as BenchStats
+  const cmp = compareBench(r, baseStats)
+  return {
+    name,
+    opsPerSec: Math.round(r.mean),
+    usPerOp: Number((1_000_000 / r.mean).toFixed(4)),
+    ci95: [Math.round(r.ci95[0]), Math.round(r.ci95[1])],
+    std: Math.round(r.std),
+    trials: r.trials,
+    welchP: Number(cmp.p.toPrecision(3)),
+    cohensD: Number(cmp.d.toFixed(3)),
+  }
+})
 
 // NOTE: snowflake is intentionally excluded from the collision gate. It is a
 // 64-bit time+sequence ID (12-bit sequence that wraps within a millisecond),
@@ -94,16 +106,16 @@ const collisions: CollisionEntry[] = [
   coll("ksuid", genKsuid),
 ]
 
-const output: CIBenchmarkResult = { environment: env, benchmarks, collisions }
+const output: CIBenchmarkResult = { environment: env, baselineName: BASELINE, benchmarks, collisions }
 
 console.log("=== GenoID CI benchmark (deno) ===")
 console.log("Environment:", JSON.stringify(env, null, 2))
-console.log("\nBenchmarks (ops/sec, mean ± std, 95% CI):")
+console.log(`\nBenchmarks (ops/sec, mean ± std, 95% CI; Welch p & Cohen's d vs ${BASELINE}):`)
 for (const b of benchmarks) {
   console.log(
-    `  ${b.name.padEnd(14)} ${b.opsPerSec.toString().padStart(10)} ± ${b.std
+    `  ${b.name.padEnd(16)} ${b.opsPerSec.toString().padStart(10)} ± ${b.std
       .toString()
-      .padStart(8)}  CI[${b.ci95[0]}–${b.ci95[1]}]`,
+      .padStart(8)}  CI[${b.ci95[0]}–${b.ci95[1]}]  p=${b.welchP}  d=${b.cohensD}`,
   )
 }
 console.log("\nCollisions:")
