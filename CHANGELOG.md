@@ -5,6 +5,47 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.19.0] - 2026-07-23
+
+### Summary
+
+**Embedded-portability APIs: injectable CSPRNG, configurable pool sizes, lean hex footprint.** GenoID now runs on microcontroller-class hosts (ESP8266/ESP32, MicroPython) without Web Crypto. Three new configurators (`configureRandom`, `configurePools`, `configureFootprint`) adapt memory and entropy sources with zero output change — every ID is byte-identical across all settings (pinned by INV-10). A research-invariant suite (INV-0–INV-10) protects every load-bearing paper claim as an executable tripwire with parallel worker-pool generation. Benchmark infra gains a JIT warmup pass and Welch t-test p-value + Cohen's d vs v4-native baseline.
+
+### Highlights
+
+#### 🆕 Embedded-portability configurators
+
+- `configureRandom(fn)` — inject a platform CSPRNG where Web Crypto is absent. Import never eagerly draws entropy, so the module loads on a no-Web-Crypto host.
+- `configurePools({ simplePoolSize, structuredPoolSize })` — shrink generation pools to trade batch size for RAM (default 256/1024; ESP8266-class budget: 16/8).
+- `configureFootprint("lean")` — format from the 256-entry hex table instead of the default lazily-built 65536-entry word table, saving ~131k interned strings.
+- HEX16/HEX16_VIEW → HEX8: 131k strings → 256 strings at import (~2KB heap).
+- Lazy word table built on first use; freed via `configureFootprint("lean")`.
+
+#### 🧪 Research-invariant suite
+
+- `scripts/research-invariants.test.ts`: INV-0–INV-10 pins v8 conformance, 0 constraint violations, counter ordering, repair idempotence, collision-freedom, monobit entropy, round-trip exactness, API guard rejection, goal-preservation under injected RNG (INV-9), and lean/fast footprint identity (INV-10).
+- Parallel worker pool across `os.availableParallelism()` cores. `GENOID_FAST=1` for quick local runs.
+
+#### ⚡ Benchmark infra
+
+- `benchRepeated` gains a `warmupTrials` parameter — the first pass discards JIT compilation noise.
+- CI bench output includes Welch t-test p-value and Cohen's d vs v4-native baseline.
+- CI table refreshed with fresh numbers: genoid-structured now 0.82–1.66M/s across 7 envs (was 0.66–1.15M/s).
+
+#### 📝 Docs
+
+- README: new "Constrained / embedded hosts" section with usage examples.
+- Benchmark stats and regression guard sections.
+
+### Breaking Changes
+
+- None. All additions are backward-compatible; existing imports and API surface unchanged.
+
+### Upgrade Guide
+
+- Rebuild with `bun run build`.
+- No import changes or API deprecations.
+
 ## [1.18.1] - 2026-07-23
 
 ### Summary
