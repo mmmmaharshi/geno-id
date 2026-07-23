@@ -215,26 +215,49 @@ export function getFieldValue(bytes: Uint8Array, f: V8Field): bigint {
   return v
 }
 
-// Write a non-negative integer `value` (assumed to fit in < 2^53 and within
-// the field's bit width) into field `f` of `bytes`, bit-by-bit with plain
-// Number arithmetic. Avoids BigInt so the structured-field population step on
-// the generation hot path stays cheap.
-function setFieldBytes(
-  bytes: Uint8Array,
-  f: V8Field,
-  value: number,
-): void {
-  if (f.start + f.length > 128) throw new Error(`setFieldBytes: field ${f.name} exceeds 128-bit UUID`)
-  let v = value
-  const n = f.length
-  for (let k = 0; k < n; k++) {
-    const bit = v & 1
-    const pos = f.start + (n - 1 - k)
-    const byteIdx = pos >> 3
-    const bitIdx = 7 - (pos & 7)
-    if (bit) bytes[byteIdx] |= 1 << bitIdx
-    else bytes[byteIdx] &= ~(1 << bitIdx)
-    v = Math.floor(v / 2)
+interface WritePlanEntry {
+  byte: number
+  clearMask: number
+  writeMask: number
+  divisor: number
+  bitOffset: number
+}
+
+const _fieldWritePlans = new WeakMap<V8Field, WritePlanEntry[]>()
+
+function computeWritePlan(f: V8Field): WritePlanEntry[] {
+  const s = f.start, l = f.length, e = s + l
+  const entries: WritePlanEntry[] = []
+  for (let b = s >> 3; b < (e + 7) >> 3; b++) {
+    const first = Math.max(s, b << 3)
+    const last = Math.min(e - 1, (b << 3) | 7)
+    const n = last - first + 1
+    const bit2 = 7 - (last & 7)
+    const writeMask = ((1 << n) - 1) << bit2
+    entries.push({
+      byte: b,
+      clearMask: ~writeMask & 0xff,
+      writeMask,
+      divisor: 2 ** (e - 1 - last),
+      bitOffset: bit2,
+    })
+  }
+  return entries
+}
+
+function getFieldWritePlan(f: V8Field): WritePlanEntry[] {
+  let p = _fieldWritePlans.get(f)
+  if (p) return p
+  p = computeWritePlan(f)
+  _fieldWritePlans.set(f, p)
+  return p
+}
+
+function writeFieldValue(bytes: Uint8Array, f: V8Field, value: number): void {
+  if (f.start + f.length > 128) throw new Error(`writeFieldValue: field ${f.name} exceeds 128-bit UUID`)
+  const plan = getFieldWritePlan(f)
+  for (const e of plan) {
+    bytes[e.byte] = (bytes[e.byte] & e.clearMask) | ((Math.floor(value / e.divisor) << e.bitOffset) & e.writeMask)
   }
 }
 
@@ -529,14 +552,14 @@ function applyStructuredFields(
     for (let fi = 0; fi < nf; fi++) {
       const f = fields[fi]
       if (!mask.includes(fi)) continue
-      if (f.type === "fixed") setFieldBytes(bytes, f, f.value ?? 0)
-      else if (f.type !== "random") setFieldBytes(bytes, f, structuredValue(layout, f, rng))
+      if (f.type === "fixed") writeFieldValue(bytes, f, f.value ?? 0)
+      else if (f.type !== "random") writeFieldValue(bytes, f, structuredValue(layout, f, rng))
     }
   } else {
     for (let fi = 0; fi < nf; fi++) {
       const f = fields[fi]
-      if (f.type === "fixed") setFieldBytes(bytes, f, f.value ?? 0)
-      else if (f.type !== "random") setFieldBytes(bytes, f, structuredValue(layout, f, rng))
+      if (f.type === "fixed") writeFieldValue(bytes, f, f.value ?? 0)
+      else if (f.type !== "random") writeFieldValue(bytes, f, structuredValue(layout, f, rng))
     }
   }
 }
@@ -631,16 +654,17 @@ export function repairConstraints(layout: V8Layout, bytes: Uint8Array): number {
       _lastValues.set(key, v)
     }
     if (changed) {
-      setFieldBytes(bytes, f, v)
+      writeFieldValue(bytes, f, v)
       repairs++
     }
   }
   return repairs
 }
 
-const STRUCT_POOL_N = 256
+const STRUCT_POOL_N = 1024
 const STRUCT_ENTRY = 34
 const _structChild = new Uint8Array(16)
+const _structChild16 = new Uint16Array(_structChild.buffer)
 const _structPools = new Map<
   string,
   {
@@ -715,7 +739,13 @@ export function genStructuredGenoID(layout: V8Layout): string {
       }
       if (p.needsRepair) repairConstraints(layout, child)
       forceVersionVariant(child)
-      p.strs[n] = toUuidString(child)
+      const v = _structChild16, t = HEX16_VIEW
+      p.strs[n] =
+        t[v[0]] + t[v[1]] + "-" +
+        t[v[2]] + "-" +
+        t[v[3]] + "-" +
+        t[v[4]] + "-" +
+        t[v[5]] + t[v[6]] + t[v[7]]
     }
     p.idx = 0
   }
