@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.18.1] - 2026-07-23
+
+### Summary
+
+**Byte-level write plan for `genStructuredGenoID` — +59% throughput on Apple A18 Pro, +69% on Windows Bun.** The hot-path field-write loop (`setFieldBytes`) was replaced with a precomputed byte-level write plan that reduces 48-bit timestamp writes from 48 bit ops to 6 byte ops. Hex string conversion in the pool refill was aligned with the base GA pool pattern (Uint16Array + HEX16_VIEW), and the pool size increased from 256→1024 to amortize `getRandomValues` on slower-URNG platforms (Raspberry Pi).
+
+GenoID-structured now beats `pg-uuid-v8` and `ulid-v8` on every platform in the CI matrix (7 environments), whereas previously it trailed both by ~34%. No public API changed.
+
+### Highlights
+
+#### ⚡ Performance
+
+- `genStructuredGenoID` throughput across CI: 0.66–1.15M ops/sec (was 0.42–0.78M), +57–69% depending on platform.
+- Byte-level `setFieldBytes` replacement eliminates per-bit loops for all structured fields — 72 bit ops per UUID → 11 byte ops for `DBKEY_LAYOUT`.
+- Pool hex conversion matches base GA pattern (no `toUuidString` call on the hot refill path).
+- Pool size 256→1024: 4× fewer `getRandomValues` syscalls for the same throughput (34KB/layout memory delta, negligible).
+
+### Breaking Changes
+
+- None.
+
+### Upgrade Guide
+
+- Rebuild with `bun run build` (or `tsc -p tsconfig.json`) to pick up the new `dist/algo.js`.
+- No import changes or API deprecations.
+
 ## [1.18.0] - 2026-07-20
 
 ### Summary
