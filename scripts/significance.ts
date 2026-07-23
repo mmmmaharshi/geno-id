@@ -10,7 +10,17 @@
 // beta identity P(|T| > |t|) = I_{ df/(df+t^2) }(df/2, 1/2), with a Lanczos
 // log-gamma and the Numerical Recipes continued fraction for I_x.
 
-import type { BenchStats } from "../dist/bench-core.js"
+interface BenchStats {
+  n: number
+  trials: number
+  mean: number
+  std: number
+  cv: number
+  min: number
+  max: number
+  ci95: number[]
+  samples: number[]
+}
 
 export interface WelchResult {
   t: number

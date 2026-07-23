@@ -2,7 +2,7 @@ import {
   benchRepeated,
   collisionTest,
 } from "../../dist/bench-core.js"
-import type { BenchStats } from "../../dist/bench-core.js"
+
 import {
   genPgUuidV8,
   genUlid,
@@ -69,13 +69,13 @@ function coll(name: string, fn: () => string): CollisionEntry {
 
 const env = await collectEnv()
 
-const statsByName = new Map<string, BenchStats>()
+const statsByName = new Map<string, ReturnType<typeof benchRepeated>>()
 for (const [name, fn] of specs) statsByName.set(name, benchRepeated(fn, nSync, TRIALS))
 
 const baseStats = statsByName.get(BASELINE)
 if (!baseStats) throw new Error(`baseline ${BASELINE} was not benchmarked`)
 const benchmarks: BenchEntry[] = specs.map(([name]) => {
-  const r = statsByName.get(name) as BenchStats
+  const r = statsByName.get(name)!
   const cmp = compareBench(r, baseStats)
   return {
     name,
