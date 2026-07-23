@@ -25,6 +25,8 @@ Node ≥ 22, ESM-only, zero runtime deps. One command, ~10 seconds:
 npm i @manohar_maharshi/genoid
 ```
 
+Also runs on microcontroller-class runtimes without Web Crypto (ESP8266/ESP32, MicroPython) — see [Constrained / embedded hosts](#constrained--embedded-hosts-esp8266-class).
+
 
 ## 2. Quick start
 
@@ -75,6 +77,29 @@ console.log(genStructuredGenoID(multitenant))
 // → 0024c64c-bcd1-8045-82a2-815be75fbefa
 ```
 
+### Constrained / embedded hosts (ESP8266-class)
+
+The core is portable to microcontroller-class runtimes — small heap, no Web Crypto. Three optional configurators adapt it **without changing output**: every generated ID is byte-identical across all settings (pinned by INV-10 in the invariant suite), so these trade memory/portability for speed only.
+
+- **`configureRandom(fn)`** — inject a platform CSPRNG where Web Crypto is absent (ESP8266/ESP32 firmware, MicroPython). `fn(buf)` must fill the byte range with secure random bytes. Import never eagerly draws entropy, so the module loads on a no-Web-Crypto host; the first `configureRandom` must run before the first ID.
+- **`configurePools({ simplePoolSize, structuredPoolSize })`** — shrink the generation pools to trade batch size for RAM. The default structured pool holds ~34 KB + 1024 interned strings per layout; size 8 is ~336 B.
+- **`configureFootprint("lean")`** — format from the 256-entry hex table instead of the default lazily-built 65536-entry word table, saving ~131k interned strings of heap. `"fast"` (default) keeps full desktop throughput.
+
+```ts
+import {
+  configureRandom, configurePools, configureFootprint,
+  genStructuredGenoID, DBKEY_LAYOUT,
+} from "@manohar_maharshi/genoid"
+
+configureFootprint("lean")                                     // 256-entry hex table
+configurePools({ simplePoolSize: 16, structuredPoolSize: 8 })  // tiny RAM budget
+configureRandom((buf) => platformFillRandom(buf))              // your CSPRNG
+
+genStructuredGenoID(DBKEY_LAYOUT)                              // runs on ESP8266-class heap
+```
+
+On a standard host (Node / Bun / Deno / browser) none of these are needed — Web Crypto is used automatically and the fast footprint is the default.
+
 ## 3. Problem
 
 Standard generators give no composition:
@@ -108,11 +133,17 @@ Output: valid v8 UUID carrying your structure, CSPRNG randomness in remaining bi
 
 Run: `bun run bench` → ±std, 95% CI, Welch t-test with Cohen's d. Sample export: `bun x tsx scripts/export-rank-scan.ts` → `dist/rank-scan.csv`.
 
+**Regression guard.** [`scripts/research-invariants.test.ts`](scripts/research-invariants.test.ts) pins the load-bearing claims as executable tripwires — v8 conformance, 0 constraint violations, ordered counters (mod field width), collision-freedom, and monobit entropy preservation on the random payload — and **re-runs every one of them under an injected RNG + ESP8266-class tiny pools** (INV-9) plus a lean/fast byte-identity check (INV-10), so embeddability or perf work cannot silently cancel a result. It fans generation across all CPU cores (`os.availableParallelism()`), runs tough scale by default (`GENOID_FAST=1` for a quick pass), and each invariant is mutation-verified to go red when its claim is broken. Run: `bun test scripts/research-invariants.test.ts`.
+
+**Benchmark stats.** `bun run bench-ci` now emits a Welch t-test p-value and Cohen's d for every generator against the `v4-native` baseline (into `dist/bench-ci-results.json`), and discards a JIT warmup pass before the measured trials.
+
 ## 6. Baseline comparison
 
 Related work placed after technical content (per SPJ). Compared against pg_uuid_v8 (closest prior art), ULID / KSUID / Snowflake, and native v4 / v7. Each baseline verified by known-answer tests + NIST + collisions.
 
 All numbers = ops/sec, mean of 10 trials (95% CI within ±5%), run on GitHub Actions CI (ubuntu-24.04, macOS-14, windows-2025; Bun latest + Node 22 LTS + Deno 2.9.3). Run `bun run bench` for your machine.
+
+> Note: this table predates the default lazily-built word-table footprint and the benchmark warmup pass; the next CI bench run will refresh it (expect a small shift on the pooled generators). Regenerate with `bun run bench-ci`.
 
 | Generator | Ubuntu (Bun) | macOS (Bun) | Windows (Bun) | Node 22 (Win) | Deno 2.9.3 (Lin) | Deno 2.9.3 (mac) | Deno 2.9.3 (Win) | NIST |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
