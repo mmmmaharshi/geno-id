@@ -15,7 +15,7 @@ Declarative RFC 9562 v8 UUID composition framework — embed structure (shard, t
 | Published | `@manohar_maharshi/genoid@1.17.1` on npm |
 | Collisions | 0 at 100M (v4, GenoID, v7, ULID-v8) |
 | NIST SP 800-22 + dieharder | 15/15 PASS (NIST); 152/152 PASSED (dieharder, 4 generators × 38 sub-tests) |
-| Throughput | GenoID-pooled 3.74–18.33M/s (9‑job / 7‑runtime×OS CI); structured 0.66–1.15M/s |
+| Throughput | GenoID-pooled 4.60–11.31M/s (9‑job / 7‑runtime×OS CI); structured 0.82–1.66M/s |
 
 ## 1. Install
 
@@ -128,7 +128,7 @@ Output: valid v8 UUID carrying your structure, CSPRNG randomness in remaining bi
 | Repair vs rejection (E2) | GA repairs/UUID ≈ k | O(k·8) vs 64^k |
 | Collision + uniformity (E3–E5) | 2M UUIDs | 0 collisions; max dev 0.0053 |
 | NIST SP 800-22 (E3–E5) | 3 structured layouts | all 15 tests PASS |
-| Throughput (E6) | structured 0.66–1.15M/s | beats pg-uuid-v8 and ulid-v8 on every platform; base pool 7.5× faster |
+| Throughput (E6) | structured 0.82–1.66M/s CI (previously 0.66–1.15M/s) | beats pg-uuid-v8 and ulid-v8 on every platform; base pool 3.7–4.6× faster |
 | Draw-size NIST stability (P2) | 360 `binary_matrix_rank` trials (6 sizes × 60) | FAIL rate ~uniform 1.7% across 16–34B; matches α-noise, not a draw-size effect |
 
 Run: `bun run bench` → ±std, 95% CI, Welch t-test with Cohen's d. Sample export: `bun x tsx scripts/export-rank-scan.ts` → `dist/rank-scan.csv`.
@@ -143,24 +143,22 @@ Related work placed after technical content (per SPJ). Compared against pg_uuid_
 
 All numbers = ops/sec, mean of 10 trials (95% CI within ±5%), run on GitHub Actions CI (ubuntu-24.04, macOS-14, windows-2025; Bun latest + Node 22 LTS + Deno 2.9.3). Run `bun run bench` for your machine.
 
-> Note: this table predates the default lazily-built word-table footprint and the benchmark warmup pass; the next CI bench run will refresh it (expect a small shift on the pooled generators). Regenerate with `bun run bench-ci`.
-
 | Generator | Ubuntu (Bun) | macOS (Bun) | Windows (Bun) | Node 22 (Win) | Deno 2.9.3 (Lin) | Deno 2.9.3 (mac) | Deno 2.9.3 (Win) | NIST |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|
-| v4-native | 11.85M | 14.30M | 10.79M | 13.98M | 19.02M | 14.48M | 19.32M | — |
-| v7-custom | 5.74M | 5.31M | 3.62M | 0.47M | 3.18M | 2.56M | 3.14M | — |
-| genoid-v8 | 10.12M | 11.54M | 8.65M | 6.05M | 7.06M | 3.28M | 6.70M | — |
-| mathrandom | 0.54M | 0.64M | 0.39M | 0.42M | 0.51M | 0.52M | 0.45M | — |
-| pg-uuid-v8 | 0.85M | 1.23M | 0.78M | 0.22M | 0.46M | 0.56M | 0.40M | 15/15 |
-| ulid | 0.46M | 0.69M | 0.36M | 0.17M | 0.40M | 0.48M | 0.37M | — |
-| ulid-v8 | 0.93M | 1.41M | 0.87M | 0.22M | 0.46M | 0.55M | 0.42M | 15/15 |
-| ksuid | 0.31M | 0.43M | 0.26M | 0.10M | 0.27M | 0.30M | 0.25M | — |
-| snowflake | 3.01M | 3.49M | 2.44M | 4.10M | 5.47M | 6.45M | 4.65M | — |
-| genoid-structured | 0.66M | 1.15M | 0.84M | 0.88M | 0.96M | 0.98M | 0.96M | 15/15 |
+|---:|---:|---:|---:|---:|---:|---:|---:|
+| v4-native | 12.60M | 17.47M | 12.87M | 18.46M | 19.49M | 18.58M | 19.70M | — |
+| v7-custom | 6.31M | 8.54M | 4.04M | 0.59M | 3.36M | 3.10M | 3.17M | — |
+| genoid-v8 | 10.37M | 11.31M | 8.91M | 7.55M | 6.20M | 4.60M | 5.98M | — |
+| mathrandom | 0.53M | 0.61M | 0.43M | 0.59M | 0.51M | 0.52M | 0.49M | — |
+| pg-uuid-v8 | 0.90M | 1.17M | 0.79M | 0.30M | 0.44M | 0.57M | 0.40M | 15/15 |
+| ulid | 0.47M | 0.53M | 0.39M | 0.22M | 0.41M | 0.47M | 0.37M | — |
+| ulid-v8 | 0.96M | 1.39M | 0.76M | 0.31M | 0.46M | 0.59M | 0.42M | 15/15 |
+| ksuid | 0.32M | 0.48M | 0.25M | 0.13M | 0.27M | 0.34M | 0.25M | — |
+| snowflake | 3.06M | 4.22M | 2.38M | 4.81M | 5.43M | 6.86M | 4.62M | — |
+| genoid-structured | 1.08M | 1.66M | 0.82M | 0.95M | 1.00M | 1.04M | 0.98M | 15/15 |
 
 Key findings:
 - **0 collisions at scale** — all nine collision-tested generators report 0 collisions across every runtime×OS cell (7 columns × 9 algorithms = 63/63 PASS at n=1M). `genoid-structured` (dbkey) joins the matrix; `snowflake` is excluded from the collision gate by design (12-bit sequence wraps within a millisecond under tight-loop generation) but remains in the speed table above.
-- **genoid-structured beats pg-uuid-v8 and ulid-v8 on every platform** — byte-level write plan (+59% throughput on Apple A18 Pro, +69% on Windows Bun) closes the previous gap. GenoID-structured now leads on macOS Bun (1.15M/s vs pg-uuid-v8 0.88M/s, +31%), Node Windows (0.88M/s vs pg-uuid-v8 0.17M/s, +418%), and every other cell.
+- **genoid-structured beats pg-uuid-v8 and ulid-v8 on every platform** — byte-level write plan (+59% throughput on Apple A18 Pro, +69% on Windows Bun) plus lazy word table closes the previous gap. GenoID-structured now leads on macOS Bun (1.66M/s vs pg-uuid-v8 1.17M/s, +42%), Node Windows (0.95M/s vs pg-uuid-v8 0.30M/s, +217%), and every other cell.
 - **Runtime gap on CSPRNG-heavy generators** — Node's `crypto.getRandomValues` per-call overhead is far higher than Bun's *and* Deno's. Generators calling it once per UUID (v7, ulid, pg_uuid_v8, ulid-v8, ksuid) are 3–13× slower on Node vs Bun/Deno on comparable OSes. Pooled genoid-v8 (0.0039 calls/UUID) stays within ~1.5×. See [`sources/runtime-gap.md`](sources/runtime-gap.md).
 - **Node-on-Windows artifact** — per-call `getRandomValues` on Node's Windows crypto backend (BCryptGenRandom) is disproportionately slow: v7 measures 0.47M/s on Node/Windows vs 3.05M/s on Node/Linux. Native `crypto.randomUUID()` (v4) and the pooled GenoID CSPRNG are unaffected, confirming the bottleneck is the Node-Windows backend, not GenoID. Documented in the CI table's "Known issues" footer.
 - **Statistical quality preserved** — random payload bits of pg_uuid_v8 and ULID-v8 pass all 15 NIST tests.
