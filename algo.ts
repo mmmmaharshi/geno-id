@@ -1,30 +1,77 @@
-const HEX16: string[] = Array.from({ length: 65536 }, (_, i) =>
-  i.toString(16).padStart(4, "0"),
+// Single 256-entry byte->hex table. Replaces the two 65536-entry word tables
+// (HEX16 / HEX16_VIEW) that previously interned ~131k strings at import — far
+// past the heap budget of constrained MCUs (ESP8266 has ~40-80KB free). A
+// 16-bit word formats as HEX8[hi] + HEX8[lo], byte-identical to the old tables.
+// 256-entry byte->hex table. Always present (~256 tiny strings), it is the only
+// hex table a constrained host ("lean" footprint) ever allocates.
+const HEX8: string[] = Array.from({ length: 256 }, (_, i) =>
+  i.toString(16).padStart(2, "0"),
 )
+
+// Optional 65536-entry big-endian word->hex table (HEX8[hi] + HEX8[lo]). It is
+// ~2x faster to format with (8 lookups/UUID instead of 16) but costs ~131k
+// interned strings — far past an ESP8266's heap. It is therefore built LAZILY
+// on first use and can be disabled/freed via configureFootprint("lean") so a
+// constrained host never allocates it. Default is "fast" (build on demand).
+let _wordTable: string[] | null = null
+let _leanFootprint = false
+
+function wordTable(): string[] | null {
+  if (_leanFootprint) return null
+  if (_wordTable === null) {
+    const w = new Array<string>(65536)
+    for (let i = 0; i < 65536; i++) w[i] = HEX8[i >> 8] + HEX8[i & 0xff]
+    _wordTable = w
+  }
+  return _wordTable
+}
+
+/**
+ * Select the hex-formatting footprint.
+ *   "fast" (default) — lazily build a 65536-entry word table; ~2x faster
+ *                      formatting, ~131k interned strings of resident memory.
+ *   "lean"           — never build the word table (free it if already built);
+ *                      format from the 256-entry byte table only. Required on
+ *                      heap-constrained hosts (ESP8266-class). Call it once,
+ *                      before the first ID is generated.
+ * Output is byte-identical in both modes — this trades memory for speed only.
+ */
+export function configureFootprint(mode: "fast" | "lean"): void {
+  if (mode === "lean") {
+    _leanFootprint = true
+    _wordTable = null
+  } else {
+    _leanFootprint = false
+  }
+}
 
 export function toUuidString(b: Uint8Array): string {
   if (b.length < 16) throw new Error(`toUuidString: expected 16 bytes, got ${b.length}`)
-  const w0 = (b[0] << 8) | b[1],
-    w1 = (b[2] << 8) | b[3],
-    w2 = (b[4] << 8) | b[5],
-    w3 = (b[6] << 8) | b[7],
-    w4 = (b[8] << 8) | b[9],
-    w5 = (b[10] << 8) | b[11],
-    w6 = (b[12] << 8) | b[13],
-    w7 = (b[14] << 8) | b[15]
+  const w = wordTable()
+  if (w) {
+    return (
+      w[(b[0] << 8) | b[1]] + w[(b[2] << 8) | b[3]] +
+      "-" +
+      w[(b[4] << 8) | b[5]] +
+      "-" +
+      w[(b[6] << 8) | b[7]] +
+      "-" +
+      w[(b[8] << 8) | b[9]] +
+      "-" +
+      w[(b[10] << 8) | b[11]] + w[(b[12] << 8) | b[13]] + w[(b[14] << 8) | b[15]]
+    )
+  }
+  const t = HEX8
   return (
-    HEX16[w0] +
-    HEX16[w1] +
+    t[b[0]] + t[b[1]] + t[b[2]] + t[b[3]] +
     "-" +
-    HEX16[w2] +
+    t[b[4]] + t[b[5]] +
     "-" +
-    HEX16[w3] +
+    t[b[6]] + t[b[7]] +
     "-" +
-    HEX16[w4] +
+    t[b[8]] + t[b[9]] +
     "-" +
-    HEX16[w5] +
-    HEX16[w6] +
-    HEX16[w7]
+    t[b[10]] + t[b[11]] + t[b[12]] + t[b[13]] + t[b[14]] + t[b[15]]
   )
 }
 
@@ -32,11 +79,67 @@ export function genV4Native(): string {
   return crypto.randomUUID()
 }
 
+// --- Injectable CSPRNG ------------------------------------------------------
+// Every GenoID entropy draw flows through this single sink. It defaults to Web
+// Crypto (crypto.getRandomValues) on Node/Deno/Bun/browsers. Hosts without Web
+// Crypto — ESP8266/ESP32 firmware, MicroPython, bare embedded runtimes — inject
+// a platform CSPRNG via configureRandom() before generating any ID. The entropy
+// contract is unchanged (fill the whole buffer with secure random bytes), so
+// output distribution and collision guarantees are identical; only the byte
+// source changes. On a host without Web Crypto, module import no longer eagerly
+// draws entropy (the pre-warms below are guarded), so importing never throws —
+// the first generate call after configureRandom() does the first fill.
+export type RandomFill = (buf: Uint8Array) => void
+
+const _hasWebCrypto =
+  typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function"
+
+const _webCryptoFill: RandomFill = (buf) => {
+  // getRandomValues rejects SharedArrayBuffer-backed views; all GenoID buffers
+  // are ArrayBuffer-backed, so narrow the widened public Uint8Array type here.
+  crypto.getRandomValues(buf as Uint8Array<ArrayBuffer>)
+}
+
+const _noRngFill: RandomFill = () => {
+  throw new Error(
+    "GenoID: no CSPRNG available — Web Crypto (crypto.getRandomValues) was not found on this host. " +
+      "Call configureRandom(fn) with a platform CSPRNG (e.g. os.urandom on MicroPython, esp_fill_random on ESP-IDF) before generating IDs.",
+  )
+}
+
+let _fillRandom: RandomFill = _hasWebCrypto ? _webCryptoFill : _noRngFill
+
+function fillRandom(buf: Uint8Array): void {
+  _fillRandom(buf)
+}
+
+/**
+ * Inject the platform CSPRNG used for every GenoID entropy draw. Required on
+ * runtimes without Web Crypto (embedded firmware, MicroPython). `fn` must fill
+ * the ENTIRE passed byte range with cryptographically-secure random bytes — a
+ * weak source silently degrades collision/uniformity guarantees. Pass `null` to
+ * restore the Web Crypto default (throws on first use if Web Crypto is absent).
+ *
+ * @example
+ * // Embedded host bridge (bytes supplied by the platform RNG)
+ * configureRandom((buf) => { for (let i = 0; i < buf.length; i++) buf[i] = platformRandomByte() })
+ */
+export function configureRandom(fn: RandomFill | null): void {
+  if (fn === null) {
+    _fillRandom = _hasWebCrypto ? _webCryptoFill : _noRngFill
+    return
+  }
+  if (typeof fn !== "function") {
+    throw new TypeError("configureRandom: expected a function (buf: Uint8Array) => void, or null to reset")
+  }
+  _fillRandom = fn
+}
+
 const _v7Rnd = new Uint8Array(10)
 const _v7Bytes = new Uint8Array(16)
 
 export function genV7(): string {
-  crypto.getRandomValues(_v7Rnd)
+  fillRandom(_v7Rnd)
   const ts = Date.now()
   const bytes = _v7Bytes
   bytes[0] = (ts / 2 ** 40) & 0xff
@@ -64,7 +167,7 @@ export function genMathRandom(): string {
 
 export async function genHashUUID(): Promise<string> {
   const seed = new Uint8Array(32)
-  crypto.getRandomValues(seed)
+  fillRandom(seed)
   let digest: ArrayBuffer
   try {
     digest = await crypto.subtle.digest("SHA-256", seed)
@@ -77,21 +180,25 @@ export async function genHashUUID(): Promise<string> {
   return toUuidString(bytes)
 }
 
-const GENO_POOL_N = 256
 const GENO_ENTRY_BYTES = 34
-const _genoPool = new Uint8Array(GENO_ENTRY_BYTES * GENO_POOL_N)
-const _genoStrs = new Array<string>(GENO_POOL_N)
-let _genoIdx = GENO_POOL_N
+// Default pool sizes. Runtime-tunable via configurePools() so a constrained
+// host (e.g. an ESP8266 with ~40-80KB free heap) can trade batch size for RAM:
+// the simple pool holds GENO_ENTRY_BYTES*N bytes + N interned strings; each
+// structured layout holds STRUCT_ENTRY*N bytes + N strings. Shrinking N only
+// changes refill granularity — per-ID generation and emitted output are
+// byte-identical at any pool size.
+const GENO_POOL_DEFAULT = 256
+const STRUCT_POOL_DEFAULT = 1024
+let _genoPoolN = GENO_POOL_DEFAULT
+let _genoPool = new Uint8Array(GENO_ENTRY_BYTES * _genoPoolN)
+let _genoStrs = new Array<string>(_genoPoolN)
+let _genoIdx = _genoPoolN
 const _child = new Uint8Array(16)
-const _child16 = new Uint16Array(_child.buffer)
-const HEX16_VIEW: string[] = Array.from({ length: 65536 }, (_, i) =>
-  (i & 0xff).toString(16).padStart(2, "0") + ((i >> 8) & 0xff).toString(16).padStart(2, "0"),
-)
 
 function refillGenoPool(): void {
-  const t = HEX16_VIEW, g = _genoPool, e = GENO_ENTRY_BYTES
-  crypto.getRandomValues(g)
-  for (let i = 0; i < GENO_POOL_N; i++) {
+  const t = HEX8, w = wordTable(), g = _genoPool, e = GENO_ENTRY_BYTES
+  fillRandom(g)
+  for (let i = 0; i < _genoPoolN; i++) {
     const off = i * e
     const cut = g[off + 32] & 15
     const mutPos = g[off + 33] & 15
@@ -101,23 +208,30 @@ function refillGenoPool(): void {
     _child[mutPos] ^= g[off + ((mutPos + 1) & 15)]
     _child[6] = (_child[6] & 0x0f) | 0x80
     _child[8] = (_child[8] & 0x3f) | 0x80
-    const v = _child16
-    _genoStrs[i] =
-      t[v[0]] + t[v[1]] + "-" +
-      t[v[2]] + "-" +
-      t[v[3]] + "-" +
-      t[v[4]] + "-" +
-      t[v[5]] + t[v[6]] + t[v[7]]
+    const c = _child
+    _genoStrs[i] = w
+      ? w[(c[0] << 8) | c[1]] + w[(c[2] << 8) | c[3]] + "-" +
+        w[(c[4] << 8) | c[5]] + "-" +
+        w[(c[6] << 8) | c[7]] + "-" +
+        w[(c[8] << 8) | c[9]] + "-" +
+        w[(c[10] << 8) | c[11]] + w[(c[12] << 8) | c[13]] + w[(c[14] << 8) | c[15]]
+      : t[c[0]] + t[c[1]] + t[c[2]] + t[c[3]] + "-" +
+        t[c[4]] + t[c[5]] + "-" +
+        t[c[6]] + t[c[7]] + "-" +
+        t[c[8]] + t[c[9]] + "-" +
+        t[c[10]] + t[c[11]] + t[c[12]] + t[c[13]] + t[c[14]] + t[c[15]]
   }
   _genoIdx = 0
 }
 
 // Pre-warm the GenoID pool at module init so the first call is never cold.
-// Same pattern as _csprngBuf pre-fill.
-refillGenoPool()
+// Guarded: on a host without Web Crypto this would throw at import; there we
+// defer the first fill to the first genGenoID() (after configureRandom()), so
+// _genoIdx stays at _genoPoolN and the next call refills.
+if (_hasWebCrypto) refillGenoPool()
 
 export function genGenoID(): string {
-  if (_genoIdx >= GENO_POOL_N) {
+  if (_genoIdx >= _genoPoolN) {
     refillGenoPool()
   }
   return _genoStrs[_genoIdx++]
@@ -416,14 +530,14 @@ export function completeLayout(name: string, fields: V8Field[]): V8Layout {
 function csprngInt(maxExclusive: number): number {
   if (maxExclusive <= 256) {
     if (_csprngPos >= _csprngBuf.length) {
-      crypto.getRandomValues(_csprngBuf)
+      fillRandom(_csprngBuf)
       _csprngPos = 0
     }
     return _csprngBuf[_csprngPos++] % maxExclusive
   }
   const need = maxExclusive <= 65536 ? 2 : 6
   if (_csprngPos + need > _csprngBuf.length) {
-    crypto.getRandomValues(_csprngBuf)
+    fillRandom(_csprngBuf)
     _csprngPos = 0
   }
   let v = 0
@@ -434,8 +548,14 @@ function csprngInt(maxExclusive: number): number {
 const _counters = new Map<string, number>()
 const _lastValues = new Map<string, number>()
 const _csprngBuf = new Uint8Array(256)
-crypto.getRandomValues(_csprngBuf)
-let _csprngPos = 0
+// Position starts at the end so csprngInt() triggers the first fillRandom()
+// refill lazily. Only pre-fill eagerly when Web Crypto is present (embedded
+// hosts inject their CSPRNG via configureRandom() before the first draw).
+let _csprngPos = _csprngBuf.length
+if (_hasWebCrypto) {
+  fillRandom(_csprngBuf)
+  _csprngPos = 0
+}
 
 // Entropy source abstraction for structured-field population. The pool refill
 // path reuses the ALREADY-CSPRNG pool bytes (one getRandomValues per 256 IDs)
@@ -574,7 +694,7 @@ export function genStructuredParent(
 ): Uint8Array {
   ensureValidated(layout)
   const bytes = new Uint8Array(16)
-  crypto.getRandomValues(bytes)
+  fillRandom(bytes)
   applyStructuredFields(bytes, layout, mask)
   forceVersionVariant(bytes)
   return bytes
@@ -661,16 +781,16 @@ export function repairConstraints(layout: V8Layout, bytes: Uint8Array): number {
   return repairs
 }
 
-const STRUCT_POOL_N = 1024
+let _structPoolN = STRUCT_POOL_DEFAULT
 const STRUCT_ENTRY = 34
 const _structChild = new Uint8Array(16)
-const _structChild16 = new Uint16Array(_structChild.buffer)
 const _structPools = new Map<
   string,
   {
     pool: Uint8Array<ArrayBuffer>
     strs: string[]
     idx: number
+    size: number
     needsRepair: boolean
     plan: ByteMask[][]
   }
@@ -680,18 +800,24 @@ function getStructPool(layout: V8Layout): {
   pool: Uint8Array<ArrayBuffer>
   strs: string[]
   idx: number
+  size: number
   needsRepair: boolean
   plan: ByteMask[][]
 } {
   const existing = _structPools.get(layout.name)
   if (existing) return existing
+  // Snapshot the current configured size into the pool entry so an in-flight
+  // pool keeps a consistent size even if configurePools() runs later (it clears
+  // the map, so the next getStructPool rebuilds at the new size).
+  const size = _structPoolN
   const p = {
-    pool: new Uint8Array(STRUCT_ENTRY * STRUCT_POOL_N),
-    strs: new Array(STRUCT_POOL_N),
-    idx: STRUCT_POOL_N,
+    pool: new Uint8Array(STRUCT_ENTRY * size),
+    strs: new Array(size),
+    idx: size,
+    size,
     needsRepair: layout.fields.some((f) => f.type === "random" && f.constraint),
     // Precomputed per-field byte masks — built once per layout, reused for all
-    // 256 pool entries so the hot child-assembly loop never touches bits.
+    // pool entries so the hot child-assembly loop never touches bits.
     plan: layout.fields.map(fieldByteMasks),
   }
   _structPools.set(layout.name, p)
@@ -711,11 +837,12 @@ export function genStructuredGenoID(layout: V8Layout): string {
   // Repair only matters for random fields that carry a constraint (allowed /
   // min / max) — structured fields are generated valid in both parents, so
   // crossover can never violate them. needsRepair is cached in the pool entry.
-  if (p.idx >= STRUCT_POOL_N) {
+  if (p.idx >= p.size) {
     const fields = layout.fields
     const nf = fields.length
-    crypto.getRandomValues(p.pool)
-    for (let n = 0; n < STRUCT_POOL_N; n++) {
+    const w = wordTable()
+    fillRandom(p.pool)
+    for (let n = 0; n < p.size; n++) {
       const off = n * STRUCT_ENTRY
       const A = p.pool.subarray(off, off + 16)
       const B = p.pool.subarray(off + 16, off + 32)
@@ -739,17 +866,75 @@ export function genStructuredGenoID(layout: V8Layout): string {
       }
       if (p.needsRepair) repairConstraints(layout, child)
       forceVersionVariant(child)
-      const v = _structChild16, t = HEX16_VIEW
-      p.strs[n] =
-        t[v[0]] + t[v[1]] + "-" +
-        t[v[2]] + "-" +
-        t[v[3]] + "-" +
-        t[v[4]] + "-" +
-        t[v[5]] + t[v[6]] + t[v[7]]
+      const c = _structChild, t = HEX8
+      p.strs[n] = w
+        ? w[(c[0] << 8) | c[1]] + w[(c[2] << 8) | c[3]] + "-" +
+          w[(c[4] << 8) | c[5]] + "-" +
+          w[(c[6] << 8) | c[7]] + "-" +
+          w[(c[8] << 8) | c[9]] + "-" +
+          w[(c[10] << 8) | c[11]] + w[(c[12] << 8) | c[13]] + w[(c[14] << 8) | c[15]]
+        : t[c[0]] + t[c[1]] + t[c[2]] + t[c[3]] + "-" +
+          t[c[4]] + t[c[5]] + "-" +
+          t[c[6]] + t[c[7]] + "-" +
+          t[c[8]] + t[c[9]] + "-" +
+          t[c[10]] + t[c[11]] + t[c[12]] + t[c[13]] + t[c[14]] + t[c[15]]
     }
     p.idx = 0
   }
   return p.strs[p.idx++]
+}
+
+export interface PoolConfig {
+  /** Simple genGenoID() pool size (IDs generated per CSPRNG refill). Default 256. */
+  simplePoolSize?: number
+  /** Per-layout genStructuredGenoID() pool size. Default 1024. */
+  structuredPoolSize?: number
+}
+
+/**
+ * Tune the generation pool sizes at runtime. Smaller pools cut resident memory
+ * for constrained hosts — an ESP8266-class chip cannot spare the ~34KB byte
+ * buffer plus ~1024 interned strings the default structured pool holds per
+ * layout; larger pools amortize the CSPRNG refill over more IDs. Output is
+ * byte-identical at any size — only the refill granularity changes, so there is
+ * NO accuracy impact (distribution, constraints, and monotonic counters are
+ * preserved because per-ID generation and the persisted `_lastValues` state are
+ * unchanged).
+ *
+ * Sizes must be positive integers. Reconfiguring rebuilds the affected pools:
+ * the simple pool is reallocated immediately; structured pools are cleared and
+ * lazily rebuilt at the new size on the next genStructuredGenoID() call.
+ *
+ * @example
+ * // ESP8266-class budget: tiny pools
+ * configurePools({ simplePoolSize: 16, structuredPoolSize: 8 })
+ */
+export function configurePools(cfg: PoolConfig): void {
+  if (cfg.simplePoolSize !== undefined) {
+    const n = cfg.simplePoolSize
+    if (!Number.isInteger(n) || n < 1) {
+      throw new Error(`configurePools: simplePoolSize must be a positive integer, got ${n}`)
+    }
+    _genoPoolN = n
+    _genoPool = new Uint8Array(GENO_ENTRY_BYTES * n)
+    _genoStrs = new Array<string>(n)
+    // force a refill on the next genGenoID()
+    _genoIdx = n
+  }
+  if (cfg.structuredPoolSize !== undefined) {
+    const n = cfg.structuredPoolSize
+    if (!Number.isInteger(n) || n < 1) {
+      throw new Error(`configurePools: structuredPoolSize must be a positive integer, got ${n}`)
+    }
+    _structPoolN = n
+    // rebuilt lazily at the new size, per layout
+    _structPools.clear()
+  }
+}
+
+/** Current effective pool sizes — useful for tests and memory budgeting. */
+export function getPoolConfig(): { simplePoolSize: number; structuredPoolSize: number } {
+  return { simplePoolSize: _genoPoolN, structuredPoolSize: _structPoolN }
 }
 
 // ---------------------------------------------------------------------------
