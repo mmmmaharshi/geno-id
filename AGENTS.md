@@ -40,6 +40,8 @@ GenoID is a TypeScript RFC 9562 v8 UUID library + CLI + browser benchmark. The p
 | `bun run typecheck` | Typecheck root + scripts tsconfigs | ~10s | `bun install` |
 | `bun run test` | Run all unit tests (`scripts/*.test.ts`) | ~4s | `bun install` |
 | `bun run bench-ci` | Condensed CI-shaped benchmark + collisions → `dist/bench-ci-results.json` | ~30s | `bun install` |
+| `bun run bench-rejection` | O(k) vs (1/d)^k repair sweep → `results/rejection-sweep.json` | ~5s | `bun install` |
+| `bun run bench-db` | SQLite index-locality benchmark → `results/db-sqlite.json` | ~30s | `bun install` |
 | `bun run bench` | Full Node.js benchmark + uniformity | ~2min | `bun install` |
 | `bun run test:stats` | NIST SP 800-22 monobit/runs/chi-square/correlation | ~30s | `bun install` |
 | `bun run playwright` | Browser benchmark (Chromium/Firefox/WebKit; `--browser=name`/`all`) | ~3min | `bun install` + `bun x playwright install` |
@@ -102,10 +104,12 @@ After every change to any `.ts` file, run in order. **Stop and fix on any failur
 3. `bun run typecheck` — both root + scripts tsconfigs.
 4. `bun run test` — Bun test runner over `scripts/*.test.ts`.
 5. `bun run build` — compiles to `dist/`.
-6. `bun run bench-ci` — condensed CI-shaped benchmark + collisions (exact command the CI matrix runs per environment). **Confirm 0 collisions + clean `dist/bench-ci-results.json`.**
-7. `bun run playwright` — browser/deployable check. **Confirm** `browserErrors: []`, `GenoID-structured` present, 0 collisions.
-8. Fix any errors from above before continuing.
-9. **After any change** that passes gates 1–8, **ask the user** if they want `npm publish`. Do not publish without explicit confirmation.
+6. `bun run bench-rejection` — validates O(k) vs O((1/d)^k) repair bound. **Confirm no NaN/null cells + `results/rejection-sweep.json` written.**
+7. `bun run bench-db` — index-locality benchmark. **Confirm output written to `results/db-sqlite.json`.**
+8. `bun run bench-ci` — condensed CI-shaped benchmark + collisions (exact command the CI matrix runs per environment). **Confirm 0 collisions + clean `dist/bench-ci-results.json`.**
+9. `bun run playwright` — browser/deployable check. **Confirm** `browserErrors: []`, `GenoID-structured` present, 0 collisions.
+10. Fix any errors from above before continuing.
+11. **After any change** that passes gates 1–10, **ask the user** if they want `npm publish`. Do not publish without explicit confirmation.
 
 ### Visible wins (what "green" looks like)
 
@@ -114,6 +118,8 @@ After every change to any `.ts` file, run in order. **Stop and fix on any failur
 | lint | `oxlint` exits 0 |
 | typecheck | both `tsc` configs exit 0 |
 | test | `NN pass, 0 fail` |
+| bench-rejection | no NaN/null cells, `results/rejection-sweep.json` written |
+| bench-db | output written to `results/db-sqlite.json` |
 | bench-ci | all collision rows `PASS`, `dist/bench-ci-results.json` written |
 | playwright | every browser `browserErrors: []`, `GenoID-structured` present, 0 collisions |
 

@@ -125,13 +125,13 @@ Output: valid v8 UUID carrying your structure, CSPRNG randomness in remaining bi
 | Experiment | Result | Win |
 |---|---|---|
 | Composition correctness (E1) | 1.5M field checks | 0 mismatches, 0 violations |
-| Repair vs rejection (E2) | GA repairs/UUID ≈ k | O(k·8) vs 64^k |
+| Repair vs rejection (E2) | O(k) repair, flat 1.4–3.2 µs/ID; measured trials match (1/d)^k | vs rejection's **2.8×10¹⁴ trials/ID** at k=6, d=0.004 ([sweep](sources/rejection-cost.md)) |
 | Collision + uniformity (E3–E5) | 2M UUIDs | 0 collisions; max dev 0.0053 |
 | NIST SP 800-22 (E3–E5) | 3 structured layouts | all 15 tests PASS |
 | Throughput (E6) | structured 0.82–1.66M/s CI (previously 0.66–1.15M/s) | beats pg-uuid-v8 and ulid-v8 on every platform; base pool 3.7–4.6× faster |
 | Draw-size NIST stability (P2) | 360 `binary_matrix_rank` trials (6 sizes × 60) | FAIL rate ~uniform 1.7% across 16–34B; matches α-noise, not a draw-size effect |
 
-Run: `bun run bench` → ±std, 95% CI, Welch t-test with Cohen's d. Sample export: `bun x tsx scripts/export-rank-scan.ts` → `dist/rank-scan.csv`.
+Run: `bun run bench` → ±std, 95% CI, Welch t-test with Cohen's d. Sample export: `bun x tsx scripts/export-rank-scan.ts` → `dist/rank-scan.csv`. Repair-vs-rejection sweep (E2): `bun run bench-rejection` → `results/rejection-sweep.{json,csv}`.
 
 **Regression guard.** [`scripts/research-invariants.test.ts`](scripts/research-invariants.test.ts) pins the load-bearing claims as executable tripwires — v8 conformance, 0 constraint violations, ordered counters (mod field width), collision-freedom, and monobit entropy preservation on the random payload — and **re-runs every one of them under an injected RNG + ESP8266-class tiny pools** (INV-9) plus a lean/fast byte-identity check (INV-10), so embeddability or perf work cannot silently cancel a result. It fans generation across all CPU cores (`os.availableParallelism()`), runs tough scale by default (`GENOID_FAST=1` for a quick pass), and each invariant is mutation-verified to go red when its claim is broken. Run: `bun test scripts/research-invariants.test.ts`.
 
@@ -194,10 +194,13 @@ Open-addressing 128-bit hash set (~2.3 GB vs ~10 GB), fanned across all cores. A
 ### Task E: Cross-engine browser
 Playwright across Chromium, Firefox, WebKit — all three: `browserErrors: []`, structured entry present, 0 collisions. Run: `bun run playwright` (`bun x playwright install` first).
 
+### Task F: Database index locality
+Zero-install `bun:sqlite` benchmark (clustered + secondary index modes, 500k rows × 3 runs, no daemon to install). Random `uuid_v4` inserts at 186k rows/s vs time-ordered `uuid_v7` 509k — **2.7×**, reproducing the published ULID/Shopify result — and `genoid-structured` (402k) matches the time-ordered peers. Partition differentiator: `genoid-shardfirst` answers "rows for partition k" straight from the PK with **0 index bytes and no insert tax**, whereas a `uuid_v7` secondary index costs a **24.5% insert-throughput tax + ~10% storage** for the same capability. Honest scope (SQLite repacks pages, so insert-time — not size — is the signal; the win is storage + write-amplification, not read latency): [`sources/db-benchmark.md`](sources/db-benchmark.md). Run: `bun run bench-db`.
+
 ## 8. Applications
 
-1. **Sharded DB** — embed shard ID in PK; router locates node direct, no lookup.
-2. **Multi-tenant** — carry tenant ID for prefix isolation + row-level security.
+1. **Sharded DB** — embed shard ID in PK; router locates the node directly, no lookup. Measured (§7 Task F): partition-queryable from the key with **0 index bytes and no insert tax**, vs a **24.5% insert-throughput tax + ~10% storage** for the secondary index a random/time-only key needs for the same query.
+2. **Multi-tenant** — carry tenant ID for prefix isolation + row-level security, without a separate tenant index.
 3. **Event sourcing** — monotonic counter + timestamp → globally ordered, collision-free event IDs.
 4. **Sortable time-series** — timestamp bits give chronological order + composable fields.
 5. **Debuggability** — declared fields readable from hex; operators read shard/tenant/sequence.
@@ -212,6 +215,8 @@ Full analysis: [`sources/security-analysis.md`](sources/security-analysis.md).
 
 - [`sources/related-work.md`](sources/related-work.md) — no prior work applies GA-style operators to UUID generation.
 - [`sources/formal-proofs.md`](sources/formal-proofs.md) — O(k) repair bound vs O(64^k) rejection; entropy-preservation proof.
+- [`sources/rejection-cost.md`](sources/rejection-cost.md) — measured sparsity sweep: O(k) repair (flat µs) vs (1/d)^k rejection, validating the §III bound on real hardware.
+- [`sources/db-benchmark.md`](sources/db-benchmark.md) — index-locality benchmark; partition-queryable PKs with zero index write-amplification.
 - [`sources/threats-to-validity.md`](sources/threats-to-validity.md) — internal/external/construct/conclusion validity.
 - [`sources/reproducibility.md`](sources/reproducibility.md) — one-command reproduction table, env pinning.
 - [`docs/literature-review.md`](docs/literature-review.md) — full survey (5 themes, 25+ sources). Two refutable claims: (C1) GA is architectural, not statistical; (C2) declarative RFC 9562 v8 layout composition is novel vs pg_uuid_v8.
