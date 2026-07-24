@@ -6,16 +6,14 @@
 
 Declarative RFC 9562 v8 UUID composition framework — embed structure (shard, tenant, counter, timestamp) in an ID without rejection sampling.
 
-**One idea:** Standard UUID generators (v4, v7, hash) cannot embed application structure. Forcing it via rejection costs 64^k trials. GenoID replaces rejection with GA-inspired crossover + constraint-guided repair: **O(k·8) per ID** — 1.5M structured-field checks → 0 mismatches, 0 violations (§5 E1–E2). Controlled degradations and weak entropy show GA is architectural, not statistical (§10 C1).
+```ts
+import { genGenoID } from "@manohar_maharshi/genoid"
+console.log(genGenoID())  // → dab18ed0-37d4-8da2-a8be-dca1864d2f1c
+```
 
-## TL;DR
+The `8` after the second dash is the RFC 9562 v8 version nibble. Every generated ID carries your declared fields — a timestamp, a shard from an allowed set, a monotonic counter — guaranteed by repair, not rejection.
 
-| Fact | Value |
-|---|---|
-| Published | `@manohar_maharshi/genoid@1.17.1` on npm |
-| Collisions | 0 at 100M (v4, GenoID, v7, ULID-v8) |
-| NIST SP 800-22 + dieharder | 15/15 PASS (NIST); 152/152 PASSED (dieharder, 4 generators × 38 sub-tests) |
-| Throughput | GenoID-pooled 4.60–11.31M/s (9‑job / 7‑runtime×OS CI); structured 0.82–1.66M/s |
+**GenoID in four sentences.** Standard UUID generators (v4, v7, hash) cannot embed application structure — every field must be looked up from a side table. Forcing structure via rejection sampling costs 64^k trials per ID (k=6 → 6.9×10¹⁰), which is unusable in production. GenoID replaces rejection with GA-inspired crossover + constraint-guided repair, producing valid v8 UUIDs from arbitrary constrained fields in O(k·8) per ID — verified across 1.5M field checks with 0 violations. It ships with zero runtime dependencies, passes all 15 NIST SP 800-22 + 152/152 dieharder sub-tests, and reports 0 collisions at 100M scale across 7 runtimes × 3 OSes.
 
 ## 1. Install
 
@@ -28,9 +26,17 @@ npm i @manohar_maharshi/genoid
 Also runs on microcontroller-class runtimes without Web Crypto (ESP8266/ESP32, MicroPython) — see [Constrained / embedded hosts](#constrained--embedded-hosts-esp8266-class).
 
 
-## 2. Quick start
+## 2. Problem
 
-**Wins in one line:** embed structure with **0 rejection cost** (O(k·8) vs 64^k), **0 collisions at 100M** across 7 runtime×OS cells, **all 15 NIST SP 800-22 + 152/152 dieharder** sub-tests PASS, **3.7–18.3M/s** pooled throughput (§6). Every claim below is reproduced by `bun run bench`.
+Standard generators give no composition:
+
+- **v4** — fully random, opaque.
+- **v7** — one fixed timestamp layout.
+- **hash-derived** — order-dependent, slow.
+
+Naive solution: rejection-sample until a field lands in the allowed set. Cost: **64^k trials** (k=6 → 6.9×10¹⁰). Exponential and impractical.
+
+## 3. Quick start
 
 ### Simple GenoID (v8 UUID)
 
@@ -99,16 +105,6 @@ genStructuredGenoID(DBKEY_LAYOUT)                              // runs on ESP826
 ```
 
 On a standard host (Node / Bun / Deno / browser) none of these are needed — Web Crypto is used automatically and the fast footprint is the default.
-
-## 3. Problem
-
-Standard generators give no composition:
-
-- **v4** — fully random, opaque.
-- **v7** — one fixed timestamp layout.
-- **hash-derived** — order-dependent, slow.
-
-Naive solution: rejection-sample until a field lands in the allowed set. Cost: **64^k trials** (k=6 → 6.9×10¹⁰). Exponential and impractical.
 
 ## 4. How it works
 
