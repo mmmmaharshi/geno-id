@@ -587,19 +587,20 @@ function drawValue(rng: Rng, mod: number): number {
 
 // Unbiased pick from a small `allowed` set (Lemire-style, avoids modulo bias
 // when allowed.length does not divide the byte range).
+// Unbiased pick from a small `allowed` set via rejection debiasing: discard the
+// top of the byte range that does not divide evenly by n, so every member is
+// equiprobable. One byte per draw plus a rare reject when n ∤ 256.
+//
+// Replaces a Lemire-style variant that collapsed ~98% of draws onto allowed[0]
+// — i.e. shard/tenant fields were effectively constant. Pinned by INV-11 in
+// scripts/research-invariants.test.ts (allowed-set uniformity).
 function pickFrom(rng: Rng, allowed: number[]): number {
   const n = allowed.length
   if (n === 1) return allowed[0]
-  const frac = 0.00392156862745098
+  const limit = 256 - (256 % n)
   let x = rng()
-  let prod = frac
-  let i = 256
-  while (true) {
-    if (x < i * n * prod) return allowed[Math.floor((x / (i * prod)) | 0)]
-    x = (x - i * n * prod) * 256
-    i *= 256
-    prod *= frac
-  }
+  while (x >= limit) x = rng()
+  return allowed[x % n]
 }
 
 const _fieldMod = new WeakMap<V8Field, number>()
@@ -784,6 +785,14 @@ export function repairConstraints(layout: V8Layout, bytes: Uint8Array): number {
 let _structPoolN = STRUCT_POOL_DEFAULT
 const STRUCT_ENTRY = 34
 const _structChild = new Uint8Array(16)
+// Snapshot buffers for the pooled structured-field entropy source. The parent
+// buffers A/B double as both the CSPRNG entropy and the write target; a field
+// written earlier (e.g. timestamp) would otherwise clobber the very bytes a
+// later allowed-field (e.g. shard) reads as its randomness — collapsing that
+// field to a constant. We copy the original CSPRNG bytes here and draw from the
+// copy, so writes never poison downstream draws.
+const _rngA = new Uint8Array(16)
+const _rngB = new Uint8Array(16)
 const _structPools = new Map<
   string,
   {
@@ -852,8 +861,12 @@ export function genStructuredGenoID(layout: V8Layout): string {
       // Entropy comes from the ALREADY-CSPRNG pool bytes (one getRandomValues
       // per 256 IDs) via disjoint cursor regions per parent — no per-field
       // syscall, same entropy as before.
-      applyStructuredFields(A, layout, undefined, poolRng(p.pool, off, off + 16))
-      applyStructuredFields(B, layout, undefined, poolRng(p.pool, off + 16, off + 32))
+      // Snapshot the original CSPRNG bytes so structured writes into A/B can't
+      // poison the entropy that later fields draw (see _rngA/_rngB note).
+      _rngA.set(A)
+      _rngB.set(B)
+      applyStructuredFields(A, layout, undefined, poolRng(_rngA, 0, 16))
+      applyStructuredFields(B, layout, undefined, poolRng(_rngB, 0, 16))
       // Assemble the child by masking+ORing parent bytes per precomputed field
       // plan — replaces the per-bit copyField loop with a fixed set of byte ops.
       const child = _structChild

@@ -578,3 +578,37 @@ test("INV-10: lean and fast footprints are byte-identical", () => {
     configureFootprint("fast")
   }
 })
+
+// ---------------------------------------------------------------------------
+// INV-11 — allowed-set fields are ~uniformly distributed. Membership (INV-2)
+// is not enough: a biased picker can keep every value in-range while collapsing
+// ~all draws onto one value, silently breaking the shard/tenant load-balancing
+// use case (§8). This asserts each allowed value lands within ±50% of its
+// expected share — loose enough never to false-fail on a fair picker, tight
+// enough to catch a collapse (the old pickFrom put ~98% on allowed[0]).
+// ---------------------------------------------------------------------------
+
+test("INV-11: allowed-set fields are ~uniformly distributed (no value collapse)", () => {
+  const M = 60_000
+  for (const name of ["dbkey", "multitenant"]) {
+    const layout = LAYOUT_BY_NAME[name]
+    const fields = fieldsOf(layout).filter((f) => f.constraint?.allowed && f.constraint.allowed.length > 1)
+    const counts: Record<string, Record<number, number>> = {}
+    for (const f of fields) counts[f.name] = {}
+    for (let i = 0; i < M; i++) {
+      const r = readStructured(genStructuredGenoID(layout), layout)
+      for (const f of fields) counts[f.name][r[f.name]] = (counts[f.name][r[f.name]] ?? 0) + 1
+    }
+    for (const f of fields) {
+      const allowed = f.constraint?.allowed as number[]
+      const exp = M / allowed.length
+      for (const v of allowed) {
+        const obs = counts[f.name][v] ?? 0
+        assert.ok(
+          obs > exp * 0.5 && obs < exp * 1.5,
+          `${name}.${f.name}: value ${v} got ${obs}, expected ~${Math.round(exp)} — allowed-set distribution collapsed`,
+        )
+      }
+    }
+  }
+})
