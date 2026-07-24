@@ -47,64 +47,64 @@
         "nColl": "2000000",
         "nSync": "200000"
       },
-      "rawLog": "Benchmarking crypto.randomUUID (v4) (n=200000, 10 trials)...\n  -> 1.084e+6 ± 52,168.8 ops/sec (95% CI 1.047e+6–1.122e+6)\nBenchmarking UUIDv7 (custom, RFC 9562) (n=200000, 10 trials)...\n  -> 1.741e+6 ± 11,069.5 ops/sec (95% CI 1.733e+6–1.748e+6)\nBenchmarking SHA-256 hash-derived (v5-style) (n=20000, 10 trials)...\n  -> 363,175.2 ± 117,935.2 ops/sec (95% CI 278,815.3–447,535)\nBenchmarking Math.random (v4-format) (n=200000, 10 trials)...\n  -> 994,258.6 ± 34,790.8 ops/sec (95% CI 969,372.5–1.019e+6)\nBenchmarking GenoID (proposed, GA-inspired, v8) (n=200000, 10 trials)...\n  -> 8.827e+6 ± 220,397.3 ops/sec (95% CI 8.670e+6–8.985e+6)\nBenchmarking GenoID-structured (dbkey, v8) (n=200000, 10 trials)...\n  -> 1.898e+6 ± 121,121.8 ops/sec (95% CI 1.811e+6–1.984e+6)\nRunning collision test, n=2000000 per algorithm...\n  crypto.randomUUID (v4): 0 collisions in 2,000,000 samples\n  UUIDv7 (custom, RFC 9562): 0 collisions in 2,000,000 samples\n  SHA-256 hash-derived (v5-style): 0 collisions in 50,000 samples\n  Math.random (v4-format): 0 collisions in 2,000,000 samples\n  GenoID (proposed, GA-inspired, v8): 0 collisions in 2,000,000 samples\n  GenoID-structured (dbkey, v8): 0 collisions in 2,000,000 samples\nDone.\nNative baseline: v4=1.084e+6 ops/s, GenoID pool=8.827e+6 ops/s (8.1x faster), structured=1.898e+6 ops/s (0.6x slower vs v4).\n",
+      "rawLog": "Benchmarking crypto.randomUUID (v4) (n=200000, 10 trials)...\n  -> 985,644.2 ± 90,676.9 ops/sec (95% CI 920,782.4–1.051e+6)\nBenchmarking UUIDv7 (custom, RFC 9562) (n=200000, 10 trials)...\n  -> 1.547e+6 ± 12,618.6 ops/sec (95% CI 1.538e+6–1.556e+6)\nBenchmarking SHA-256 hash-derived (v5-style) (n=20000, 10 trials)...\n  -> 315,804.2 ± 108,953.3 ops/sec (95% CI 237,869.2–393,739.3)\nBenchmarking Math.random (v4-format) (n=200000, 10 trials)...\n  -> 890,570.8 ± 34,509.8 ops/sec (95% CI 865,885.7–915,255.9)\nBenchmarking GenoID (proposed, GA-inspired, v8) (n=200000, 10 trials)...\n  -> 7.582e+6 ± 163,443.5 ops/sec (95% CI 7.465e+6–7.699e+6)\nBenchmarking GenoID-structured (dbkey, v8) (n=200000, 10 trials)...\n  -> 1.666e+6 ± 20,775.5 ops/sec (95% CI 1.651e+6–1.681e+6)\nRunning collision test, n=2000000 per algorithm...\n  crypto.randomUUID (v4): 0 collisions in 2,000,000 samples\n  UUIDv7 (custom, RFC 9562): 0 collisions in 2,000,000 samples\n  SHA-256 hash-derived (v5-style): 0 collisions in 50,000 samples\n  Math.random (v4-format): 0 collisions in 2,000,000 samples\n  GenoID (proposed, GA-inspired, v8): 0 collisions in 2,000,000 samples\n  GenoID-structured (dbkey, v8): 0 collisions in 2,000,000 samples\nDone.\nNative baseline: v4=985,644.2 ops/s, GenoID pool=7.582e+6 ops/s (7.7x faster), structured=1.666e+6 ops/s (0.6x slower vs v4).\n",
       "results": [
         {
           "Algorithm": "crypto.randomUUID (v4)",
-          "Ops/sec": "1.084e+6 ± 52,168.8",
-          "Mean time/op": "0.922 µs",
-          "95% CI": "1.047e+6–1.122e+6",
+          "Ops/sec": "985,644.2 ± 90,676.9",
+          "Mean time/op": "1.015 µs",
+          "95% CI": "920,782.4–1.051e+6",
           "Random entropy (bits)": "122",
           "RNG source": "OS CSPRNG",
           "Security class": "High"
         },
         {
           "Algorithm": "UUIDv7 (custom, RFC 9562)",
-          "Ops/sec": "1.741e+6 ± 11,069.5",
-          "Mean time/op": "0.575 µs",
-          "95% CI": "1.733e+6–1.748e+6",
+          "Ops/sec": "1.547e+6 ± 12,618.6",
+          "Mean time/op": "0.647 µs",
+          "95% CI": "1.538e+6–1.556e+6",
           "Random entropy (bits)": "74",
           "RNG source": "OS CSPRNG",
           "Security class": "High* (timestamp leaks creation time)"
         },
         {
           "Algorithm": "SHA-256 hash-derived (v5-style)",
-          "Ops/sec": "363,175.2 ± 117,935.2",
-          "Mean time/op": "2.753 µs",
-          "95% CI": "278,815.3–447,535",
+          "Ops/sec": "315,804.2 ± 108,953.3",
+          "Mean time/op": "3.167 µs",
+          "95% CI": "237,869.2–393,739.3",
           "Random entropy (bits)": "121",
           "RNG source": "OS CSPRNG + SHA-256",
           "Security class": "High (slower)"
         },
         {
           "Algorithm": "Math.random (v4-format)",
-          "Ops/sec": "994,258.6 ± 34,790.8",
-          "Mean time/op": "1.006 µs",
-          "95% CI": "969,372.5–1.019e+6",
+          "Ops/sec": "890,570.8 ± 34,509.8",
+          "Mean time/op": "1.123 µs",
+          "95% CI": "865,885.7–915,255.9",
           "Random entropy (bits)": "122",
           "RNG source": "Xorshift128+ PRNG",
           "Security class": "Insecure (state-recoverable)"
         },
         {
           "Algorithm": "GenoID (proposed, GA-inspired, v8)",
-          "Ops/sec": "8.827e+6 ± 220,397.3",
-          "Mean time/op": "0.113 µs",
-          "95% CI": "8.670e+6–8.985e+6",
+          "Ops/sec": "7.582e+6 ± 163,443.5",
+          "Mean time/op": "0.132 µs",
+          "95% CI": "7.465e+6–7.699e+6",
           "Random entropy (bits)": "122",
           "RNG source": "Pooled OS CSPRNG (refills every 256 UUIDs) + byte-level GA crossover/mutation",
           "Security class": "High (near-native speed)"
         },
         {
           "Algorithm": "GenoID-structured (dbkey, v8)",
-          "Ops/sec": "1.898e+6 ± 121,121.8",
-          "Mean time/op": "0.527 µs",
-          "95% CI": "1.811e+6–1.984e+6",
+          "Ops/sec": "1.666e+6 ± 20,775.5",
+          "Mean time/op": "0.600 µs",
+          "95% CI": "1.651e+6–1.681e+6",
           "Random entropy (bits)": "50",
           "RNG source": "Pooled CSPRNG + declared v8 layout (timestamp/shard/monotonic-counter) + field-boundary crossover + constraint repair",
           "Security class": "High (composition framework)"
         }
       ],
-      "timestamp": "2026-07-23T14:22:03.292Z",
+      "timestamp": "2026-07-24T05:29:53.435Z",
       "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/149.0.7827.55 Safari/537.36"
     },
     {
@@ -154,64 +154,64 @@
         "nColl": "2000000",
         "nSync": "200000"
       },
-      "rawLog": "Benchmarking crypto.randomUUID (v4) (n=200000, 10 trials)...\n  -> 967,412 ± 32,648.7 ops/sec (95% CI 944,058.2–990,765.8)\nBenchmarking UUIDv7 (custom, RFC 9562) (n=200000, 10 trials)...\n  -> 1.530e+6 ± 14,810.5 ops/sec (95% CI 1.519e+6–1.540e+6)\nBenchmarking SHA-256 hash-derived (v5-style) (n=20000, 10 trials)...\n  -> 314,981.4 ± 95,485.6 ops/sec (95% CI 246,679.8–383,282.9)\nBenchmarking Math.random (v4-format) (n=200000, 10 trials)...\n  -> 894,048.9 ± 32,333.7 ops/sec (95% CI 870,920.3–917,177.4)\nBenchmarking GenoID (proposed, GA-inspired, v8) (n=200000, 10 trials)...\n  -> 7.602e+6 ± 571,369 ops/sec (95% CI 7.194e+6–8.011e+6)\nBenchmarking GenoID-structured (dbkey, v8) (n=200000, 10 trials)...\n  -> 1.723e+6 ± 89,725.3 ops/sec (95% CI 1.659e+6–1.787e+6)\nRunning collision test, n=2000000 per algorithm...\n  crypto.randomUUID (v4): 0 collisions in 2,000,000 samples\n  UUIDv7 (custom, RFC 9562): 0 collisions in 2,000,000 samples\n  SHA-256 hash-derived (v5-style): 0 collisions in 50,000 samples\n  Math.random (v4-format): 0 collisions in 2,000,000 samples\n  GenoID (proposed, GA-inspired, v8): 0 collisions in 2,000,000 samples\n  GenoID-structured (dbkey, v8): 0 collisions in 2,000,000 samples\nDone.\nNative baseline: v4=967,412 ops/s, GenoID pool=7.602e+6 ops/s (7.9x faster), structured=1.723e+6 ops/s (0.6x slower vs v4).\n",
+      "rawLog": "Benchmarking crypto.randomUUID (v4) (n=200000, 10 trials)...\n  -> 921,183.3 ± 58,531.4 ops/sec (95% CI 879,315.4–963,051.3)\nBenchmarking UUIDv7 (custom, RFC 9562) (n=200000, 10 trials)...\n  -> 1.525e+6 ± 7,862.3 ops/sec (95% CI 1.519e+6–1.530e+6)\nBenchmarking SHA-256 hash-derived (v5-style) (n=20000, 10 trials)...\n  -> 303,590 ± 97,313.7 ops/sec (95% CI 233,980.8–373,199.2)\nBenchmarking Math.random (v4-format) (n=200000, 10 trials)...\n  -> 869,524.9 ± 26,009.5 ops/sec (95% CI 850,920.1–888,129.7)\nBenchmarking GenoID (proposed, GA-inspired, v8) (n=200000, 10 trials)...\n  -> 7.637e+6 ± 269,437.1 ops/sec (95% CI 7.444e+6–7.830e+6)\nBenchmarking GenoID-structured (dbkey, v8) (n=200000, 10 trials)...\n  -> 1.670e+6 ± 18,770.4 ops/sec (95% CI 1.656e+6–1.683e+6)\nRunning collision test, n=2000000 per algorithm...\n  crypto.randomUUID (v4): 0 collisions in 2,000,000 samples\n  UUIDv7 (custom, RFC 9562): 0 collisions in 2,000,000 samples\n  SHA-256 hash-derived (v5-style): 0 collisions in 50,000 samples\n  Math.random (v4-format): 0 collisions in 2,000,000 samples\n  GenoID (proposed, GA-inspired, v8): 0 collisions in 2,000,000 samples\n  GenoID-structured (dbkey, v8): 0 collisions in 2,000,000 samples\nDone.\nNative baseline: v4=921,183.3 ops/s, GenoID pool=7.637e+6 ops/s (8.3x faster), structured=1.670e+6 ops/s (0.6x slower vs v4).\n",
       "results": [
         {
           "Algorithm": "crypto.randomUUID (v4)",
-          "Ops/sec": "967,412 ± 32,648.7",
-          "Mean time/op": "1.034 µs",
-          "95% CI": "944,058.2–990,765.8",
+          "Ops/sec": "921,183.3 ± 58,531.4",
+          "Mean time/op": "1.086 µs",
+          "95% CI": "879,315.4–963,051.3",
           "Random entropy (bits)": "122",
           "RNG source": "OS CSPRNG",
           "Security class": "High"
         },
         {
           "Algorithm": "UUIDv7 (custom, RFC 9562)",
-          "Ops/sec": "1.530e+6 ± 14,810.5",
-          "Mean time/op": "0.654 µs",
-          "95% CI": "1.519e+6–1.540e+6",
+          "Ops/sec": "1.525e+6 ± 7,862.3",
+          "Mean time/op": "0.656 µs",
+          "95% CI": "1.519e+6–1.530e+6",
           "Random entropy (bits)": "74",
           "RNG source": "OS CSPRNG",
           "Security class": "High* (timestamp leaks creation time)"
         },
         {
           "Algorithm": "SHA-256 hash-derived (v5-style)",
-          "Ops/sec": "314,981.4 ± 95,485.6",
-          "Mean time/op": "3.175 µs",
-          "95% CI": "246,679.8–383,282.9",
+          "Ops/sec": "303,590 ± 97,313.7",
+          "Mean time/op": "3.294 µs",
+          "95% CI": "233,980.8–373,199.2",
           "Random entropy (bits)": "121",
           "RNG source": "OS CSPRNG + SHA-256",
           "Security class": "High (slower)"
         },
         {
           "Algorithm": "Math.random (v4-format)",
-          "Ops/sec": "894,048.9 ± 32,333.7",
-          "Mean time/op": "1.119 µs",
-          "95% CI": "870,920.3–917,177.4",
+          "Ops/sec": "869,524.9 ± 26,009.5",
+          "Mean time/op": "1.150 µs",
+          "95% CI": "850,920.1–888,129.7",
           "Random entropy (bits)": "122",
           "RNG source": "Xorshift128+ PRNG",
           "Security class": "Insecure (state-recoverable)"
         },
         {
           "Algorithm": "GenoID (proposed, GA-inspired, v8)",
-          "Ops/sec": "7.602e+6 ± 571,369",
-          "Mean time/op": "0.132 µs",
-          "95% CI": "7.194e+6–8.011e+6",
+          "Ops/sec": "7.637e+6 ± 269,437.1",
+          "Mean time/op": "0.131 µs",
+          "95% CI": "7.444e+6–7.830e+6",
           "Random entropy (bits)": "122",
           "RNG source": "Pooled OS CSPRNG (refills every 256 UUIDs) + byte-level GA crossover/mutation",
           "Security class": "High (near-native speed)"
         },
         {
           "Algorithm": "GenoID-structured (dbkey, v8)",
-          "Ops/sec": "1.723e+6 ± 89,725.3",
-          "Mean time/op": "0.580 µs",
-          "95% CI": "1.659e+6–1.787e+6",
+          "Ops/sec": "1.670e+6 ± 18,770.4",
+          "Mean time/op": "0.599 µs",
+          "95% CI": "1.656e+6–1.683e+6",
           "Random entropy (bits)": "50",
           "RNG source": "Pooled CSPRNG + declared v8 layout (timestamp/shard/monotonic-counter) + field-boundary crossover + constraint repair",
           "Security class": "High (composition framework)"
         }
       ],
-      "timestamp": "2026-07-23T14:22:22.284Z",
+      "timestamp": "2026-07-24T05:30:13.625Z",
       "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/149.0.7827.55 Safari/537.36"
     },
     {
@@ -261,64 +261,64 @@
         "nColl": "2000000",
         "nSync": "200000"
       },
-      "rawLog": "Benchmarking crypto.randomUUID (v4) (n=200000, 10 trials)...\n  -> 920,735.2 ± 41,840.3 ops/sec (95% CI 890,806.5–950,663.9)\nBenchmarking UUIDv7 (custom, RFC 9562) (n=200000, 10 trials)...\n  -> 1.464e+6 ± 13,256.6 ops/sec (95% CI 1.455e+6–1.474e+6)\nBenchmarking SHA-256 hash-derived (v5-style) (n=20000, 10 trials)...\n  -> 296,601 ± 91,238.2 ops/sec (95% CI 231,337.6–361,864.4)\nBenchmarking Math.random (v4-format) (n=200000, 10 trials)...\n  -> 858,876.2 ± 31,454.9 ops/sec (95% CI 836,376.2–881,376.1)\nBenchmarking GenoID (proposed, GA-inspired, v8) (n=200000, 10 trials)...\n  -> 7.253e+6 ± 1.042e+6 ops/sec (95% CI 6.507e+6–7.999e+6)\nBenchmarking GenoID-structured (dbkey, v8) (n=200000, 10 trials)...\n  -> 1.717e+6 ± 23,706.3 ops/sec (95% CI 1.700e+6–1.734e+6)\nRunning collision test, n=2000000 per algorithm...\n  crypto.randomUUID (v4): 0 collisions in 2,000,000 samples\n  UUIDv7 (custom, RFC 9562): 0 collisions in 2,000,000 samples\n  SHA-256 hash-derived (v5-style): 0 collisions in 50,000 samples\n  Math.random (v4-format): 0 collisions in 2,000,000 samples\n  GenoID (proposed, GA-inspired, v8): 0 collisions in 2,000,000 samples\n  GenoID-structured (dbkey, v8): 0 collisions in 2,000,000 samples\nDone.\nNative baseline: v4=920,735.2 ops/s, GenoID pool=7.253e+6 ops/s (7.9x faster), structured=1.717e+6 ops/s (0.5x slower vs v4).\n",
+      "rawLog": "Benchmarking crypto.randomUUID (v4) (n=200000, 10 trials)...\n  -> 904,265.7 ± 61,805.1 ops/sec (95% CI 860,056.1–948,475.4)\nBenchmarking UUIDv7 (custom, RFC 9562) (n=200000, 10 trials)...\n  -> 1.435e+6 ± 7,937.3 ops/sec (95% CI 1.429e+6–1.441e+6)\nBenchmarking SHA-256 hash-derived (v5-style) (n=20000, 10 trials)...\n  -> 292,345.3 ± 91,982.9 ops/sec (95% CI 226,549.3–358,141.4)\nBenchmarking Math.random (v4-format) (n=200000, 10 trials)...\n  -> 830,522.7 ± 25,232.6 ops/sec (95% CI 812,473.6–848,571.8)\nBenchmarking GenoID (proposed, GA-inspired, v8) (n=200000, 10 trials)...\n  -> 6.933e+6 ± 381,800.1 ops/sec (95% CI 6.660e+6–7.206e+6)\nBenchmarking GenoID-structured (dbkey, v8) (n=200000, 10 trials)...\n  -> 1.614e+6 ± 21,318.7 ops/sec (95% CI 1.598e+6–1.629e+6)\nRunning collision test, n=2000000 per algorithm...\n  crypto.randomUUID (v4): 0 collisions in 2,000,000 samples\n  UUIDv7 (custom, RFC 9562): 0 collisions in 2,000,000 samples\n  SHA-256 hash-derived (v5-style): 0 collisions in 50,000 samples\n  Math.random (v4-format): 0 collisions in 2,000,000 samples\n  GenoID (proposed, GA-inspired, v8): 0 collisions in 2,000,000 samples\n  GenoID-structured (dbkey, v8): 0 collisions in 2,000,000 samples\nDone.\nNative baseline: v4=904,265.7 ops/s, GenoID pool=6.933e+6 ops/s (7.7x faster), structured=1.614e+6 ops/s (0.6x slower vs v4).\n",
       "results": [
         {
           "Algorithm": "crypto.randomUUID (v4)",
-          "Ops/sec": "920,735.2 ± 41,840.3",
-          "Mean time/op": "1.086 µs",
-          "95% CI": "890,806.5–950,663.9",
+          "Ops/sec": "904,265.7 ± 61,805.1",
+          "Mean time/op": "1.106 µs",
+          "95% CI": "860,056.1–948,475.4",
           "Random entropy (bits)": "122",
           "RNG source": "OS CSPRNG",
           "Security class": "High"
         },
         {
           "Algorithm": "UUIDv7 (custom, RFC 9562)",
-          "Ops/sec": "1.464e+6 ± 13,256.6",
-          "Mean time/op": "0.683 µs",
-          "95% CI": "1.455e+6–1.474e+6",
+          "Ops/sec": "1.435e+6 ± 7,937.3",
+          "Mean time/op": "0.697 µs",
+          "95% CI": "1.429e+6–1.441e+6",
           "Random entropy (bits)": "74",
           "RNG source": "OS CSPRNG",
           "Security class": "High* (timestamp leaks creation time)"
         },
         {
           "Algorithm": "SHA-256 hash-derived (v5-style)",
-          "Ops/sec": "296,601 ± 91,238.2",
-          "Mean time/op": "3.372 µs",
-          "95% CI": "231,337.6–361,864.4",
+          "Ops/sec": "292,345.3 ± 91,982.9",
+          "Mean time/op": "3.421 µs",
+          "95% CI": "226,549.3–358,141.4",
           "Random entropy (bits)": "121",
           "RNG source": "OS CSPRNG + SHA-256",
           "Security class": "High (slower)"
         },
         {
           "Algorithm": "Math.random (v4-format)",
-          "Ops/sec": "858,876.2 ± 31,454.9",
-          "Mean time/op": "1.164 µs",
-          "95% CI": "836,376.2–881,376.1",
+          "Ops/sec": "830,522.7 ± 25,232.6",
+          "Mean time/op": "1.204 µs",
+          "95% CI": "812,473.6–848,571.8",
           "Random entropy (bits)": "122",
           "RNG source": "Xorshift128+ PRNG",
           "Security class": "Insecure (state-recoverable)"
         },
         {
           "Algorithm": "GenoID (proposed, GA-inspired, v8)",
-          "Ops/sec": "7.253e+6 ± 1.042e+6",
-          "Mean time/op": "0.138 µs",
-          "95% CI": "6.507e+6–7.999e+6",
+          "Ops/sec": "6.933e+6 ± 381,800.1",
+          "Mean time/op": "0.144 µs",
+          "95% CI": "6.660e+6–7.206e+6",
           "Random entropy (bits)": "122",
           "RNG source": "Pooled OS CSPRNG (refills every 256 UUIDs) + byte-level GA crossover/mutation",
           "Security class": "High (near-native speed)"
         },
         {
           "Algorithm": "GenoID-structured (dbkey, v8)",
-          "Ops/sec": "1.717e+6 ± 23,706.3",
-          "Mean time/op": "0.582 µs",
-          "95% CI": "1.700e+6–1.734e+6",
+          "Ops/sec": "1.614e+6 ± 21,318.7",
+          "Mean time/op": "0.620 µs",
+          "95% CI": "1.598e+6–1.629e+6",
           "Random entropy (bits)": "50",
           "RNG source": "Pooled CSPRNG + declared v8 layout (timestamp/shard/monotonic-counter) + field-boundary crossover + constraint repair",
           "Security class": "High (composition framework)"
         }
       ],
-      "timestamp": "2026-07-23T14:22:41.593Z",
+      "timestamp": "2026-07-24T05:30:34.137Z",
       "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/149.0.7827.55 Safari/537.36"
     }
   ]
