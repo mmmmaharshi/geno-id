@@ -5,6 +5,45 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.20.0] - 2026-07-24
+
+### Summary
+
+**Bug fixes (pickFrom bias, entropy poisoning), two new benchmark experiments (rejection-cost sweep, DB index-locality), IEEE paper draft, and refreshed CI results.**
+
+A critical `pickFrom` bug — the Lemire-style variant collapsed ~98% of its draws onto `allowed[0]` — was silently making every constrained field (shard, tenant) effectively constant, breaking the load-balancing use case. An entropy-poisoning bug in `genStructuredGenoID` — structured field writes clobbered the CSPRNG bytes that downstream fields drew as their randomness — compounded the distribution collapse. Both fixed and pinned by new INV-11.
+
+Two new benchmarks: the rejection-cost sweep (`bench-rejection`) validates the O(k) vs (1/d)^k complexity claim empirically (48 cells, flat 1.4–3.2 µs/ID vs 2.8×10¹⁴ trials/ID); the DB index-locality benchmark (`bench-db`) measures 8 PK types in bun:sqlite (500k × 3 runs), reproducing the 2.7× v4→v7 result and showing GenoID's shardfirst layout answers partition queries with 0 index bytes vs 24.5% insert tax + ~10% storage. An IEEE-format paper draft (Sections I–III) and fresh CI benchmark numbers across 7 environments complete the release.
+
+### Highlights
+
+#### 🐛 Bug fixes
+
+- **`pickFrom` bias (INV-11)** — replaced Lemire-style debiasing with rejection debiasing (byte-range discard + modulo). The old picker collapsed ~98% of draws onto `allowed[0]` because a 256-entry byte range does not divide evenly by small `n`, and the incremental-`frac` arithmetic amplified the remainder. Fixed: discard the top `256 % n` values and retry (rare — 1 retry in 256/n draws). INV-11 asserts every allowed value lands within ±50% of its expected share.
+- **Entropy poisoning in structured gen** — `applyStructuredFields` wrote allowed-field values (e.g. shard at byte 0) directly into parent buffers A/B, then later fields drew their "randomness" from the same buffer — reading the previously-written field value instead of CSPRNG bytes. Fixed by snapshotting `_rngA`/`_rngB` before writes; downstream fields now draw from the unmodified CSPRNG copy.
+
+#### 🧪 New experiments
+
+- **Rejection-cost sweep** (`scripts/bench-rejection.ts`) — 48 cells (k=1..6 × 8 density levels). GenoID cost flat at 1.4–3.2 µs/ID (O(k), independent of density — actually *decreases* as density falls). Rejection detonates as (1/d)^k: k=6, d≈0.004 → 2.81×10¹⁴ trials/ID. Measured rejection trials match the analytical model where both are measurable, validating the §III bound. Output: `results/rejection-sweep.{json,csv}`.
+- **DB index-locality benchmark** (`scripts/bench-db.ts`) — zero-install `bun:sqlite`, 8 PK types, clustered + secondary modes (InnoDB-like + Postgres-like), 500k rows × 3 runs. uuid_v4→v7 = 2.7× (reproduces ULID/Shopify). GenoID-structured matches time-ordered peers (402k rows/s). Shardfirst layout: partition-queryable from PK with **0 index bytes, 0 insert tax** vs v7's **24.5% insert-throughput tax + ~10% storage** for an equivalent secondary index. Output: `results/db-sqlite.json`.
+
+#### 📄 Paper
+
+- **IEEE-format draft** (`GenoID_IEEE_paper.md`) — Sections I–III covering introduction, design (declarative layout, field-boundary crossover, constraint-guided repair), and formal analysis (complexity bound, entropy-preservation proof).
+
+#### ⚡ CI refresh
+
+- Consolidated 7-environment benchmark table refreshed with fresh CI run numbers.
+
+### Breaking Changes
+
+- None.
+
+### Upgrade Guide
+
+- Rebuild with `bun run build`.
+- No import changes or API deprecations — the `pickFrom` fix is internal and output-preserving (all entries remain valid v8 UUIDs with constrained fields correctly populated).
+
 ## [1.19.0] - 2026-07-23
 
 ### Summary
