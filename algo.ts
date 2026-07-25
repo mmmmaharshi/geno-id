@@ -113,6 +113,33 @@ function fillRandom(buf: Uint8Array): void {
   _fillRandom(buf)
 }
 
+export function resetSeededState(): void {
+  _csprngPos = _csprngBuf.length
+  _counters.clear()
+  _lastValues.clear()
+}
+
+export function createSeededRandom(seed0: number, seed1: number): RandomFill {
+  let s0 = seed0 >>> 0
+  let s1 = seed1 >>> 0
+  return (buf: Uint8Array): void => {
+    let off = 0
+    while (off < buf.length) {
+      let t = s1
+      t ^= t << 23
+      t ^= t >>> 17
+      t ^= s0
+      t ^= s0 >>> 26
+      s0 = s1
+      s1 = t
+      buf[off++] = s1 & 0xff
+      if (off < buf.length) buf[off++] = (s1 >>> 8) & 0xff
+      if (off < buf.length) buf[off++] = (s1 >>> 16) & 0xff
+      if (off < buf.length) buf[off++] = (s1 >>> 24) & 0xff
+    }
+  }
+}
+
 /**
  * Inject the platform CSPRNG used for every GenoID entropy draw. Required on
  * runtimes without Web Crypto (embedded firmware, MicroPython). `fn` must fill

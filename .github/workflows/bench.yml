@@ -97,6 +97,26 @@ jobs:
           path: |
             dist/bench-ci-results.json
 
+  golden-check:
+    name: golden-vector check (Rust)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - uses: dtolnay/rust-toolchain@stable
+      - run: bun install
+      - run: bun run build
+      - run: bun run scripts/export-golden.ts
+      - run: cargo run --manifest-path golden-check/Cargo.toml --release
+      - name: Upload golden vectors
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: golden-vectors
+          path: golden/
+
   consolidate:
     name: consolidate CI results
     runs-on: ubuntu-latest
