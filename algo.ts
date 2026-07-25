@@ -833,6 +833,56 @@ function getStructPool(layout: V8Layout): {
   return p
 }
 
+const _spPool = new Map<string, { pool: Uint8Array<ArrayBuffer>; strs: string[]; idx: number; size: number }>()
+
+function refillSingleParentPool(layout: V8Layout): void {
+  const w = wordTable(), t = HEX8, size = _structPoolN
+  let entry = _spPool.get(layout.name)
+  let pool: Uint8Array<ArrayBuffer>
+  let strs: string[]
+  if (entry && entry.pool.length >= STRUCT_ENTRY * size) {
+    pool = entry.pool
+    strs = entry.strs
+    strs.length = size
+  } else {
+    pool = new Uint8Array(STRUCT_ENTRY * size)
+    strs = new Array<string>(size)
+    _spPool.set(layout.name, { pool, strs, idx: 0, size })
+  }
+  fillRandom(pool)
+  for (let n = 0; n < size; n++) {
+    const off = n * STRUCT_ENTRY
+    const buf = pool.subarray(off, off + 16)
+    applyStructuredFields(buf, layout)
+    forceVersionVariant(buf)
+    repairConstraints(layout, buf)
+    const c = buf
+    strs[n] = w
+      ? w[(c[0] << 8) | c[1]] + w[(c[2] << 8) | c[3]] + "-" +
+        w[(c[4] << 8) | c[5]] + "-" +
+        w[(c[6] << 8) | c[7]] + "-" +
+        w[(c[8] << 8) | c[9]] + "-" +
+        w[(c[10] << 8) | c[11]] + w[(c[12] << 8) | c[13]] + w[(c[14] << 8) | c[15]]
+      : t[c[0]] + t[c[1]] + t[c[2]] + t[c[3]] + "-" +
+        t[c[4]] + t[c[5]] + "-" +
+        t[c[6]] + t[c[7]] + "-" +
+        t[c[8]] + t[c[9]] + "-" +
+        t[c[10]] + t[c[11]] + t[c[12]] + t[c[13]] + t[c[14]] + t[c[15]]
+  }
+  entry = _spPool.get(layout.name)!
+  entry.idx = 0
+}
+
+export function genStructuredGenoIDSingleParent(layout: V8Layout): string {
+  ensureValidated(layout)
+  let p = _spPool.get(layout.name)
+  if (!p || p.idx >= p.size) {
+    refillSingleParentPool(layout)
+    p = _spPool.get(layout.name)!
+  }
+  return p.strs[p.idx++]
+}
+
 /**
  * Production API: pool of structured parents + field-boundary crossover +
  * constraint repair. Every structured field is populated in BOTH pooled

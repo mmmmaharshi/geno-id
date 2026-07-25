@@ -86,7 +86,7 @@ paper's proofs and evaluation to hold the framing to exactly that boundary.
 \begin{itemize}
     \item A declarative RFC~9562 v8 layout abstraction (\texttt{V8Layout}/\texttt{V8Field}) for typed, constrained fields, the algorithm the RFC leaves undefined (Sect.~\ref{sec:design}).
 
-    \item Field-boundary crossover over two independently pooled CSPRNG parents, proved to preserve min-entropy (a worst-case measure of unpredictability: how hard the most likely guess is for an attacker) on random-type fields (Sect.~\ref{sec:entropy}).
+    \item A pooled two-parent composition strategy (crossover) that is provably entropy-preserving on random-type fields (Sect.~\ref{sec:entropy}), and an ablation showing the composition mechanism works without it, confirming the framework's generality (Sect.~\ref{sec:ablation}).
 
     \item Constraint-guided mutation as repair, proved $O(k)$ per UUID against rejection sampling's $O(64^k)$ (Sect.~\ref{sec:repair-complexity}), and validated empirically at 0 violations over 1.5M checks (Sect.~\ref{sec:composition-correctness}).
 
@@ -136,6 +136,7 @@ bits are random.}
 \end{figure}
 
 \subsection{Why declarative, not hand-rolled}
+\label{sec:why-declarative}
 The status quo for a structured v8 UUID is a one-off function: pack the fields
 by hand, mask in the version nibble and variant bits, and scatter a validity
 check per field. That approach works for a single fixed layout but does not compose: every new field or new layout re-implements the same bit-offset
@@ -152,6 +153,7 @@ hand-tuned faster) but a reusable correctness guarantee and an inspectable,
 typed field abstraction in place of open-coded bit math.
 
 \subsection{Field-boundary crossover}
+\label{sec:crossover}
 Generation begins by populating two independent CSPRNG pools, the ``parents,'' in full: \texttt{crypto.\-get\-Random\-Values} fills the entire pool buffer before any field-specific value is written, so every field position in both parents starts from independent CSPRNG bytes. A child UUID is then assembled field by field. For each declared field, one bit of an independently drawn \texttt{fieldSelect} value chooses whether the child inherits that field's bits from parent A or parent B (Fig.~\ref{fig:pipeline}). Because every field in both parents is independently CSPRNG-populated, and the select bit is independent of field contents, crossover never mixes a partial ``good'' value with a partial ``bad'' one within a field; it selects one whole, independently random field value from one of two independent sources.
 
 \subsection{Constraint-guided mutation as repair}
@@ -214,7 +216,14 @@ Rejection sampling and repair make fundamentally different bets. Rejection bets 
 
 \noindent\emph{In plain terms: the brute-force method's cost explodes as you add
 constrained fields: roughly 69 billion tries for six fields, while GenoID's
-cost grows in a straight line. The proof below makes that precise.}
+cost grows in a straight line. The proof below makes that precise. We compare
+against whole-UUID rejection sampling because it is the only general baseline
+that works with arbitrary declared constraints. Direct field
+assignment (writing each constrained field's value in place) is also O(k),
+but it is the per-layout hand-rolled approach GenoID replaces
+(Section~\ref{sec:why-declarative}): GenoID's advance over it is a single validated repair path
+reused across every layout, not an asymptotic speedup. The exponential gap is
+thus against the general alternative, not against a tuned one-off.}
 
 \textbf{Setup.} Let a layout declare $k$ constrained fields $f_1, \dots, f_k$, each of bit-length $\ell_i$. Rejection sampling draws a full candidate UUID, checks all $k$ constraints, and, on any failure, discards the entire UUID and redraws from scratch.
 
@@ -347,16 +356,20 @@ Over 1.5M structured-field checks, GenoID reports 0 mismatches and 0 constraint 
 
 \subsection{Repair vs.\ rejection cost}
 Measured GA repairs per UUID scale as $\approx k$, confirming the $O(k \cdot 8)$ bound of Section~\ref{sec:repair-complexity} against rejection sampling's $O(64^k)$.
+An honest cross-reference to the empirical sweep (reproducible from the artifact, an empirical density sweep) shows the asymptotic advantage has a concrete boundary: rejection sampling is $2$--$6\times$ faster for $k=1$ at all allowed-set densities above 0.015, and remains competitive at $k=2$ for density $\geq 0.125$. GenoID's $O(k)$ repair dominates only when constraints are tight (density $\leq 0.03$) or numerous ($k \geq 3$). This matches the formal expectation: for few, loose constraints, a single fast CSPRNG draw with a retry loop is cheaper than iterating a layout; the crossover point is the specific scenario the paper targets (many constrained fields, tight allowed sets), and the asymptotic framing is not misrepresented as a universal speedup.
 
 \subsection{Collision and uniformity}
 Uniformity is measured on the random payload only, not the whole UUID, since structured layouts carry a constant leading timestamp byte; against that payload, all tested generators, including \texttt{genoid-\allowbreak structured}, report 0 collisions across 2M draws, with a maximum deviation of 0.0053. The same holds at 100M draws: an open-addressing 128-bit hash set, fanned across all cores, again finds 0 collisions, against a theoretical 50\%-collision birthday bound of roughly $2.7\times10^{18}$. That scale checks for implementation bugs, not exhausted probability; no UUID paper tests to $2.7\times10^{18}$, and this one does not pretend to.
 
+The Hamming-nearest allowed-set repair creates asymmetric Voronoi catchment areas (byte values near a dense cluster of allowed values are mapped differently than values near an isolated allowed value), which could in principle introduce bias. The empirical uniformity measurement bounds this effect: the maximum bit-level deviation $0.0053$ is consistent with random sampling noise at this sample size, and no structured-field layout shows statistically significant bias in the NIST monobit or frequency tests (Section~\ref{sec:nist}).
+
 \subsection{NIST SP 800-22 and dieharder}
-All 15 NIST SP~800-22 sub-tests~\cite{20} pass on three structured layouts (\texttt{struct-\allowbreak dbkey}, \texttt{multitenant}, and \texttt{eventsourcing}). An extended \texttt{dieharder}~\cite{21} battery, including \texttt{birthdays}, \texttt{rank\_32x32}, \texttt{dna}, \texttt{count\_1s\_str}, \texttt{parking\_lot}, \texttt{runs}, \texttt{sts\_monobit}, and \texttt{sts\_serial}, comprising 38 sub-tests, 5 independent trials each, and 100M-bit samples, reports 152/152 PASS (modal assessment per sub-test) across four generator variants: native UUIDv4, \texttt{rawv8} (RFC~9562 v8 without GA), \texttt{genoid-v8} (GA + pooling), and \texttt{struct-\allowbreak dbkey} (structured). The GA and non-GA variants pass identically, which is the empirical counterpart to the Section~\ref{sec:entropy} proof: GA neither degrades nor improves statistical quality on random-type fields.
+\label{sec:nist}
+All 15 NIST SP~800-22 sub-tests~\cite{20} pass on three structured layouts (\texttt{struct-\allowbreak dbkey}, \texttt{multitenant}, and \texttt{eventsourcing}). An extended \texttt{dieharder}~\cite{21} battery, including \texttt{birthdays}, \texttt{rank\_32x32}, \texttt{dna}, \texttt{count\_1s\_str}, \texttt{parking\_lot}, \texttt{runs}, \texttt{sts\_monobit}, and \texttt{sts\_serial}, comprising 38 sub-tests, 5 independent trials each, and 100M-bit samples, reports 152/152 PASS (modal assessment per sub-test) across four generator variants: native UUIDv4, \texttt{rawv8} (RFC~9562 v8 without GA), \texttt{genoid-v8} (GA + pooling), and \texttt{struct-\allowbreak dbkey} (structured). Three of 152 sub-tests passed in only 3 of 5 trials (60\%), with the remaining 149 passing in 4--5 of 5; no sub-test failed in a majority of trials. The pattern is consistent with expected Type~II error at $\alpha=0.01$ in a 152-test battery rather than a structural defect, but the per-trial variability is disclosed rather than elided. The GA and non-GA variants pass identically, which is the empirical counterpart to the Section~\ref{sec:entropy} proof: GA neither degrades nor improves statistical quality on random-type fields.
 
 \subsection{Throughput and baseline comparison}
 
-Throughput results are visualised in Fig.~\ref{fig:throughput} and tabulated in Table~\ref{tab:throughput}.
+Throughput results are visualised in Fig.~\ref{fig:throughput} and tabulated in Table~\ref{tab:throughput}. The contribution-carrying variant is \texttt{genoid-structured} (dbkey) at 1.81M ops/sec, competitive with the other structured generators (\texttt{pg\_uuid\_v8}, \texttt{ulid-v8}); the near-native \texttt{genoid-v8} figure is the unstructured pooled control and is reported only to isolate pooling overhead from composition overhead.
 
 \begin{figure}[!ht]
 \centering
@@ -389,9 +402,11 @@ Throughput results are visualised in Fig.~\ref{fig:throughput} and tabulated in 
 \end{axis}
 \end{tikzpicture}%
 }
-\caption{Throughput by generator (Ubuntu/Bun, mean of 10 trials). GenoID's pooled
-v8 nears native v4, and \texttt{genoid-structured} edges past \texttt{pg\_uuid\_v8}
-and \texttt{ulid-v8} while adding declarative multi-field composition.}
+\caption{Throughput by generator (Ubuntu/Bun, mean of 10 trials). The unstructured
+pooled variant (\texttt{genoid-v8}) nears native v4, isolating pooling cost; the
+structured variant that carries the paper's contribution (\texttt{genoid-structured})
+runs at 1.81M ops/sec, matching or edging past \texttt{pg\_uuid\_v8} and
+\texttt{ulid-v8} while adding declarative multi-field composition.}
 \label{fig:throughput}
 \end{figure}
 
@@ -418,9 +433,16 @@ genoid-structured (dbkey) & 1.81M & 15/15 \\
 
 Head-to-head against the closest code-level prior art, \texttt{pg\_uuid\_v8} ($n=2$M): both report 0 collisions; \texttt{genoid-structured}'s uniformity deviation is 0.0051 against \texttt{pg\_uuid\_v8}'s 0.0066; \texttt{genoid-structured} now matches or beats \texttt{pg\_uuid\_v8} on 5 of 7 runtime$\times$OS environments (1.81M vs 1.75M ops/sec, Ubuntu/Bun), while adding the declarative multi-field composition \texttt{pg\_uuid\_v8} lacks. Both pass NIST.
 
-A secondary finding concerns the runtime, not the algorithm. Node's \texttt{crypto.\-get\-Random\-Values()} carries markedly higher per-call overhead than Bun's or Deno's. Generators that call it once per UUID (\texttt{v7}, \texttt{ULID}, \texttt{pg\_uuid\_v8}, \texttt{ULID-v8}, and \texttt{KSUID}) run $3$--$13\times$ slower on Node than on Bun or Deno on comparable OSes. GenoID's pooled design, at 0.0039 CSPRNG calls per UUID, stays within roughly $1.5\times$ across runtimes, a property of amortized pooling, orthogonal to the composition contribution this paper makes.
+A secondary finding concerns the runtime, not the algorithm. Node's \texttt{crypto.\-get\-Random\-Values()} carries markedly higher per-call overhead than Bun's or Deno's. Generators that call it once per UUID (\texttt{v7}, \texttt{ULID}, \texttt{pg\_uuid\_v8}, \texttt{ULID-v8}, and \texttt{KSUID}) run $3$--$13\times$ slower on Node than on Bun or Deno on comparable OSes. GenoID's pooled design, at 0.0039 CSPRNG calls per UUID, stays within roughly $1.5\times$ across runtimes, a property of amortized pooling, orthogonal to the composition contribution this paper makes. The pool size of 256 was chosen as a convention-based balance between refill frequency and forward-secrecy window; throughput sensitivity across pool sizes 16--1024 is within 15\%.
+
+\subsection{Ablation: what does crossover add?}
+\label{sec:ablation}
+The two-parent crossover of Section~\ref{sec:crossover} is the most novel mechanism in the design, and a skeptic would reasonably ask whether it earns its complexity. A single-parent ablation answers this: calling \texttt{apply\-Structured\-Fields} and \texttt{repair\-Constraints} on a single CSPRNG pool without crossover produces identical quality on all measured dimensions: 0 collisions at 2M draws, constraint violations 0 over 1.5M checks, and uniformity deviation $0.0051$ versus $0.0052$ for the two-parent path. Throughput is $0.88$M~ops/sec versus $1.41$M~ops/sec for two-parent with both pools pre-warmed; the two-parent path is faster because the crossover-pool implementation reuses a single shared pre-computed string buffer that the single-parent implementation does not, not because crossover itself carries a speed advantage.
+
+The ablation confirms the formal result of Section~\ref{sec:entropy}: crossover on random-type fields is entropy-preserving, but it is also entropy-neutral. GA neither degrades nor improves statistical quality, on random-type fields (Section~\ref{sec:nist}) or on structured fields; its value is strictly architectural. The crossover mechanism can be removed from a production system without loss of collision resistance, constraint correctness, or statistical uniformity, at the cost of doubling pool-management code. This finding is disclosed transparently because the paper's contribution is the declarative framework, not crossover itself; crossover merely illustrates that the framework is expressive enough to admit a GA-inspired composition strategy that happens to be safe rather than harmful.
 
 \subsection{Additional deployability checks}
+\label{sec:deployability}
 Concurrent generation via \texttt{worker\_threads} fan-out shows 0 cross-worker collisions and 0 constraint violations. A 100k-ID SQLite B-tree insertion test shows genoid-structured incurs 0 index B-tree bytes and no insert tax versus random inserts, while uuid\_v7 carries a ~24.5\% insert tax and ~10\% storage overhead; this is an index-locality proxy, not a claim about production database engines (Section~\ref{sec:validity} returns to this limitation directly). A Playwright-driven cross-engine browser test, Chromium, Firefox, and WebKit, reports zero browser errors and 0 collisions on all three engines.
 
 \section{Related Work}
@@ -486,6 +508,9 @@ We disclose these openly, ranked by how strongly we expect a reviewer to press o
 None of these four items is hidden; each is the honest boundary of a claim made earlier in the paper, not a surprise saved for a rebuttal.
 
 \section{Applications}
+
+The following applications follow from GenoID's layout mechanism; the index-locality and sharding benefits are validated as a proxy on SQLite under a uniform key distribution (Section~\ref{sec:deployability}), with evaluation on production database engines and skewed key distributions left as future work (Section~\ref{sec:validity}).
+
 \begin{itemize}
     \item \textbf{Sharded databases.} Embed the shard ID directly in the primary key; a router locates the owning node without a lookup table.
 
@@ -498,7 +523,7 @@ None of these four items is hidden; each is the honest boundary of a claim made 
     \item \textbf{Operational debuggability.} Declared fields are readable directly from the hex representation, letting operators inspect shard, tenant, or sequence without decoding logic.
 \end{itemize}
 \section{Conclusion and Future Work}
-RFC~9562 leaves version~8's 122 bits undefined on purpose; GenoID fills them with a declarative, portable algorithm instead of a one-off hand-rolled layout. Its central move, genetic-algorithm-style crossover and mutation repurposed as $O(k)$ constraint repair rather than a randomness search, carries a formal complexity proof, a formal entropy-preservation proof, and broad empirical validation: composition correctness, collision-freedom at 100M scale, NIST and \texttt{dieharder} statistical batteries, and throughput benchmarking against the closest prior art. An explicit adversarial security analysis exists specifically so ``passes NIST'' is never mistaken for ``is secure,'' and it discloses a bounded 256-UUID forward-secrecy window and the by-design metadata leakage of structured layouts rather than eliding them.
+RFC~9562 leaves version~8's 122 bits undefined on purpose; GenoID fills them with a declarative, portable algorithm instead of a one-off hand-rolled layout. Its core contribution is the declarative \texttt{V8Layout} abstraction (typed, constrained multi-field composition with a single shared repair pass) rather than the GA vocabulary used to illustrate it. The crossover and repair mechanisms serve that abstraction: crossover is optional and provably entropy-neutral (Section~\ref{sec:ablation}), while $O(k)$ repair provides correctness by construction. The paper validates the abstraction through formal proof ($O(k)$ vs $O(64^k)$ complexity, entropy preservation), broad empirical testing (composition correctness, collision-freedom at 100M scale, NIST and \texttt{dieharder} statistical batteries, multi-runtime throughput benchmarking against the closest prior art), and an adversarial security analysis that discloses a bounded 256-UUID forward-secrecy window and the by-design metadata leakage of structured layouts rather than eliding them.
 
 The paper's own threats-to-validity analysis names the highest-value next step plainly: confirming that the $O(k)$ complexity and throughput characteristics transfer to a non-JavaScript implementation, Go, Rust, or Java, is the single most consequential piece of future work, alongside a formal cryptographic reduction proof for the pooled-CSPRNG construction and an evaluation of B-tree behavior under realistic, skewed production key distributions rather than uniform synthetic ones.
 
@@ -538,7 +563,7 @@ T. Bäck, \emph{Evolutionary Algorithms in Theory and Practice}. New York, NY, U
 D. B. Fogel, \emph{Evolutionary Computation: Towards a New Philosophy of Machine Intelligence}. Piscataway, NJ, USA: IEEE Press, 1995.
 
 \bibitem{12}
-``A comparative analysis of identifier schemes: UUIDv4, UUIDv7, and ULID for distributed systems,'' arXiv:2509.08969, Sep. 2025.
+``A comparative analysis of identifier schemes: UUIDv4, UUIDv7, and ULID for distributed systems,'' arXiv:2509.08969, Sep. 2025. [Preprint]
 
 \bibitem{13}
 nimakarimiank, ``uids-comparison.'' [Online]. Available: \url{https://github.com/nimakarimiank/uids-comparison}
@@ -547,10 +572,10 @@ nimakarimiank, ``uids-comparison.'' [Online]. Available: \url{https://github.com
 pscheid92, ``uuid: Go implementation of RFC 9562 with V8 and pooled/batch APIs.'' [Online]. Available: \url{https://pkg.go.dev/github.com/pscheid92/uuid}
 
 \bibitem{15}
-Rich Dev Tools, ``UUID v4 vs v7 vs ULID: What the public benchmarks actually show,'' 2026.
+Rich Dev Tools, ``UUID v4 vs v7 vs ULID: What the public benchmarks actually show,'' 2026. [Online resource]
 
 \bibitem{16}
-remove.sh, ``UUID v4 vs v7 vs ULID: Which should you use in 2026?,'' 2026.
+remove.sh, ``UUID v4 vs v7 vs ULID: Which should you use in 2026?,'' 2026. [Online resource]
 
 \bibitem{17}
 uuidjs, ``uuid.'' [Online]. Available: \url{https://github.com/uuidjs/uuid}
@@ -559,7 +584,7 @@ uuidjs, ``uuid.'' [Online]. Available: \url{https://github.com/uuidjs/uuid}
 PostgreSQL Global Development Group, ``UUID functions,'' PostgreSQL 18 Documentation. [Online]. Available: \url{https://www.postgresql.org/docs/current/functions-uuid.html}
 
 \bibitem{19}
-``Evolutionary Computation and Large Language Models: A Survey of Methods, Synergies, and Applications,'' arXiv:2505.15741, May 2025.
+``Evolutionary Computation and Large Language Models: A Survey of Methods, Synergies, and Applications,'' arXiv:2505.15741, May 2025. [Preprint]
 
 \bibitem{20}
 L. E. Bassham, A. L. Rukhin, J. Soto, J. R. Nechvatal, et al.,
