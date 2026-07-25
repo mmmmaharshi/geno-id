@@ -160,9 +160,7 @@ Generation begins by populating two independent CSPRNG pools in full. A child UU
 \end{algorithmic}
 \end{algorithm}
 
-Every branch assigns $v'$ unconditionally, so the loop body cannot fail and the procedure contains no backward jump: it executes exactly $k$ iterations for $k$ constrained fields, independent of the drawn value. Correctness is by construction: each branch's codomain is the constraint's satisfying set.
-
-After crossover, \texttt{repairConstraints} performs a single pass over the layout's constrained fields, with no retry loop and no redraw. An allowed-constrained field is mapped to its Hamming-nearest member; a min/max-constrained field is clamped; a monotonic field is clamped to max(current, last-seen). Every branch returns a constraint-satisfying value by construction: 0 violations, not ``near 0.''
+Every branch assigns $v'$ unconditionally, so the loop body cannot fail and the procedure contains no backward jump: it executes exactly $k$ iterations for $k$ constrained fields, independent of the drawn value. Correctness is by construction: each branch's codomain is the constraint's satisfying set: 0 violations, not ``near 0.''
 
 \begin{figure}[!ht]
 \centering
@@ -212,6 +210,62 @@ snaps any out-of-range field to its nearest allowed member. No redraw.}
 \label{fig:pipeline}
 \end{figure}
 
+\section{Applications}
+\label{sec:applications}
+Each use case below declares one layout and reads one field; no
+generation code is written per application.
+
+\subsection{Sharded databases}
+Listing~\ref{lst:dbkey} embeds the owning shard directly in the key.
+A router extracts bits 52--59 and dispatches without consulting a
+shard map: routing becomes a bit-mask and a comparison, replacing a
+hash computation and a ring lookup under consistent hashing, and
+removing the coordination needed to keep a shard map current across
+application nodes. The 48-bit timestamp prefix preserves index
+locality, so keys remain B-tree friendly (Section~\ref{sec:deployability}).
+The shard set is fixed at declaration time; resharding requires a
+new layout and a dual-read window, which makes this approach suited
+to stable shard counts rather than elastic ones.
+
+\subsection{Multi-tenant isolation}
+The \texttt{multitenant} layout (Listing~\ref{lst:multitenant})
+carries a 12-bit tenant enum and an 8-bit region enum. Tenant
+scoping becomes a bit-range predicate on the primary key rather than
+a join against a tenant table, and a row whose key-embedded tenant
+disagrees with its session context is detectable at the storage
+layer, turning a class of isolation bug into a checkable invariant.
+The region field supports data-residency assertions without a
+secondary index. The allowed-tenant set is declared as $[1,8]$; a
+wider set or a different constraint kind requires changing the
+declaration, not the generator.
+
+\begin{lstlisting}[language=Java,
+  caption={The \texttt{multitenant} layout. Only the constrained
+           fields are declared; the generator is unchanged.},
+  label={lst:multitenant}]
+const multitenant: V8Layout = {
+  name: "multitenant",
+  fields: [
+    { name: "tenant", offset:  0, length: 12, type: "shard",
+      constraint: { kind: "allowed", allowed: [1,2,3,4,5,6,7,8] } },
+    { name: "region", offset: 52, length:  8, type: "shard",
+      constraint: { kind: "allowed", allowed: [1,2,3,4] } },
+  ],
+};
+\end{lstlisting}
+
+\subsection{Event sourcing}
+Pairing a 48-bit timestamp with a monotonic counter yields
+identifiers that sort in emission order within a node, with the
+counter breaking ties inside a single millisecond. An append-only
+log therefore orders by primary key alone, without a sequence
+server or a coordination round trip. Because the monotonic branch
+of Algorithm~\ref{alg:repair} clamps to
+$\max(\textit{current},\textit{last-seen})$ rather than rejecting,
+ordering is preserved even when the underlying clock moves
+backwards. Ordering is per-generator; cross-node total order still
+requires an external mechanism.
+
 \section{Formal Analysis}
 Rejection bets that a lucky whole-UUID draw arrives before an unlucky run; repair guarantees success by fixing only the fields that need it. The gap below quantifies that bet, and the entropy argument shows it costs nothing in randomness quality.
 
@@ -236,7 +290,7 @@ Repair does not increase entropy: \texttt{repairConstraints} is deterministic, s
 \section{Security Analysis}
 \label{sec:security}
 
-The OS CSPRNG is assumed reliable, matching RFC~9562 \S8.1. Every GenoID pool refill is seeded from it. We consider passive observers, state compromise, structure inference, and collision attacks.
+The OS CSPRNG is assumed reliable, matching RFC~9562 \S8. Every GenoID pool refill is seeded from it. We consider passive observers, state compromise, structure inference, and collision attacks.
 
 \subsection{Entropy accounting}
 \label{sec:entropy-accounting}
@@ -277,7 +331,7 @@ Every number below is reproducible from the CI artifacts at \texttt{bun run benc
 Over 1.5M structured-field checks: 0 mismatches and 0 constraint violations, the empirical counterpart to the by-construction correctness proof.
 
 \subsection{Repair vs.\ rejection cost}
-Measured repairs per UUID scale as $\approx k$, confirming the $O(k \cdot 8)$ bound against $O(64^k)$. An empirical sweep gives the concrete boundary: rejection sampling is $2$--$6\times$ faster for $k=1$ at density $>0.015$. GenoID's repair dominates only when constraints are tight ($\leq 0.03$ density) or numerous ($k \geq 3$), matching the formal expectation that the asymptotic advantage is real but bounded.
+Measured repairs per UUID scale as $\approx k$, confirming the $O(k)$ bound, with measured constant factor near 8, against $O(64^k)$. An empirical sweep gives the concrete boundary: rejection sampling is $2$--$6\times$ faster for $k=1$ at density $>0.015$. GenoID's repair dominates only when constraints are tight ($\leq 0.03$ density) or numerous ($k \geq 3$), matching the formal expectation that the asymptotic advantage is real but bounded.
 
 \subsection{Collision and uniformity}
 All generators report 0 collisions across 2M draws and at 100M draws fanned across all cores, against a 50\%-collision birthday bound of $2.7\times10^{18}$. Uniformity deviation on the random payload is at most 0.0053. The Hamming-nearest repair creates asymmetric Voronoi catchment areas that could introduce bias in principle; the measured deviation is consistent with random sampling noise, and no structured layout shows significant bias in NIST monobit or frequency tests.
@@ -370,7 +424,7 @@ In production, each port draws from its own OS CSPRNG; the seeded byte stream ex
 \subsection{UUID standards: RFC 4122 to RFC 9562}
 UUIDs originated as RFC~4122 (versions~1--5), obsoleted by RFC~9562 (2024), which adds versions~6, 7, and~8~\cite{1}. UUIDv4 carries 122 CSPRNG bits but lacks order; UUIDv7 prepends a 48-bit timestamp for index locality~\cite[\S5.7]{1}; UUIDv8 is explicitly experimental, with the RFC providing no creation algorithm for its 122 bits~\cite[\S5.8]{1}.
 \subsection{Sortable and structured identifiers}
-RFC~9562 surveyed sixteen prior implementations~\cite{1}. Representative members: ULID~\cite{2} (48-bit timestamp + 80-bit randomness), KSUID~\cite{3} (32-bit timestamp + 128-bit randomness), Snowflake~\cite{4} (timestamp $|$ worker $|$ sequence), TypeID~\cite{5} (typed prefix over UUIDv7), and COMBGUID (embedded timestamp). Time-ordered identifiers improve database behavior~\cite{6}, with academic comparisons of UUIDv4/v7/ULID for distributed systems~\cite{8,9}. This is a well-explored field limited to fixed, hand-coded layouts; none offers a declarative framework for arbitrary multi-field v8 composition.
+RFC~9562 surveyed sixteen prior implementations~\cite{1}. Representative members: ULID~\cite{2} (48-bit timestamp + 80-bit randomness), KSUID~\cite{3} (32-bit timestamp + 128-bit randomness), Snowflake~\cite{4} (timestamp $|$ worker $|$ sequence), TypeID~\cite{5} (typed prefix over UUIDv7), and COMBGUID (embedded timestamp). Time-ordered identifiers improve database behavior~\cite{6}, with academic comparisons of UUIDv4/v7/ULID for distributed systems~\cite{8}. This is a well-explored field limited to fixed, hand-coded layouts; none offers a declarative framework for arbitrary multi-field v8 composition.
 \subsection{Steganographic UUIDs: closest prior art}
 \texttt{pg\_uuid\_v8}~\cite{7}, a PostgreSQL C extension (PGXN, May~2026), is the closest prior art. It generates v4-compliant UUIDs with an encrypted microsecond timestamp (XOR or AES), recoverable by extraction function. GenoID differs: \texttt{pg\_uuid\_v8} offers one fixed stego layout with no multi-field abstraction or repair, while GenoID provides a declarative, multi-field DSL and constraint-guided repair as a portable library.
 
@@ -384,69 +438,16 @@ We disclose these openly, ranked by expected reviewer pressure.
 
 \textbf{Construct validity.} NIST PASS/FAIL is necessary but not sufficient for security; Section~\ref{sec:security} provides a threat model and entropy accounting.
 
-\textbf{Internal validity.} Benchmark confounds are mitigated by mean $\pm$ SD over 10 trials with 95\% CI and Welch $t$-tests. Two implementation bugs were caught by the test suite before publication. NIST runs unconditionally; dieharder is a CI-budget curation.
+\textbf{Internal validity.} Benchmark confounds are mitigated by mean $\pm$ SD over 10 trials with 95\% CI and Welch $t$-tests. Two implementation bugs (a byte-consumption mismatch in \texttt{eventsourcing}'s \texttt{node}-typed field and a missing seed-state reset) were caught by the test suite before publication. NIST runs unconditionally; dieharder is a CI-budget curation.
 
 \textbf{Conclusion validity.} Throughput comparisons use Welch $t$-tests. ``0 collisions'' is reported alongside the birthday-bound expectation.
 
-\section{Applications}
-\label{sec:applications}
-Each use case below declares one layout and reads one field; no
-generation code is written per application.
 
-\subsection{Sharded databases}
-Listing~\ref{lst:dbkey} embeds the owning shard directly in the key.
-A router extracts bits 52--59 and dispatches without consulting a
-shard map: routing becomes a bit-mask and a comparison, replacing a
-hash computation and a ring lookup under consistent hashing, and
-removing the coordination needed to keep a shard map current across
-application nodes. The 48-bit timestamp prefix preserves index
-locality, so keys remain B-tree friendly (Section~\ref{sec:deployability}).
-The shard set is fixed at declaration time; resharding requires a
-new layout and a dual-read window, which makes this approach suited
-to stable shard counts rather than elastic ones.
-
-\subsection{Multi-tenant isolation}
-The \texttt{multitenant} layout (Listing~\ref{lst:multitenant})
-carries a 12-bit tenant enum and an 8-bit region enum. Tenant
-scoping becomes a bit-range predicate on the primary key rather than
-a join against a tenant table, and a row whose key-embedded tenant
-disagrees with its session context is detectable at the storage
-layer, turning a class of isolation bug into a checkable invariant.
-The region field supports data-residency assertions without a
-secondary index. The 12-bit enum bounds the scheme at 4096 tenants;
-larger populations require widening the field and re-declaring.
-
-\begin{lstlisting}[language=Java,
-  caption={The \texttt{multitenant} layout. Only the constrained
-           fields are declared; the generator is unchanged.},
-  label={lst:multitenant}]
-const multitenant: V8Layout = {
-  name: "multitenant",
-  fields: [
-    { name: "tenant", offset:  0, length: 12, type: "shard",
-      constraint: { kind: "range", min: 0, max: 4095 } },
-    { name: "region", offset: 12, length:  8, type: "node",
-      constraint: { kind: "allowed", allowed: [1,2,3,4] } },
-  ],
-};
-\end{lstlisting}
-
-\subsection{Event sourcing}
-Pairing a 48-bit timestamp with a monotonic counter yields
-identifiers that sort in emission order within a node, with the
-counter breaking ties inside a single millisecond. An append-only
-log therefore orders by primary key alone, without a sequence
-server or a coordination round trip. Because the monotonic branch
-of Algorithm~\ref{alg:repair} clamps to
-$\max(\textit{current},\textit{last-seen})$ rather than rejecting,
-ordering is preserved even when the underlying clock moves
-backwards. Ordering is per-generator; cross-node total order still
-requires an external mechanism.
 
 \section{Conclusion and Future Work}
 RFC~9562 leaves version~8's 122 bits undefined; GenoID fills them with a declarative, portable algorithm. Its core contribution is the \texttt{V8Layout} abstraction: typed, constrained multi-field composition with a single shared repair pass, validated through formal proof, empirical testing across 100M identifiers, an adversarial security analysis, and a cross-language reproducibility check.
 
-The highest-value next step is a full-performance Rust or Go port confirming $O(k)$ and throughput transfer, alongside a formal cryptographic reduction proof for the pooled-CSPRNG construction and evaluation under skewed production key distributions.
+The highest-value next step is compiling a layout declaration into a specialized generator, replacing the generic field loop and repair dispatch with inlined, layout-specific code. This would push GenoID's throughput toward the pooled-CSPRNG floor while retaining the declarative interface, staking a clear path from framework to production primitive.
 
 \begin{thebibliography}{00}
 
@@ -473,9 +474,6 @@ ineron, ``pg\_uuid\_v8: PostgreSQL extension for steganographic UUIDs,'' May 202
 
 \bibitem{8}
 N. Karimian Kakolaki, ``A comparative analysis of identifier schemes: UUIDv4, UUIDv7, and ULID for distributed systems,'' arXiv:2509.08969, Sep.~2025.
-
-\bibitem{9}
-nimakarimiank, ``uids-comparison.'' \url{https://github.com/nimakarimiank/uids-comparison}
 
 \bibitem{10}
 pscheid92, ``uuid: Go implementation of RFC 9562 with V8 and pooled/batch APIs.'' \url{https://pkg.go.dev/github.com/pscheid92/uuid}
