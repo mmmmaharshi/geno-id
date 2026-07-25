@@ -4,41 +4,59 @@
 [![Release](https://img.shields.io/github/v/release/mmmmaharshi/geno-id)](https://github.com/mmmmaharshi/geno-id/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-Declarative RFC 9562 v8 UUID composition framework — embed structure (shard, tenant, counter, timestamp) in an ID without rejection sampling.
+GenoID is a framework to create RFC 9562 version 8 UUIDs.
+It lets you embed structure in an ID without rejection sampling.
 
 ```ts
 import { genGenoID } from "@manohar_maharshi/genoid"
-console.log(genGenoID())  // → dab18ed0-37d4-8da2-a8be-dca1864d2f1c
+console.log(genGenoID())
+// → dab18ed0-37d4-8da2-a8be-dca1864d2f1c
 ```
 
-The `8` after the second dash is the RFC 9562 v8 version nibble. Every generated ID carries your declared fields — a timestamp, a shard from an allowed set, a monotonic counter — guaranteed by repair, not rejection.
+The `8` after the second dash is the RFC 9562 version 8 nibble.
+Each ID carries your fields (a timestamp, a shard from a set, a monotonic counter).
+The generator uses repair, not rejection.
 
-**GenoID in four sentences.** Standard UUID generators (v4, v7, hash) cannot embed application structure — every field must be looked up from a side table. Forcing structure via rejection sampling costs 64^k trials per ID (k=6 → 6.9×10¹⁰), which is unusable in production. GenoID replaces rejection with GA-inspired crossover + constraint-guided repair, producing valid v8 UUIDs from arbitrary constrained fields in O(k) per ID (measured constant factor near 8) — verified across 1.5M field checks with 0 violations. It ships with zero runtime dependencies, passes all 15 NIST SP 800-22 + 152/152 dieharder sub-tests, and reports 0 collisions at 100M scale across 7 runtimes × 3 OSes.
+**Summary.** Standard UUID generators (v4, v7, hash) cannot embed structure.
+You must look up each field from a side table.
+Rejection sampling costs 64^k trials per ID (k=6 gives 6.9 times 10^10).
+This is not usable in production.
+GenoID replaces rejection with crossover and repair.
+It produces valid v8 UUIDs from constrained fields in O(k) per ID.
+A measured constant factor is near 8.
+GenoID passes 1.5 million field checks with 0 violations.
+It passes all 15 NIST SP 800-22 tests and 152 of 152 dieharder sub-tests.
+It reports 0 collisions at 100 million scale across 7 runtimes and 3 operating systems.
+The library has zero runtime dependencies.
 
 ## 1. Install
 
-Node ≥ 22, ESM-only, zero runtime deps. One command, ~10 seconds:
+Node 22 or later is necessary. The library is ESM-only.
 
 ```bash
 npm i @manohar_maharshi/genoid
 ```
 
-Also runs on microcontroller-class runtimes without Web Crypto (ESP8266/ESP32, MicroPython) — see [Constrained / embedded hosts](#constrained--embedded-hosts-esp8266-class).
-
+The library also runs on microcontrollers (ESP8266, ESP32, MicroPython).
+It does not need Web Crypto on those platforms.
+Refer to section 3.4 for details.
 
 ## 2. Problem
 
-Standard generators give no composition:
+Standard generators do not give composition.
 
-- **v4** — fully random, opaque.
-- **v7** — one fixed timestamp layout.
-- **hash-derived** — order-dependent, slow.
+- **v4** — fully random. It is opaque.
+- **v7** — one timestamp layout. It is fixed.
+- **hash-derived** — slow. The order depends on the input.
 
-Naive solution: rejection-sample until a field lands in the allowed set. Cost: **64^k trials** (k=6 → 6.9×10¹⁰). Exponential and impractical.
+Rejection sampling is the naive solution.
+It tries random values until one field matches the allowed set.
+The cost is 64^k trials (k=6 gives 6.9 times 10^10).
+This cost is exponential. It is not practical.
 
 ## 3. Quick start
 
-### Simple GenoID (v8 UUID)
+### 3.1 Simple GenoID (v8 UUID)
 
 ```ts
 import { genGenoID } from "@manohar_maharshi/genoid"
@@ -46,14 +64,14 @@ console.log(genGenoID())
 // → c550c9b2-e2b0-8d8c-93b9-58c2b9379970
 ```
 
-The `8` in `-8d8c-` is the RFC 9562 v8 version nibble.
+The `8` in `-8d8c-` is the RFC 9562 v8 nibble.
 
-### Structured dbkey layout
+### 3.2 Structured dbkey layout
 
 ```ts
-import { genStructuredGenoID, completeLayout, readStructured, type Layout } from "@manohar_maharshi/genoid"
+import { genStructuredGenoID, completeLayout, readStructured } from "@manohar_maharshi/genoid"
 
-const dbkey: Layout = completeLayout("dbkey", [
+const dbkey = completeLayout("dbkey", [
   { name: "timestamp", start: 0, length: 48, type: "timestamp-ms" },
   { name: "shard", start: 52, length: 8, type: "shard", constraint: { allowed: [1, 2, 3, 4, 5] } },
   { name: "counter", start: 66, length: 16, type: "counter", constraint: { monotonic: true } },
@@ -61,18 +79,17 @@ const dbkey: Layout = completeLayout("dbkey", [
 
 const uuid = genStructuredGenoID(dbkey)
 console.log(uuid)
+// → 019f7aaf-3299-8017-8000-6a76e5d8a0f2
 
 console.log(readStructured(uuid, dbkey))
+// { "timestamp": 1784469729945, "shard": 1, "counter": 1, ... }
 ```
 
-```
-019f7aaf-3299-8017-8000-6a76e5d8a0f2
-{ "timestamp": 1784469729945, "shard": 1, "counter": 1, "rand_60": 7, "rand_82": 46690150686962 }
-```
+The value of `shard` is always in the set 1 to 5.
+The value of `counter` is always monotonic.
+The generator uses repair, not rejection.
 
-`shard ∈ {1..5}`, `counter` monotonic — guaranteed by repair, not rejection.
-
-### Multi-tenant variant
+### 3.3 Multi-tenant variant
 
 ```ts
 const multitenant = completeLayout("multitenant", [
@@ -83,13 +100,24 @@ console.log(genStructuredGenoID(multitenant))
 // → 0024c64c-bcd1-8045-82a2-815be75fbefa
 ```
 
-### Constrained / embedded hosts (ESP8266-class)
+### 3.4 Constrained hosts (ESP8266 class)
 
-The core is portable to microcontroller-class runtimes — small heap, no Web Crypto. Three optional configurators adapt it **without changing output**: every generated ID is byte-identical across all settings (pinned by INV-10 in the invariant suite), so these trade memory/portability for speed only.
+The core works on microcontrollers with a small heap.
+It does not need Web Crypto.
+Three optional functions adjust the library for the target.
 
-- **`configureRandom(fn)`** — inject a platform CSPRNG where Web Crypto is absent (ESP8266/ESP32 firmware, MicroPython). `fn(buf)` must fill the byte range with secure random bytes. Import never eagerly draws entropy, so the module loads on a no-Web-Crypto host; the first `configureRandom` must run before the first ID.
-- **`configurePools({ simplePoolSize, structuredPoolSize })`** — shrink the generation pools to trade batch size for RAM. The default structured pool holds ~34 KB + 1024 interned strings per layout; size 8 is ~336 B.
-- **`configureFootprint("lean")`** — format from the 256-entry hex table instead of the default lazily-built 65536-entry word table, saving ~131k interned strings of heap. `"fast"` (default) keeps full desktop throughput.
+- **configureRandom(fn)** — supply a CSPRNG for platforms that do not have Web Crypto.
+  The function `fn(buf)` must fill the byte array with secure random bytes.
+  The import does not draw entropy.
+  You must run `configureRandom` before the first ID.
+
+- **configurePools({ simplePoolSize, structuredPoolSize })** — change the pool sizes to save RAM.
+  The default structured pool uses about 34 KB of memory.
+  A size of 8 uses about 336 bytes.
+
+- **configureFootprint("lean")** — use a 256-entry table instead of the 65536-entry table.
+  This saves about 131 KB of strings.
+  The default is `"fast"` (full throughput on desktop).
 
 ```ts
 import {
@@ -97,47 +125,88 @@ import {
   genStructuredGenoID, DBKEY_LAYOUT,
 } from "@manohar_maharshi/genoid"
 
-configureFootprint("lean")                                     // 256-entry hex table
-configurePools({ simplePoolSize: 16, structuredPoolSize: 8 })  // tiny RAM budget
-configureRandom((buf) => platformFillRandom(buf))              // your CSPRNG
+configureFootprint("lean")
+configurePools({ simplePoolSize: 16, structuredPoolSize: 8 })
+configureRandom((buf) => platformFillRandom(buf))
 
-genStructuredGenoID(DBKEY_LAYOUT)                              // runs on ESP8266-class heap
+genStructuredGenoID(DBKEY_LAYOUT)
 ```
 
-On a standard host (Node / Bun / Deno / browser) none of these are needed — Web Crypto is used automatically and the fast footprint is the default.
+On a standard host (Node, Bun, Deno, browser), you do not need these functions.
+The library uses Web Crypto automatically.
+The fast footprint is the default.
 
 ## 4. How it works
 
-Declare a layout — which bits are timestamp, shard from allowed set, monotonic counter, tenant, or CSPRNG filler.
+You declare a layout.
+A layout specifies which bits are the timestamp, the shard, the counter, the tenant, or the random filler.
 
-1. **Generate two pooled parent UUIDs** — every structured field independently populated in both.
-2. **Field-boundary crossover** — each child field inherited from one parent.
-3. **Constraint-guided mutation** (`repairConstraints`) — fix any violating field in **O(field length)**. No rejection.
+1.  Generate two pooled parent UUIDs.
+    Every field in both parents is populated independently.
 
-Output: valid v8 UUID carrying your structure, CSPRNG randomness in remaining bits.
+2.  Crossover at the field boundary.
+    Each child field comes from one parent.
+
+3.  Constraint-guided repair (repairConstraints).
+    The function fixes any field that violates a constraint.
+    It does this in O(field length).
+    There is no rejection.
+
+Output: a valid v8 UUID that carries your structure.
+Randomness fills the remaining bits.
 
 ## 5. Proof it works
 
 | Experiment | Result | Win |
 |---|---|---|
 | Composition correctness (E1) | 1.5M field checks | 0 mismatches, 0 violations |
-| Repair vs rejection (E2) | O(k) repair, flat 1.4–3.2 µs/ID; measured trials match (1/d)^k | vs rejection's **2.8×10¹⁴ trials/ID** at k=6, d=0.004 ([sweep](sources/rejection-cost.md)) |
-| Collision + uniformity (E3–E5) | 2M UUIDs | 0 collisions; max dev 0.0053 |
-| NIST SP 800-22 (E3–E5) | 3 structured layouts | all 15 tests PASS |
-| Throughput (E6) | structured 0.82–1.66M/s CI (previously 0.66–1.15M/s) | beats pg-uuid-v8 and ulid-v8 on every platform; base pool 3.7–4.6× faster |
-| Draw-size NIST stability (P2) | 360 `binary_matrix_rank` trials (6 sizes × 60) | FAIL rate ~uniform 1.7% across 16–34B; matches α-noise, not a draw-size effect |
+| Repair vs rejection (E2) | O(k) repair, flat 1.4 to 3.2 microseconds per ID. Measured trials match (1/d)^k expect. | Rejection at k=6 and d=0.004 gives 2.8 times 10^14 trials per ID. Refer to the rejection-cost document. |
+| Collision and uniformity (E3 to E5) | 2M UUIDs | 0 collisions. Maximum deviation is 0.0053. |
+| NIST SP 800-22 (E3 to E5) | 3 structured layouts | All 15 tests PASS. |
+| Throughput (E6) | Structured 0.82 to 1.66 M/s CI. Base pool is 3.7 to 4.6 times faster. | Beats pg-uuid-v8 and ulid-v8 on every platform. |
+| Draw-size NIST stability (P2) | 360 binary_matrix_rank trials (6 sizes times 60) | FAIL rate is about 1.7 percent across 16 to 34 bytes. This matches alpha noise. It is not a draw-size effect. |
 
-Run: `bun run bench` → ±std, 95% CI, Welch t-test with Cohen's d. Sample export: `bun x tsx scripts/export-rank-scan.ts` → `dist/rank-scan.csv`. Repair-vs-rejection sweep (E2): `bun run bench-rejection` → `results/rejection-sweep.{json,csv}`.
+Run the benchmark:
+```bash
+bun run bench
+```
 
-**Regression guard.** [`scripts/research-invariants.test.ts`](scripts/research-invariants.test.ts) pins the load-bearing claims as executable tripwires — v8 conformance, 0 constraint violations, ordered counters (mod field width), collision-freedom, and monobit entropy preservation on the random payload — and **re-runs every one of them under an injected RNG + ESP8266-class tiny pools** (INV-9) plus a lean/fast byte-identity check (INV-10), so embeddability or perf work cannot silently cancel a result. It fans generation across all CPU cores (`os.availableParallelism()`), runs tough scale by default (`GENOID_FAST=1` for a quick pass), and each invariant is mutation-verified to go red when its claim is broken. Run: `bun test scripts/research-invariants.test.ts`.
+Export samples:
+```bash
+bun x tsx scripts/export-rank-scan.ts
+```
 
-**Benchmark stats.** `bun run bench-ci` now emits a Welch t-test p-value and Cohen's d for every generator against the `v4-native` baseline (into `dist/bench-ci-results.json`), and discards a JIT warmup pass before the measured trials.
+Sweep repair-vs-rejection (E2):
+```bash
+bun run bench-rejection
+```
+
+**Regression guard.** The test file `scripts/research-invariants.test.ts` contains executable checks.
+It tests v8 conformance, constraint violations, counter order, collision freedom, and monobit entropy.
+It runs each check under an injected RNG with small pools (ESP8266 class) to confirm the invariant holds everywhere.
+Each invariant fails (red) when the claim is broken.
+
+Run:
+```bash
+bun test scripts/research-invariants.test.ts
+```
+
+**Benchmark statistics.** The command `bun run bench-ci` emits a Welch t-test p-value and a Cohen's d.
+It compares each generator to the v4-native baseline.
+The results go to `dist/bench-ci-results.json`.
+A JIT warmup pass runs before the measured trials.
 
 ## 6. Baseline comparison
 
-Related work placed after technical content (per SPJ). Compared against pg_uuid_v8 (closest prior art), ULID / KSUID / Snowflake, and native v4 / v7. Each baseline verified by known-answer tests + NIST + collisions.
+All values are operations per second.
+They are the mean of 10 trials (95 percent confidence interval within plus or minus 5 percent).
+The tests run on GitHub Actions CI (ubuntu-24.04, macOS-14, windows-2025).
+The runtimes are Bun latest, Node 22 LTS, and Deno 2.9.3.
 
-All numbers = ops/sec, mean of 10 trials (95% CI within ±5%), run on GitHub Actions CI (ubuntu-24.04, macOS-14, windows-2025; Bun latest + Node 22 LTS + Deno 2.9.3). Run `bun run bench` for your machine.
+Run the benchmark on your machine:
+```bash
+bun run bench
+```
 
 | Generator | Ubuntu (Bun) | macOS (Bun) | Windows (Bun) | Node 22 (Win) | Deno 2.9.3 (Lin) | Deno 2.9.3 (mac) | Deno 2.9.3 (Win) | NIST |
 |---|--:|--:|--:|--:|--:|--:|--:|--:|
@@ -153,68 +222,177 @@ All numbers = ops/sec, mean of 10 trials (95% CI within ±5%), run on GitHub Act
 | genoid-structured | 1.81M | 0.86M | 0.85M | 0.86M | 0.95M | 1.28M | 1.21M | 15/15 |
 
 Key findings:
-- **0 collisions at scale** — all nine collision-tested generators report 0 collisions across every runtime×OS cell (7 columns × 9 algorithms = 63/63 PASS at n=1M). `genoid-structured` (dbkey) joins the matrix; `snowflake` is excluded from the collision gate by design (12-bit sequence wraps within a millisecond under tight-loop generation) but remains in the speed table above.
-- **genoid-structured beats pg-uuid-v8 and ulid-v8 on 5 of 7 environments** — leads on Ubuntu Bun (1.81M/s vs pg-uuid-v8 1.75M/s), Node Windows (0.86M/s vs 0.27M/s, +219%), Deno Linux (0.95M/s vs 0.46M/s, +107%), Deno macOS (1.28M/s vs 0.47M/s, +172%), Deno Windows (1.21M/s vs 0.53M/s, +128%). pg-uuid-v8 leads slightly on macOS Bun (0.88M/s vs 0.86M/s) and Windows Bun (0.80M/s vs 0.85M/s) — comparable.
-- **Runtime gap on CSPRNG-heavy generators** — Node's `crypto.getRandomValues` per-call overhead is far higher than Bun's *and* Deno's. Generators calling it once per UUID (v7, ulid, pg_uuid_v8, ulid-v8, ksuid) are 3–13× slower on Node vs Bun/Deno on comparable OSes. Pooled genoid-v8 (0.0039 calls/UUID) stays within ~1.5×. See [`sources/runtime-gap.md`](sources/runtime-gap.md).
-- **Node-on-Windows artifact** — per-call `getRandomValues` on Node's Windows crypto backend (BCryptGenRandom) is disproportionately slow: v7 measures 0.52M/s on Node/Windows vs 3.21M/s on Deno/Linux. Native `crypto.randomUUID()` (v4) and the pooled GenoID CSPRNG are unaffected, confirming the bottleneck is the Node-Windows backend, not GenoID. Documented in the CI table's "Known issues" footer.
-- **Statistical quality preserved** — random payload bits of pg_uuid_v8 and ULID-v8 pass all 15 NIST tests.
-- **pg_uuid_v8 is the only code-level prior art** — head-to-head (n=2M): both 0 collisions; pg_uuid_v8 is fixed-layout (timestamp only); GenoID is declarative (arbitrary fields). Both pass NIST. Win: GenoID = composition flexibility + speed.
 
-### Dieharder battery
+- **0 collisions at scale.** All nine generators report 0 collisions across every operating system and runtime (63 of 63 cells PASS at n=1M). Snowflake is excluded from the collision test by design. Its 12-bit sequence wraps in one millisecond under tight-loop generation.
 
-Beyond NIST SP 800-22, the four baseline/composition generators are run through the [dieharder](https://webhome.phy.duke.edu/~rgb/General/dieharder.php) curated subset (birthdays, rank_32x32, dna, count_1s_str, parking_lot, runs, sts_monobit, sts_serial) on a 12.5 MB / 100M-bit sample, 5 independent trials each. Per sub-test the modal assessment across trials is reported; a single test flipping PASSED/WEAK/FAILED is statistical noise. `diehard_opso`, `diehard_squeeze`, and the rgb/dab family are excluded (they rewind the sample or persistently fail good CSPRNG streams — see [`sources/reproducibility.md`](sources/reproducibility.md) §3).
+- **genoid-structured is faster than pg-uuid-v8 and ulid-v8 on most systems.** It leads on Ubuntu Bun (1.81M/s vs 1.75M/s for pg-uuid-v8). It leads on Node Windows (0.86M/s vs 0.27M/s, plus 219 percent). It leads on Deno Linux (0.95M/s vs 0.46M/s, plus 107 percent). It leads on Deno macOS (1.28M/s vs 0.47M/s, plus 172 percent). It leads on Deno Windows (1.21M/s vs 0.53M/s, plus 128 percent). The margin is comparable on macOS Bun (0.86M/s vs 0.88M/s for pg-uuid-v8) and Windows Bun (0.85M/s vs 0.80M/s).
+
+- **Runtime gap on CSPRNG-heavy generators.** Node crypto.getRandomValues has more overhead per call than Bun or Deno. Generators that call it once per UUID (v7, ulid, pg-uuid-v8, ulid-v8, ksuid) are 3 to 13 times slower on Node. Pooled genoid-v8 (0.0039 calls per UUID) stays within about 1.5 times. Refer to the runtime-gap document.
+
+- **Node-on-Windows artifact.** The Node crypto backend on Windows (BCryptGenRandom) is slow for per-call getRandomValues. v7 measures 0.52M/s on Node Windows compared to 3.21M/s on Deno Linux. Native v4 and the pooled GenoID CSPRNG are not affected. This confirms the bottleneck is the Node Windows backend, not GenoID.
+
+- **Statistical quality is preserved.** The random payload bits of pg-uuid-v8 and ULID-v8 pass all 15 NIST tests.
+
+- **pg-uuid-v8 is the only prior art at the code level.** Both generators have 0 collisions at n=2M. pg-uuid-v8 has a fixed layout (timestamp only). GenoID has a declarative layout (arbitrary fields). Both pass NIST.
+
+### 6.1 Dieharder battery
+
+The four baseline generators also go through the dieharder test suite.
+The suite uses a 12.5 MB sample (100 million bits) with 5 trials.
+The test runs the sub-tests that are listed in the reproducibility document.
 
 | Generator | Sub-tests (5 trials) | Assessments | Non-5/5 trials | Result |
-|---|---:|---|---:|---|
+|---|---|---|---:|---|
 | v4 (native) | 38 | all PASSED | 6 | PASS |
 | rawv8 (RFC 9562 v8, no GA) | 38 | all PASSED | 7 | PASS |
-| genoid-v8 (GA + pool) | 38 | all PASSED | 11 | PASS |
+| genoid-v8 (GA and pool) | 38 | all PASSED | 11 | PASS |
 | struct-dbkey (structured) | 38 | all PASSED | 5 | PASS |
 
-Full per-sub-test p-values: [`results/dieharder-results.md`](results/dieharder-results.md). Local: `bun x tsx scripts/run-dieharder.ts` (requires the `dieharder` binary on the host).
+Full per-sub-test p-values are in `results/dieharder-results.md`.
+
+Run the test locally:
+```bash
+bun x tsx scripts/run-dieharder.ts
+```
+
+The dieharder binary must be on the host.
 
 ## 7. Validated claims
 
-### Task A: Multi-environment
-GitHub Actions matrix: ubuntu/macos/windows × (Bun latest + Node 22 LTS + Deno 2.9.3) — 9 jobs across 7 distinct runtime×OS columns. All 63 collision cells PASS (7 envs × 9 algorithms). The consolidated CI table in §6 reveals a 3–13× Bun/Node/Deno gap on generators that call `crypto.getRandomValues` per UUID — see [`sources/runtime-gap.md`](sources/runtime-gap.md). Local: `bun run bench-ci` (Node/Bun) or `deno run --allow-read --allow-write --allow-env --allow-sys scripts/deno/bench-ci.ts` (Deno).
+### 7.1 Multi-environment (Task A)
 
-### Task B: Concurrent generation
-`worker_threads` fan-out: 0 cross-worker collisions (plain GenoID, 3×50k); 0 collisions + 0 violations (structured, 4×50k). Run: `bun run bench-concurrent`.
+The CI matrix has 9 jobs across 3 operating systems and 3 runtimes.
+All 63 collision cells PASS (7 environments times 9 algorithms).
 
-### Task C: B-tree index
-100k IDs into SQLite. All types clean B-tree (`freelist_count = 0`). Sortable IDs match/exceed random insert throughput. Run: `bun run bench-sqlite`.
+Run locally:
+```bash
+bun run bench-ci
+```
 
-### Task D: 100M collisions
-Open-addressing 128-bit hash set (~2.3 GB vs ~10 GB), fanned across all cores. All generators 0 collisions — 0 observed vs 122-bit birthday bound ~2.7×10¹⁸ expected at p=0.5. Run: `bun run collision-100m`.
+For Deno:
+```bash
+deno run --allow-read --allow-write --allow-env --allow-sys scripts/deno/bench-ci.ts
+```
 
-### Task E: Cross-engine browser
-Playwright across Chromium, Firefox, WebKit — all three: `browserErrors: []`, structured entry present, 0 collisions. Run: `bun run playwright` (`bun x playwright install` first).
+The consolidated table in section 6 shows the runtime gap.
+Refer to the runtime-gap document for details.
 
-### Task F: Database index locality
-Zero-install `bun:sqlite` benchmark (clustered + secondary index modes, 500k rows × 3 runs, no daemon to install). Random `uuid_v4` inserts at 186k rows/s vs time-ordered `uuid_v7` 509k — **2.7×**, reproducing the published ULID/Shopify result — and `genoid-structured` (402k) matches the time-ordered peers. Partition differentiator: `genoid-shardfirst` answers "rows for partition k" straight from the PK with **0 index bytes and no insert tax**, whereas a `uuid_v7` secondary index costs a **24.5% insert-throughput tax + ~10% storage** for the same capability. Honest scope (SQLite repacks pages, so insert-time — not size — is the signal; the win is storage + write-amplification, not read latency): [`sources/db-benchmark.md`](sources/db-benchmark.md). Run: `bun run bench-db`.
+### 7.2 Concurrent generation (Task B)
+
+A fan-out with worker_threads gives 0 cross-worker collisions.
+Plain GenoID uses 3 workers with 50000 UUIDs each.
+Structured GenoID uses 4 workers with 50000 UUIDs each.
+
+Run:
+```bash
+bun run bench-concurrent
+```
+
+### 7.3 B-tree index (Task C)
+
+SQLite receives 100000 IDs.
+All types have a clean B-tree (freelist_count equals 0).
+Sortable IDs match or exceed the throughput of random inserts.
+
+Run:
+```bash
+bun run bench-sqlite
+```
+
+### 7.4 100M collisions (Task D)
+
+The test uses an open-addressing 128-bit hash set (about 2.3 GB total).
+It fans out across all CPU cores.
+All generators report 0 collisions.
+The birthday bound at p=0.5 is about 2.7 times 10^18 for 122-bit keys.
+
+Run:
+```bash
+bun run collision-100m
+```
+
+### 7.5 Cross-engine browser (Task E)
+
+Playwright runs across Chromium, Firefox, and WebKit.
+All three browsers show no errors.
+The structured entry is present. Collisions are 0.
+
+Run:
+```bash
+bun run playwright
+```
+
+Install browsers first:
+```bash
+bun x playwright install
+```
+
+### 7.6 Database index locality (Task F)
+
+The benchmark uses bun:sqlite with no external daemon.
+It runs in clustered and secondary index modes with 500000 rows and 3 runs.
+Random uuid_v4 inserts at 186000 rows per second.
+Time-ordered uuid_v7 inserts at 509000 rows per second (2.7 times faster).
+GenoID-structured (402000 rows per second) matches the time-ordered peers.
+
+The genoid-shardfirst layout answers partition queries from the primary key.
+It uses 0 index bytes and has no insert tax.
+A uuid_v7 secondary index for the same capability has a 24.5 percent insert tax.
+It uses about 10 percent more storage.
+
+The SQLite database repacks pages.
+Insert time is the signal, not file size.
+The win is storage and write amplification, not read latency.
+
+Run:
+```bash
+bun run bench-db
+```
 
 ## 8. Applications
 
-1. **Sharded DB** — embed shard ID in PK; router locates the node directly, no lookup. Measured (§7 Task F): partition-queryable from the key with **0 index bytes and no insert tax**, vs a **24.5% insert-throughput tax + ~10% storage** for the secondary index a random/time-only key needs for the same query.
-2. **Multi-tenant** — carry tenant ID for prefix isolation + row-level security, without a separate tenant index.
-3. **Event sourcing** — monotonic counter + timestamp → globally ordered, collision-free event IDs.
-4. **Sortable time-series** — timestamp bits give chronological order + composable fields.
-5. **Debuggability** — declared fields readable from hex; operators read shard/tenant/sequence.
+1.  **Sharded database.** Embed the shard ID in the primary key.
+    The router can find the node without a lookup.
+    The key answers partition queries with 0 index bytes.
+
+2.  **Multi-tenant isolation.** Carry the tenant ID.
+    The primary key gives prefix isolation and row-level security.
+    There is no separate tenant index.
+
+3.  **Event sourcing.** Use a monotonic counter with a timestamp.
+    The IDs are globally ordered and collision-free.
+
+4.  **Sortable time series.** The timestamp bits give chronological order.
+    You can add composable fields.
+
+5.  **Debuggability.** You can read the declared fields from the hex string.
+    An operator can read the shard, tenant, or sequence.
 
 ## 9. Security analysis
 
-GenoID v8 rests on OS CSPRNG — every pool refill calls `crypto.getRandomValues`; 122-bit min-entropy matches v4. Pool forward-secrecy caveat: refills every 256 UUIDs; process-memory adversary predicts at most 256 future UUIDs. Structured layouts leak metadata by design (timestamp, shard, counter, tenant) — consistent with RFC 9562 §8 warning.
+GenoID uses the operating system CSPRNG.
+Every pool refill calls crypto.getRandomValues.
+The minimum entropy is 122 bits (same as v4).
 
-Full analysis: [`sources/security-analysis.md`](sources/security-analysis.md).
+**Pool forward secrecy.** The pool refills after 256 UUIDs.
+An adversary who reads the process memory can predict at most 256 future UUIDs.
 
-## 10. Literature & formal docs
+**Metadata leakage.** Structured layouts expose the timestamp, shard, counter, and tenant by design.
+This is consistent with the RFC 9562 section 8 warning.
 
-- [`sources/related-work.md`](sources/related-work.md) — no prior work applies GA-style operators to UUID generation.
-- [`sources/formal-proofs.md`](sources/formal-proofs.md) — O(k) repair bound vs O(64^k) rejection; entropy-preservation proof.
-- [`sources/rejection-cost.md`](sources/rejection-cost.md) — measured sparsity sweep: O(k) repair (flat µs) vs (1/d)^k rejection, validating the §III bound on real hardware.
-- [`sources/db-benchmark.md`](sources/db-benchmark.md) — index-locality benchmark; partition-queryable PKs with zero index write-amplification.
-- [`sources/threats-to-validity.md`](sources/threats-to-validity.md) — internal/external/construct/conclusion validity.
-- [`sources/reproducibility.md`](sources/reproducibility.md) — one-command reproduction table, env pinning.
-- [`docs/literature-review.md`](docs/literature-review.md) — full survey (5 themes, 25+ sources). Two refutable claims: (C1) GA is architectural, not statistical; (C2) declarative RFC 9562 v8 layout composition is novel vs pg_uuid_v8.
+Full analysis: `sources/security-analysis.md`.
 
-Extended randomness battery: `bun run dieharder`.
+## 10. Literature and formal documents
+
+- `sources/related-work.md` — No prior work applies GA-style operators to UUID generation.
+- `sources/formal-proofs.md` — O(k) repair bound compared to O(64^k) rejection. Entropy preservation proof.
+- `sources/rejection-cost.md` — Measured sparsity sweep. O(k) repair (flat microseconds) compared to (1/d)^k rejection.
+- `sources/db-benchmark.md` — Index locality benchmark. Partition-queryable primary keys with zero write amplification.
+- `sources/threats-to-validity.md` — Internal, external, construct, and conclusion validity.
+- `sources/reproducibility.md` — One-command reproduction table. Environment pinning.
+- `docs/literature-review.md` — Full survey with 5 themes and 25 or more sources.
+
+Extended randomness battery:
+```bash
+bun run dieharder
+```
