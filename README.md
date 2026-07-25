@@ -234,8 +234,7 @@ const compiled = compileLayout(layout)
 const id = compiled.fn()
 ```
 
-Use this for maximum throughput.
-Call it once at startup, then call `fn()` for each UUID.
+Use this to inspect the generated source code or control compilation timing.
 
 ### `readStructured(uuid, layout): Record<string, number>`
 
