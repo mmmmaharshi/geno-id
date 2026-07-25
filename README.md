@@ -184,7 +184,7 @@ GenoID is faster than other structured UUID generators.
 The compiled variant is near-native speed.
 
 | Generator | Ops/sec (Bun, macOS A18 Pro) | Collisions (n=1M) | NIST |
-|---|---|---|---|---|
+|---|---|---|---|
 | v4-native | 24.92 M | 0 | — |
 | genoid-v8 (unstructured) | 20.52 M | 0 | — |
 | **genoid-compiled (dbkey)** | **10.49 M** | **0** | **15/15** |
