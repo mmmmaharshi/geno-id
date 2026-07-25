@@ -1028,6 +1028,118 @@ export function getPoolConfig(): { simplePoolSize: number; structuredPoolSize: n
 }
 
 // ---------------------------------------------------------------------------
+// Step 0: Hand-coded dbkey generators (no layout objects, hardcoded shifts).
+// Used as the throughput ceiling for codegen benchmarks.
+// ---------------------------------------------------------------------------
+
+// Per-call version: one CSPRNG fill + direct byte assembly per UUID.
+const _hcBuf = new Uint8Array(16)
+const _hcRnd = new Uint8Array(8)
+let _hcCounter = 0
+
+function pickFromAllowed(allowed: number[], byte: number): number {
+  const n = allowed.length
+  if (n === 1) return allowed[0]
+  return allowed[byte % n]
+}
+
+function formatHex(b: Uint8Array): string {
+  const w = wordTable()
+  const t = HEX8
+  if (w) {
+    return (
+      w[(b[0] << 8) | b[1]] + w[(b[2] << 8) | b[3]] + "-" +
+      w[(b[4] << 8) | b[5]] + "-" +
+      w[(b[6] << 8) | b[7]] + "-" +
+      w[(b[8] << 8) | b[9]] + "-" +
+      w[(b[10] << 8) | b[11]] + w[(b[12] << 8) | b[13]] + w[(b[14] << 8) | b[15]]
+    )
+  }
+  return (
+    t[b[0]] + t[b[1]] + t[b[2]] + t[b[3]] + "-" +
+    t[b[4]] + t[b[5]] + "-" +
+    t[b[6]] + t[b[7]] + "-" +
+    t[b[8]] + t[b[9]] + "-" +
+    t[b[10]] + t[b[11]] + t[b[12]] + t[b[13]] + t[b[14]] + t[b[15]]
+  )
+}
+
+export function genHandCodedDbkey(): string {
+  fillRandom(_hcRnd)
+  const ts = Date.now()
+  const shard = pickFromAllowed([1, 2, 3, 4, 5], _hcRnd[0])
+  const ctr = (++_hcCounter) & 0xffff
+  const b = _hcBuf
+  b[0] = (ts / 2 ** 40) & 0xff
+  b[1] = (ts / 2 ** 32) & 0xff
+  b[2] = (ts / 2 ** 24) & 0xff
+  b[3] = (ts / 2 ** 16) & 0xff
+  b[4] = (ts / 2 ** 8) & 0xff
+  b[5] = ts & 0xff
+  b[6] = 0x80 | ((shard >> 4) & 0x0f)
+  b[7] = ((shard & 0x0f) << 4) | (_hcRnd[1] & 0x0f)
+  b[8] = 0x80 | ((ctr >> 10) & 0x3f)
+  b[9] = (ctr >> 2) & 0xff
+  b[10] = ((ctr & 0x3) << 6) | (_hcRnd[2] & 0x3f)
+  b[11] = _hcRnd[3]
+  b[12] = _hcRnd[4]
+  b[13] = _hcRnd[5]
+  b[14] = _hcRnd[6]
+  b[15] = _hcRnd[7]
+  return formatHex(b)
+}
+
+// Pooled version: pre-generates N strings with hardcoded assembly, returns in
+// sequence — no per-call allocations, no layout objects, no field iteration.
+const HC_POOL_SIZE = 256
+const _hcPool = new Array<string>(HC_POOL_SIZE)
+let _hcPoolIdx = HC_POOL_SIZE
+
+function refillHcPool(): void {
+  const buf = new Uint8Array(HC_POOL_SIZE * 16)
+  fillRandom(buf)
+  const w = wordTable()
+  const t = HEX8
+  for (let n = 0; n < HC_POOL_SIZE; n++) {
+    const off = n * 16
+    const ts = Date.now()
+    const shard = pickFromAllowed([1, 2, 3, 4, 5], buf[off + 15])
+    const ctr = (++_hcCounter) & 0xffff
+    buf[off] = (ts / 2 ** 40) & 0xff
+    buf[off + 1] = (ts / 2 ** 32) & 0xff
+    buf[off + 2] = (ts / 2 ** 24) & 0xff
+    buf[off + 3] = (ts / 2 ** 16) & 0xff
+    buf[off + 4] = (ts / 2 ** 8) & 0xff
+    buf[off + 5] = ts & 0xff
+    buf[off + 6] = 0x80 | ((shard >> 4) & 0x0f)
+    buf[off + 7] = ((shard & 0x0f) << 4) | (buf[off + 7] & 0x0f)
+    buf[off + 8] = 0x80 | ((ctr >> 10) & 0x3f)
+    buf[off + 9] = (ctr >> 2) & 0xff
+    buf[off + 10] = ((ctr & 0x3) << 6) | (buf[off + 10] & 0x3f)
+    _hcPool[n] = w
+      ? w[(buf[off] << 8) | buf[off + 1]] +
+        w[(buf[off + 2] << 8) | buf[off + 3]] + "-" +
+        w[(buf[off + 4] << 8) | buf[off + 5]] + "-" +
+        w[(buf[off + 6] << 8) | buf[off + 7]] + "-" +
+        w[(buf[off + 8] << 8) | buf[off + 9]] + "-" +
+        w[(buf[off + 10] << 8) | buf[off + 11]] +
+        w[(buf[off + 12] << 8) | buf[off + 13]] +
+        w[(buf[off + 14] << 8) | buf[off + 15]]
+      : t[buf[off]] + t[buf[off + 1]] + t[buf[off + 2]] + t[buf[off + 3]] + "-" +
+        t[buf[off + 4]] + t[buf[off + 5]] + "-" +
+        t[buf[off + 6]] + t[buf[off + 7]] + "-" +
+        t[buf[off + 8]] + t[buf[off + 9]] + "-" +
+        t[buf[off + 10]] + t[buf[off + 11]] + t[buf[off + 12]] + t[buf[off + 13]] + t[buf[off + 14]] + t[buf[off + 15]]
+  }
+  _hcPoolIdx = 0
+}
+
+export function genHandCodedDbkeyP(): string {
+  if (_hcPoolIdx >= HC_POOL_SIZE) refillHcPool()
+  return _hcPool[_hcPoolIdx++]
+}
+
+// ---------------------------------------------------------------------------
 // Canonical structured layouts (single source of truth).
 //
 // These are the layouts used across the benchmark/export/research scripts and
