@@ -1,5 +1,6 @@
 node_modules/
 dist/
+.DS_Store
 *results.json
 !benchmark_results.json
 !results/
