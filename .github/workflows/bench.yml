@@ -3,7 +3,29 @@ name: bench
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - 'sources/**'
+      - 'results/**'
+      - 'paper.tex'
+      - '*.md'
+      - 'LICENSE'
+      - 'CITATION.cff'
+      - '.opencode/**'
+      - 'AGENTS.md'
   pull_request:
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - 'sources/**'
+      - 'results/**'
+      - 'paper.tex'
+      - '*.md'
+      - 'LICENSE'
+      - 'CITATION.cff'
+      - '.opencode/**'
+      - 'AGENTS.md'
   workflow_dispatch:
 
 permissions:
