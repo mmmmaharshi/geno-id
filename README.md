@@ -13,7 +13,7 @@ console.log(genGenoID())  // → dab18ed0-37d4-8da2-a8be-dca1864d2f1c
 
 The `8` after the second dash is the RFC 9562 v8 version nibble. Every generated ID carries your declared fields — a timestamp, a shard from an allowed set, a monotonic counter — guaranteed by repair, not rejection.
 
-**GenoID in four sentences.** Standard UUID generators (v4, v7, hash) cannot embed application structure — every field must be looked up from a side table. Forcing structure via rejection sampling costs 64^k trials per ID (k=6 → 6.9×10¹⁰), which is unusable in production. GenoID replaces rejection with GA-inspired crossover + constraint-guided repair, producing valid v8 UUIDs from arbitrary constrained fields in O(k·8) per ID — verified across 1.5M field checks with 0 violations. It ships with zero runtime dependencies, passes all 15 NIST SP 800-22 + 152/152 dieharder sub-tests, and reports 0 collisions at 100M scale across 7 runtimes × 3 OSes.
+**GenoID in four sentences.** Standard UUID generators (v4, v7, hash) cannot embed application structure — every field must be looked up from a side table. Forcing structure via rejection sampling costs 64^k trials per ID (k=6 → 6.9×10¹⁰), which is unusable in production. GenoID replaces rejection with GA-inspired crossover + constraint-guided repair, producing valid v8 UUIDs from arbitrary constrained fields in O(k) per ID (measured constant factor near 8) — verified across 1.5M field checks with 0 violations. It ships with zero runtime dependencies, passes all 15 NIST SP 800-22 + 152/152 dieharder sub-tests, and reports 0 collisions at 100M scale across 7 runtimes × 3 OSes.
 
 ## 1. Install
 
@@ -203,7 +203,7 @@ Zero-install `bun:sqlite` benchmark (clustered + secondary index modes, 500k row
 
 ## 9. Security analysis
 
-GenoID v8 rests on OS CSPRNG — every pool refill calls `crypto.getRandomValues`; 122-bit min-entropy matches v4. Pool forward-secrecy caveat: refills every 256 UUIDs; process-memory adversary predicts at most 256 future UUIDs. Structured layouts leak metadata by design (timestamp, shard, counter, tenant) — consistent with RFC 9562 §8.2 warning.
+GenoID v8 rests on OS CSPRNG — every pool refill calls `crypto.getRandomValues`; 122-bit min-entropy matches v4. Pool forward-secrecy caveat: refills every 256 UUIDs; process-memory adversary predicts at most 256 future UUIDs. Structured layouts leak metadata by design (timestamp, shard, counter, tenant) — consistent with RFC 9562 §8 warning.
 
 Full analysis: [`sources/security-analysis.md`](sources/security-analysis.md).
 
