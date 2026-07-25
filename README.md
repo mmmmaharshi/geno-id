@@ -140,7 +140,7 @@ Related work placed after technical content (per SPJ). Compared against pg_uuid_
 All numbers = ops/sec, mean of 10 trials (95% CI within ±5%), run on GitHub Actions CI (ubuntu-24.04, macOS-14, windows-2025; Bun latest + Node 22 LTS + Deno 2.9.3). Run `bun run bench` for your machine.
 
 | Generator | Ubuntu (Bun) | macOS (Bun) | Windows (Bun) | Node 22 (Win) | Deno 2.9.3 (Lin) | Deno 2.9.3 (mac) | Deno 2.9.3 (Win) | NIST |
-|---:|---:|---:|---:|---:|---:|---:|---:|
+|---|--:|--:|--:|--:|--:|--:|--:|--:|
 | v4-native | 18.37M | 8.28M | 13.25M | 18.48M | 20.36M | 18.24M | 25.70M | — |
 | v7-custom | 10.62M | 4.09M | 4.99M | 0.52M | 3.21M | 3.52M | 4.10M | — |
 | genoid-v8 | 17.46M | 10.96M | 9.50M | 6.96M | 6.76M | 5.00M | 8.45M | — |
