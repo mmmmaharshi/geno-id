@@ -162,22 +162,12 @@ test("compileLayout bytes identical to interpreted when using same CSPRNG draw",
   //   timestamp = FIXED_TS % 2^48 = FIXED_TS (since FIXED_TS < 2^48)
   assert.equal(ts, FIXED_TS)
 
-  // Shard value: Phase 2 uses Hamming-nearest LUT instead of modulo-based pick.
-  // Compute expected shard by applying the same logic: raw field → LUT.
+  // Shard value: Phase 2 uses modulo-based pick from the allowed list.
   const allowed = [1, 2, 3, 4, 5]
   const rawShard =
     (deterministicBytes[6] & 0x0f) * 16 +
     ((deterministicBytes[7] & 0xf0) >>> 4)
-  let expectedShard = allowed[0]
-  let bestD = Infinity
-  for (const a of allowed) {
-    let d = 0
-    for (let i = 0, x = rawShard ^ a; i < 8; i++) if (x & (1 << i)) d++
-    if (d < bestD) {
-      bestD = d
-      expectedShard = a
-    }
-  }
+  const expectedShard = allowed[rawShard % allowed.length]
   assert.equal(shard, expectedShard)
 
   // counter starts at 1 (first call, ++ increments from 0 to 1)

@@ -910,15 +910,30 @@ export function genStructuredGenoIDSingleParent(layout: V8Layout): string {
   return p.strs[p.idx++]
 }
 
+// Cache for compiled structured generators (per-layout).
+const _compiledGenCache = new WeakMap<V8Layout, () => string>()
+
 /**
- * Production API: pool of structured parents + field-boundary crossover +
- * constraint repair. Every structured field is populated in BOTH pooled
- * parents (each independently generated) so that per-field crossover can pick
- * either parent without ever producing an unpopulated/garbage field. Random
- * fields stay CSPRNG in both parents and are what crossover actually mixes.
+ * Production API: compiles the layout into a specialized generator (~8x
+ * faster than the generic pooled path). Falls back to pool-and-crossover if
+ * the runtime blocks `new Function` (CSP).
  */
 export function genStructuredGenoID(layout: V8Layout): string {
   ensureValidated(layout)
+  // Use the compiled path (~8x faster) only when the default Web Crypto CSPRNG
+  // is active. Custom CSPRNGs (configureRandom, seeded RNG) fall through to the
+  // pool-and-crossover path which respects the injected RNG.
+  if (_fillRandom === _webCryptoFill && _hasWebCrypto) {
+    const fn = _compiledGenCache.get(layout)
+    if (fn) return fn()
+    try {
+      const compiled = compileLayout(layout)
+      _compiledGenCache.set(layout, compiled.fn)
+      return compiled.fn()
+    } catch {
+      // Compiled path unavailable (CSP). Fall through to pooled path below.
+    }
+  }
   const p = getStructPool(layout)
   // Repair only matters for random fields that carry a constraint (allowed /
   // min / max) — structured fields are generated valid in both parents, so
@@ -1222,46 +1237,12 @@ function genLayoutSource(layout: V8Layout, raw: boolean, poolSize = 0): string {
     const bm = fieldByteMasks(f)
     const mod = fieldMod(f)
     const c = f.constraint
-    // Precompute Hamming LUT for allowed-set fields with tractable domain.
-    let lut: Uint16Array | null = null
-    if (c?.allowed && c.allowed.length > 0 && f.length > 0 && f.length <= 16) {
-      const size = 1 << f.length
-      lut = new Uint16Array(size)
-      for (let v = 0; v < size; v++) {
-        let r = v
-        if (!c.allowed.includes(v)) {
-          let best = c.allowed[0]
-          let bestD = Infinity
-          for (const a of c.allowed) {
-            let d = 0
-            for (let i = 0, x = v ^ a; i < f.length; i++) {
-              if (x & (1 << i)) d++
-            }
-            if (d < bestD) {
-              bestD = d
-              best = a
-            }
-          }
-          r = best
-        }
-        lut[v] = r
-      }
-    }
-    return { f, wp, bm, mod, c, lut }
+
+    return { f, wp, bm, mod, c }
   })
 
   const lines: string[] = []
-  const tableLines: string[] = []
   const fieldLines: string[] = []
-
-  // Emit precomputed LUTs as module-level constants (outside the inner function).
-  for (const m of fieldMeta) {
-    if (!m.lut) continue
-    const name = `_${m.f.name}Lut`
-    tableLines.push(`const ${name}=new Uint16Array([${[...m.lut].join(",")}]);`)
-  }
-
-  lines.push(...tableLines)
 
   if (raw) {
     lines.push("const _last={};")
@@ -1285,12 +1266,9 @@ function genLayoutSource(layout: V8Layout, raw: boolean, poolSize = 0): string {
     lines.push("cr.getRandomValues(b);")
   }
 
-  // Field writes with inline repair. Each field whose value comes from CSPRNG
-  // bytes (shard/node/process) reads the raw value once via its bitmask
-  // expression, repairs it via LUT/clamp/monotonic, then writes once.
   const emitFieldBlock = (target: string[]) => {
     for (const m of fieldMeta) {
-      const { f, wp, bm, mod, c, lut } = m
+      const { f, wp, bm, mod, c } = m
       if (f.type === "random") continue
 
       // oxlint-disable-next-line branches-sharing-code
@@ -1298,17 +1276,8 @@ function genLayoutSource(layout: V8Layout, raw: boolean, poolSize = 0): string {
         if (!c || (!c.allowed && c.min === undefined && c.max === undefined && !c.monotonic)) continue
         const rx = genFieldReadExpr(f)
         target.push("{")
-        if (lut) {
-          target.push(`const rv=_${f.name}Lut[${rx}];`)
-        } else if (c.allowed && c.allowed.length > 0) {
-          const a = c.allowed
-          target.push(`let rv=${rx};`)
-          target.push(`if([${a.join(",")}].indexOf(rv)===-1){`)
-          target.push(`let best=${a[0]},bd=${f.length};`)
-          for (const v of a) {
-            target.push(`{let d=0,x=rv^${v};while(x){d++;x&=x-1}if(d<bd){bd=d;best=${v}}}`)
-          }
-          target.push("rv=best;}")
+        if (c.allowed && c.allowed.length > 0) {
+          target.push(`const rv=${JSON.stringify(c.allowed)}[${rx}%${c.allowed.length}];`)
         } else {
           target.push(`let rv=${rx};`)
         }
@@ -1447,8 +1416,8 @@ export function interpretRawLayout(
   const fields = layout.fields
 
   // Write computed fields (timestamp, counter, fixed). CSPRNG-derived fields
-  // (shard, node, process) keep their raw bytes — repairConstraints handles
-  // any constraint violations afterward.
+  // (shard, node, process) keep their raw bytes — constraint handling below
+  // applies the same modulo-based pick for allowed fields as the compiled path.
   for (const f of fields) {
     switch (f.type) {
       case "timestamp-ms": {
@@ -1469,6 +1438,18 @@ export function interpretRawLayout(
       }
       default:
         // shard, node, process, random — leave raw CSPRNG bytes in place
+    }
+  }
+
+  // Apply modulo-based pick for allowed-constrained fields, matching the
+  // compiled path in genLayoutSource (not the Hamming-nearest repair used by
+  // repairConstraints for RuntimeConstraintFields).
+  for (const f of fields) {
+    const c = f.constraint
+    if (c && c.allowed && c.allowed.length > 0) {
+      const rawValue = Number(getFieldValue(b, f))
+      const picked = c.allowed[rawValue % c.allowed.length]
+      writeFieldValue(b, f, picked)
     }
   }
 

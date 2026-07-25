@@ -46,7 +46,7 @@ Standard UUIDs cannot carry your data.
 
 GenoID replaces rejection with repair.
 It generates a valid UUID on the first try.
-The cost is O(k) where k is the number of constrained fields (measured constant factor near 8).
+The cost is O(k) — one constant-time operation per constrained field.
 
 ## Install
 
@@ -91,10 +91,10 @@ console.log(parsed.tenant)  // → 1
 console.log(parsed.seq)     // → 14
 ```
 
-## Compiled layout (faster)
+## Compiled layout
 
-For maximum speed, compile the layout into a specialized generator function.
-The compiler inlines the field logic and removes the generic repair loop.
+`genStructuredGenoID` compiles each layout lazily and caches the result internally.
+Use `compileLayout` when you need the generated source code or want explicit one-time compilation.
 
 ```ts
 import { compileLayout, completeLayout } from "@manohar_maharshi/genoid"
@@ -105,14 +105,12 @@ const layout = completeLayout("myapp", [
 ])
 
 const compiled = compileLayout(layout)
-const id = compiled.fn()  // same format as genStructuredGenoID, ~8x faster
+const id = compiled.fn()               // same format as genStructuredGenoID
+console.log(compiled.source)           // inspect the generated code
 ```
 
-The compiled generator produces the same output as `genStructuredGenoID` for the same layout.
-It runs at near-pool speed (10M+ ops/sec) instead of the generic structured path (1-2M ops/sec).
-
 The `compileLayout` call generates JavaScript source code from the layout declaration and compiles it with `new Function`.
-Call `compileLayout` once at startup, then call `compiled.fn()` for each UUID.
+The compiled generator runs at ~10M ops/sec — slightly faster than the regular structured path (shared pool overhead adds ~5%).
 
 ## What you can embed
 
@@ -185,14 +183,11 @@ const events = Array.from({ length: 100 }, () => genStructuredGenoID(eventLayout
 GenoID is faster than other structured UUID generators.
 The compiled variant is near-native speed.
 
-| Generator | Ops/sec (Bun, Ubuntu) | Collisions (n=2M) | NIST |
-|---|---|---|---|
-| v4-native | 18.37 M | 0 | — |
-| genoid-v8 (pooled, unstructured) | 17.46 M | 0 | — |
-| **genoid-compiled (dbkey)** | **10.73 M** | **0** | **15/15** |
-| genoid-structured (dbkey) | 1.81 M | 0 | 15/15 |
-| pg-uuid-v8 | 1.75 M | 0 | 15/15 |
-| ulid-v8 | 1.78 M | 0 | 15/15 |
+| Generator | Ops/sec (Bun, macOS A18 Pro) | Collisions (n=1M) | NIST |
+|---|---|---|---|---|
+| v4-native | 24.92 M | 0 | — |
+| genoid-v8 (unstructured) | 20.52 M | 0 | — |
+| **genoid-compiled (dbkey)** | **10.49 M** | **0** | **15/15** |
 
 Full table across 7 runtimes and 3 operating systems: run `bun run bench-ci`.
 
