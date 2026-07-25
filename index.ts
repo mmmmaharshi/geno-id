@@ -11,6 +11,7 @@ export {
   uuidToBytes,
   readStructured,
   completeLayout,
+  compileLayout,
   genStructuredGenoID,
   DBKEY_LAYOUT,
   MULTITENANT_LAYOUT,
@@ -22,4 +23,5 @@ export type {
   V8FieldConstraint as FieldConstraint,
   V8Field as Field,
   V8Layout as Layout,
+  CompiledLayout,
 } from "./algo.js"
