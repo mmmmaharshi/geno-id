@@ -21,6 +21,12 @@
 \usepackage{microtype}
 \usepackage{hyphenat}
 \usepackage{tabularx}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,fit,backgrounds,calc}
+\usepackage{graphicx}
+\usepackage{bytefield}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
 
 \def\UrlFont{\rmfamily}
 
@@ -104,7 +110,30 @@ no database lookup. The remaining bits stay fully random.
 
 \subsection{Declarative layout}
 
-A \texttt{V8Layout} declares an ordered set of \texttt{V8Field}s, each with a bit offset, a bit length, a type (\texttt{timestamp-ms}, \texttt{counter}, \texttt{shard}, \texttt{node}, or \texttt{random}), and an optional constraint (allowed set, min/max bound, or monotonic). Two shipped layouts illustrate the DSL (domain-specific language): \texttt{dbkey} (48-bit timestamp, 8-bit shard constrained to a five-value allowed set, 16-bit monotonic counter, remaining bits random) and \texttt{multitenant} (12-bit tenant enum, 8-bit region enum, remaining bits random). \texttt{completeLayout} fills any undeclared bit range with random-type filler, so every generated value is a syntactically valid RFC~9562 v8 UUID, version nibble 8 and variant bits fixed, the remaining 122 bits carrying the declared composition.
+A \texttt{V8Layout} declares an ordered set of \texttt{V8Field}s, each with a bit offset, a bit length, a type (\texttt{timestamp-ms}, \texttt{counter}, \texttt{shard}, \texttt{node}, or \texttt{random}), and an optional constraint (allowed set, min/max bound, or monotonic). Two shipped layouts illustrate the DSL (domain-specific language): \texttt{dbkey} (48-bit timestamp, 8-bit shard constrained to a five-value allowed set, 16-bit monotonic counter, remaining bits random, shown in Fig.~\ref{fig:layout}) and \texttt{multitenant} (12-bit tenant enum, 8-bit region enum, remaining bits random). \texttt{completeLayout} fills any undeclared bit range with random-type filler, so every generated value is a syntactically valid RFC~9562 v8 UUID, version nibble 8 and variant bits fixed, the remaining 122 bits carrying the declared composition.
+
+\begin{figure}[!ht]
+\centering
+\resizebox{\columnwidth}{!}{%
+\begin{bytefield}[bitwidth=1.05em,boxformatting={\centering\footnotesize}]{32}
+  \bitbox{32}{\texttt{timestamp} (bits 0--31)} \\
+  \bitbox{16}{\texttt{timestamp} 32--47}
+    \bitbox{4}{\scriptsize ver$^\dagger$}
+    \bitbox{8}{\texttt{shard}}
+    \bitbox{4}{\scriptsize rnd} \\
+  \bitbox{2}{\scriptsize var$^\dagger$}
+    \bitbox{16}{\texttt{counter}}
+    \bitbox{14}{random} \\
+  \bitbox{32}{random}
+\end{bytefield}%
+}
+\caption{RFC~9562 v8 UUID under the \texttt{dbkey} layout, as four consecutive
+32-bit words (bits 0--127, most significant first). $^\dagger$RFC-fixed:
+\texttt{ver} (bits 48--51), \texttt{var} (bits 64--65). All other bits carry the
+declared \texttt{timestamp}, \texttt{shard}, and \texttt{counter}; undeclared
+bits are random.}
+\label{fig:layout}
+\end{figure}
 
 \subsection{Why declarative, not hand-rolled}
 The status quo for a structured v8 UUID is a one-off function: pack the fields
@@ -123,10 +152,59 @@ hand-tuned faster) but a reusable correctness guarantee and an inspectable,
 typed field abstraction in place of open-coded bit math.
 
 \subsection{Field-boundary crossover}
-Generation begins by populating two independent CSPRNG pools, the ``parents,'' in full: \texttt{crypto.\-get\-Random\-Values} fills the entire pool buffer before any field-specific value is written, so every field position in both parents starts from independent CSPRNG bytes. A child UUID is then assembled field by field. For each declared field, one bit of an independently drawn \texttt{fieldSelect} value chooses whether the child inherits that field's bits from parent A or parent B. Because every field in both parents is independently CSPRNG-populated, and the select bit is independent of field contents, crossover never mixes a partial ``good'' value with a partial ``bad'' one within a field; it selects one whole, independently random field value from one of two independent sources.
+Generation begins by populating two independent CSPRNG pools, the ``parents,'' in full: \texttt{crypto.\-get\-Random\-Values} fills the entire pool buffer before any field-specific value is written, so every field position in both parents starts from independent CSPRNG bytes. A child UUID is then assembled field by field. For each declared field, one bit of an independently drawn \texttt{fieldSelect} value chooses whether the child inherits that field's bits from parent A or parent B (Fig.~\ref{fig:pipeline}). Because every field in both parents is independently CSPRNG-populated, and the select bit is independent of field contents, crossover never mixes a partial ``good'' value with a partial ``bad'' one within a field; it selects one whole, independently random field value from one of two independent sources.
 
 \subsection{Constraint-guided mutation as repair}
 After crossover, \texttt{repairConstraints} performs a single pass over the layout's constrained fields, with no retry loop and no redraw. An allowed-constrained field is mapped to its Hamming-nearest member of the allowed set; a min/max-constrained field is clamped; a monotonic field is clamped to \texttt{max(current, last-seen)}, and the new value is recorded for the next call. Every branch returns a value that satisfies its constraint by construction; membership, clamping, and monotonicity are structural guarantees, not probabilistic outcomes. Section~\ref{sec:composition-correctness} reports the empirical face of this guarantee: 0 violations, not ``near 0.''
+
+\begin{figure}[!ht]
+\centering
+\resizebox{\columnwidth}{!}{%
+\begin{tikzpicture}[
+  font=\footnotesize,
+  cell/.style={draw,minimum width=42pt,minimum height=18pt,align=center},
+  pick/.style={fill=black!10},
+  lbl/.style={font=\scriptsize\itshape},
+  >={Stealth[]}]
+% Parent A
+\node[lbl] at (-58pt,0) {Parent A};
+\node[cell] (a1) at (0,0)    {ts};
+\node[cell] (a2) at (43pt,0) {shard};
+\node[cell] (a3) at (86pt,0) {ctr};
+\node[cell] (a4) at (129pt,0){rnd};
+% Parent B
+\node[lbl] at (-58pt,-24pt) {Parent B};
+\node[cell] (b1) at (0,-24pt)    {ts};
+\node[cell] (b2) at (43pt,-24pt) {shard};
+\node[cell] (b3) at (86pt,-24pt) {ctr};
+\node[cell] (b4) at (129pt,-24pt){rnd};
+% Child (fieldSelect: A,B,A,B)
+\node[lbl] at (-58pt,-54pt) {child};
+\node[cell,pick] (c1) at (0,-54pt)    {ts$_A$};
+\node[cell,pick] (c2) at (43pt,-54pt) {shard$_B$};
+\node[cell,pick] (c3) at (86pt,-54pt) {ctr$_A$};
+\node[cell,pick] (c4) at (129pt,-54pt){rnd$_B$};
+% select arrows
+\draw[->] (a1) -- (c1); \draw[->] (b2) -- (c2);
+\draw[->] (a3) -- (c3); \draw[->] (b4) -- (c4);
+\node[lbl,right] at (150pt,-39pt) {\texttt{fieldSelect}: A,B,A,B};
+% repair
+\node[lbl] at (-58pt,-84pt) {repaired};
+\node[cell] (r1) at (0,-84pt)   {ts};
+\node[cell,draw=black,very thick] (r2) at (43pt,-84pt) {shard};
+\node[cell] (r3) at (86pt,-84pt){ctr};
+\node[cell] (r4) at (129pt,-84pt){rnd};
+\draw[->] (c2) -- node[right=1pt,lbl]{\scriptsize 7$\to$5} (r2);
+\draw[->] (c1) -- (r1); \draw[->] (c3) -- (r3); \draw[->] (c4) -- (r4);
+\node[lbl,right] at (150pt,-84pt) {valid v8 UUID};
+\end{tikzpicture}%
+}
+\caption{Field-level crossover and repair. Each declared field is inherited whole
+from one parent per the \texttt{fieldSelect} bits (shaded); the single repair pass
+then snaps any out-of-range field---here a \texttt{shard} value 7---to its nearest
+allowed member (5). No redraw.}
+\label{fig:pipeline}
+\end{figure}
 
 \section{Formal Analysis}
 Rejection sampling and repair make fundamentally different bets. Rejection bets that a lucky whole-UUID draw arrives before an unlucky run goes on forever; repair guarantees success on every draw by fixing only the fields that need it. The exponential-versus-linear gap below quantifies that bet, and the entropy argument that follows shows the bet costs nothing in randomness quality.
@@ -213,7 +291,7 @@ Math.random & 128 & PRNG state & 0 \\
 \end{tabular*}
 \end{table}
 
-\indent UUIDv4 uses \texttt{crypto.\allowbreak randomUUID()} and \texttt{pg\_uuid\_v8} embeds an AES-encrypted timestamp. For the \texttt{dbkey} layout,
+\indent UUIDv4 uses \texttt{crypto.\allowbreak randomUUID()} and \texttt{pg\_\allowbreak uuid\_v8} embeds an AES-encrypted timestamp. For the \texttt{dbkey} layout,
 $128 - 48\,(\texttt{ts}) - 8\,(\texttt{shard}) - 16\,(\texttt{counter}) - 6\,(\texttt{fixed}) = 50$,
 so 50 random bits are the only entropy an adversary cannot strip.
 \subsection{Adversarial findings}
@@ -274,11 +352,48 @@ Measured GA repairs per UUID scale as $\approx k$, confirming the $O(k \cdot 8)$
 Uniformity is measured on the random payload only, not the whole UUID, since structured layouts carry a constant leading timestamp byte; against that payload, all tested generators, including \texttt{genoid-\allowbreak structured}, report 0 collisions across 2M draws, with a maximum deviation of 0.0053. The same holds at 100M draws: an open-addressing 128-bit hash set, fanned across all cores, again finds 0 collisions, against a theoretical 50\%-collision birthday bound of roughly $2.7\times10^{18}$. That scale checks for implementation bugs, not exhausted probability; no UUID paper tests to $2.7\times10^{18}$, and this one does not pretend to.
 
 \subsection{NIST SP 800-22 and dieharder}
-All 15 NIST SP~800-22 sub-tests~\cite{20} pass on three structured layouts (\texttt{struct-dbkey}, \texttt{multitenant}, and \texttt{eventsourcing}). An extended \texttt{dieharder}~\cite{21} battery, including \texttt{birthdays}, \texttt{rank\_32x32}, \texttt{dna}, \texttt{count\_1s\_str}, \texttt{parking\_lot}, \texttt{runs}, \texttt{sts\_monobit}, and \texttt{sts\_serial}, comprising 38 sub-tests, 5 independent trials each, and 100M-bit samples, reports 152/152 PASS (modal assessment per sub-test) across four generator variants: native UUIDv4, \texttt{rawv8} (RFC~9562 v8 without GA), \texttt{genoid-v8} (GA + pooling), and \texttt{struct-dbkey} (structured). The GA and non-GA variants pass identically, which is the empirical counterpart to the Section~\ref{sec:entropy} proof: GA neither degrades nor improves statistical quality on random-type fields.
+All 15 NIST SP~800-22 sub-tests~\cite{20} pass on three structured layouts (\texttt{struct-\allowbreak dbkey}, \texttt{multitenant}, and \texttt{eventsourcing}). An extended \texttt{dieharder}~\cite{21} battery, including \texttt{birthdays}, \texttt{rank\_32x32}, \texttt{dna}, \texttt{count\_1s\_str}, \texttt{parking\_lot}, \texttt{runs}, \texttt{sts\_monobit}, and \texttt{sts\_serial}, comprising 38 sub-tests, 5 independent trials each, and 100M-bit samples, reports 152/152 PASS (modal assessment per sub-test) across four generator variants: native UUIDv4, \texttt{rawv8} (RFC~9562 v8 without GA), \texttt{genoid-v8} (GA + pooling), and \texttt{struct-\allowbreak dbkey} (structured). The GA and non-GA variants pass identically, which is the empirical counterpart to the Section~\ref{sec:entropy} proof: GA neither degrades nor improves statistical quality on random-type fields.
 
 \subsection{Throughput and baseline comparison}
 
-Table~\ref{tab:throughput} reports throughput across all tested generators.
+Throughput results are visualised in Fig.~\ref{fig:throughput} and tabulated in Table~\ref{tab:throughput}.
+
+\begin{figure}[!ht]
+\centering
+\resizebox{\columnwidth}{!}{%
+\begin{tikzpicture}
+\begin{axis}[
+  xbar, width=0.78\columnwidth, height=6cm,
+  axis x line=bottom,
+  axis y line=left,
+  xmin=0, xmax=21,
+  xlabel={Throughput (Mops/sec, Ubuntu/Bun)},
+  symbolic y coords={pg-uuid-v8,ulid-v8,genoid-structured,snowflake,v7-custom,genoid-v8,v4-native},
+  ytick={pg-uuid-v8,ulid-v8,genoid-structured,snowflake,v7-custom,genoid-v8,v4-native},
+  nodes near coords, nodes near coords align={horizontal},
+  every node near coord/.append style={font=\scriptsize},
+  bar width=8pt,
+  tick label style={font=\footnotesize},
+  label style={font=\footnotesize},
+  enlarge y limits=0.15,
+  clip=false,
+  legend style={font=\footnotesize,draw=black,at={(0.97,0.5)},anchor=east},
+]
+% baselines (light)
+\addplot[xbar,bar shift=0pt,fill=black!12,draw=black] coordinates {
+  (1.75,pg-uuid-v8) (1.78,ulid-v8) (4.61,snowflake) (10.62,v7-custom) (18.37,v4-native)};
+% GenoID (dark)
+\addplot[xbar,bar shift=0pt,fill=black!55,draw=black] coordinates {
+  (1.81,genoid-structured) (17.46,genoid-v8)};
+\legend{baselines, GenoID}
+\end{axis}
+\end{tikzpicture}%
+}
+\caption{Throughput by generator (Ubuntu/Bun, mean of 10 trials). GenoID's pooled
+v8 nears native v4, and \texttt{genoid-structured} edges past \texttt{pg\_uuid\_v8}
+and \texttt{ulid-v8} while adding declarative multi-field composition.}
+\label{fig:throughput}
+\end{figure}
 
 \begin{table}[!ht]
 \caption{Throughput comparison of UUID generators (mean of 10 trials, Ubuntu/Bun; 95\% CI within $\pm$5\%).}
@@ -313,11 +428,9 @@ Concurrent generation via \texttt{worker\_threads} fan-out shows 0 cross-worker 
 \subsection{UUID standards: RFC 4122 to RFC 9562}
 UUIDs are 128-bit identifiers, originally standardized as RFC~4122 (2005, versions~1--5), obsoleted by RFC~9562 (IETF Standards Track, May~2024), which adds versions~6, 7, and~8~\cite{1}. UUIDv4 carries 122 bits of CSPRNG randomness with fixed version/variant bits, simple and unpredictable, but with poor B-tree locality (how tightly new database index entries pack together; random IDs scatter and fragment the index, ordered IDs do not) due to its lack of order. UUIDv7 prepends a 48-bit big-endian Unix-millisecond timestamp, giving 74 random bits and solving v4's index-fragmentation problem while remaining drop-in compatible with existing v4 storage~\cite[\S5.7]{1}. UUIDv8 is explicitly experimental: only the version and variant bits are defined, and the RFC supplies no creation algorithm for the remaining 122~\cite[\S5.8]{1}. The widely used \texttt{uuid} JavaScript package likewise omits v8 generation~\cite{17}.
 \subsection{Sortable and structured identifiers}
-RFC~9562's own motivation section surveyed sixteen prior implementations while drafting the standard, ULID, LexicalUUID, Snowflake, Flake, ShardingID, KSUID, Elasticflake, FlakeID, Sonyflake, orderedUuid, COMBGUID, SID, pushID, XID~\cite{6}, ObjectID, and CUID~\cite{1}. Representative members: ULID~\cite{2} (48-bit timestamp + 80-bit randomness, Base32, lexicographically sortable); KSUID~\cite{3} (32-bit second-resolution timestamp + 128-bit randomness, tuned for distributed log ordering); Snowflake and derivatives~\cite{4} (timestamp $|$ worker $|$ sequence, k-sortable but coordination- and clock-dependent); TypeID~\cite{5} (typed prefix over a UUIDv7 payload); and COMBGUID (hybrid UUID with an embedded timestamp for index locality). Empirically, time-ordered identifiers measurably improve database behavior versus random v4, with reported gains including roughly 35\% faster inserts and 22\% smaller indexes at 10M rows~\cite{7}, and Shopify reported that switching to ULID halved \texttt{INSERT} duration on a high-throughput MySQL table~\cite{15,16}. Recent academic work directly compares UUIDv4/v7/ULID for distributed systems on collision probability, network overhead, and generation speed~\cite{12}, and a further study benchmarks ULID against UUIDv4/v7 atop Kafka and PostgreSQL~\cite{13}. This is a well-explored field; its gap is not effort but scope: it has explored time-ordered composition thoroughly, almost exclusively via fixed, hand-coded layouts, and none of it offers a declarative framework for arbitrary multi-field v8 composition.
+RFC~9562's own motivation section surveyed sixteen prior implementations while drafting the standard, ULID, LexicalUUID, Snowflake, Flake, ShardingID, KSUID, Elasticflake, FlakeID, Sonyflake, ordered\-Uuid, COMBGUID, SID, pushID, XID~\cite{6}, ObjectID, and CUID~\cite{1}. Representative members: ULID~\cite{2} (48-bit timestamp + 80-bit randomness, Base32, lexicographically sortable); KSUID~\cite{3} (32-bit second-resolution timestamp + 128-bit randomness, tuned for distributed log ordering); Snowflake and derivatives~\cite{4} (timestamp $|$ worker $|$ sequence, k-sortable but coordination- and clock-dependent); TypeID~\cite{5} (typed prefix over a UUIDv7 payload); and COMBGUID (hybrid UUID with an embedded timestamp for index locality). Empirically, time-ordered identifiers measurably improve database behavior versus random v4, with reported gains including roughly 35\% faster inserts and 22\% smaller indexes at 10M rows~\cite{7}, and Shopify reported that switching to ULID halved \texttt{INSERT} duration on a high-throughput MySQL table~\cite{15,16}. Recent academic work directly compares UUIDv4/v7/ULID for distributed systems on collision probability, network overhead, and generation speed~\cite{12}, and a further study benchmarks ULID against UUIDv4/v7 atop Kafka and PostgreSQL~\cite{13}. This is a well-explored field; its gap is not effort but scope: it has explored time-ordered composition thoroughly, almost exclusively via fixed, hand-coded layouts, and none of it offers a declarative framework for arbitrary multi-field v8 composition.
 \subsection{Steganographic UUIDs — closest prior art}
-\texttt{pg\_uuid\_v8}~\cite{8}, a PostgreSQL C extension (PGXN, May~2026), is the closest prior art, and a clever one. It generates v4-format-compliant UUIDs while embedding an encrypted microsecond timestamp, XOR, AES-128, or AES-256, in the random portion, recoverable via a dedicated extraction function and indexable through a functional index, resolving the same performance/privacy trade-off as v7 through steganography rather than a plaintext timestamp. GenoID shares \texttt{pg\_uuid\_v8}'s core instinct: putting useful structure inside a standards-compliant UUID, but differs in scope: \texttt{pg\_uuid\_v8} offers one fixed stego layout with no multi-field abstraction and no repair mechanism, while GenoID is a declarative, multi-field DSL packaged as a portable library (browser, Node, and CI-verified) rather than a database-specific extension. The two are complementary, not competing: a system wanting encrypted-timestamp indexability inside Postgres should still reach for \texttt{pg\_uuid\_v8}.
-
-Table~\ref{tab:pguuid-vs-genoid} summarizes the capability differences.
+\texttt{pg\_uuid\_v8}~\cite{8}, a PostgreSQL C extension (PGXN, May~2026), is the closest prior art, and a clever one. It generates v4-format-compliant UUIDs while embedding an encrypted microsecond timestamp, XOR, AES-128, or AES-256, in the random portion, recoverable via a dedicated extraction function and indexable through a functional index, resolving the same performance/privacy trade-off as v7 through steganography rather than a plaintext timestamp. GenoID shares \texttt{pg\_uuid\_v8}'s core instinct: putting useful structure inside a standards-compliant UUID, but differs in scope: \texttt{pg\_uuid\_v8} offers one fixed stego layout with no multi-field abstraction and no repair mechanism, while GenoID is a declarative, multi-field DSL packaged as a portable library (browser, Node, and CI-verified) rather than a database-specific extension. The two are complementary, not competing: a system wanting encrypted-timestamp indexability inside Postgres should still reach for \texttt{pg\_uuid\_v8}; Table~\ref{tab:pguuid-vs-genoid} summarizes the capability differences.
 
 \begin{table}[!ht]
 \caption{Comparison of pg\_uuid\_v8 and GenoID.}
