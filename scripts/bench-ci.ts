@@ -21,7 +21,7 @@ const __dirname = import.meta.dirname
 const root = path.resolve(__dirname, "..")
 
 const algo = await import(pathToFileURL(path.resolve(root, "dist/algo.js")).href)
-const { genV4Native, genV7, genMathRandom, genGenoID, genStructuredGenoID, DBKEY_LAYOUT } =
+const { genV4Native, genV7, genMathRandom, genGenoID, genStructuredGenoID, DBKEY_LAYOUT, compileLayout } =
   algo as {
     genV4Native: () => string
     genV7: () => string
@@ -29,9 +29,11 @@ const { genV4Native, genV7, genMathRandom, genGenoID, genStructuredGenoID, DBKEY
     genGenoID: () => string
     genStructuredGenoID: (layout: unknown) => string
     DBKEY_LAYOUT: unknown
+    compileLayout: (layout: unknown) => { source: string; fn: () => string }
   }
 
 const genDbkey = (): string => genStructuredGenoID(DBKEY_LAYOUT)
+const genCompiled = compileLayout(DBKEY_LAYOUT as Parameters<typeof compileLayout>[0]).fn
 
 function collectEnv(): EnvInfo {
   const isBun = (globalThis as { Bun?: unknown }).Bun !== undefined
@@ -66,6 +68,7 @@ const specs: [string, () => string][] = [
   ["ksuid", genKsuid],
   ["snowflake", genSnowflake],
   ["genoid-structured", genDbkey],
+  ["genoid-compiled", genCompiled],
 ]
 
 function coll(name: string, fn: () => string): CollisionEntry {
@@ -108,6 +111,7 @@ const collisions: CollisionEntry[] = [
   coll("v7-custom", genV7),
   coll("genoid-v8", genGenoID),
   coll("genoid-structured", genDbkey),
+  coll("genoid-compiled", genCompiled),
   coll("mathrandom", genMathRandom),
   coll("pg-uuid-v8", genPgUuidV8),
   coll("ulid-v8", genUlidV8),
