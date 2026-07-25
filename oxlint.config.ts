@@ -46,5 +46,9 @@ export default defineConfig({
     "eslint/no-promise-executor-return": "off",
     "import/consistent-type-specifier-style": "off",
     "import/no-named-as-default-member": "off",
+    "unicorn/no-immediate-mutation": "off",
+    "unicorn/prefer-single-call": "off",
+    "eslint/no-new-func": "off",
+    "typescript/method-signature-style": "off",
   },
 })

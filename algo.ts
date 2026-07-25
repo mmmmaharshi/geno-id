@@ -4,7 +4,7 @@
 // 16-bit word formats as HEX8[hi] + HEX8[lo], byte-identical to the old tables.
 // 256-entry byte->hex table. Always present (~256 tiny strings), it is the only
 // hex table a constrained host ("lean" footprint) ever allocates.
-const HEX8: string[] = Array.from({ length: 256 }, (_, i) =>
+export const HEX8: string[] = Array.from({ length: 256 }, (_, i) =>
   i.toString(16).padStart(2, "0"),
 )
 
@@ -16,7 +16,7 @@ const HEX8: string[] = Array.from({ length: 256 }, (_, i) =>
 let _wordTable: string[] | null = null
 let _leanFootprint = false
 
-function wordTable(): string[] | null {
+export function wordTable(): string[] | null {
   if (_leanFootprint) return null
   if (_wordTable === null) {
     const w = new Array<string>(65536)
@@ -386,7 +386,7 @@ function computeWritePlan(f: V8Field): WritePlanEntry[] {
   return entries
 }
 
-function getFieldWritePlan(f: V8Field): WritePlanEntry[] {
+export function getFieldWritePlan(f: V8Field): WritePlanEntry[] {
   let p = _fieldWritePlans.get(f)
   if (p) return p
   p = computeWritePlan(f)
@@ -1137,6 +1137,353 @@ function refillHcPool(): void {
 export function genHandCodedDbkeyP(): string {
   if (_hcPoolIdx >= HC_POOL_SIZE) refillHcPool()
   return _hcPool[_hcPoolIdx++]
+}
+
+// ---------------------------------------------------------------------------
+// Phase 1: Layout compiler — V8Layout → straight-line JS function.
+// ---------------------------------------------------------------------------
+
+export interface CompiledLayout {
+  source: string
+  fn: () => string
+}
+
+function genFieldReadExpr(f: V8Field, buf = "b"): string {
+  const bm = fieldByteMasks(f)
+  const parts: { expr: string; nbits: number }[] = []
+  for (let i = bm.length - 1; i >= 0; i--) {
+    const mk = bm[i]
+    const byteStart = mk.byte * 8
+    const fieldEnd = f.start + f.length - 1
+    const fEnd = Math.min(fieldEnd, byteStart + 7)
+    const nbits = fEnd - Math.max(f.start, byteStart) + 1
+    const rshift = 7 - (fEnd & 7)
+    let expr = `(${buf}[${mk.byte}]&${mk.mask})`
+    if (rshift > 0) expr = `(${expr}>>>${rshift})`
+    parts.push({ expr, nbits })
+  }
+  if (parts.length === 0) return "0"
+  let result = parts.at(-1)!.expr
+  for (let i = parts.length - 2; i >= 0; i--) {
+    const factor = 1 << parts[i].nbits
+    result = `((${result})*${factor}+(${parts[i].expr}))`
+  }
+  return result
+}
+
+function genValueExpr(f: V8Field, mod: number, bm: ByteMask[], raw?: boolean, buf = "b"): string {
+  switch (f.type) {
+    case "timestamp-ms": {
+      return raw ? `now%${mod}` : `Date.now()%${mod}`
+    }
+    case "timestamp-us": {
+      return raw ? `(now*1000)%${mod}` : `(Date.now()*1000)%${mod}`
+    }
+    case "counter": {
+      return raw ? `ctr%${mod}` : `(++_ctr)%${mod}`
+    }
+    case "shard":
+    case "node":
+    case "process": {
+      const a = f.constraint?.allowed
+      if (a && a.length > 0) {
+        if (a.length === 1) return `${a[0]}`
+        const rndByte = bm.length > 0 ? bm.at(-1)!.byte : 15
+        return `[${a.join(",")}][${buf}[${rndByte}]%${a.length}]`
+      }
+      return `((${buf}[${bm[0].byte}]<<8|${buf}[${bm.length > 1 ? bm[1].byte : bm[0].byte}])%${mod})`
+    }
+    case "fixed": {
+      return `${f.value ?? 0}`
+    }
+    default: {
+      return "0"
+    }
+  }
+}
+
+function emitFieldWrite(wp: WritePlanEntry[], lines: string[], varName = "v", mod = 0, buf = "b"): void {
+  const useArith = mod > 2 ** 32
+  lines.push(
+    ...wp.map((e) => {
+      const s = Math.round(Math.log2(e.divisor))
+      const lshift = e.bitOffset
+      const srcPart = useArith
+        ? `((${varName}/${2 ** s})<<${lshift}&${e.writeMask})`
+        : `((${varName}>>>${s}<<${lshift})&${e.writeMask})`
+      return `${buf}[${e.byte}]=(${buf}[${e.byte}]&${e.clearMask})|${srcPart};`
+    }),
+  )
+}
+
+function genLayoutSource(layout: V8Layout, raw: boolean, poolSize = 0): string {
+  const fieldMeta = layout.fields.map((f) => {
+    const wp = computeWritePlan(f)
+    const bm = fieldByteMasks(f)
+    const mod = fieldMod(f)
+    const c = f.constraint
+    // Precompute Hamming LUT for allowed-set fields with tractable domain.
+    let lut: Uint16Array | null = null
+    if (c?.allowed && c.allowed.length > 0 && f.length > 0 && f.length <= 16) {
+      const size = 1 << f.length
+      lut = new Uint16Array(size)
+      for (let v = 0; v < size; v++) {
+        let r = v
+        if (!c.allowed.includes(v)) {
+          let best = c.allowed[0]
+          let bestD = Infinity
+          for (const a of c.allowed) {
+            let d = 0
+            for (let i = 0, x = v ^ a; i < f.length; i++) {
+              if (x & (1 << i)) d++
+            }
+            if (d < bestD) {
+              bestD = d
+              best = a
+            }
+          }
+          r = best
+        }
+        lut[v] = r
+      }
+    }
+    return { f, wp, bm, mod, c, lut }
+  })
+
+  const lines: string[] = []
+  const tableLines: string[] = []
+  const fieldLines: string[] = []
+
+  // Emit precomputed LUTs as module-level constants (outside the inner function).
+  for (const m of fieldMeta) {
+    if (!m.lut) continue
+    const name = `_${m.f.name}Lut`
+    tableLines.push(`const ${name}=new Uint16Array([${[...m.lut].join(",")}]);`)
+  }
+
+  lines.push(...tableLines)
+
+  if (raw) {
+    lines.push("const _last={};")
+    lines.push("return function(b,now,ctr){")
+  } else if (poolSize > 0) {
+    lines.push("let _ctr=0;")
+    const hasMono = fieldMeta.some((m) => m.f.constraint?.monotonic)
+    if (hasMono) lines.push("const _last={};")
+    lines.push(`const _bp=new Uint8Array(${poolSize * 16});`)
+    lines.push(`const _p=new Array(${poolSize});`)
+    lines.push(`let _pi=${poolSize};`)
+    lines.push("return function(){")
+    lines.push(`if(_pi>=${poolSize}){`)
+    lines.push("cr.getRandomValues(_bp);")
+    lines.push(`for(_pi=0;_pi<${poolSize};_pi++){const _o=_pi*16;`)
+  } else {
+    lines.push("const b=new Uint8Array(16);let _ctr=0;")
+    const hasMono = fieldMeta.some((m) => m.f.constraint?.monotonic)
+    if (hasMono) lines.push("const _last={};")
+    lines.push("return function(){")
+    lines.push("cr.getRandomValues(b);")
+  }
+
+  // Field writes with inline repair. Each field whose value comes from CSPRNG
+  // bytes (shard/node/process) reads the raw value once via its bitmask
+  // expression, repairs it via LUT/clamp/monotonic, then writes once.
+  const emitFieldBlock = (target: string[]) => {
+    for (const m of fieldMeta) {
+      const { f, wp, bm, mod, c, lut } = m
+      if (f.type === "random") continue
+
+      // oxlint-disable-next-line branches-sharing-code
+      if (f.type === "shard" || f.type === "node" || f.type === "process") {
+        if (!c || (!c.allowed && c.min === undefined && c.max === undefined && !c.monotonic)) continue
+        const rx = genFieldReadExpr(f)
+        target.push("{")
+        if (lut) {
+          target.push(`const rv=_${f.name}Lut[${rx}];`)
+        } else if (c.allowed && c.allowed.length > 0) {
+          const a = c.allowed
+          target.push(`let rv=${rx};`)
+          target.push(`if([${a.join(",")}].indexOf(rv)===-1){`)
+          target.push(`let best=${a[0]},bd=${f.length};`)
+          for (const v of a) {
+            target.push(`{let d=0,x=rv^${v};while(x){d++;x&=x-1}if(d<bd){bd=d;best=${v}}}`)
+          }
+          target.push("rv=best;}")
+        } else {
+          target.push(`let rv=${rx};`)
+        }
+        if (c.min !== undefined) target.push(`if(rv<${c.min})rv=${c.min};`)
+        if (c.max !== undefined) target.push(`if(rv>${c.max})rv=${c.max};`)
+        if (c.monotonic) {
+          target.push(
+            `{const lk="${f.name}";const lv=_last[lk];if(lv!==undefined&&rv<lv){rv=lv;}_last[lk]=rv;}`,
+          )
+        }
+        emitFieldWrite(wp, target, "rv", mod)
+        target.push("}")
+      } else {
+        const vx = genValueExpr(f, mod, bm, raw)
+        target.push("{")
+        let varName = "v"
+        if (c && (c.min !== undefined || c.max !== undefined || c.monotonic)) {
+          target.push(`let rv=${vx};`)
+          if (c.min !== undefined) target.push(`if(rv<${c.min})rv=${c.min};`)
+          if (c.max !== undefined) target.push(`if(rv>${c.max})rv=${c.max};`)
+          if (c.monotonic) {
+            target.push(
+              `{const lk="${f.name}";const lv=_last[lk];if(lv!==undefined&&rv<lv){rv=lv;}_last[lk]=rv;}`,
+            )
+          }
+          varName = "rv"
+        } else {
+          target.push(`const v=${vx};`)
+        }
+        emitFieldWrite(wp, target, varName, mod)
+        target.push("}")
+      }
+    }
+    // Version/variant
+    target.push("b[6]=(b[6]&0x0f)|0x80;b[8]=(b[8]&0x3f)|0x80;")
+  }
+
+  // oxlint-disable-next-line branches-sharing-code
+  if (raw || poolSize === 0) {
+    emitFieldBlock(lines)
+    // Format
+    lines.push(
+      'return w?w[(b[0]<<8)|b[1]]+w[(b[2]<<8)|b[3]]+"-"+w[(b[4]<<8)|b[5]]+"-"+w[(b[6]<<8)|b[7]]+"-"+w[(b[8]<<8)|b[9]]+"-"+w[(b[10]<<8)|b[11]]+w[(b[12]<<8)|b[13]]+w[(b[14]<<8)|b[15]]:h[b[0]]+h[b[1]]+h[b[2]]+h[b[3]]+"-"+h[b[4]]+h[b[5]]+"-"+h[b[6]]+h[b[7]]+"-"+h[b[8]]+h[b[9]]+"-"+h[b[10]]+h[b[11]]+h[b[12]]+h[b[13]]+h[b[14]]+h[b[15]];',
+    )
+    lines.push("};")
+  } else {
+    // Pooled: emit field + format into fieldLines, then substitute b[ → b[_o+
+    emitFieldBlock(fieldLines)
+    const fmtExpr = 'w?w[(b[0]<<8)|b[1]]+w[(b[2]<<8)|b[3]]+"-"+w[(b[4]<<8)|b[5]]+"-"+w[(b[6]<<8)|b[7]]+"-"+w[(b[8]<<8)|b[9]]+"-"+w[(b[10]<<8)|b[11]]+w[(b[12]<<8)|b[13]]+w[(b[14]<<8)|b[15]]:h[b[0]]+h[b[1]]+h[b[2]]+h[b[3]]+"-"+h[b[4]]+h[b[5]]+"-"+h[b[6]]+h[b[7]]+"-"+h[b[8]]+h[b[9]]+"-"+h[b[10]]+h[b[11]]+h[b[12]]+h[b[13]]+h[b[14]]+h[b[15]]'
+    const poolfy = (s: string) => s.replaceAll("b[", "_bp[_o+")
+    lines.push(...fieldLines.map((l) => "  " + poolfy(l)))
+    lines.push(`  _p[_pi]=${poolfy(fmtExpr)};`)
+    lines.push("}_pi=0;}")
+    lines.push("return _p[_pi++];")
+    lines.push("};")
+  }
+
+  return lines.join("\n")
+}
+
+export function compileLayout(layout: V8Layout, poolSize = 0): CompiledLayout {
+  const source = genLayoutSource(layout, false, poolSize)
+
+  let fn: () => string = () => {
+    throw new Error(
+      `compileLayout(${layout.name}): failed to create Function from generated source.\n${source}`,
+    )
+  }
+  try {
+    const factory = new Function("h", "w", "cr", source) as (
+      h: string[],
+      w: string[] | null,
+      cr: { getRandomValues(b: Uint8Array): void },
+    ) => () => string
+    fn = factory(HEX8, wordTable(), globalThis.crypto as { getRandomValues(b: Uint8Array): void })
+  } catch {
+    // fn stays as throw wrapper
+  }
+
+  return { source, fn }
+}
+
+export interface CompiledRawLayout {
+  source: string
+  fn: (b: Uint8Array, now: number, ctr: number) => string
+}
+
+export function compileRawLayout(layout: V8Layout): CompiledRawLayout {
+  const source = genLayoutSource(layout, true)
+
+  let fn: (b: Uint8Array, now: number, ctr: number) => string = () => {
+    throw new Error(
+      `compileRawLayout(${layout.name}): failed to create Function from generated source.\n${source}`,
+    )
+  }
+  try {
+    const factory = new Function("h", "w", source) as (
+      h: string[],
+      w: string[] | null,
+    ) => (b: Uint8Array, now: number, ctr: number) => string
+    fn = factory(HEX8, wordTable())
+  } catch {
+    // fn stays as throw wrapper
+  }
+
+  return { source, fn }
+}
+
+/**
+ * Hand-written (not codegen) counterpart to compileRawLayout.
+ * Applies the same field-value derivation as the compiled path, but in
+ * plain JS — no generated code, no new Function.
+ *
+ * Tie-break rule for allowed-set constraint repair: **first value in the
+ * `allowed` array wins** on equal Hamming distance. This is inherited from
+ * `repairConstraints` which uses strict `<` (not `<=`) in the argmin loop.
+ *
+ * The `_lastValues` Map in `repairConstraints` provides monotonic tracking
+ * across calls, and `ctr` is used directly (not auto-incremented).
+ */
+export function interpretRawLayout(
+  layout: V8Layout,
+  raw: Uint8Array,
+  now: number,
+  ctr: number,
+): string {
+  const b = new Uint8Array(16)
+  if (raw) {
+    let i = 0
+    for (const v of raw) {
+      if (i >= 16) break
+      b[i++] = v
+    }
+  }
+
+  const fields = layout.fields
+
+  // Write computed fields (timestamp, counter, fixed). CSPRNG-derived fields
+  // (shard, node, process) keep their raw bytes — repairConstraints handles
+  // any constraint violations afterward.
+  for (const f of fields) {
+    switch (f.type) {
+      case "timestamp-ms": {
+        writeFieldValue(b, f, now % fieldMod(f))
+        break
+      }
+      case "timestamp-us": {
+        writeFieldValue(b, f, (now * 1000) % fieldMod(f))
+        break
+      }
+      case "counter": {
+        writeFieldValue(b, f, ctr % fieldMod(f))
+        break
+      }
+      case "fixed": {
+        writeFieldValue(b, f, f.value ?? 0)
+        break
+      }
+      default:
+        // shard, node, process, random — leave raw CSPRNG bytes in place
+    }
+  }
+
+  repairConstraints(layout, b)
+
+  forceVersionVariant(b)
+
+  const h = HEX8
+  return (
+    h[b[0]] + h[b[1]] + h[b[2]] + h[b[3]] +
+    "-" + h[b[4]] + h[b[5]] +
+    "-" + h[b[6]] + h[b[7]] +
+    "-" + h[b[8]] + h[b[9]] +
+    "-" + h[b[10]] + h[b[11]] + h[b[12]] + h[b[13]] + h[b[14]] + h[b[15]]
+  )
 }
 
 // ---------------------------------------------------------------------------
