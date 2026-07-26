@@ -14,3 +14,8 @@ scripts/__pycache__/
 
 # Rust build artifacts (golden-check)
 golden-check/target/
+
+# Agent configuration (opencode, claude, cursor)
+.claude/
+.opencode/
+.agents/

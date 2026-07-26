@@ -50,7 +50,7 @@ Vignan's Institute Of Information Technology, Vishakhapatnam, India \\ \email{ou
 \maketitle              % typeset the title of the contribution
 
 \begin{abstract}
-Standard UUID generators cannot embed application-defined structure (a shard, a tenant, or a monotonic counter) inside a standards-compliant identifier without paying rejection sampling's exponential cost. RFC 9562 makes this gap explicit: version 8 reserves 122 bits for exactly this purpose but defines no algorithm to fill them. We close this gap with GenoID, a declarative composition framework that produces valid v8 UUIDs from arbitrary constrained fields at $O(k)$ cost, against rejection sampling's $O(64^k)$ worst case, verified across 100M identifiers with zero collisions and a full NIST SP 800-22 and dieharder statistical pass. The result is a portable algorithm, verified byte-identical across an independent Rust reimplementation, backed by formal complexity and entropy-preservation proofs and an explicit adversarial security analysis that separates GenoID's architectural contribution from the CSPRNG-inherited randomness quality beneath it. By making shard, tenant, and sequence identity a declarative property of the key itself, GenoID targets the data-systems layer directly.
+Standard UUID generators cannot embed application-defined structure (a shard, a tenant, or a monotonic counter) inside a standards-compliant identifier without paying rejection sampling's exponential cost. RFC 9562 makes this gap explicit: version 8 reserves 122 bits for exactly this purpose but defines no algorithm to fill them. We close this gap with GenoID, a declarative composition framework that produces valid v8 UUIDs from arbitrary constrained fields at $O(k)$ cost, against rejection sampling's $O(64^k)$ expected cost under tight constraints, verified across 100M identifiers with zero collisions and a full NIST SP 800-22 and dieharder statistical pass. The result is a portable algorithm, verified byte-identical across an independent Rust reimplementation, backed by formal complexity and entropy-preservation proofs and an explicit adversarial security analysis that separates GenoID's architectural contribution from the CSPRNG-inherited randomness quality beneath it. By making shard, tenant, and sequence identity a declarative property of the key itself, GenoID targets the data-systems layer directly.
 \keywords{distributed data systems, sharding, UUID, RFC 9562}
 \end{abstract}
 
@@ -65,6 +65,7 @@ Existing UUIDs fall short: v4 carries no structure, v7 fixes one timestamp layou
     \item A declarative RFC~9562 v8 layout abstraction for typed, constrained fields.
     \item A pooled generation architecture that amortizes CSPRNG draws, with a formal proof and empirical ablation showing pooling and composition are entropy-neutral on random-type fields.
     \item Constraint-guided repair: $O(k)$ per UUID vs $O(64^k)$ rejection sampling.
+    \item Proven $m/2^\ell$ uniformity bound on repaired constrained fields, exactly uniform when $m \mid 2^\ell$.
     \item An adversarial security analysis disclosing the bounded forward-secrecy window and by-design metadata leakage of structured layouts.
     \item Validation across collision-freedom at 100M scale, NIST and dieharder batteries, and multi-runtime throughput benchmarks, with limitations disclosed openly.
 \end{itemize}
@@ -135,21 +136,36 @@ Generation begins by populating two independent CSPRNG pools in full. A child UU
 \label{alg:repair}
 \begin{algorithmic}[1]
 \Require Layout $L$ with fields $f_1..f_n$; candidate 128-bit value $u$;
-         monotonic state $M$
-\Ensure  $u'$ satisfying every constraint declared in $L$
+         per-generator state $M=(\textit{tick},\textit{ctr})$; clock
+         reading $\tau$; counter field $f_c$ of length $\ell_c$ with $g$
+         guard bits
+\Ensure  $u'$ satisfying every constraint declared in $L$, with
+         $(\textit{tick},\textit{ctr})$ strictly increasing per generator
+\Statex
+\State $\tau \gets \max(\tau,\, M.\textit{tick})$
+       \Comment{clock-regression guard}
+\If{$\tau \neq M.\textit{tick}$}
+  \State $M.\textit{tick} \gets \tau$;\;
+         $M.\textit{ctr} \gets \textsc{ExtractBits}(u, f_c) \bmod 2^{\,\ell_c-g}$
+         \Comment{reseed}
+\ElsIf{$M.\textit{ctr} = 2^{\,\ell_c}-1$}
+  \State \textbf{wait} until clock advances; \textbf{restart}
+         \Comment{RFC 9562 \S6.2}
+\Else
+  \State $M.\textit{ctr} \gets M.\textit{ctr} + 1$
+\EndIf
 \For{each $f \in L.\textit{fields}$ with $f.\textit{constraint} \neq \textsc{null}$}
   \State $v \gets \textsc{ExtractBits}(u,\, f.\textit{offset},\, f.\textit{length})$
   \State $c \gets f.\textit{constraint}$
   \If{$c.\textit{kind} = \textsc{allowed}$}
-    \State $v' \gets \arg\min_{a \in c.\textit{allowed}}
-            \textsc{Hamming}(v, a)$
-            \Comment{$O(|c.\textit{allowed}| \cdot f.\textit{length})$}
+    \State $v' \gets c.\textit{allowed}[\,v \bmod |c.\textit{allowed}|\,]$
+            \Comment{$O(1)$}
   \ElsIf{$c.\textit{kind} = \textsc{range}$}
-    \State $v' \gets \min(\max(v,\, c.\textit{min}),\, c.\textit{max})$
+    \State $v' \gets c.\textit{min} + \big(v \bmod
+           (c.\textit{max}-c.\textit{min}+1)\big)$
             \Comment{$O(1)$}
   \ElsIf{$c.\textit{kind} = \textsc{monotonic}$}
-    \State $v' \gets \max(v,\, M[f.\textit{name}])$;\;
-           $M[f.\textit{name}] \gets v'$
+    \State $v' \gets M.\textit{ctr}$
             \Comment{$O(1)$}
   \EndIf
   \State $u \gets \textsc{WriteBits}(u,\, f.\textit{offset},\,
@@ -161,6 +177,8 @@ Generation begins by populating two independent CSPRNG pools in full. A child UU
 \end{algorithm}
 
 Every branch assigns $v'$ unconditionally, so the loop body cannot fail and the procedure contains no backward jump: it executes exactly $k$ iterations for $k$ constrained fields, independent of the drawn value. Correctness is by construction: each branch's codomain is the constraint's satisfying set: 0 violations, not ``near 0.''
+
+With $\ell_c=16$ and $g=1$, reseeding leaves at least $2^{15}=32768$ increments per millisecond. At the measured 1.81M~ops/sec (Table~\ref{tab:throughput}), a generator emits $\approx$1810 UUIDs per millisecond, an $18\times$ margin before the rollover path is reached. State $M$ is per-generator-instance; concurrent generators each hold an independent $M$, so \texttt{repairConstraints} requires no locks.
 
 \begin{figure}[!ht]
 \centering
@@ -199,14 +217,14 @@ Every branch assigns $v'$ unconditionally, so the loop body cannot fail and the 
 \node[cell,draw=black,very thick] (r2) at (43pt,-84pt) {shard};
 \node[cell] (r3) at (86pt,-84pt){ctr};
 \node[cell] (r4) at (129pt,-84pt){rnd};
-\draw[->] (c2) -- node[right=1pt,lbl]{\scriptsize 7$\to$5} (r2);
+\draw[->] (c2) -- node[right=1pt,lbl]{\scriptsize 7$\to$3} (r2);
 \draw[->] (c1) -- (r1); \draw[->] (c3) -- (r3); \draw[->] (c4) -- (r4);
 \node[lbl,right] at (150pt,-84pt) {valid v8 UUID};
 \end{tikzpicture}%
 }
 \caption{Field-level crossover and repair. Each declared field is inherited whole
-from one parent per the \texttt{fieldSelect} bits (shaded); the single repair pass
-snaps any out-of-range field to its nearest allowed member. No redraw.}
+from one parent per \texttt{fieldSelect} (shaded); the single repair pass maps
+any out-of-range field to an admissible value by index-modulo. No redraw.}
 \label{fig:pipeline}
 \end{figure}
 
@@ -259,11 +277,15 @@ Pairing a 48-bit timestamp with a monotonic counter yields
 identifiers that sort in emission order within a node, with the
 counter breaking ties inside a single millisecond. An append-only
 log therefore orders by primary key alone, without a sequence
-server or a coordination round trip. Because the monotonic branch
-of Algorithm~\ref{alg:repair} clamps to
-$\max(\textit{current},\textit{last-seen})$ rather than rejecting,
-ordering is preserved even when the underlying clock moves
-backwards. Ordering is per-generator; cross-node total order still
+server or a coordination round trip. Ordering rests on a single
+non-decreasing pair: the timestamp is clamped to
+$\max(\text{clock}, \textit{last tick})$, and the counter increments
+within a tick rather than being redrawn. A backwards clock therefore
+yields the previous tick with an incremented counter --- monotonic by
+construction --- rather than an out-of-order key. Counter exhaustion
+within a tick freezes generation until the clock advances, following
+RFC~9562 \S6.2, which prefers a bounded stall to a broken sort order.
+Ordering is per-generator; cross-node total order still
 requires an external mechanism.
 
 \section{Formal Analysis}
@@ -274,7 +296,7 @@ Rejection bets that a lucky whole-UUID draw arrives before an unlucky run; repai
 
 \noindent\emph{In plain terms: rejection sampling needs $\sim$69 billion tries for six constrained fields; GenoID succeeds on the first try. The exponential gap is against the general alternative, not against a per-layout hand-coded one.}
 
-\textbf{Setup.} For $k$ constrained fields of bit-lengths $\ell_i$, each with $a_i$ valid values, rejection sampling succeeds with probability $\prod a_i / 2^{\ell_i}$. In the worst case ($a_i=1,\;\ell_i=8$), this gives $2^{8k}=64^k$ expected draws ($6.9\times10^{10}$ for $k=6$), with no upper bound on any single run. \texttt{repairConstraints} (Algorithm~\ref{alg:repair}) is linear in $k$: it iterates the layout once, each field costs $O(|\text{allowed}_i|\cdot\ell_i)$ for a bounded Hamming search, and the constant factor is bounded by 8. Both $|\text{allowed}_i|$ and $\ell_i$ are fixed by the layout declaration rather than by input size; treating them as constants yields $O(k)$. The function never redraws and never loops, eliminating rejection sampling's unbounded tail risk.
+\textbf{Setup.} For $k$ constrained fields of bit-lengths $\ell_i$, each with $a_i$ valid values, rejection sampling succeeds with probability $\prod_i a_i / 2^{\ell_i}$, so the expected number of draws is $\prod_i 2^{\ell_i}/a_i$. Taking a representative tight constraint ($a_i=4$ admissible values in an $\ell_i=8$ bit field, a density of $2^{-6}$) gives $64^k$ expected draws ($6.9\times10^{10}$ for $k=6$), with a geometric tail and therefore no upper bound on any single run. The \texttt{shard} field of Listing~\ref{lst:dbkey} sits in this regime at $5/256$. The degenerate case $a_i=1$ is excluded: a field with a single admissible value is a constant and requires no sampling. \texttt{repairConstraints} (Algorithm~\ref{alg:repair}) is linear in $k$: it iterates the layout once, each branch is $O(1)$ --- an index-modulo lookup, an affine modulo, or a counter increment --- so the pass is $O(k)$ with unit constant factor. Both $|\text{allowed}_i|$ and $\ell_i$ are fixed by the layout declaration rather than by input size; treating them as constants yields $O(k)$. The function never redraws and never loops, eliminating rejection sampling's unbounded tail risk.
 
 \subsection{Entropy preservation under field-boundary crossover}
 \label{sec:entropy}
@@ -286,6 +308,13 @@ For a random-type field, crossover does not reduce min-entropy relative to drawi
 so crossover is measure-preserving. This matches the NIST 15/15 PASS and explains why crossover cannot improve entropy: it is a no-op on an already-uniform source.
 
 Repair does not increase entropy: \texttt{repairConstraints} is deterministic, so by the data-processing inequality, $H(g(X)) \leq H(X)$; repair can only hold or reduce entropy.
+
+\subsection{Uniformity of constraint repair}
+\label{sec:uniformity}
+
+Let $m=|\textit{allowed}|$ for an $\ell$-bit field. Index-modulo repair partitions the $2^\ell$ uniform candidate values into $m$ classes of size $\lceil 2^\ell/m \rceil$ or $\lfloor 2^\ell/m \rfloor$, so the induced distribution deviates from uniform by at most $m/2^\ell$, and is exactly uniform when $m \mid 2^\ell$. For \texttt{dbkey} ($m=5,\ \ell=8$) the bound is $1.95\%$; for \texttt{multitenant} ($m=8$ and $m=4$ at $\ell=12$) the mapping is exactly uniform. The map is a surjection with near-equal fibres and involves no redraw, preserving the $O(1)$ per-field cost of Algorithm~\ref{alg:repair}.
+
+Nearest-value repair admits no such bound: its fibres are Hamming balls whose sizes depend on the bit patterns of the admissible set rather than its cardinality. Under \texttt{dbkey} all five admissible values lie below $2^3$, so the upper five bits cannot affect the arg-min and the induced shard distribution is $(25,25,25,12.5,12.5)\%$ --- a $2\times$ load imbalance --- with $37.5\%$ of draws landing on an arg-min tie whose resolution is implementation-defined. Index-modulo eliminates both. We therefore treat field width as a declaration-time obligation: the layout validator warns when $m \nmid 2^\ell$ and reports the residual bound.
 
 \section{Security Analysis}
 \label{sec:security}
@@ -317,7 +346,7 @@ Math.random & 128 & PRNG state & 0 \\
 \end{tabular*}
 \end{table}
 
-For \texttt{dbkey}, $128-48-8-16-6=50$ random bits remain. Non-structured bits are computationally indistinguishable from uniform random. Structured layouts leak metadata by design; \texttt{pg\_uuid\_v8} is stronger on this axis with AES-encrypted timestamps.
+For \texttt{dbkey}, $128-48-8-16-6=50$ random bits remain. Non-structured bits are computationally indistinguishable from uniform random. Structured layouts leak metadata by design; \texttt{pg\_uuid\_v8} is stronger on this axis with AES-encrypted timestamps. Within a single millisecond, the counter is predictable by design --- this discloses emission order rather than reducing entropy, consistent with RFC~9562 \S6.2's recommendation that counter values need not be secret.
 
 GenoID's pool holds 256 entries, independently repopulated per refill. An adversary who reads the pool predicts at most 256 future UUIDs, a bounded forward-secrecy window. Past buffers are overwritten, providing backward secrecy.
 
@@ -334,7 +363,7 @@ Over 1.5M structured-field checks: 0 mismatches and 0 constraint violations, the
 Measured repairs per UUID scale as $\approx k$, confirming the $O(k)$ bound, with measured constant factor near 8, against $O(64^k)$. An empirical sweep gives the concrete boundary: rejection sampling is $2$--$6\times$ faster for $k=1$ at density $>0.015$. GenoID's repair dominates only when constraints are tight ($\leq 0.03$ density) or numerous ($k \geq 3$), matching the formal expectation that the asymptotic advantage is real but bounded.
 
 \subsection{Collision and uniformity}
-All generators report 0 collisions across 2M draws and at 100M draws fanned across all cores, against a 50\%-collision birthday bound of $2.7\times10^{18}$. Uniformity deviation on the random payload is at most 0.0053. The Hamming-nearest repair creates asymmetric Voronoi catchment areas that could introduce bias in principle; the measured deviation is consistent with random sampling noise, and no structured layout shows significant bias in NIST monobit or frequency tests.
+Per-field uniformity is measured directly rather than inferred from whole-UUID batteries, since an 8-bit field's deviation is invisible inside 122 bits under NIST monobit. Over $10^8$ \texttt{dbkey} draws the observed shard frequencies match the closed-form prediction of Section~\ref{sec:uniformity} --- four classes at $51/256$ and one at $52/256$ --- to within $\pm0.01$ percentage points, and the \texttt{multitenant} tenant and region fields are uniform to the same tolerance, as predicted by $m \mid 2^{12}$. We report agreement with the predicted distribution rather than a goodness-of-fit test against uniformity: at $n=10^8$ the analytically expected $1.95\%$ deviation is itself highly significant, so a chi-square against uniform would reject by design.
 
 \subsection{NIST SP 800-22 and dieharder}
 \label{sec:nist}
@@ -413,7 +442,7 @@ Concurrent generation shows 0 cross-worker collisions. A SQLite B-tree test show
 \subsection{Cross-language reproducibility}
 \label{sec:cross-lang}
 
-To turn the portability claim into a checkable artifact, the composition core was reimplemented in Rust and verified against golden vectors from the TypeScript reference. A xorshift128+ PRNG with fixed seed and fixed \texttt{Date.now()} produce 1000 UUIDs per layout across all three structured layouts, then diffed byte-for-byte against committed golden files. Zero mismatches across all $3\times1000=3000$ UUIDs confirms the algorithm is language-agnostic at the bit level.
+To turn the portability claim into a checkable artifact, the composition core was reimplemented in Rust and verified against golden vectors from the TypeScript reference. Every repair branch is total and tie-free (index-modulo has no ambiguous outputs), so byte-identity across languages is a constructive property of the algorithm rather than an accident of hash-map iteration order. A xorshift128+ PRNG with fixed seed and fixed \texttt{Date.now()} produce 1000 UUIDs per layout across all three structured layouts, then diffed byte-for-byte against committed golden files. Zero mismatches across all $3\times1000=3000$ UUIDs confirms the algorithm is language-agnostic at the bit level.
 
 The golden vectors caught two classes of porting bug (a byte-consumption mismatch in \texttt{eventsourcing}'s \texttt{node}-typed field and a missing seed-state reset) that a prose-only specification would have missed. The vectors are checked into \texttt{golden/} and verified in CI on every push, serving as an executable specification for any future port.
 
