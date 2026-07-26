@@ -59,7 +59,7 @@ Standard UUID generators cannot embed application-defined structure (a shard, a 
 
 Imagine ten database servers where each record's ID must reveal which one owns it. RFC~9562's v8 UUID reserves 122 bits for application-defined structure but specifies no algorithm to fill them. GenoID is that missing algorithm: instead of rejection sampling's $O(64^k)$ draws, it produces correct keys on the first try in $O(k)$ work.
 
-Existing UUIDs fall short: v4 carries no structure, v7 fixes one timestamp layout, and \texttt{pg\_uuid\_v8} embeds an encrypted timestamp with no multi-field composition. GenoID declares field structure once as a \texttt{V8Layout} and satisfies it by deterministic repair, drawing from pre-populated CSPRNG pools to amortize entropy cost.
+Existing UUIDs fall short: v4 carries no structure, v7 fixes one timestamp layout, and \texttt{pg\_uuid\_v8} embeds an encrypted timestamp with no multi-field composition. Structure in the key is not always the right choice --- a composite key is simpler whenever the identifier never leaves the database --- and Section~\ref{sec:why-embed} states the conditions under which it is. GenoID declares field structure once as a \texttt{V8Layout} and satisfies it by deterministic repair, drawing from pre-populated CSPRNG pools to amortize entropy cost.
 
 \noindent\textbf{Contributions.}
 \begin{itemize}
@@ -234,6 +234,38 @@ any out-of-range field to an admissible value by index-modulo. No redraw.}
 Each use case below declares one layout and reads one field; no
 generation code is written per application.
 
+\subsection{Why embed structure in the key?}
+\label{sec:why-embed}
+
+The obvious alternative to embedding a shard in the identifier is to keep
+it beside the identifier: a composite key
+$(\textit{shard\_id}, \textit{uuid})$, or a separate indexed column. That
+design is simpler than anything in this paper, and it is better on three
+axes we do not contest. Resharding becomes a column update rather than a
+layout migration and a dual-read window. The identifier retains all 122
+random bits, so none of the entropy accounting in
+Section~\ref{sec:entropy-accounting} applies. And the shard count is not
+bounded by a field width fixed at declaration time.
+
+Embedding wins in one specific circumstance: when the identifier must
+cross a boundary that carries a single value. A URL path segment, a cache
+key, a queue partition key, a log line, or a foreign key in a system one
+does not control each admit one identifier, not two. A composite key
+crossing such a boundary degrades to string concatenation --- an ad-hoc,
+unvalidated encoding of precisely what \texttt{V8Layout} specifies
+formally --- and the concatenated form is no longer a UUID, forfeiting
+the native 16-byte column type, its index representation, and the library
+and tooling support that RFC~9562 conformance carries.
+
+A second, narrower benefit is integrity. When the tenant is a projection
+of the key rather than a neighbouring column, a row whose key and session
+context disagree is impossible by construction rather than merely
+detectable: two columns can drift, one cannot.
+
+We therefore position GenoID for stable shard and tenant sets whose
+identifiers escape the database, and not for elastic partitioning behind
+a boundary the application fully controls.
+
 \subsection{Sharded databases}
 Listing~\ref{lst:dbkey} embeds the owning shard directly in the key.
 A router extracts bits 52--59 and dispatches without consulting a
@@ -242,9 +274,8 @@ hash computation and a ring lookup under consistent hashing, and
 removing the coordination needed to keep a shard map current across
 application nodes. The 48-bit timestamp prefix preserves index
 locality, so keys remain B-tree friendly (Section~\ref{sec:deployability}).
-The shard set is fixed at declaration time; resharding requires a
-new layout and a dual-read window, which makes this approach suited
-to stable shard counts rather than elastic ones.
+The trade-offs of embedding vs a composite key are discussed in
+Section~\ref{sec:why-embed}.
 
 \subsection{Multi-tenant isolation}
 The \texttt{multitenant} layout (Listing~\ref{lst:multitenant})
