@@ -128,7 +128,7 @@ export function renderConsolidated(results: CIBenchmarkResult[]): string {
     }
   }
 
-  // Known-artifact note so the raw numbers are not misread as a GenoID defect.
+  // Known-artifact notes so the raw numbers are not misread as a GenoID defect.
   md +=
     "\n### Known issues\n\n" +
     "- **Node on Windows throughput:** schemes that call `crypto.getRandomValues` " +
@@ -136,7 +136,12 @@ export function renderConsolidated(results: CIBenchmarkResult[]): string {
     "Node/Windows than on Node/Linux or macOS. This is a Node WebCrypto backend " +
     "artifact (BCryptGenRandom per-call overhead, not batched), not a GenoID defect. " +
     "Native `crypto.randomUUID()` (v4) and the pooled GenoID CSPRNG are unaffected, " +
-    "which confirms the bottleneck is per-call `getRandomValues`, not the algorithm.\n"
+    "which confirms the bottleneck is per-call `getRandomValues`, not the algorithm.\n" +
+    "- **Node 22 GenoID V8 deopt:** `genoid-structured` reaches only 12--16% of " +
+    "`genoid-v8`'s rate on Node 22 (all three OSes), against 56--94% on Bun and Deno. " +
+    "Both draw from the same pool, so the cause is a V8-version-specific " +
+    "deoptimisation in the field-extraction/repair loop, not CSPRNG access. " +
+    "Deno runs a newer V8 without the regression.\n"
 
   return md
 }

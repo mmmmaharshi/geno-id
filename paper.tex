@@ -51,7 +51,7 @@ Vignan's Institute Of Information Technology, Vishakhapatnam, India \\ \email{ou
 \maketitle              % typeset the title of the contribution
 
 \begin{abstract}
-Standard UUID generators cannot embed application-defined structure (a shard, a tenant, or a monotonic counter) inside a standards-compliant identifier without paying rejection sampling's exponential cost. RFC 9562 makes this gap explicit: version 8 reserves 122 bits for exactly this purpose but defines no algorithm to fill them. We close this gap with GenoID, a declarative composition framework that produces valid v8 UUIDs from arbitrary constrained fields at $O(k)$ cost, against rejection sampling's $O(64^k)$ expected cost under tight constraints, with a proven $m/2^\ell$ uniformity bound on every repaired field and measured throughput $2.2$--$9.0\times$ that of the closest prior art across seven runtime environments. The result is a portable algorithm, verified byte-identical across an independent Rust reimplementation, backed by formal complexity and entropy-preservation proofs and an explicit adversarial security analysis that separates GenoID's architectural contribution from the CSPRNG-inherited randomness quality beneath it. By making shard, tenant, and sequence identity a declarative property of the key itself, GenoID targets the data-systems layer directly.
+Standard UUID generators cannot embed application-defined structure (a shard, a tenant, or a monotonic counter) inside a standards-compliant identifier without paying rejection sampling's exponential cost. RFC 9562 makes this gap explicit: version 8 reserves 122 bits for exactly this purpose but defines no algorithm to fill them. We close this gap with GenoID, a declarative composition framework that produces valid v8 UUIDs from arbitrary constrained fields at $O(k)$ cost, against rejection sampling's $O(64^k)$ expected cost under tight constraints, with a proven $m/2^\ell$ uniformity bound on every repaired field and measured throughput $2.0$--$6.7\times$ that of the closest prior art across nine runtime environments. The result is a portable algorithm, verified byte-identical across an independent Rust reimplementation, backed by formal complexity and entropy-preservation proofs and an explicit adversarial security analysis that separates GenoID's architectural contribution from the CSPRNG-inherited randomness quality beneath it. By making shard, tenant, and sequence identity a declarative property of the key itself, GenoID targets the data-systems layer directly.
 \keywords{distributed data systems, sharding, UUID, RFC 9562}
 \end{abstract}
 
@@ -372,58 +372,72 @@ All 15 NIST SP~800-22 sub-tests~\cite{12} pass on three structured layouts. An e
 
 \subsection{Throughput and baseline comparison}
 
-Index-modulo repair (Section~\ref{sec:uniformity}) replaced an $O(|\textit{allowed}|\cdot\ell)$ arg-min search with a single modulo, improving \texttt{genoid-structured} from $9.9\%$ to $51.4\%$ of native v4 throughput on the same runner --- a $5.2\times$ relative gain from the edit that also removed the sampling bias. Correctness and cost moved together.
+The benchmark loop consumes every generated identifier, so that no generator's work can be elided as dead code; this correction reduced the measured rate of the pure-JavaScript generators by roughly $2\times$ relative to an unconsumed loop, while leaving native \texttt{crypto.randomUUID()} unchanged --- a useful check that the sink is doing what it claims.
 
 \begin{table}[!ht]
-\caption{Throughput across seven CI environments (mean of 10 trials). Absolute rates vary up to $50\%$ between runs on macOS and Deno runners; claims in the text are therefore stated as same-rig paired ratios (Table~\ref{tab:paired}), which are stable to $\pm3\%$.}
+\caption{Throughput across nine CI environments (mean of 10 trials after a
+discarded warm-up; the timing loop consumes each generated value to
+prevent dead-code elimination). Absolute rates vary by runtime and host;
+claims in the text are stated as same-rig paired ratios
+(Table~\ref{tab:paired}).}
 \label{tab:throughput}
 \centering\footnotesize
 \begin{tabular*}{\columnwidth}{@{\extracolsep{\fill}}lcc}
 \hline\noalign{\smallskip}
-\textbf{Generator} & \textbf{Ubuntu/Bun} & \textbf{Min--Max, 7 envs} \\
+\textbf{Generator} & \textbf{Ubuntu/Bun} & \textbf{Min--Max, 9 envs} \\
 \noalign{\smallskip}\hline\noalign{\smallskip}
-v4-native                  & 12.67M & 11.91--23.45M \\
-genoid-v8 (pooled)         &  9.97M &  4.15--12.15M \\
-genoid-compiled            &  6.86M &  0.50--7.07M \\
-genoid-structured          &  6.51M &  0.48--6.51M \\
-v7-custom                  &  6.35M &  0.44--6.35M \\
-snowflake                  &  3.05M &  2.31--7.62M \\
-ulid-v8                    &  0.95M &  0.23--1.32M \\
-pg\_uuid\_v8               &  0.90M &  0.22--1.12M \\
-Math.random                &  0.53M &  0.42--0.67M \\
-ulid                       &  0.46M &  0.18--0.68M \\
-ksuid                      &  0.32M &  0.10--0.39M \\
+v4-native                & 12.72M & 3.12--19.86M \\
+snowflake$^\dagger$      &  2.90M & 2.41--8.94M \\
+genoid-v8 (pooled)       &  4.07M & 2.55--5.84M \\
+genoid-compiled          &  3.02M & 0.47--4.95M \\
+genoid-structured        &  3.04M & 0.46--4.43M \\
+v7-custom                &  3.09M & 0.39--4.17M \\
+ulid-v8                  &  0.89M & 0.22--1.29M \\
+pg\_uuid\_v8             &  0.84M & 0.22--1.06M \\
+Math.random              &  0.53M & 0.41--0.79M \\
+ulid                     &  0.45M & 0.18--0.73M \\
+ksuid                    &  0.32M & 0.11--0.46M \\
 \noalign{\smallskip}\hline
 \end{tabular*}
+\smallskip
+\footnotesize $^\dagger$Snowflake is a 64-bit time+sequence identifier, not
+an entropy-based UUID; it is excluded from the collision gate because its
+12-bit sequence wraps within a millisecond under tight-loop generation.
 \end{table}
 
 \begin{table}[!ht]
-\caption{\texttt{genoid-structured} relative to the two closest structured baselines, measured on the same rig within the same run so that runner noise cancels. GenoID leads in all seven environments.}
+\caption{\texttt{genoid-structured} against the two closest structured
+baselines, and the layout compiler against the interpreted path. Ratios
+are same-rig, same-run, so host and runtime noise cancel. All
+comparisons against \texttt{pg\_uuid\_v8} and \texttt{ulid-v8} are
+significant at $p<10^{-7}$ (Welch); ``n.s.'' marks $p>0.05$.}
 \label{tab:paired}
 \centering\footnotesize
 \begin{tabular*}{\columnwidth}{@{\extracolsep{\fill}}lccc}
 \hline\noalign{\smallskip}
 \textbf{Environment} & \textbf{vs \texttt{pg\_uuid\_v8}} &
-\textbf{vs \texttt{ulid-v8}} & \textbf{vs \texttt{v7-custom}} \\
+\textbf{vs \texttt{ulid-v8}} & \textbf{compiled/interp.} \\
 \noalign{\smallskip}\hline\noalign{\smallskip}
-Ubuntu / Bun     & 7.23$\times$ & 6.85$\times$ & 1.03$\times$ \\
-macOS / Bun      & 5.31$\times$ & 4.51$\times$ & 1.32$\times$ \\
-Windows / Bun    & 6.21$\times$ & 5.83$\times$ & 1.12$\times$ \\
-Node 22 / Win    & 2.18$\times$ & 2.09$\times$ & 1.09$\times$ \\
-Deno / Linux     & 8.91$\times$ & 8.70$\times$ & 1.10$\times$ \\
-Deno / macOS     & 6.33$\times$ & 4.95$\times$ & 1.18$\times$ \\
-Deno / Windows   & 8.98$\times$ & 8.00$\times$ & 1.09$\times$ \\
+Ubuntu / Bun      & 3.62$\times$ & 3.40$\times$ & 0.99 (n.s.) \\
+macOS / Bun       & 4.18$\times$ & 3.43$\times$ & 1.12 \\
+Windows / Bun     & 3.64$\times$ & 2.89$\times$ & 1.02 (n.s.) \\
+Node 22 / Linux   & 2.41$\times$ & 2.45$\times$ & 1.01 \\
+Node 22 / macOS   & 2.01$\times$ & 1.92$\times$ & 1.02 (n.s.) \\
+Node 22 / Windows & 2.05$\times$ & 2.08$\times$ & 1.03 \\
+Deno / Linux      & 6.12$\times$ & 6.10$\times$ & 1.14 \\
+Deno / macOS      & 5.44$\times$ & 5.03$\times$ & 1.06 \\
+Deno / Windows    & 6.73$\times$ & 6.08$\times$ & 1.13 \\
 \noalign{\smallskip}\hline
 \end{tabular*}
 \end{table}
 
-Against the closest prior art, \texttt{genoid-structured} leads in all seven environments: $2.2$--$9.0\times$ over \texttt{pg\_uuid\_v8} and $2.1$--$8.7\times$ over \texttt{ulid-v8} (Table~\ref{tab:paired}). It also exceeds a hand-coded \texttt{v7} implementation in every environment despite satisfying three declared field constraints that \texttt{v7} does not.
+\texttt{genoid-structured} outperforms the closest prior art in all nine environments: $2.0$--$6.7\times$ over \texttt{pg\_uuid\_v8} and $1.9$--$6.1\times$ over \texttt{ulid-v8}, every comparison significant at $p<10^{-7}$ (Table~\ref{tab:paired}). It is at parity with a hand-coded \texttt{v7} implementation --- ahead in six of nine environments, behind narrowly in three --- while additionally satisfying three declared field constraints that \texttt{v7} does not express.
 
-Two results run against us and we report them plainly. \texttt{snowflake} is faster in four of seven environments (Node~22 and all three Deno runners), where its fixed-layout integer path avoids GenoID's generic field loop. And on Node~22 \texttt{genoid-structured} reaches only $7.6\%$ of \texttt{genoid-v8}'s rate, against $49$--$93\%$ elsewhere: a V8-specific regression in the field-extraction path, which we document in Section~\ref{sec:validity} rather than tune away.
+Two results run against us. \texttt{snowflake} is faster in seven of nine environments, by up to $10\times$ on Node; it is a 64-bit time-and-sequence integer rather than a 122-bit UUID, and it collides once its sequence wraps, so the comparison is across guarantee classes rather than within one. Second, \texttt{genoid-structured} reaches only $12$--$16\%$ of \texttt{genoid-v8}'s rate on Node~22, against $56$--$94\%$ on Bun and Deno; Section~\ref{sec:validity} treats this as a portability limitation rather than tuning it away.
 
 \subsection{Ablation}
 \label{sec:ablation}
-A prototype layout compiler, which emits inlined per-layout code in place of the generic field loop, yields a geometric-mean $1.07\times$ across the seven environments and regresses on one Deno/macOS runner. The interpreted repair pass is therefore no longer the bottleneck, and further gains must come from the pooling and formatting paths instead.
+A prototype layout compiler emitting inlined per-layout code yields a geometric-mean $1.06\times$ across the nine environments, with no significant difference in three of them and a point estimate below unity in one (Table~\ref{tab:paired}). Gains concentrate on Deno ($1.06$--$1.14\times$). The interpreted repair pass is therefore no longer the dominant cost, and further work should target the pooling and string-formatting paths instead.
 
 \subsection{Additional deployability checks}
 \label{sec:deployability}
@@ -457,7 +471,9 @@ We disclose these openly, ranked by expected reviewer pressure.
 
 \textbf{Construct validity.} NIST PASS/FAIL is necessary but not sufficient for security; Section~\ref{sec:security} provides a threat model and entropy accounting.
 
-\textbf{Internal validity.} Benchmark confounds are mitigated by mean $\pm$ SD over 10 trials with 95\% CI and Welch $t$-tests. Two implementation bugs (a byte-consumption mismatch in \texttt{eventsourcing}'s \texttt{node}-typed field and a missing seed-state reset) were caught by the test suite before publication. NIST runs unconditionally; dieharder is a CI-budget curation. On Node~22, \texttt{genoid-structured} reaches only $7.6\%$ of \texttt{genoid-v8}'s rate, against $49$--$93\%$ elsewhere: we attribute this to BigInt arithmetic in the field-extraction path, which V8 optimises less aggressively than JavaScriptCore or Bun's V8 derivative; extracting fields $\leq 32$ bits as \texttt{Number} rather than BigInt is the likely remedy.
+\textbf{Internal validity.} Benchmark confounds are mitigated by mean $\pm$ SD over 10 trials with 95\% CI and Welch $t$-tests. Two implementation bugs (a byte-consumption mismatch in \texttt{eventsourcing}'s \texttt{node}-typed field and a missing seed-state reset) were caught by the test suite before publication. NIST runs unconditionally; dieharder is a CI-budget curation.
+
+\textbf{Runtime portability.} The structured path costs $6$--$44\%$ relative to unstructured pooled generation on Bun and Deno, but $84$--$88\%$ on Node~22, consistently across Linux, macOS, and Windows. Both variants draw from the same pool, so the cause is not CSPRNG access but the field-extraction and repair loop. Deno executes the same code on a newer V8 without the regression, which points to a version-specific deoptimisation rather than an algorithmic one. We report the measurement rather than a workaround; a reader deploying on Node~22 should benchmark before assuming the Bun figures transfer.
 
 \textbf{Conclusion validity.} Throughput comparisons use Welch $t$-tests. ``0 collisions'' is reported alongside the birthday-bound expectation.
 
@@ -466,7 +482,7 @@ We disclose these openly, ranked by expected reviewer pressure.
 \section{Conclusion and Future Work}
 RFC~9562 leaves version~8's 122 bits undefined; GenoID fills them with a declarative, portable algorithm. Its core contribution is the \texttt{V8Layout} abstraction: typed, constrained multi-field composition with a single shared repair pass, validated through formal proof, empirical testing across 100M identifiers, an adversarial security analysis, and a cross-language reproducibility check.
 
-A prototype layout compiler, which emits inlined per-layout code in place of the generic field loop, yields a geometric-mean $1.07\times$ across the seven environments and regresses on one. The interpreted repair pass is therefore no longer the bottleneck, and further gains must come from the pooling and formatting paths instead.
+A prototype layout compiler emitting inlined per-layout code yields a geometric-mean $1.06\times$ across the nine environments, with no significant difference in three of them and a point estimate below unity in one (Table~\ref{tab:paired}). Gains concentrate on Deno ($1.06$--$1.14\times$). The interpreted repair pass is therefore no longer the dominant cost, and further work should target the pooling and string-formatting paths instead.
 
 \begin{thebibliography}{00}
 

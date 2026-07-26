@@ -13,7 +13,6 @@ const {
   forceVersionVariant,
   DBKEY_LAYOUT,
   HEX8,
-  _wordTable,
   configureRandom,
   createSeededRandom,
   resetSeededState,
