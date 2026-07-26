@@ -19,10 +19,12 @@ const algo = (await import("../../dist/algo.js")) as {
   genMathRandom: () => string
   genGenoID: () => string
   genStructuredGenoID: (layout: unknown) => string
+  compileLayout: (layout: unknown) => { source: string; fn: () => string }
   DBKEY_LAYOUT: unknown
 }
 
 const genDbkey = (): string => algo.genStructuredGenoID(algo.DBKEY_LAYOUT)
+const genCompiled = algo.compileLayout(algo.DBKEY_LAYOUT as Parameters<typeof algo.compileLayout>[0]).fn
 
 function normalizeArch(arch: string): string {
   if (arch === "aarch64") return "arm64"
@@ -61,6 +63,7 @@ const specs: [string, () => string][] = [
   ["ksuid", genKsuid],
   ["snowflake", genSnowflake],
   ["genoid-structured", genDbkey],
+  ["genoid-compiled", genCompiled],
 ]
 
 function coll(name: string, fn: () => string): CollisionEntry {
@@ -99,6 +102,7 @@ const collisions: CollisionEntry[] = [
   coll("v7-custom", algo.genV7),
   coll("genoid-v8", algo.genGenoID),
   coll("genoid-structured", genDbkey),
+  coll("genoid-compiled", genCompiled),
   coll("mathrandom", algo.genMathRandom),
   coll("pg-uuid-v8", genPgUuidV8),
   coll("ulid-v8", genUlidV8),
