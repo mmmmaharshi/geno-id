@@ -17,12 +17,28 @@ export interface BenchEntry {
   ci95: [number, number]
   /** Sample standard deviation of opsPerSec across repeated trials. */
   std: number
+  /** Coefficient of variation (std / mean). */
+  cv: number
   /** Number of repeated trials. */
   trials: number
+  /** Raw per-trial ops/sec values. */
+  samples: number[]
   /** Two-tailed Welch t-test p-value vs the baseline generator (CIBenchmarkResult.baselineName). */
   welchP?: number
   /** Cohen's d effect size vs the baseline generator (positive = faster than baseline). */
   cohensD?: number
+}
+
+export interface ComparisonEntry {
+  name: string
+  a: string
+  b: string
+  /** Ratio mean_a / mean_b. >1 means a is faster. */
+  ratio: number
+  welchP: number
+  cohensD: number
+  /** Name of the faster generator. */
+  faster: string
 }
 
 export interface CollisionEntry {
@@ -37,4 +53,6 @@ export interface CIBenchmarkResult {
   baselineName?: string
   benchmarks: BenchEntry[]
   collisions: CollisionEntry[]
+  /** Pairwise comparisons for the specific pairs the paper asserts. */
+  comparisons?: ComparisonEntry[]
 }

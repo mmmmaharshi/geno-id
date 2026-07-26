@@ -6,11 +6,13 @@ export interface BenchResult {
 
 export function benchSync(fn: () => string, n: number): BenchResult {
   if (n <= 0) return { n, elapsed: 0, opsPerSec: 0 }
+  let sink = 0
   const start = performance.now()
   for (let i = 0; i < n; i++) {
-    fn()
+    sink += fn().codePointAt(0) ?? 0
   }
   const elapsed = performance.now() - start
+  if (sink === -1) throw new Error("unreachable")
   return { n, elapsed, opsPerSec: n / (elapsed / 1000) }
 }
 
@@ -93,7 +95,7 @@ export function benchRepeated(
   fn: () => string,
   n: number,
   trials = 10,
-  warmupTrials = 1,
+  warmupTrials = 3,
 ): BenchStats {
   // Discard warmup pass(es): the first run pays JIT compilation (and any
   // lazy one-time allocation) which would inflate variance and bias the mean
@@ -144,7 +146,9 @@ function summarize(samples: number[], n: number, trials: number): BenchStats {
 const T_CRIT_95: Record<number, number> = {
   1: 12.706, 2: 4.303, 3: 3.182, 4: 2.776, 5: 2.571, 6: 2.447,
   7: 2.365, 8: 2.306, 9: 2.262, 10: 2.228, 11: 2.201, 12: 2.179,
-  13: 2.16, 14: 2.145, 15: 2.131, 19: 2.093, 29: 2.045,
+  13: 2.16, 14: 2.145, 15: 2.131, 16: 2.12, 17: 2.11, 18: 2.101,
+  19: 2.093, 20: 2.086, 21: 2.08, 22: 2.074, 23: 2.069, 24: 2.064,
+  25: 2.06, 26: 2.056, 27: 2.052, 28: 2.048, 29: 2.045,
 }
 
 function studentTCritical95(df: number): number {

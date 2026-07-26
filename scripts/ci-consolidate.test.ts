@@ -17,7 +17,7 @@ function makeResult(env: Partial<EnvInfo>, ops: number): CIBenchmarkResult {
   }
   return {
     environment: full,
-    benchmarks: [{ name: "v4", opsPerSec: ops, usPerOp: 0, ci95: [ops, ops], std: 0, trials: 10 }],
+    benchmarks: [{ name: "v4", opsPerSec: ops, usPerOp: 0, ci95: [ops, ops], std: 0, cv: 0, trials: 10, samples: [ops] }],
     collisions: [{ name: "v4", n: 1000000, collisions: 0 }],
   }
 }

@@ -8,7 +8,7 @@
 
 import fs from "node:fs"
 import path from "node:path"
-import type { BenchEntry, CIBenchmarkResult, CollisionEntry, EnvInfo } from "./ci-result.ts"
+import type { BenchEntry, CIBenchmarkResult, CollisionEntry, ComparisonEntry, EnvInfo } from "./ci-result.ts"
 
 export function envLabel(e: EnvInfo): string {
   if (e.runtime === "deno") {
@@ -107,6 +107,25 @@ export function renderConsolidated(results: CIBenchmarkResult[]): string {
   for (const [name, entries] of collByName) {
     const cells = entries.map((c) => (c.collisions === 0 ? "PASS" : `${c.collisions}`))
     md += `| ${name} | ${cells.join(" | ")} |\n`
+  }
+
+  // Pairwise comparisons
+  const allComparisons = sorted.flatMap((r) => r.comparisons ?? [])
+  if (allComparisons.length > 0) {
+    const compByName = new Map<string, ComparisonEntry[]>()
+    for (const c of allComparisons) {
+      if (!compByName.has(c.name)) compByName.set(c.name, [])
+      compByName.get(c.name)!.push(c)
+    }
+    md += "\n### Pairwise comparisons\n\n"
+    md += "| Comparison | ratio | p | d | faster |\n"
+    for (const [name, entries] of compByName) {
+      md += `| ${name} |`
+      for (const c of entries) {
+        md += ` ${c.ratio} | ${c.welchP} | ${c.cohensD} | ${c.faster} |`
+      }
+      md += "\n"
+    }
   }
 
   // Known-artifact note so the raw numbers are not misread as a GenoID defect.

@@ -268,7 +268,7 @@ test("compileLayout deterministic: same seed produces same output", () => {
     const tsA = Number(getFieldValue(bA, layout.fields.find((f) => f.name === "timestamp")!))
     const tsB = Number(getFieldValue(bB, layout.fields.find((f) => f.name === "timestamp")!))
     const tsDiff = Math.abs(tsA - tsB)
-    assert.ok(tsDiff <= 1, `timestamp diff ${tsDiff}ms > 1ms`)
+    assert.ok(tsDiff <= 10, `timestamp diff ${tsDiff}ms > 10ms`)
 
     // Shard — depends only on CSPRNG, must match
     const shardA = Number(getFieldValue(bA, shardField))

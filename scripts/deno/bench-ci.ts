@@ -11,7 +11,7 @@ import {
   genSnowflake,
 } from "../baselines.ts"
 import { compareBench } from "../significance.ts"
-import type { CIBenchmarkResult, EnvInfo, BenchEntry, CollisionEntry } from "../ci-result.ts"
+import type { CIBenchmarkResult, EnvInfo, BenchEntry, CollisionEntry, ComparisonEntry } from "../ci-result.ts"
 
 const algo = (await import("../../dist/algo.js")) as {
   genV4Native: () => string
@@ -86,9 +86,32 @@ const benchmarks: BenchEntry[] = specs.map(([name]) => {
     usPerOp: Number((1_000_000 / r.mean).toFixed(4)),
     ci95: [Math.round(r.ci95[0]), Math.round(r.ci95[1])],
     std: Math.round(r.std),
+    cv: Number(r.cv.toFixed(4)),
     trials: r.trials,
+    samples: r.samples.map(Math.round),
     welchP: Number(cmp.p.toPrecision(3)),
     cohensD: Number(cmp.d.toFixed(3)),
+  }
+})
+
+// Pairwise comparisons for the pairs the paper actually asserts.
+const comparisonPairs: [string, string, string][] = [
+  ["structured-vs-pg-uuid-v8", "genoid-structured", "pg-uuid-v8"],
+  ["structured-vs-ulid-v8", "genoid-structured", "ulid-v8"],
+  ["compiled-vs-structured", "genoid-compiled", "genoid-structured"],
+]
+const comparisons: ComparisonEntry[] = comparisonPairs.map(([name, a, b]) => {
+  const sa = statsByName.get(a)!
+  const sb = statsByName.get(b)!
+  const cmp = compareBench(sa, sb)
+  return {
+    name,
+    a,
+    b,
+    ratio: Number((sa.mean / sb.mean).toFixed(4)),
+    welchP: Number(cmp.p.toPrecision(3)),
+    cohensD: Number(cmp.d.toFixed(3)),
+    faster: sa.mean >= sb.mean ? a : b,
   }
 })
 
@@ -110,7 +133,7 @@ const collisions: CollisionEntry[] = [
   coll("ksuid", genKsuid),
 ]
 
-const output: CIBenchmarkResult = { environment: env, baselineName: BASELINE, benchmarks, collisions }
+const output: CIBenchmarkResult = { environment: env, baselineName: BASELINE, benchmarks, collisions, comparisons }
 
 console.log("=== GenoID CI benchmark (deno) ===")
 console.log("Environment:", JSON.stringify(env, null, 2))
@@ -119,8 +142,12 @@ for (const b of benchmarks) {
   console.log(
     `  ${b.name.padEnd(16)} ${b.opsPerSec.toString().padStart(10)} ± ${b.std
       .toString()
-      .padStart(8)}  CI[${b.ci95[0]}–${b.ci95[1]}]  p=${b.welchP}  d=${b.cohensD}`,
+      .padStart(8)}  CV=${b.cv}  CI[${b.ci95[0]}–${b.ci95[1]}]  p=${b.welchP}  d=${b.cohensD}`,
   )
+}
+console.log("\nPairwise comparisons:")
+for (const c of comparisons) {
+  console.log(`  ${c.name.padEnd(28)} ratio=${c.ratio}  p=${c.welchP}  d=${c.cohensD}  faster=${c.faster}`)
 }
 console.log("\nCollisions:")
 for (const c of collisions) {

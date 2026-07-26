@@ -13,7 +13,7 @@ const {
   forceVersionVariant,
   DBKEY_LAYOUT,
   HEX8,
-  wordTable,
+  _wordTable,
   configureRandom,
   createSeededRandom,
   resetSeededState,
@@ -122,7 +122,8 @@ function genE(): string {
   if (tau > E_TICK) {
     E_TICK = tau
     // reseed: draw from random
-    E_CTR = (b[10] | (b[11] << 8)) & 0x7fff  // g=1 guard bit
+    E_CTR = (b[10] | (b[11] << 8)) & 0x7fff
+    // g=1 guard bit
   } else if (tau === E_TICK) {
     E_CTR++
   }
@@ -196,8 +197,10 @@ console.log(`E / C (single-parent compiled / two-parent cmp): ${(e / c).toFixed(
 console.log(`C / A (two-parent compiled vs single pooled):   ${(c / a).toFixed(2)}x`)
 
 // Projection to CI (Ubuntu/Bun) using A as anchor
-const CI_ANCHOR = 522093  // Arm A on this machine
-const CI_TABLE2_STRUCTURED = 1_810_000  // from Table 2 (Ubuntu/Bun)
+// Arm A on this machine
+const CI_ANCHOR = 522093
+// From Table 2 (Ubuntu/Bun)
+const CI_TABLE2_STRUCTURED = 1_810_000
 const RIG_FACTOR = CI_TABLE2_STRUCTURED / CI_ANCHOR
 console.log(`\n--- CI projection (rig factor ${RIG_FACTOR.toFixed(2)}×) ---`)
 console.log(`Single-parent compiled (projected): ${(e * RIG_FACTOR / 1e6).toFixed(2)}M ops/sec`)

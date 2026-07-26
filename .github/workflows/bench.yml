@@ -83,7 +83,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: bench-node-${{ matrix.node-version }}-ubuntu
+          name: bench-node-${{ matrix.node-version }}-${{ matrix.os }}
           path: |
             dist/bench-ci-results.json
             dist/ci-summary.md
