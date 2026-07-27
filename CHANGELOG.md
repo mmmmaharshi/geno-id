@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.21.2] - 2026-07-27
+
+### Summary
+
+**Barrel export fix: configureRandom, configurePools, configureFootprint now importable from package.**
+
+#### 🔧 Internal
+
+- **`index.ts`** — added `configureRandom`, `configurePools`, `configureFootprint` to the barrel export. These were documented in the README as public API (microcontroller setup) but missing from `index.ts`, causing runtime import failures.
+
 ## [1.21.1] - 2026-07-27
 
 ### Summary
