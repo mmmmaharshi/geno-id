@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.21.0] - 2026-07-27
+
+### Summary
+
+**Paper alignment: Algorithm 1 matches code; public API fully tested; artifact availability footnote added.**
+
+#### 🔧 Internal
+
+- **`repairConstraints`** — deleted dead monotonic branch (`_constraintLast` saturating counter). Tick-keyed counter lives only in the pool refill path. The exported function now handles only `allowed` (idempotent modulo) and `range` (clamp), matching Algorithm 1.
+- **Public API test coverage** — added tests for `compileLayout`, `DBKEY_LAYOUT`, `MULTITENANT_LAYOUT`, `EVENTSOURCING_LAYOUT`, and `CompiledLayout` type, closing the coverage gap. 12/12 tests.
+- **Cross-lang golden vectors** — Rust port now matches TS on all 3 layouts × 1000 UUIDs (3000/3000). Two fixes: (1) TS tick-keyed counter no longer double-increments on first UUID; (2) Rust allowed-set repair uses idempotent `contains` guard. Mutation testing confirms each layout fails under the wrong repair algorithm.
+
+#### 📖 Documentation
+
+- **§3.3** — rollover margin corrected to 10× (counter advances once per UUID).
+- **§4.3** — added idempotent-guard analysis with distribution-neutrality proof for contiguous admissible sets; added range-clamp uniformity disclosure.
+- **§6.6** — replaced "caught two porting bugs" with the full mutation-result coverage matrix (nearest-value fails dbkey/multitenant; saturating counter fails dbkey/eventsourcing).
+- **Algorithm 1** — removed tick/ctr state and monotonic branch; `allowed` branch is now guarded ($v \in A$ vs modulo); `range` branch is now clamp ($\max(min, \min(v, max))$).
+- **Title footnote** — artifact availability with GitHub URL (tag v1.21.0), npm package, Zenodo DOI placeholder, and reproducibility command.
+- **§7.3** — noted npm publication as evidence of portability.
+
 ## [1.20.1] - 2026-07-26
 
 ### Summary

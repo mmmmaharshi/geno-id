@@ -34,7 +34,7 @@
 \begin{document}
 \mainmatter
 
-\title{GenoID: A Declarative Framework for Structured RFC 9562 v8 UUIDs via Constraint-Guided Repair}
+\title{GenoID: A Declarative Framework for Structured RFC 9562 v8 UUIDs via Constraint-Guided Repair\thanks{Implementation, golden vectors, and Rust cross-check at \url{https://github.com/mmmmaharshi/geno-id} (tag \texttt{v1.21.0}); npm package \texttt{@manohar\_maharshi/genoid}. Archived at DOI~10.5281/zenodo.XXXXXXX. All reported measurements reproducible via \texttt{bun run bench-ci}.}}
 
 \titlerunning{GenoID: Declarative Structured RFC 9562 v8 UUIDs}
 
@@ -557,7 +557,7 @@ UUIDs originated as RFC~4122 (versions~1--5), obsoleted by RFC~9562 (2024), whic
 \subsection{Sortable and structured identifiers}
 RFC~9562 surveyed sixteen prior implementations~\cite{1}. Representative members: ULID~\cite{2} (48-bit timestamp + 80-bit randomness), KSUID~\cite{3} (32-bit timestamp + 128-bit randomness), Snowflake~\cite{4} (timestamp $|$ worker $|$ sequence), TypeID~\cite{5} (typed prefix over UUIDv7), and COMBGUID (embedded timestamp). Time-ordered identifiers improve database behavior~\cite{6}, with academic comparisons of UUIDv4/v7/ULID for distributed systems~\cite{8}. This is a well-explored field limited to fixed, hand-coded layouts; none offers a declarative framework for arbitrary multi-field v8 composition.
 \subsection{Steganographic UUIDs: closest prior art}
-\texttt{pg\_uuid\_v8}~\cite{7}, a PostgreSQL C extension (PGXN, May~2026), is the closest prior art. It generates RFC~9562 v8 UUIDs with an encrypted microsecond timestamp (XOR or AES), recoverable by extraction function. GenoID differs: \texttt{pg\_uuid\_v8} offers one fixed stego layout with no multi-field abstraction or repair, while GenoID provides a declarative, multi-field DSL and constraint-guided repair as a portable library.
+\texttt{pg\_uuid\_v8}~\cite{7}, a PostgreSQL C extension (PGXN, May~2026), is the closest prior art. It generates RFC~9562 v8 UUIDs with an encrypted microsecond timestamp (XOR or AES), recoverable by extraction function. GenoID differs: \texttt{pg\_uuid\_v8} offers one fixed stego layout with no multi-field abstraction or repair, while GenoID provides a declarative, multi-field DSL and constraint-guided repair as a portable library, published for the Node/Bun/Deno ecosystem.
 
 On throughput, prior work amortizes CSPRNG draws via pooling~\cite{9}, and PostgreSQL~18 ships a native \texttt{uuidv7()}~\cite{10}; GenoID adopts the same principle with a 256-UUID pool.
 
