@@ -115,7 +115,6 @@ function fillRandom(buf: Uint8Array): void {
 
 export function resetSeededState(): void {
   _csprngPos = _csprngBuf.length
-  _constraintLast.clear()
   _poolMonoTick.clear()
 }
 
@@ -670,7 +669,6 @@ export function composeStructured(
   return child
 }
 
-const _constraintLast = new Map<string, number>()
 const _poolMonoTick = new Map<string, { tick: number; ctr: number }>()
 
 /**
@@ -678,8 +676,8 @@ const _poolMonoTick = new Map<string, { tick: number; ctr: number }>()
  * fields repaired. Cost is O(k) for k constrained fields — independent
  * of the drawn value, unlike rejection sampling.
  *
- * For monotonic fields, clamps to the last-seen value (idempotent). The
- * pool refill path applies tick-keyed counter logic before calling this.
+ * Monotonic fields are handled by the pool refill path's tick-keyed
+ * counter logic before this is called.
  */
 export function repairConstraints(layout: V8Layout, bytes: Uint8Array): number {
   let repairs = 0
@@ -694,12 +692,6 @@ export function repairConstraints(layout: V8Layout, bytes: Uint8Array): number {
     }
     if (c.min !== undefined && v < c.min) { v = c.min; changed = true }
     if (c.max !== undefined && v > c.max) { v = c.max; changed = true }
-    if (c.monotonic) {
-      const key = layout.name + ":" + f.name
-      const lv = _constraintLast.get(key)
-      if (lv !== undefined && v < lv) { v = lv; changed = true }
-      _constraintLast.set(key, v)
-    }
     if (changed) {
       writeFieldValue(bytes, f, v)
       repairs++

@@ -140,37 +140,21 @@ outside its admissible set.
 \caption{\texttt{repairConstraints}: single-pass constraint satisfaction}
 \label{alg:repair}
 \begin{algorithmic}[1]
-\Require Layout $L$ with fields $f_1..f_n$; candidate 128-bit value $u$;
-         per-generator state $M=(\textit{tick},\textit{ctr})$; clock
-         reading $\tau$; counter field $f_c$ of length $\ell_c$ with $g$
-         guard bits
-\Ensure  $u'$ satisfying every constraint declared in $L$, with
-         $(\textit{tick},\textit{ctr})$ strictly increasing per generator
+\Require Layout $L$ with fields $f_1..f_n$; candidate 128-bit value $u$
+\Ensure  $u'$ satisfying every constraint declared in $L$
 \Statex
-\State $\tau \gets \max(\tau,\, M.\textit{tick})$
-       \Comment{clock-regression guard}
-\If{$\tau \neq M.\textit{tick}$}
-  \State $M.\textit{tick} \gets \tau$;\;
-         $M.\textit{ctr} \gets \textsc{ExtractBits}(u, f_c) \bmod 2^{\,\ell_c-g}$
-         \Comment{reseed}
-\ElsIf{$M.\textit{ctr} = 2^{\,\ell_c}-1$}
-  \State \textbf{wait} until clock advances; \textbf{restart}
-         \Comment{RFC 9562 \S6.2}
-\Else
-  \State $M.\textit{ctr} \gets M.\textit{ctr} + 1$
-\EndIf
 \For{each $f \in L.\textit{fields}$ with $f.\textit{constraint} \neq \textsc{null}$}
   \State $v \gets \textsc{ExtractBits}(u,\, f.\textit{offset},\, f.\textit{length})$
   \State $c \gets f.\textit{constraint}$
   \If{$c.\textit{kind} = \textsc{allowed}$}
-    \State $v' \gets c.\textit{allowed}[\,v \bmod |c.\textit{allowed}|\,]$
+    \State $v' \gets
+           \begin{cases}
+             v & v \in c.\textit{allowed} \\
+             c.\textit{allowed}[\,v \bmod |c.\textit{allowed}|\,] & \text{otherwise}
+           \end{cases}$
             \Comment{$O(1)$}
   \ElsIf{$c.\textit{kind} = \textsc{range}$}
-    \State $v' \gets c.\textit{min} + \big(v \bmod
-           (c.\textit{max}-c.\textit{min}+1)\big)$
-            \Comment{$O(1)$}
-  \ElsIf{$c.\textit{kind} = \textsc{monotonic}$}
-    \State $v' \gets M.\textit{ctr}$
+    \State $v' \gets \max\bigl(c.\textit{min},\ \min(v,\, c.\textit{max})\bigr)$
             \Comment{$O(1)$}
   \EndIf
   \State $u \gets \textsc{WriteBits}(u,\, f.\textit{offset},\,
@@ -181,11 +165,11 @@ outside its admissible set.
 \end{algorithmic}
 \end{algorithm}
 
-Every branch assigns $v'$ unconditionally, so the loop body cannot fail and the procedure contains no backward jump: it executes exactly $k$ iterations for $k$ constrained fields, independent of the drawn value. Correctness is by construction: each branch's codomain is the constraint's satisfying set: 0 violations, not ``near 0.''
+Every branch assigns $v'$ unconditionally, so the loop body cannot fail and the procedure contains no backward jump: it executes exactly $k$ iterations for $k$ constrained fields, independent of the drawn value. Correctness is by construction: each branch's codomain is the constraint's satisfying set: 0 violations, not ``near 0.'' Monotonic fields are handled by the pool refill path's tick-keyed counter logic before \texttt{repairConstraints} is called.
 
 Figure~\ref{fig:pipeline} shows a single repair: a drawn candidate whose \texttt{shard} field reads 7 is mapped to the admissible value 3.
 
-With $\ell_c=16$ and $g=1$, reseeding leaves at least $2^{15}=32768$ increments per millisecond. At the measured 3.04M~ops/sec (Table~\ref{tab:throughput}), a generator emits $\approx$3040 UUIDs per millisecond, a $10\times$ margin before the rollover path is reached. State $M$ is per-generator-instance; concurrent generators each hold an independent $M$, so \texttt{repairConstraints} requires no locks.
+With $\ell_c=16$ and $g=1$, reseeding leaves at least $2^{15}=32768$ increments per millisecond. At 3040~UUIDs/ms the counter advances once per UUID, yielding a $\sim10\times$ margin before the rollover path. Per-generator state is isolated; concurrent generators require no locks.
 
 \begin{figure}[!ht]
 \centering
@@ -395,7 +379,11 @@ identically (Section~\ref{sec:nist}), consistent with the former.
 
 Let $m=|\textit{allowed}|$ for an $\ell$-bit field. Index-modulo repair partitions the $2^\ell$ uniform candidate values into $m$ classes of size $\lceil 2^\ell/m \rceil$ or $\lfloor 2^\ell/m \rfloor$, so the induced distribution deviates from uniform by at most $m/2^\ell$, and is exactly uniform when $m \mid 2^\ell$. For \texttt{dbkey} ($m=5,\ \ell=8$) the bound is $1.95\%$; for \texttt{multitenant} ($m=8$ and $m=4$ at $\ell=12$) the mapping is exactly uniform. The map is a surjection with near-equal fibres and involves no redraw, preserving the $O(1)$ per-field cost of Algorithm~\ref{alg:repair}.
 
+Repair is idempotent: a value already in $A$ is left unchanged, and only inadmissible values are mapped. For a contiguous admissible set the guard is distribution-neutral --- each admissible value gains the draw it maps to itself and loses the one that would otherwise have landed on it, a permutation cycle summing to zero --- so the $m/2^\ell$ bound is unaffected. For a non-contiguous set the guard displaces at most $m$ draws, leaving the bound $O(m/2^\ell)$.
+
 Nearest-value repair admits no such bound: its fibres are Hamming balls whose sizes depend on the bit patterns of the admissible set rather than its cardinality. Under \texttt{dbkey} all five admissible values lie below $2^3$, so the upper five bits cannot affect the arg-min and the induced shard distribution is $(25,25,25,12.5,12.5)\%$ --- a $2\times$ load imbalance --- with $37.5\%$ of draws landing on an arg-min tie whose resolution is implementation-defined. Index-modulo eliminates both. We therefore treat field width as a declaration-time obligation: the layout validator warns when $m \nmid 2^\ell$ and reports the residual bound.
+
+The \textsc{range} branch clamps rather than folds, and is therefore not uniformity-preserving: draws outside $[\textit{min},\textit{max}]$ accumulate at the endpoints. Neither layout evaluated here declares a range constraint; a layout that does should size the field so that out-of-range draws are rare, or declare an admissible set instead.
 
 \section{Security Analysis}
 \label{sec:security}
@@ -476,7 +464,7 @@ Per-field uniformity is measured directly rather than inferred from whole-UUID b
 
 \subsection{NIST SP 800-22 and dieharder}
 \label{sec:nist}
-All 15 NIST SP~800-22 sub-tests~\cite{11} pass on three structured layouts. (SP~800-22 has been withdrawn by NIST and its planned revision explicitly rejects the suite's use for assessing cryptographic generators~\cite{13}; we report the result as a sanity check on the pooling path, not as evidence of security.) An extended dieharder~\cite{12} battery (38 sub-tests, 5 trials, 100M-bit samples) reports 152/152 PASS (modal) across UUIDv4, raw, pooled, and structured-dbkey variants. Three tests passed in only 3 of 5 trials (60\%), consistent with Type~II error at $\alpha=0.01$, not a structural defect. Pooled and unpooled variants pass identically, matching the Section~\ref{sec:entropy} proof: composition is measure-preserving on random-type fields.
+All 15 NIST SP~800-22 sub-tests~\cite{11} pass on three structured layouts. (SP~800-22 has been withdrawn by NIST and its planned revision explicitly rejects the suite's use for assessing cryptographic generators~\cite{13}; we report the result as a sanity check on the pooling path, not as evidence of security.) An extended dieharder~\cite{12} battery (38 sub-tests, 5 trials, 100M-bit samples) reports 152/152 PASS (modal) across UUIDv4, raw, pooled, and structured-dbkey variants. Three tests passed in only 3 of 5 trials (60\%), consistent with Type~II error at $\alpha=0.01$, not a structural defect. Pooled and unpooled variants pass identically, matching the Section~\ref{sec:entropy} argument: pooling is measure-preserving.
 
 \subsection{Throughput and baseline comparison}
 
@@ -554,9 +542,11 @@ Concurrent generation shows 0 cross-worker collisions. A SQLite B-tree index ben
 \subsection{Cross-language reproducibility}
 \label{sec:cross-lang}
 
-To turn the portability claim into a checkable artifact, the composition core was reimplemented in Rust and verified against golden vectors from the TypeScript reference. Every repair branch is total and tie-free (index-modulo has no ambiguous outputs), so byte-identity across languages is a constructive property of the algorithm rather than an accident of hash-map iteration order. A xorshift128+ PRNG with fixed seed and fixed \texttt{Date.now()} produce 1000 UUIDs per layout across all three structured layouts, then diffed byte-for-byte against committed golden files. Zero mismatches across all $3\times1000=3000$ UUIDs confirms the algorithm is language-agnostic at the bit level.
+To turn the portability claim into a checkable artifact, the composition core was reimplemented in Rust and verified against golden vectors from the TypeScript reference. Every repair branch is total and tie-free (index-modulo has no ambiguous outputs), so byte-identity across languages is a constructive property of the algorithm rather than an accident of hash-map iteration order. A xorshift128+ PRNG with fixed seed and fixed \texttt{Date.now()} produce 1000 UUIDs per layout across all three structured layouts, then diffed byte-for-byte against committed golden files, achieving zero mismatches across $3\times1000=3000$ UUIDs.
 
-The golden vectors caught two classes of porting bug (a byte-consumption mismatch in \texttt{eventsourcing}'s \texttt{node}-typed field and a missing seed-state reset) that a prose-only specification would have missed. The vectors are checked into \texttt{golden/} and verified in CI on every push, serving as an executable specification for any future port.
+To establish that the vectors discriminate rather than merely agree, we re-ran the check against deliberately incorrect repair. Substituting nearest-value selection for index-modulo fails \texttt{dbkey} (1000/1000) and \texttt{multitenant} (986/1000), while leaving \texttt{eventsourcing} --- which declares no admissible-set constraint --- untouched. Substituting a saturating counter for the tick-keyed one fails \texttt{dbkey} (1000/1000) and \texttt{eventsourcing} (999/1000) and leaves \texttt{multitenant}, which declares no counter, untouched. Each layout is sensitive to exactly the constraint kinds it declares. The residual agreements (14 and 1 line respectively) are draws on which both algorithms coincide.
+
+The vectors were regenerated after the repair and counter algorithms changed during development; on re-verification the prior Rust port had diverged on both, a divergence a prose specification would not have surfaced. The vectors are checked into \texttt{golden/} and verified in CI on every push, serving as an executable specification for any future port.
 
 In production, each port draws from its own OS CSPRNG; the seeded byte stream exists only for cross-language verification. Different buffering in a Rust port would be no less correct for producing different byte sequences.
 
