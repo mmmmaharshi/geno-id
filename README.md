@@ -2,6 +2,7 @@
 
 [![CI bench](https://github.com/mmmmaharshi/geno-id/actions/workflows/bench.yml/badge.svg)](https://github.com/mmmmaharshi/geno-id/actions/workflows/bench.yml)
 [![Release](https://img.shields.io/github/v/release/mmmmaharshi/genoid)](https://github.com/mmmmaharshi/geno-id/releases)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21618258.svg)](https://doi.org/10.5281/zenodo.21618258)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 Create RFC 9562 v8 UUIDs that contain your data — a shard ID, a tenant, a timestamp, a monotonic counter — all inside a single standard identifier.
