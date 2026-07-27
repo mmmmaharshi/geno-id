@@ -10,6 +10,10 @@ import {
   readStructured,
   toUuidString,
   uuidToBytes,
+  compileLayout,
+  DBKEY_LAYOUT,
+  MULTITENANT_LAYOUT,
+  EVENTSOURCING_LAYOUT,
 } from "../dist/index.js"
 
 import type {
@@ -17,6 +21,7 @@ import type {
   Field,
   FieldConstraint,
   FieldType,
+  CompiledLayout,
 } from "../dist/index.js"
 
 const __dirname = import.meta.dirname
@@ -113,6 +118,47 @@ test("public type aliases resolve for the layout API", () => {
   // exercise the alias types end-to-end through the public generators
   const uuid = genStructuredGenoID(layout)
   assert.match(uuid, UUID_V8_RE)
+})
+
+test("compileLayout produces a CompiledLayout shape and its source round-trips through genStructuredGenoID", () => {
+  const cl: CompiledLayout = compileLayout(DBKEY_LAYOUT)
+  assert.ok(typeof cl.source === "string" && cl.source.length > 0)
+  assert.ok(typeof cl.fn === "function")
+  // genStructuredGenoID uses the compiled path when Web Crypto is available.
+  // Verify it produces valid UUIDs that readStructured can decode.
+  for (let i = 0; i < 5; i++) {
+    const uuid = genStructuredGenoID(DBKEY_LAYOUT)
+    assert.match(uuid, UUID_V8_RE)
+    const got = readStructured(uuid, DBKEY_LAYOUT)
+    assert.ok("shard" in got && "counter" in got && "timestamp" in got)
+  }
+})
+
+test("DBKEY_LAYOUT round-trips through genStructuredGenoID and readStructured", () => {
+  const uuid = genStructuredGenoID(DBKEY_LAYOUT)
+  assert.match(uuid, UUID_V8_RE)
+  const got = readStructured(uuid, DBKEY_LAYOUT)
+  assert.ok("timestamp" in got && "shard" in got && "counter" in got)
+  assert.ok([1, 2, 3, 4, 5].includes(got.shard))
+  assert.ok(Number.isInteger(got.counter) && got.counter >= 0)
+})
+
+test("MULTITENANT_LAYOUT round-trips through genStructuredGenoID and readStructured", () => {
+  const uuid = genStructuredGenoID(MULTITENANT_LAYOUT)
+  assert.match(uuid, UUID_V8_RE)
+  const got = readStructured(uuid, MULTITENANT_LAYOUT)
+  assert.ok("tenant" in got && "region" in got)
+  assert.ok([1, 2, 3, 4, 5, 6, 7, 8].includes(got.tenant))
+  assert.ok([1, 2, 3, 4].includes(got.region))
+})
+
+test("EVENTSOURCING_LAYOUT round-trips through genStructuredGenoID and readStructured", () => {
+  const uuid = genStructuredGenoID(EVENTSOURCING_LAYOUT)
+  assert.match(uuid, UUID_V8_RE)
+  const got = readStructured(uuid, EVENTSOURCING_LAYOUT)
+  assert.ok("stream" in got && "seq" in got)
+  assert.ok(Number.isInteger(got.seq) && got.seq >= 0)
+  assert.ok(Number.isInteger(got.stream) && got.stream >= 0)
 })
 
 test("public barrel does NOT leak research/internal symbols", async () => {
