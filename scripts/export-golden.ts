@@ -10,7 +10,6 @@ const {
   configureRandom,
   createSeededRandom,
   resetSeededState,
-  genStructuredGenoID,
   genStructuredGenoIDSingleParent,
   compileLayout,
   DBKEY_LAYOUT,
@@ -20,7 +19,6 @@ const {
   configureRandom: (fn: ((buf: Uint8Array) => void) | null) => void
   createSeededRandom: (s0: number, s1: number) => (buf: Uint8Array) => void
   resetSeededState: () => void
-  genStructuredGenoID: (layout: unknown) => string
   genStructuredGenoIDSingleParent: (layout: unknown) => string
   compileLayout: (layout: unknown) => { source: string; fn: () => string }
   DBKEY_LAYOUT: unknown
@@ -53,10 +51,10 @@ function emit(layout: Layout, name: string, gen: (l: Layout) => string, label: s
 
 // Emit compiled golden vectors. The compiled function draws 16 CSPRNG bytes per
 // UUID — a different consumption pattern than the pool-based interpreted path
-// (34-byte STRUCT_ENTRY stride + separate _csprngBuf), so these ARE NOT
-// byte-for-byte comparable to the interpreted golden vectors. They serve as a
-// deterministic check that the compiled field-assembly logic is stable across
-// runs (same input bytes → same UUID) and are structurally validatable.
+// (34-byte STRUCT_ENTRY stride), so these ARE NOT byte-for-byte comparable to
+// the interpreted golden vectors. They serve as a deterministic check that the
+// compiled field-assembly logic is stable across runs (same input bytes → same
+// UUID) and are structurally validatable.
 function emitCompiled(layout: Layout, name: string, label: string): void {
   const compiled = compileLayout(layout)
   const seededFill = createSeededRandom(SEED0, SEED1)
@@ -70,11 +68,6 @@ function emitCompiled(layout: Layout, name: string, label: string): void {
     w: string[] | null,
     cr: { getRandomValues(buf: Uint8Array): void },
   ) => () => string
-  // Reuse the same seeded generator for both the pool-based interpreted path
-  // (above) and this compiled path. The consumption rates differ (16 bytes vs
-  // STRUCT_ENTRY), so the Nth UUID will differ — what matters is that the
-  // output is deterministic, structurally valid, and the field-assembly logic
-  // matches the interpreted layout specification.
   const cfn = factory(algo.HEX8, algo.wordTable(), cr)
   const origNow = Date.now
   Date.now = () => FIXED_TIME_MS
@@ -92,11 +85,8 @@ function emitCompiled(layout: Layout, name: string, label: string): void {
 console.log("=== Golden vector export ===")
 console.log(`seed: (${SEED0}, ${SEED1}), n=${N}, fixed-time=${FIXED_TIME_MS}`)
 
-emit(DBKEY_LAYOUT, "dbkey-two-parent", genStructuredGenoID, "dbkey (two-parent)")
 emit(DBKEY_LAYOUT, "dbkey-single-parent", genStructuredGenoIDSingleParent, "dbkey (single-parent)")
-emit(MULTITENANT_LAYOUT, "multitenant-two-parent", genStructuredGenoID, "multitenant (two-parent)")
 emit(MULTITENANT_LAYOUT, "multitenant-single-parent", genStructuredGenoIDSingleParent, "multitenant (single-parent)")
-emit(EVENTSOURCING_LAYOUT, "eventsourcing-two-parent", genStructuredGenoID, "eventsourcing (two-parent)")
 emit(EVENTSOURCING_LAYOUT, "eventsourcing-single-parent", genStructuredGenoIDSingleParent, "eventsourcing (single-parent)")
 
 console.log("\n=== Compiled golden vectors (different CSPRNG consumption) ===")

@@ -115,8 +115,8 @@ function fillRandom(buf: Uint8Array): void {
 
 export function resetSeededState(): void {
   _csprngPos = _csprngBuf.length
-  _counters.clear()
-  _lastValues.clear()
+  _constraintLast.clear()
+  _poolMonoTick.clear()
 }
 
 export function createSeededRandom(seed0: number, seed1: number): RandomFill {
@@ -554,26 +554,6 @@ export function completeLayout(name: string, fields: V8Field[]): V8Layout {
   return { name, fields: out }
 }
 
-function csprngInt(maxExclusive: number): number {
-  if (maxExclusive <= 256) {
-    if (_csprngPos >= _csprngBuf.length) {
-      fillRandom(_csprngBuf)
-      _csprngPos = 0
-    }
-    return _csprngBuf[_csprngPos++] % maxExclusive
-  }
-  const need = maxExclusive <= 65536 ? 2 : 6
-  if (_csprngPos + need > _csprngBuf.length) {
-    fillRandom(_csprngBuf)
-    _csprngPos = 0
-  }
-  let v = 0
-  for (let i = 0; i < need; i++) v = v * 256 + _csprngBuf[_csprngPos++]
-  return v % maxExclusive
-}
-
-const _counters = new Map<string, number>()
-const _lastValues = new Map<string, number>()
 const _csprngBuf = new Uint8Array(256)
 // Position starts at the end so csprngInt() triggers the first fillRandom()
 // refill lazily. Only pre-fill eagerly when Web Crypto is present (embedded
@@ -590,46 +570,6 @@ if (_hasWebCrypto) {
 // syscall. genStructuredParent (no pool) falls back to the csprng buffer.
 type Rng = () => number
 
-function poolRng(buf: Uint8Array, start: number, end: number): Rng {
-  let i = start
-  return () => {
-    if (i >= end) i = start
-    return buf[i++]
-  }
-}
-
-// Draw a width-matched unsigned integer from `rng` in [0, mod). Consumes
-// ceil(log2(mod)/8) bytes so a 16-bit field gets 2 bytes, a 24-bit field 3,
-// etc. — preserving the FULL declared field entropy (the original per-field
-// csprngInt path did the same). A single-byte rng() would silently cap any
-// field > 8 bits at 256 values, so we always accumulate enough bytes.
-function drawValue(rng: Rng, mod: number): number {
-  if (mod <= 256) return rng() % mod
-  let need = 1
-  while ((1 << (need * 8)) < mod) need++
-  let v = 0
-  for (let i = 0; i < need; i++) v = v * 256 + rng()
-  return v % mod
-}
-
-// Unbiased pick from a small `allowed` set (Lemire-style, avoids modulo bias
-// when allowed.length does not divide the byte range).
-// Unbiased pick from a small `allowed` set via rejection debiasing: discard the
-// top of the byte range that does not divide evenly by n, so every member is
-// equiprobable. One byte per draw plus a rare reject when n ∤ 256.
-//
-// Replaces a Lemire-style variant that collapsed ~98% of draws onto allowed[0]
-// — i.e. shard/tenant fields were effectively constant. Pinned by INV-11 in
-// scripts/research-invariants.test.ts (allowed-set uniformity).
-function pickFrom(rng: Rng, allowed: number[]): number {
-  const n = allowed.length
-  if (n === 1) return allowed[0]
-  const limit = 256 - (256 % n)
-  let x = rng()
-  while (x >= limit) x = rng()
-  return allowed[x % n]
-}
-
 const _fieldMod = new WeakMap<V8Field, number>()
 
 function fieldMod(f: V8Field): number {
@@ -644,7 +584,11 @@ function fieldMod(f: V8Field): number {
 // All structured field values fit in a Number (< 2^53; validateLayout caps
 // structured fields at 48 bits), so plain Number arithmetic is exact and far
 // cheaper than BigInt on the generation hot path.
-function structuredValue(layout: V8Layout, f: V8Field, rng: Rng): number {
+// Only computes values for timestamp fields and fixed fields. Counter, shard,
+// node, and process fields are left as CSPRNG bytes and handled by the
+// repairConstraints pass (Algorithm 1), which applies index-modulo for
+// allowed constraints and tick-keyed increment for monotonic constraints.
+function structuredValue(layout: V8Layout, f: V8Field, _rng: Rng): number {
   const mod = fieldMod(f)
   switch (f.type) {
     case "timestamp-ms": {
@@ -652,21 +596,6 @@ function structuredValue(layout: V8Layout, f: V8Field, rng: Rng): number {
     }
     case "timestamp-us": {
       return (Date.now() * 1000) % mod
-    }
-    case "counter": {
-      const key = layout.name + ":" + f.name
-      const cur = (_counters.get(key) ?? 0) + 1
-      _counters.set(key, cur)
-      return cur % mod
-    }
-    case "shard": {
-      const a = f.constraint?.allowed
-      if (a && a.length > 0) return pickFrom(rng, a) % mod
-      return drawValue(rng, mod)
-    }
-    case "node":
-    case "process": {
-      return drawValue(rng, mod)
     }
     default: {
       return 0
@@ -683,32 +612,22 @@ function ensureValidated(layout: V8Layout): void {
   }
 }
 
-// Populate every structured/fixed field of `bytes` per its declared type.
-// When `mask` is supplied, only the named field indices are written (the
-// buffer is assumed pre-filled with CSPRNG bytes — used by single-parent
-// construction); when omitted, all non-random fields are written (used by the
-// pool refill, where both parents must carry independent structured values).
+// Populate timestamp and fixed fields. Counter, shard, node, process, and
+// random fields are left as CSPRNG bytes; repairConstraints (called after this)
+// handles all constraint satisfaction via index-modulo and tick-keyed increment.
 function applyStructuredFields(
   bytes: Uint8Array,
   layout: V8Layout,
-  mask?: number[],
-  rng: Rng = () => csprngInt(256),
+  _mask?: number[],
+  _rng?: Rng,
 ): void {
   const fields = layout.fields
-  const nf = fields.length
-  if (mask) {
-    for (let fi = 0; fi < nf; fi++) {
-      const f = fields[fi]
-      if (!mask.includes(fi)) continue
-      if (f.type === "fixed") writeFieldValue(bytes, f, f.value ?? 0)
-      else if (f.type !== "random") writeFieldValue(bytes, f, structuredValue(layout, f, rng))
+  for (const f of fields) {
+    if (f.type === "fixed") writeFieldValue(bytes, f, f.value ?? 0)
+    else if (f.type === "timestamp-ms" || f.type === "timestamp-us") {
+      writeFieldValue(bytes, f, structuredValue(layout, f, _rng ?? (() => 0)))
     }
-  } else {
-    for (let fi = 0; fi < nf; fi++) {
-      const f = fields[fi]
-      if (f.type === "fixed") writeFieldValue(bytes, f, f.value ?? 0)
-      else if (f.type !== "random") writeFieldValue(bytes, f, structuredValue(layout, f, rng))
-    }
+    // counter, shard, node, process, random — stay as CSPRNG bytes
   }
 }
 
@@ -751,18 +670,16 @@ export function composeStructured(
   return child
 }
 
-function hamming(a: number, b: number, bits: number): number {
-  let d = 0
-  for (let i = 0; i < bits; i++) {
-    if (((a >> i) ^ (b >> i)) & 1) d++
-  }
-  return d
-}
+const _constraintLast = new Map<string, number>()
+const _poolMonoTick = new Map<string, { tick: number; ctr: number }>()
 
 /**
  * Repair per-field constraint violations in place. Returns the number of
- * fields repaired. Cost is O(sum of constrained field lengths) — independent
- * of how many other fields exist, unlike rejection sampling.
+ * fields repaired. Cost is O(k) for k constrained fields — independent
+ * of the drawn value, unlike rejection sampling.
+ *
+ * For monotonic fields, clamps to the last-seen value (idempotent). The
+ * pool refill path applies tick-keyed counter logic before calling this.
  */
 export function repairConstraints(layout: V8Layout, bytes: Uint8Array): number {
   let repairs = 0
@@ -772,34 +689,16 @@ export function repairConstraints(layout: V8Layout, bytes: Uint8Array): number {
     let v = Number(getFieldValue(bytes, f))
     let changed = false
     if (c.allowed && c.allowed.length > 0 && !c.allowed.includes(v)) {
-      let best = c.allowed[0]
-      let bestD = Infinity
-      for (const a of c.allowed) {
-        const d = hamming(v, a, f.length)
-        if (d < bestD) {
-          bestD = d
-          best = a
-        }
-      }
-      v = best
+      v = c.allowed[v % c.allowed.length]
       changed = true
     }
-    if (c.min !== undefined && v < c.min) {
-      v = c.min
-      changed = true
-    }
-    if (c.max !== undefined && v > c.max) {
-      v = c.max
-      changed = true
-    }
+    if (c.min !== undefined && v < c.min) { v = c.min; changed = true }
+    if (c.max !== undefined && v > c.max) { v = c.max; changed = true }
     if (c.monotonic) {
       const key = layout.name + ":" + f.name
-      const last = _lastValues.get(key) ?? 0
-      if (v < last) {
-        v = last
-        changed = true
-      }
-      _lastValues.set(key, v)
+      const lv = _constraintLast.get(key)
+      if (lv !== undefined && v < lv) { v = lv; changed = true }
+      _constraintLast.set(key, v)
     }
     if (changed) {
       writeFieldValue(bytes, f, v)
@@ -811,54 +710,6 @@ export function repairConstraints(layout: V8Layout, bytes: Uint8Array): number {
 
 let _structPoolN = STRUCT_POOL_DEFAULT
 const STRUCT_ENTRY = 34
-const _structChild = new Uint8Array(16)
-// Snapshot buffers for the pooled structured-field entropy source. The parent
-// buffers A/B double as both the CSPRNG entropy and the write target; a field
-// written earlier (e.g. timestamp) would otherwise clobber the very bytes a
-// later allowed-field (e.g. shard) reads as its randomness — collapsing that
-// field to a constant. We copy the original CSPRNG bytes here and draw from the
-// copy, so writes never poison downstream draws.
-const _rngA = new Uint8Array(16)
-const _rngB = new Uint8Array(16)
-const _structPools = new Map<
-  string,
-  {
-    pool: Uint8Array<ArrayBuffer>
-    strs: string[]
-    idx: number
-    size: number
-    needsRepair: boolean
-    plan: ByteMask[][]
-  }
->()
-
-function getStructPool(layout: V8Layout): {
-  pool: Uint8Array<ArrayBuffer>
-  strs: string[]
-  idx: number
-  size: number
-  needsRepair: boolean
-  plan: ByteMask[][]
-} {
-  const existing = _structPools.get(layout.name)
-  if (existing) return existing
-  // Snapshot the current configured size into the pool entry so an in-flight
-  // pool keeps a consistent size even if configurePools() runs later (it clears
-  // the map, so the next getStructPool rebuilds at the new size).
-  const size = _structPoolN
-  const p = {
-    pool: new Uint8Array(STRUCT_ENTRY * size),
-    strs: new Array(size),
-    idx: size,
-    size,
-    needsRepair: layout.fields.some((f) => f.type === "random" && f.constraint),
-    // Precomputed per-field byte masks — built once per layout, reused for all
-    // pool entries so the hot child-assembly loop never touches bits.
-    plan: layout.fields.map(fieldByteMasks),
-  }
-  _structPools.set(layout.name, p)
-  return p
-}
 
 const _spPool = new Map<string, { pool: Uint8Array<ArrayBuffer>; strs: string[]; idx: number; size: number }>()
 
@@ -877,10 +728,31 @@ function refillSingleParentPool(layout: V8Layout): void {
     _spPool.set(layout.name, { pool, strs, idx: 0, size })
   }
   fillRandom(pool)
+  const poolNow = Date.now()
   for (let n = 0; n < size; n++) {
     const off = n * STRUCT_ENTRY
     const buf = pool.subarray(off, off + 16)
     applyStructuredFields(buf, layout)
+    for (const f of layout.fields) {
+      if (f.constraint?.monotonic) {
+        const key = layout.name + ":" + f.name
+        let st = _poolMonoTick.get(key)
+        if (!st) {
+          st = { tick: poolNow, ctr: Number(getFieldValue(buf, f)) % (2 ** (f.length - 1)) }
+          _poolMonoTick.set(key, st)
+          writeFieldValue(buf, f, st.ctr)
+          continue
+        }
+        const tick = Math.max(poolNow, st.tick)
+        if (tick !== st.tick) {
+          st.tick = tick
+          st.ctr = Number(getFieldValue(buf, f)) % (2 ** (f.length - 1))
+        } else {
+          st.ctr = (st.ctr + 1) % (2 ** f.length)
+        }
+        writeFieldValue(buf, f, st.ctr)
+      }
+    }
     forceVersionVariant(buf)
     repairConstraints(layout, buf)
     const c = buf
@@ -915,14 +787,11 @@ const _compiledGenCache = new WeakMap<V8Layout, () => string>()
 
 /**
  * Production API: compiles the layout into a specialized generator (~8x
- * faster than the generic pooled path). Falls back to pool-and-crossover if
- * the runtime blocks `new Function` (CSP).
+ * faster than the generic pooled path). Falls back to single-parent pool
+ * if the runtime blocks `new Function` (CSP).
  */
 export function genStructuredGenoID(layout: V8Layout): string {
   ensureValidated(layout)
-  // Use the compiled path (~8x faster) only when the default Web Crypto CSPRNG
-  // is active. Custom CSPRNGs (configureRandom, seeded RNG) fall through to the
-  // pool-and-crossover path which respects the injected RNG.
   if (_fillRandom === _webCryptoFill && _hasWebCrypto) {
     const fn = _compiledGenCache.get(layout)
     if (fn) return fn()
@@ -934,59 +803,7 @@ export function genStructuredGenoID(layout: V8Layout): string {
       // Compiled path unavailable (CSP). Fall through to pooled path below.
     }
   }
-  const p = getStructPool(layout)
-  // Repair only matters for random fields that carry a constraint (allowed /
-  // min / max) — structured fields are generated valid in both parents, so
-  // crossover can never violate them. needsRepair is cached in the pool entry.
-  if (p.idx >= p.size) {
-    const fields = layout.fields
-    const nf = fields.length
-    const w = wordTable()
-    fillRandom(p.pool)
-    for (let n = 0; n < p.size; n++) {
-      const off = n * STRUCT_ENTRY
-      const A = p.pool.subarray(off, off + 16)
-      const B = p.pool.subarray(off + 16, off + 32)
-      const fieldSelect = p.pool[off + 32] | (p.pool[off + 33] << 8)
-      // Every structured field populated independently in both parents, so
-      // field-boundary crossover can pick either without producing garbage.
-      // Entropy comes from the ALREADY-CSPRNG pool bytes (one getRandomValues
-      // per 256 IDs) via disjoint cursor regions per parent — no per-field
-      // syscall, same entropy as before.
-      // Snapshot the original CSPRNG bytes so structured writes into A/B can't
-      // poison the entropy that later fields draw (see _rngA/_rngB note).
-      _rngA.set(A)
-      _rngB.set(B)
-      applyStructuredFields(A, layout, undefined, poolRng(_rngA, 0, 16))
-      applyStructuredFields(B, layout, undefined, poolRng(_rngB, 0, 16))
-      // Assemble the child by masking+ORing parent bytes per precomputed field
-      // plan — replaces the per-bit copyField loop with a fixed set of byte ops.
-      const child = _structChild
-      child.fill(0)
-      for (let fi = 0; fi < nf; fi++) {
-        const src = ((fieldSelect >> fi) & 1) === 1 ? A : B
-        for (const mk of p.plan[fi]) {
-          child[mk.byte] |= src[mk.byte] & mk.mask
-        }
-      }
-      if (p.needsRepair) repairConstraints(layout, child)
-      forceVersionVariant(child)
-      const c = _structChild, t = HEX8
-      p.strs[n] = w
-        ? w[(c[0] << 8) | c[1]] + w[(c[2] << 8) | c[3]] + "-" +
-          w[(c[4] << 8) | c[5]] + "-" +
-          w[(c[6] << 8) | c[7]] + "-" +
-          w[(c[8] << 8) | c[9]] + "-" +
-          w[(c[10] << 8) | c[11]] + w[(c[12] << 8) | c[13]] + w[(c[14] << 8) | c[15]]
-        : t[c[0]] + t[c[1]] + t[c[2]] + t[c[3]] + "-" +
-          t[c[4]] + t[c[5]] + "-" +
-          t[c[6]] + t[c[7]] + "-" +
-          t[c[8]] + t[c[9]] + "-" +
-          t[c[10]] + t[c[11]] + t[c[12]] + t[c[13]] + t[c[14]] + t[c[15]]
-    }
-    p.idx = 0
-  }
-  return p.strs[p.idx++]
+  return genStructuredGenoIDSingleParent(layout)
 }
 
 export interface PoolConfig {
@@ -1033,7 +850,7 @@ export function configurePools(cfg: PoolConfig): void {
     }
     _structPoolN = n
     // rebuilt lazily at the new size, per layout
-    _structPools.clear()
+    _spPool.clear()
   }
 }
 
@@ -1386,18 +1203,8 @@ export function compileRawLayout(layout: V8Layout): CompiledRawLayout {
   return { source, fn }
 }
 
-/**
- * Hand-written (not codegen) counterpart to compileRawLayout.
- * Applies the same field-value derivation as the compiled path, but in
- * plain JS — no generated code, no new Function.
- *
- * Tie-break rule for allowed-set constraint repair: **first value in the
- * `allowed` array wins** on equal Hamming distance. This is inherited from
- * `repairConstraints` which uses strict `<` (not `<=`) in the argmin loop.
- *
- * The `_lastValues` Map in `repairConstraints` provides monotonic tracking
- * across calls, and `ctr` is used directly (not auto-incremented).
- */
+const _interpretLast = new Map<string, number>()
+
 export function interpretRawLayout(
   layout: V8Layout,
   raw: Uint8Array,
@@ -1413,47 +1220,50 @@ export function interpretRawLayout(
     }
   }
 
-  const fields = layout.fields
+  for (const f of layout.fields) {
+    if (f.type === "random") continue
+    const c = f.constraint
+    let rv: number
 
-  // Write computed fields (timestamp, counter, fixed). CSPRNG-derived fields
-  // (shard, node, process) keep their raw bytes — constraint handling below
-  // applies the same modulo-based pick for allowed fields as the compiled path.
-  for (const f of fields) {
     switch (f.type) {
       case "timestamp-ms": {
-        writeFieldValue(b, f, now % fieldMod(f))
+        rv = now % fieldMod(f)
         break
       }
       case "timestamp-us": {
-        writeFieldValue(b, f, (now * 1000) % fieldMod(f))
+        rv = (now * 1000) % fieldMod(f)
         break
       }
       case "counter": {
-        writeFieldValue(b, f, ctr % fieldMod(f))
+        rv = ctr % fieldMod(f)
         break
       }
       case "fixed": {
-        writeFieldValue(b, f, f.value ?? 0)
+        rv = f.value ?? 0
         break
       }
-      default:
-        // shard, node, process, random — leave raw CSPRNG bytes in place
+      default: {
+        rv = Number(getFieldValue(b, f))
+        if (c && c.allowed && c.allowed.length > 0) {
+          rv = c.allowed[rv % c.allowed.length]
+        }
+        break
+      }
     }
-  }
 
-  // Apply modulo-based pick for allowed-constrained fields, matching the
-  // compiled path in genLayoutSource (not the Hamming-nearest repair used by
-  // repairConstraints for RuntimeConstraintFields).
-  for (const f of fields) {
-    const c = f.constraint
-    if (c && c.allowed && c.allowed.length > 0) {
-      const rawValue = Number(getFieldValue(b, f))
-      const picked = c.allowed[rawValue % c.allowed.length]
-      writeFieldValue(b, f, picked)
+    if (c) {
+      if (c.min !== undefined && rv < c.min) rv = c.min
+      if (c.max !== undefined && rv > c.max) rv = c.max
+      if (c.monotonic) {
+        const key = layout.name + ":" + f.name
+        const lv = _interpretLast.get(key)
+        if (lv !== undefined && rv < lv) rv = lv
+        _interpretLast.set(key, rv)
+      }
     }
-  }
 
-  repairConstraints(layout, b)
+    writeFieldValue(b, f, rv)
+  }
 
   forceVersionVariant(b)
 

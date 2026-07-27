@@ -12,20 +12,17 @@ impl Xorshift128p {
     fn new(s0: u32, s1: u32) -> Self {
         Self { s0, s1 }
     }
-    fn next_u32(&mut self) -> u32 {
-        let mut t = self.s1;
-        t ^= t << 23;
-        t ^= t >> 17;
-        t ^= self.s0;
-        t ^= self.s0 >> 26;
-        self.s0 = self.s1;
-        self.s1 = t;
-        self.s1
-    }
     fn fill_bytes(&mut self, buf: &mut [u8]) {
         let mut off = 0;
         while off < buf.len() {
-            let val = self.next_u32();
+            let mut t = self.s1;
+            t ^= t << 23;
+            t ^= t >> 17;
+            t ^= self.s0;
+            t ^= self.s0 >> 26;
+            self.s0 = self.s1;
+            self.s1 = t;
+            let val = self.s1;
             let n = (buf.len() - off).min(4);
             for i in 0..n {
                 buf[off + i] = ((val >> (i * 8)) & 0xff) as u8;
@@ -35,58 +32,11 @@ impl Xorshift128p {
     }
 }
 
-// === csprngInt-alike: separate buffer refilled from PRNG in 256-byte chunks ===
-struct CsprngStream<'a> {
-    rng: &'a mut Xorshift128p,
-    buf: [u8; 256],
-    pos: usize,
-}
-
-impl<'a> CsprngStream<'a> {
-    fn new(rng: &'a mut Xorshift128p) -> Self {
-        let mut buf = [0u8; 256];
-        rng.fill_bytes(&mut buf);
-        Self { rng, buf, pos: 0 }
-    }
-    fn next_byte(&mut self) -> u8 {
-        if self.pos >= 256 {
-            self.rng.fill_bytes(&mut self.buf);
-            self.pos = 0;
-        }
-        let b = self.buf[self.pos];
-        self.pos += 1;
-        b
-    }
-}
-
-// === drawValue (matches TypeScript drawValue) ===
-fn draw_value(csprng: &mut CsprngStream, mod_val: u64) -> u64 {
-    if mod_val <= 256 {
-        return (csprng.next_byte() as u64) % mod_val;
-    }
-    let mut need: u32 = 1;
-    while (1u64 << (need * 8)) < mod_val {
-        need += 1;
-    }
-    let mut v: u64 = 0;
-    for _ in 0..need {
-        v = v * 256 + (csprng.next_byte() as u64);
-    }
-    v % mod_val
-}
-
-// === pickFrom (matches TypeScript pickFrom) ===
-fn pick_from(csprng: &mut CsprngStream, allowed: &[u32]) -> u32 {
-    let n = allowed.len();
-    if n == 1 {
-        return allowed[0];
-    }
-    let limit = 256 - (256 % n as u32);
-    let mut x = csprng.next_byte() as u32;
-    while x >= limit {
-        x = csprng.next_byte() as u32;
-    }
-    allowed[(x % n as u32) as usize]
+// === Counter state (tick-keyed, matches TypeScript CounterState) ===
+#[derive(Clone, Copy)]
+struct CounterState {
+    tick: u64,
+    ctr: u64,
 }
 
 // === Layout ===
@@ -98,9 +48,11 @@ enum FieldType {
     Node,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 struct Constraint {
     allowed: Option<Vec<u32>>,
+    min: Option<u64>,
+    max: Option<u64>,
     monotonic: bool,
 }
 
@@ -136,16 +88,6 @@ fn read_bits(buf: &[u8; 16], start: u32, len: u32) -> u64 {
     v
 }
 
-fn hamming(a: u64, b: u64, bits: u32) -> u32 {
-    let mut d = 0;
-    for i in 0..bits {
-        if ((a >> i) ^ (b >> i)) & 1 != 0 {
-            d += 1;
-        }
-    }
-    d
-}
-
 fn force_version_variant(buf: &mut [u8; 16]) {
     buf[6] = (buf[6] & 0x0f) | 0x80;
     buf[8] = (buf[8] & 0x3f) | 0x80;
@@ -162,12 +104,13 @@ fn to_uuid_string(buf: &[u8; 16]) -> String {
     )
 }
 
-// === Repair (matches TypeScript repairConstraints) ===
+// === Repair (matches TypeScript repairConstraints — index-modulo + tick-keyed counter) ===
 fn repair_constraints(
     buf: &mut [u8; 16],
     fields: &[Field],
-    monotonic: &mut HashMap<String, u64>,
+    counters: &mut HashMap<String, CounterState>,
     layout_name: &str,
+    now: u64,
 ) {
     for f in fields {
         let c = match &f.constraint {
@@ -177,42 +120,73 @@ fn repair_constraints(
         let raw = read_bits(buf, f.start, f.length);
         let mut v = raw;
         let mut changed = false;
+
+        // allowed: idempotent index-modulo — only pick when v not already valid (algo.ts:691-693)
         if let Some(allowed) = &c.allowed {
-            let allowed_u64: Vec<u64> = allowed.iter().map(|&a| a as u64).collect();
-            if !allowed_u64.contains(&v) {
-                let (mut best, mut best_d) = (allowed_u64[0], u32::MAX);
-                for &a in &allowed_u64 {
-                    let d = hamming(v, a, f.length);
-                    if d < best_d { best_d = d; best = a; }
-                }
-                v = best;
+            if !allowed.is_empty() && !allowed.contains(&(v as u32)) {
+                let picked = allowed[(v as usize) % allowed.len()] as u64;
+                v = picked;
                 changed = true;
             }
         }
+
+        // min/max: clamp (algo.ts:701-702)
+        if let Some(min) = c.min {
+            if v < min { v = min; changed = true; }
+        }
+        if let Some(max) = c.max {
+            if v > max { v = max; changed = true; }
+        }
+
+        // monotonic: tick-keyed counter, 1 guard bit (algo.ts:703-719).
+        // On first init TS seeds ctr = v % reseed_range and then falls through
+        // to the tick check, where tick == state.tick, taking the increment
+        // branch — so the effective first value is (v % reseed_range) + 1.
+        // On a genuine tick change TS reseeds to v % reseed_range with NO
+        // increment.
         if c.monotonic {
             let key = format!("{}:{}", layout_name, f.name);
-            let last = *monotonic.get(&key).unwrap_or(&0);
-            if v < last { v = last; changed = true; }
-            monotonic.insert(key, v);
+            let field_range = 1u64 << f.length;
+            let reseed_range = 1u64 << (f.length - 1); // guardBits = 1
+
+            match counters.get(&key).copied() {
+                // First init seeds only — no increment (algo.ts:706-711).
+                None => {
+                    let st = CounterState { tick: now, ctr: v % reseed_range };
+                    counters.insert(key, st);
+                    v = st.ctr;
+                }
+                Some(mut st) => {
+                    let tick = now.max(st.tick);
+                    if tick != st.tick {
+                        st.tick = tick;
+                        st.ctr = v % reseed_range;
+                    } else {
+                        st.ctr = (st.ctr + 1) % field_range;
+                    }
+                    counters.insert(key, st);
+                    v = st.ctr;
+                }
+            }
+            changed = true;
         }
-        if changed { write_bits(buf, f.start, f.length, v); }
+
+        let _ = raw;
+
+        if changed {
+            write_bits(buf, f.start, f.length, v);
+        }
     }
 }
 
 // === Layout definitions ===
 const TIMESTAMP_MS: u64 = 1_700_000_000_000;
 
-// Replicating the TypeScript refillSingleParentPool pattern exactly:
-// 1. fillRandom(pool) for 34*1024 bytes
-// 2. Then for each entry, apply structured fields
-// 3. Shard/Node fields use the csprngInt byte stream
-
 fn generate_batch(
     rng: &mut Xorshift128p,
     fields: &[Field],
     layout_name: &str,
-    monotonic: &mut HashMap<String, u64>,
-    counters: &mut HashMap<String, u64>,
+    counters: &mut HashMap<String, CounterState>,
     count: usize,
 ) -> Vec<String> {
     const STRUCT_ENTRY: usize = 34;
@@ -221,7 +195,9 @@ fn generate_batch(
 
     let mut pool = vec![0u8; pool_bytes];
     rng.fill_bytes(&mut pool);
-    let mut csprng = CsprngStream::new(rng);
+
+    // Separate from `counters`: mirrors _poolMonoTick vs _counterStates.
+    let mut pool_mono: HashMap<String, CounterState> = HashMap::new();
 
     let mut strings = Vec::with_capacity(POOL_SIZE);
     for n in 0..POOL_SIZE {
@@ -229,40 +205,56 @@ fn generate_batch(
         let mut buf = [0u8; 16];
         buf.copy_from_slice(&pool[off..off + 16]);
 
+        // applyStructuredFields (algo.ts:618-632): ONLY fixed and timestamp-*
+        // are written. counter / shard / node / random keep raw pool bytes.
         for f in fields {
-            let mod_val = if f.length < 64 { 1u64 << f.length } else { 0 };
-            let val = match f.ftype {
+            match f.ftype {
                 FieldType::TimestampMs => {
                     let m = if f.length < 64 { 1u64 << f.length } else { 0 };
-                    if m > 0 { TIMESTAMP_MS % m } else { TIMESTAMP_MS }
+                    let val = if m > 0 { TIMESTAMP_MS % m } else { TIMESTAMP_MS };
+                    write_bits(&mut buf, f.start, f.length, val);
                 }
-                FieldType::Counter => {
-                    let key = format!("{}:{}", layout_name, f.name);
-                    let cur = counters.get(&key).copied().unwrap_or(0) + 1;
-                    counters.insert(key, cur);
-                    let m = if f.length < 64 { 1u64 << f.length } else { 0 };
-                    if m > 0 { cur % m } else { cur }
+                _ => {}
+            }
+        }
+
+        // Pool-level monotonic pass (algo.ts:736-753). This runs BEFORE
+        // repairConstraints and uses a SEPARATE state map (_poolMonoTick),
+        // so the counter is advanced twice per UUID; the repair pass writes
+        // last, but this pass determines the value repair reads at first init.
+        for f in fields {
+            let is_mono = f.constraint.as_ref().map(|c| c.monotonic).unwrap_or(false);
+            if !is_mono {
+                continue;
+            }
+            let key = format!("{}:{}", layout_name, f.name);
+            let field_range = 1u64 << f.length;
+            let reseed_range = 1u64 << (f.length - 1);
+            let v = read_bits(&buf, f.start, f.length);
+
+            let out = match pool_mono.get(&key).copied() {
+                None => {
+                    let st = CounterState { tick: TIMESTAMP_MS, ctr: v % reseed_range };
+                    pool_mono.insert(key, st);
+                    st.ctr
                 }
-                FieldType::Shard => {
-                    if let Some(c) = &f.constraint {
-                        if let Some(allowed) = &c.allowed {
-                            // pickFrom path: 1 byte rejection sampling
-                            (pick_from(&mut csprng, allowed) as u64) % mod_val
-                        } else {
-                            draw_value(&mut csprng, mod_val)
-                        }
+                Some(mut st) => {
+                    let tick = TIMESTAMP_MS.max(st.tick);
+                    if tick != st.tick {
+                        st.tick = tick;
+                        st.ctr = v % reseed_range;
                     } else {
-                        draw_value(&mut csprng, mod_val)
+                        st.ctr = (st.ctr + 1) % field_range;
                     }
-                }
-                FieldType::Node => {
-                    draw_value(&mut csprng, mod_val)
+                    pool_mono.insert(key, st);
+                    st.ctr
                 }
             };
-            write_bits(&mut buf, f.start, f.length, val);
+            write_bits(&mut buf, f.start, f.length, out);
         }
+
         force_version_variant(&mut buf);
-        repair_constraints(&mut buf, fields, monotonic, layout_name);
+        repair_constraints(&mut buf, fields, counters, layout_name, TIMESTAMP_MS);
         strings.push(to_uuid_string(&buf));
     }
     strings.truncate(count);
@@ -274,18 +266,18 @@ fn dbkey_layout() -> Vec<Field> {
     vec![
         Field { name: "timestamp".into(), start: 0, length: 48, ftype: FieldType::TimestampMs, constraint: None },
         Field { name: "shard".into(), start: 52, length: 8, ftype: FieldType::Shard,
-            constraint: Some(Constraint { allowed: Some(vec![1, 2, 3, 4, 5]), monotonic: false }) },
+            constraint: Some(Constraint { allowed: Some(vec![1, 2, 3, 4, 5]), ..Default::default() }) },
         Field { name: "counter".into(), start: 66, length: 16, ftype: FieldType::Counter,
-            constraint: Some(Constraint { allowed: None, monotonic: true }) },
+            constraint: Some(Constraint { monotonic: true, ..Default::default() }) },
     ]
 }
 
 fn multitenant_layout() -> Vec<Field> {
     vec![
         Field { name: "tenant".into(), start: 0, length: 12, ftype: FieldType::Shard,
-            constraint: Some(Constraint { allowed: Some(vec![1, 2, 3, 4, 5, 6, 7, 8]), monotonic: false }) },
+            constraint: Some(Constraint { allowed: Some(vec![1, 2, 3, 4, 5, 6, 7, 8]), ..Default::default() }) },
         Field { name: "region".into(), start: 52, length: 8, ftype: FieldType::Shard,
-            constraint: Some(Constraint { allowed: Some(vec![1, 2, 3, 4]), monotonic: false }) },
+            constraint: Some(Constraint { allowed: Some(vec![1, 2, 3, 4]), ..Default::default() }) },
     ]
 }
 
@@ -293,7 +285,7 @@ fn eventsourcing_layout() -> Vec<Field> {
     vec![
         Field { name: "stream".into(), start: 0, length: 16, ftype: FieldType::Node, constraint: None },
         Field { name: "seq".into(), start: 66, length: 24, ftype: FieldType::Counter,
-            constraint: Some(Constraint { allowed: None, monotonic: true }) },
+            constraint: Some(Constraint { monotonic: true, ..Default::default() }) },
     ]
 }
 
@@ -322,9 +314,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let ts_lines: Vec<&str> = content_ts.lines().collect();
 
         let mut rng = Xorshift128p::new(SEED0, SEED1);
-        let mut monotonic = HashMap::new();
         let mut counters = HashMap::new();
-        let rust_uuids = generate_batch(&mut rng, layout, label, &mut monotonic, &mut counters, N);
+        let rust_uuids = generate_batch(&mut rng, layout, label, &mut counters, N);
 
         let mut diff_count = 0;
         for i in 0..N {
