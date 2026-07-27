@@ -136,7 +136,7 @@ interface ArmRun {
 }
 
 function ddl(mode: string): string {
-  return `CREATE TABLE t (id BLOB PRIMARY KEY, tenant INTEGER, ts INTEGER, payload BLOB)${mode === "clustered" ? " WITHOUT ROWID" : ""}`
+  return `CREATE TABLE IF NOT EXISTS t (id BLOB PRIMARY KEY, tenant INTEGER, ts INTEGER, payload BLOB)${mode === "clustered" ? " WITHOUT ROWID" : ""}`
 }
 
 function runArm(arm: Arm, mode: string, dir: string): ArmRun {
@@ -296,7 +296,7 @@ function loadForWriteAmp(arm: Arm, dir: string, withIndex: boolean, rows: number
   db.exec(`PRAGMA page_size=4096; PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL; PRAGMA cache_size=${-CACHE_MB * 1024};`)
   db.exec(ddl("clustered"))
   // maintained on every insert
-  if (withIndex) db.exec("CREATE INDEX idx_tenant ON t(tenant)")
+  if (withIndex) db.exec("CREATE INDEX IF NOT EXISTS idx_tenant ON t(tenant)")
   const insert = db.prepare("INSERT OR IGNORE INTO t (id, tenant, ts, payload) VALUES (?, ?, ?, ?)")
   const rng = mulberry32(42)
   const payload = new Uint8Array(BLOB_BYTES)

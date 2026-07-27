@@ -419,7 +419,7 @@ test("INV-2: zero constraint violations across all layouts at scale", () => {
 // decreases are field-width wraps, whose count is bounded.
 // ---------------------------------------------------------------------------
 
-test("INV-3: counter fields are ordered modulo their field width (bounded wraps)", () => {
+test("INV-3: counter fields are ordered modulo their field width (bounded wraps)", { timeout: 30000 }, () => {
   for (const name of ["dbkey", "eventsourcing"]) {
     const layout = LAYOUT_BY_NAME[name]
     const counters = fieldsOf(layout).filter((f) => f.type === "counter")

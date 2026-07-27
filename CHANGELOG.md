@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.21.1] - 2026-07-27
+
+### Summary
+
+**Stability fix: INV-3 timeout, Windows bench-db DDL race; paper Zenodo DOI finalized.**
+
+#### 🔧 Internal
+
+- **`research-invariants.test.ts`** — raised INV-3 timeout from 5s to 30s for 400k-UUID sequential counter-order check on slower machines.
+- **`bench-db.ts`** — changed DDL to `CREATE TABLE IF NOT EXISTS` and index to `CREATE INDEX IF NOT EXISTS` to fix Windows file-lock race in WAL-mode repeated runs.
+
+#### 📖 Documentation
+
+- **Availability paragraph** — replaced Zenodo DOI placeholder with real DOI (`10.5281/zenodo.21617109`).
+
 ## [1.21.0] - 2026-07-27
 
 ### Summary
