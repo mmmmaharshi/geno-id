@@ -1,0 +1,595 @@
+{
+  "engine": "bun:sqlite",
+  "sqliteVersion": "3.53.0",
+  "hardware": {
+    "platform": "win32",
+    "arch": "x64",
+    "cpu": "11th Gen Intel(R) Core(TM) i3-1115G4 @ 3.00GHz",
+    "cores": 4,
+    "memMB": 7991
+  },
+  "config": {
+    "rows": 500000,
+    "runs": 3,
+    "sampleEvery": 100000,
+    "cacheMb": 16,
+    "blobBytes": 64
+  },
+  "note": "Relative index-locality benchmark. Headline = insert throughput (SQLite repacks pages, so on-disk size diverges less than production InnoDB). Anchor: uuid_v4 -> uuid_v7 insert speedup reproduces the published ULID result. Partition differentiator is STORAGE + WRITE-AMPLIFICATION, not read latency: GenoID answers a partition query from the PK with zero index (a range scan, slower than an indexed probe), while non-structured keys must carry a secondary index — paying its insert tax and storage (see writeAmplification).",
+  "modes": {
+    "clustered": {
+      "bigint_seq": {
+        "insertTotalRowsPerSec": {
+          "mean": 880975,
+          "ci95": [
+            209586,
+            1552364
+          ]
+        },
+        "pageBytes": 52346880,
+        "pagesPerRow": 0.0256,
+        "freePages": 0,
+        "insertSeries": [
+          {
+            "atRows": 100000,
+            "rowsPerSec": 1039738
+          },
+          {
+            "atRows": 200000,
+            "rowsPerSec": 1058139
+          },
+          {
+            "atRows": 300000,
+            "rowsPerSec": 1055761
+          },
+          {
+            "atRows": 400000,
+            "rowsPerSec": 1066891
+          },
+          {
+            "atRows": 500000,
+            "rowsPerSec": 1024818
+          }
+        ]
+      },
+      "uuid_v4": {
+        "insertTotalRowsPerSec": {
+          "mean": 27654,
+          "ci95": [
+            -13007,
+            68315
+          ]
+        },
+        "pageBytes": 157290496,
+        "pagesPerRow": 0.0768,
+        "freePages": 0,
+        "insertSeries": [
+          {
+            "atRows": 100000,
+            "rowsPerSec": 17222
+          },
+          {
+            "atRows": 200000,
+            "rowsPerSec": 16814
+          },
+          {
+            "atRows": 300000,
+            "rowsPerSec": 15824
+          },
+          {
+            "atRows": 400000,
+            "rowsPerSec": 15606
+          },
+          {
+            "atRows": 500000,
+            "rowsPerSec": 15112
+          }
+        ]
+      },
+      "uuid_v7": {
+        "insertTotalRowsPerSec": {
+          "mean": 245600,
+          "ci95": [
+            217002,
+            274198
+          ]
+        },
+        "pageBytes": 155447296,
+        "pagesPerRow": 0.0759,
+        "freePages": 0,
+        "insertSeries": [
+          {
+            "atRows": 100000,
+            "rowsPerSec": 261482
+          },
+          {
+            "atRows": 200000,
+            "rowsPerSec": 256132
+          },
+          {
+            "atRows": 300000,
+            "rowsPerSec": 248099
+          },
+          {
+            "atRows": 400000,
+            "rowsPerSec": 241045
+          },
+          {
+            "atRows": 500000,
+            "rowsPerSec": 250075
+          }
+        ]
+      },
+      "pg_uuid_v8": {
+        "insertTotalRowsPerSec": {
+          "mean": 192900,
+          "ci95": [
+            172946,
+            212854
+          ]
+        },
+        "pageBytes": 183226368,
+        "pagesPerRow": 0.0895,
+        "freePages": 0,
+        "insertSeries": [
+          {
+            "atRows": 100000,
+            "rowsPerSec": 192325
+          },
+          {
+            "atRows": 200000,
+            "rowsPerSec": 202326
+          },
+          {
+            "atRows": 300000,
+            "rowsPerSec": 177258
+          },
+          {
+            "atRows": 400000,
+            "rowsPerSec": 184727
+          },
+          {
+            "atRows": 500000,
+            "rowsPerSec": 202978
+          }
+        ]
+      },
+      "ulid_v8": {
+        "insertTotalRowsPerSec": {
+          "mean": 198538,
+          "ci95": [
+            169957,
+            227120
+          ]
+        },
+        "pageBytes": 154787840,
+        "pagesPerRow": 0.0756,
+        "freePages": 0,
+        "insertSeries": [
+          {
+            "atRows": 100000,
+            "rowsPerSec": 191294
+          },
+          {
+            "atRows": 200000,
+            "rowsPerSec": 193268
+          },
+          {
+            "atRows": 300000,
+            "rowsPerSec": 206489
+          },
+          {
+            "atRows": 400000,
+            "rowsPerSec": 148974
+          },
+          {
+            "atRows": 500000,
+            "rowsPerSec": 200132
+          }
+        ]
+      },
+      "genoid_v8": {
+        "insertTotalRowsPerSec": {
+          "mean": 15540,
+          "ci95": [
+            3456,
+            27624
+          ]
+        },
+        "pageBytes": 157413376,
+        "pagesPerRow": 0.0769,
+        "freePages": 0,
+        "insertSeries": [
+          {
+            "atRows": 100000,
+            "rowsPerSec": 17159
+          },
+          {
+            "atRows": 200000,
+            "rowsPerSec": 16505
+          },
+          {
+            "atRows": 300000,
+            "rowsPerSec": 15858
+          },
+          {
+            "atRows": 400000,
+            "rowsPerSec": 15520
+          },
+          {
+            "atRows": 500000,
+            "rowsPerSec": 15036
+          }
+        ]
+      },
+      "genoid_structured": {
+        "insertTotalRowsPerSec": {
+          "mean": 269235,
+          "ci95": [
+            267335,
+            271136
+          ]
+        },
+        "pageBytes": 155713536,
+        "pagesPerRow": 0.076,
+        "freePages": 0,
+        "insertSeries": [
+          {
+            "atRows": 100000,
+            "rowsPerSec": 270688
+          },
+          {
+            "atRows": 200000,
+            "rowsPerSec": 262291
+          },
+          {
+            "atRows": 300000,
+            "rowsPerSec": 272928
+          },
+          {
+            "atRows": 400000,
+            "rowsPerSec": 267324
+          },
+          {
+            "atRows": 500000,
+            "rowsPerSec": 272342
+          }
+        ]
+      },
+      "genoid_shardfirst": {
+        "insertTotalRowsPerSec": {
+          "mean": 258437,
+          "ci95": [
+            251571,
+            265304
+          ]
+        },
+        "pageBytes": 151830528,
+        "pagesPerRow": 0.0741,
+        "freePages": 0,
+        "insertSeries": [
+          {
+            "atRows": 100000,
+            "rowsPerSec": 263723
+          },
+          {
+            "atRows": 200000,
+            "rowsPerSec": 254605
+          },
+          {
+            "atRows": 300000,
+            "rowsPerSec": 265236
+          },
+          {
+            "atRows": 400000,
+            "rowsPerSec": 254624
+          },
+          {
+            "atRows": 500000,
+            "rowsPerSec": 265523
+          }
+        ]
+      }
+    },
+    "secondary": {
+      "bigint_seq": {
+        "insertTotalRowsPerSec": {
+          "mean": 814024,
+          "ci95": [
+            182577,
+            1445470
+          ]
+        },
+        "pageBytes": 63123456,
+        "pagesPerRow": 0.0308,
+        "freePages": 0,
+        "insertSeries": [
+          {
+            "atRows": 100000,
+            "rowsPerSec": 994618
+          },
+          {
+            "atRows": 200000,
+            "rowsPerSec": 956577
+          },
+          {
+            "atRows": 300000,
+            "rowsPerSec": 1007972
+          },
+          {
+            "atRows": 400000,
+            "rowsPerSec": 948696
+          },
+          {
+            "atRows": 500000,
+            "rowsPerSec": 989801
+          }
+        ]
+      },
+      "uuid_v4": {
+        "insertTotalRowsPerSec": {
+          "mean": 47484,
+          "ci95": [
+            -46595,
+            141563
+          ]
+        },
+        "pageBytes": 188137472,
+        "pagesPerRow": 0.0919,
+        "freePages": 0,
+        "insertSeries": [
+          {
+            "atRows": 100000,
+            "rowsPerSec": 27685
+          },
+          {
+            "atRows": 200000,
+            "rowsPerSec": 26138
+          },
+          {
+            "atRows": 300000,
+            "rowsPerSec": 24817
+          },
+          {
+            "atRows": 400000,
+            "rowsPerSec": 23965
+          },
+          {
+            "atRows": 500000,
+            "rowsPerSec": 21496
+          }
+        ]
+      },
+      "uuid_v7": {
+        "insertTotalRowsPerSec": {
+          "mean": 225473,
+          "ci95": [
+            112215,
+            338732
+          ]
+        },
+        "pageBytes": 189386752,
+        "pagesPerRow": 0.0925,
+        "freePages": 0,
+        "insertSeries": [
+          {
+            "atRows": 100000,
+            "rowsPerSec": 259065
+          },
+          {
+            "atRows": 200000,
+            "rowsPerSec": 250928
+          },
+          {
+            "atRows": 300000,
+            "rowsPerSec": 252056
+          },
+          {
+            "atRows": 400000,
+            "rowsPerSec": 242573
+          },
+          {
+            "atRows": 500000,
+            "rowsPerSec": 262716
+          }
+        ]
+      },
+      "pg_uuid_v8": {
+        "insertTotalRowsPerSec": {
+          "mean": 188837,
+          "ci95": [
+            185070,
+            192604
+          ]
+        },
+        "pageBytes": 207060992,
+        "pagesPerRow": 0.1011,
+        "freePages": 0,
+        "insertSeries": [
+          {
+            "atRows": 100000,
+            "rowsPerSec": 192728
+          },
+          {
+            "atRows": 200000,
+            "rowsPerSec": 183570
+          },
+          {
+            "atRows": 300000,
+            "rowsPerSec": 188236
+          },
+          {
+            "atRows": 400000,
+            "rowsPerSec": 190346
+          },
+          {
+            "atRows": 500000,
+            "rowsPerSec": 183294
+          }
+        ]
+      },
+      "ulid_v8": {
+        "insertTotalRowsPerSec": {
+          "mean": 207030,
+          "ci95": [
+            200512,
+            213548
+          ]
+        },
+        "pageBytes": 189419520,
+        "pagesPerRow": 0.0925,
+        "freePages": 0,
+        "insertSeries": [
+          {
+            "atRows": 100000,
+            "rowsPerSec": 200727
+          },
+          {
+            "atRows": 200000,
+            "rowsPerSec": 211101
+          },
+          {
+            "atRows": 300000,
+            "rowsPerSec": 215219
+          },
+          {
+            "atRows": 400000,
+            "rowsPerSec": 208827
+          },
+          {
+            "atRows": 500000,
+            "rowsPerSec": 214354
+          }
+        ]
+      },
+      "genoid_v8": {
+        "insertTotalRowsPerSec": {
+          "mean": 48951,
+          "ci95": [
+            -36284,
+            134186
+          ]
+        },
+        "pageBytes": 188080128,
+        "pagesPerRow": 0.0918,
+        "freePages": 0,
+        "insertSeries": [
+          {
+            "atRows": 100000,
+            "rowsPerSec": 27028
+          },
+          {
+            "atRows": 200000,
+            "rowsPerSec": 25742
+          },
+          {
+            "atRows": 300000,
+            "rowsPerSec": 24202
+          },
+          {
+            "atRows": 400000,
+            "rowsPerSec": 23002
+          },
+          {
+            "atRows": 500000,
+            "rowsPerSec": 21380
+          }
+        ]
+      },
+      "genoid_structured": {
+        "insertTotalRowsPerSec": {
+          "mean": 256357,
+          "ci95": [
+            252877,
+            259837
+          ]
+        },
+        "pageBytes": 189390848,
+        "pagesPerRow": 0.0925,
+        "freePages": 0,
+        "insertSeries": [
+          {
+            "atRows": 100000,
+            "rowsPerSec": 259010
+          },
+          {
+            "atRows": 200000,
+            "rowsPerSec": 252981
+          },
+          {
+            "atRows": 300000,
+            "rowsPerSec": 266304
+          },
+          {
+            "atRows": 400000,
+            "rowsPerSec": 252038
+          },
+          {
+            "atRows": 500000,
+            "rowsPerSec": 258550
+          }
+        ]
+      },
+      "genoid_shardfirst": {
+        "insertTotalRowsPerSec": {
+          "mean": 87853,
+          "ci95": [
+            38576,
+            137131
+          ]
+        },
+        "pageBytes": 188866560,
+        "pagesPerRow": 0.0922,
+        "freePages": 0,
+        "insertSeries": [
+          {
+            "atRows": 100000,
+            "rowsPerSec": 68884
+          },
+          {
+            "atRows": 200000,
+            "rowsPerSec": 82665
+          },
+          {
+            "atRows": 300000,
+            "rowsPerSec": 84903
+          },
+          {
+            "atRows": 400000,
+            "rowsPerSec": 58531
+          },
+          {
+            "atRows": 500000,
+            "rowsPerSec": 81149
+          }
+        ]
+      }
+    }
+  },
+  "reads": {
+    "pointLookupUs": {
+      "genoid_shardfirst": 30.91,
+      "uuid_v7": 31.12,
+      "genoid_structured": 28.91,
+      "uuid_v4": 30.15
+    },
+    "shard": {
+      "genoidRangeMs": 13.277,
+      "baselineNoIndexMs": 50.993,
+      "baselineIndexedMs": 2.556,
+      "baselineExtraIndexBytes": 11489280,
+      "genoidExtraIndexBytes": 0,
+      "matched": 99851,
+      "total": 500000
+    }
+  },
+  "writeAmplification": {
+    "rows": 300000,
+    "baselineNoIndexRowsPerSec": 257244,
+    "baselineWithIndexRowsPerSec": 210108,
+    "insertTaxPct": 18.3,
+    "indexBytes": 7745536,
+    "genoidRowsPerSec": 259211,
+    "genoidIndexBytes": 0
+  }
+}
