@@ -350,10 +350,7 @@ without a separate index maintenance path. Read-write balance tips toward
 writes under heavy update traffic due to Vacuum pressure, where the
 embedded form's zero-secondary-index advantage compounds.
 
-These are structural facts---they hold for any engine that stores a
-primary key as a B+\!tree leaf, whether clustered (InnoDB,
-SQLite's \texttt{WITHOUT~ROWID}) or as a secondary structure
-(PostgreSQL).
+These are structural facts---they hold for any engine that stores a primary key as a B+\!tree leaf, whether clustered (InnoDB, SQLite's \texttt{WITHOUT~ROWID}) or as a secondary structure (PostgreSQL). These mechanisms share a common root: all three systems store their primary key as a leaf-level B+\!tree, meaning that any random-key distribution causes insert-time page reordering proportional to the entropy of the identifier space. Time-ordered keys (v7, ULID-v8, GenoID dbkey) reduce this variance to near zero; fully-random keys (v4, Math.random) distribute hot-spotting uniformly across the index diameter. The choice between embedding partition identity in the key versus a composite column therefore interacts with this universal constraint regardless of MVCC strategy or WAL semantics.
 
 \subsection{Sharded databases}
 Listing~\ref{lst:dbkey} embeds the owning shard directly in the key.
@@ -497,11 +494,7 @@ drawn value. At the low-density end of each block, where measurement has
 warmed, per-identifier cost is $\approx\!900$\,ns per constrained field
 across $k \in \{1,2,3,4,6\}$, linear in $k$ to within $\pm15\%$.
 
-Rejection's expected trial count follows $d^{-k}$ and becomes infeasible
-to measure beyond $k=3$ at low density. At $d=1/64$, the representative constraint of Section~
-ef{sec:repair-complexity}, the sweep reproduces $64^k$ exactly for $k=3,4,6$
-sweep reproduces $64^k$ exactly for $k=3,4,6$
-($2.62\times10^{5}$, $1.68\times10^{7}$, $6.87\times10^{10}$).
+Rejection's expected trial count follows $d^{-k}$ and becomes infeasible to measure beyond $k=3$ at low density. At $d=1/64$, the representative constraint of Section~\ref{sec:repair-complexity}, the sweep reproduces $64^k$ exactly for $k=3,4,6$ ($2.62\times10^{5}$, $1.68\times10^{7}$, $6.87\times10^{10}$).
 
 The asymptotic advantage is real but bounded, and we state where it
 begins. Rejection is faster at loose constraints and low field counts:
@@ -629,7 +622,7 @@ We disclose these openly, ranked by expected reviewer pressure.
 
 \textbf{Internal validity.} Benchmark confounds are mitigated by mean $\pm$ SD over 10 trials with 95\% CI and Welch $t$-tests. Two implementation bugs (a byte-consumption mismatch in \texttt{eventsourcing}'s \texttt{node}-typed field and a missing seed-state reset) were caught by the test suite before publication. A dead-code-elimination (DCE) hazard in the timing loop was identified and corrected after early throughput runs: an unconsumed loop elides the pure-JavaScript generators' work, inflating measured rates by roughly $2\times$ while leaving native \texttt{crypto.randomUUID()} unchanged; every number in Table~\ref{tab:throughput} post-dates the correction, confirmed by consuming each generated value at a sink (\texttt{.codePointAt(0)}) that the JIT cannot prove is a no-op. NIST runs unconditionally; dieharder is a CI-budget curation. The SQLite composite-key benchmark (Section~\ref{sec:composite-bench}) revealed a between-run variance component not captured by within-run CIs; one of three runs was contaminated by system-level background load (all arms uniformly $1.3$--$2.5\times$ slower), and we report the two uncontended runs with a note that ratios were preserved under perturbation. Absolute per-identifier times in the density sweep (Section~\ref{sec:repair-vs-rejection}) carry a warm-up ordering effect; the repair-count and trial-count results, on which the analysis rests, are order-independent.
 
-\textbf{Runtime portability.} The structured path costs $6$--$44\%$ relative to unstructured pooled generation on Bun and Deno, but $84$--$88\%$ on Node~22, consistently across Linux, macOS, and Windows. Both variants draw from the same pool, so the cause is not CSPRNG access but the field-extraction and repair loop. Profiling pinpoints \texttt{getFieldValue}, the bit-by-bit BigInt arithmetic used in every repair call, as the sole hotspot: replacing the boxed-\texttt{BigInt} loop with plain JS integer shifts yields a 4--8$\times$ speedup on the repair pass alone (measured at 2.1M vs 7.6M UUIDs/s on Node). This reflects a known V8 v13 gap where \texttt{BigInt} allocation is not yet JIT-compiled for tight extraction loops, closed only partially in later engine versions; Bun/Deno ship V8 v14+, while Node~22 ships v13.6. The structural overhead persists because every repair iteration must extract, compare, and write back each constrained field across partial-byte boundaries using this path. A reader deploying on Node~22 should benchmark before assuming the Bun figures transfer.
+\textbf{Runtime portability.} The structured path costs $6$--$44\%$ relative to unstructured pooled generation on Bun and Deno, but $84$--$88\%$ on Node~22, consistently across Linux, macOS, and Windows. Both variants draw from the same pool, so the cause is not CSPRNG access but the field-extraction and repair loop. Profiling pinpoints \texttt{getFieldValue}, the bit-by-bit BigInt arithmetic used in every repair call, as the sole hotspot: replacing the boxed-\texttt{BigInt} loop with plain JS integer shifts yields a 4--8$\times$ speedup on the repair pass alone (measured at 2.1M vs 7.6M UUIDs/s on Node). This reflects a known V8 v13 gap where boxed-\texttt{BigInt} values are heap-allocated even within tight arithmetic loops, incurring per-allocation identity checks and GC pressure that the tier-1 compiler does not eliminate; integer shifts avoid this path entirely. Bun/Deno ship V8 v14+, while Node~22 ships v13.6. The structural overhead persists because every repair iteration must extract, compare, and write back each constrained field across partial-byte boundaries using this path. A reader deploying on Node~22 should benchmark before assuming the Bun figures transfer; if the repair pass proves critical, consider upgrading to Node~24 (which includes the v14+ patch) or replacing the boxed-\texttt{BigInt} extraction loop with native integer shifts to restore comparable throughput.
 
 \textbf{Conclusion validity.} Throughput comparisons use Welch $t$-tests. ``0 collisions'' is reported alongside the birthday-bound expectation.
 
