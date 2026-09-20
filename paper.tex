@@ -82,8 +82,7 @@ Think of a UUID's 122 free bits as a form with labeled blanks: timestamp, shard 
 \label{sec:layout}
 A \texttt{V8Layout} declares ordered \texttt{V8Field}s with bit offset, length, type, and optional constraint.
 
-\begin{lstlisting}[language=Java,
-  caption={The \texttt{dbkey} layout declaration. Bit ranges 48--51
+\begin{lstlisting}[caption={The \texttt{dbkey} layout declaration. Bit ranges 48--51
            (\texttt{ver}) and 64--65 (\texttt{var}) are never declared:
            \texttt{completeLayout} reserves them per RFC~9562 and fills
            every remaining undeclared range with random filler.},
@@ -324,8 +323,7 @@ secondary index. The allowed-tenant set is declared as $[1,8]$; a
 wider set or a different constraint kind requires changing the
 declaration, not the generator.
 
-\begin{lstlisting}[language=Java,
-  caption={The \texttt{multitenant} layout. Only the constrained
+\begin{lstlisting}[caption={The \texttt{multitenant} layout. Only the constrained
            fields are declared; the generator is unchanged.},
   label={lst:multitenant}]
 const multitenant: V8Layout = {
