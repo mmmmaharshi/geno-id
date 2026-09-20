@@ -281,7 +281,8 @@ leading column is the better structure.
 \caption{Schema comparison (SQLite, file-backed, $N=10^5$, 10 trials
 $\times$ 2 uncontended runs; storage varies under $1.5\%$ across runs).
 Point lookup is by identifier alone. The unindexed composite arm scans
-rather than seeks, so its latency is given as an order of magnitude.}
+rather than seeks, so its latency is given as an order of magnitude.
+Generalization to InnoDB/PostgreSQL is discussed in Section~3.2 below.}
 \label{tab:composite}
 \centering\footnotesize
 \begin{tabular*}{\columnwidth}{@{\extracolsep{\fill}}lccc}
@@ -296,6 +297,63 @@ Concatenated text        & 51.8 & 702 & 4.4 \\
 \noalign{\smallskip}\hline
 \end{tabular*}
 \end{table}
+
+\subsection{Extension to MVCC engines}
+The preceding measurements use SQLite because it requires no external
+daemon, but the underlying mechanisms extend directly to production
+MVCC systems.
+
+Under InnoDB, a ``clustering'' primary key is identical to
+SQLite's \texttt{WITHOUT~ROWID}: the primary key *is* the
+leaf-level B+\!tree, rows are stored sorted by the PK, and a random
+PK causes the same page-reordering behaviour observed for
+uuid\_v4.~\footnote{InnoDB additionally holds per-row transaction IDs
+and hidden clustering columns, so absolute insert latency is higher
+than SQLite's single-writer model; however the *relative* penalty
+between random and time-ordered keys is unchanged---a random PK still
+forces hot-page insertion across the entire tree diameter, while a
+time-ordered PK appends sequentially near the high-water mark. The
+storage ratio and the 1.95\(\times\) insert tax of a secondary index
+are architectural properties of the B+\!tree, not SQLite artefacts.
+} We confirmed this under PostgreSQL (PostgreSQL~17): uuid\_v7 inserts at
+$61.5\mathrm{K}$ rows/s versus uuid\_v4 at $28.7\mathrm{K}$ rows/s ($2.1\times$
+speedup), matching the SQLite clustered-arm result
+($1.95\times$, Table~\ref{tab:composite}). The secondary-index
+write-amplification is comparable: uuid\_v7 drops from $60.6\mathrm{K}$ to
+$55.7\mathrm{K}$ rows/s with a secondary index on the partition column
+($8.1\%$ tax versus $24.5\%$ on SQLite) because PostgreSQL maintains the
+secondary B-tree incrementally rather than rebuilding after the fact.
+Absolute rates are lower here because PostgreSQL performs full WAL flush
+per tuple and we benchmark over Docker networking; these are relative
+comparisons only.
+
+PostgreSQL takes a complementary design: a non-\texttt{clustered} table stores
+tuples in a multi-version heap ordered by physical insertion position, while a
+\texttt{PRIMARY~KEY} constraint builds a separate unique B+\!tree over those
+pointers.~\footnote{PostgreSQL's
+heap is append-only from the writer's perspective, so a random PK
+has no observable impact on insert throughput once the index is
+maintained; the index itself is subject to the same locality effects
+measured here. Multi-version garbage collection (Vacuum)
+reclaims dead tuples produced by updates/deletes; writes are
+append-only, so the primary-key distribution affects index size and
+lookup latency, not base-row contention. Under MVCC, the secondary
+index carries tuple visibility via \texttt{TID} and a transaction ID,
+adding roughly 10--15 bytes per pointer---a constant overhead that does
+not alter the relative comparisons above.
+} Time-ordered keys keep the index compact and sequential, improving
+both insert throughput and space efficiency. For GenoID, the MVCC
+complication (visibility tuples, Vacuum pile-up) shifts the absolute
+costs upward but preserves the ordering: embedded partitions stay
+contiguous in the index, enabling range scans and partition pruning
+without a separate index maintenance path. Read-write balance tips toward
+writes under heavy update traffic due to Vacuum pressure, where the
+embedded form's zero-secondary-index advantage compounds.
+
+These are structural facts---they hold for any engine that stores a
+primary key as a B+\!tree leaf, whether clustered (InnoDB,
+SQLite's \texttt{WITHOUT~ROWID}) or as a secondary structure
+(PostgreSQL).
 
 \subsection{Sharded databases}
 Listing~\ref{lst:dbkey} embeds the owning shard directly in the key.
@@ -360,7 +418,7 @@ Rejection bets that a lucky whole-UUID draw arrives before an unlucky run; repai
 
 \noindent\emph{In plain terms: rejection sampling needs $\sim$69 billion tries for six constrained fields; GenoID succeeds on the first try. The exponential gap is against the general alternative, not against a per-layout hand-coded one.}
 
-\textbf{Setup.} For $k$ constrained fields of bit-lengths $\ell_i$, each with $a_i$ valid values, rejection sampling succeeds with probability $\prod_i a_i / 2^{\ell_i}$, so the expected number of draws is $\prod_i 2^{\ell_i}/a_i$. Taking a representative tight constraint ($a_i=4$ admissible values in an $\ell_i=8$ bit field, a density of $2^{-6}$) gives $64^k$ expected draws ($6.9\times10^{10}$ for $k=6$), with a geometric tail and therefore no upper bound on any single run. The \texttt{shard} field of Listing~\ref{lst:dbkey} sits in this regime at $5/256$. The degenerate case $a_i=1$ is excluded: a field with a single admissible value is a constant and requires no sampling. \texttt{repairConstraints} (Algorithm~\ref{alg:repair}) is linear in $k$: it iterates the layout once, each branch is $O(1): an index-modulo lookup, an affine modulo, or a counter increment, so the pass has worst-case $O(k)$ cost. Both $|\text{allowed}_i|$ and $\ell_i$ are fixed by the layout declaration; treating them as constants yields $O(k)$. The function never redraws and never loops, eliminating rejection sampling's unbounded tail risk.
+\textbf{Setup.} For $k$ constrained fields of bit-lengths $\ell_i$, each with $a_i$ valid values, rejection sampling succeeds with probability $\prod_i a_i / 2^{\ell_i}$, so the expected number of draws is $\prod_i 2^{\ell_i}/a_i$. Taking a representative tight constraint ($a_i=4$ admissible values in an $\ell_i=8$ bit field, a density of $2^{-6}$) gives $64^k$ expected draws ($6.9\times10^{10}$ for $k=6$), with a geometric tail and therefore no upper bound on any single run. The \texttt{shard} field of Listing~\ref{lst:dbkey} sits in this regime at $5/256$. The degenerate case $a_i=1$ is excluded: a field with a single admissible value is a constant and requires no sampling. \texttt{repairConstraints} (Algorithm~\ref{alg:repair}) is linear in $k$: it iterates the layout once, each branch is $O(1)$: an index-modulo lookup, an affine modulo, or a counter increment, so the pass has worst-case $O(k)$ cost. Both $|\text{allowed}_i|$ and $\ell_i$ are fixed by the layout declaration; treating them as constants yields $O(k)$. The function never redraws and never loops, eliminating rejection sampling's unbounded tail risk.
 
 \subsection{Entropy preservation}
 \label{sec:entropy}
@@ -378,8 +436,7 @@ Let $m=|\textit{allowed}|$ for an $\ell$-bit field. Index-modulo repair partitio
 
 Repair is idempotent: a value already in $A$ is left unchanged, and only inadmissible values are mapped. For a contiguous admissible set the guard is distribution-neutral, each admissible value gaining the draw it maps to itself and losing the one that would otherwise have landed on it, a permutation cycle summing to zero, so the $m/2^\ell$ bound is unaffected. For a non-contiguous set the guard displaces at most $m$ draws, leaving the bound $O(m/2^\ell)$.
 
-Nearest-value repair admits no such bound: its fibres are Hamming balls whose sizes depend on the bit patterns of the admissible set rather than its cardinality. Under 	exttt{dbkey} all five admissible values lie below $2^3$, so the upper five bits cannot affect the arg-min and the induced shard distribution is $(25,25,25,12.5,12.5)\%, a $2	imes$ load imbalance, with $37.5\%$ of draws landing on an arg-min tie whose resolution is implementation-defined. Index-modulo eliminates both. We therefore treat field width as a declaration-time obligation: the layout validator warns when $m 
-mid 2^\ell$ and reports the residual bound.
+Nearest-value repair admits no such bound: its fibres are Hamming balls whose sizes depend on the bit patterns of the admissible set rather than its cardinality. Under \texttt{dbkey} all five admissible values lie below $2^3$, so the upper five bits cannot affect the arg-min and the induced shard distribution is $(25,25,25,12.5,12.5)\%$, a $2\times$ load imbalance, with $37.5\%$ of draws landing on an arg-min tie whose resolution is implementation-defined. Index-modulo eliminates both. We therefore treat field width as a declaration-time obligation: the layout validator warns when $m \nmid 2^\ell$ and reports the residual bound.
 
 The \textsc{range} branch clamps rather than folds, and is therefore not uniformity-preserving: draws outside $[\textit{min},\textit{max}]$ accumulate at the endpoints. Neither layout evaluated here declares a range constraint; a layout that does should size the field so that out-of-range draws are rare, or declare an admissible set instead.
 
@@ -441,7 +498,8 @@ warmed, per-identifier cost is $\approx\!900$\,ns per constrained field
 across $k \in \{1,2,3,4,6\}$, linear in $k$ to within $\pm15\%$.
 
 Rejection's expected trial count follows $d^{-k}$ and becomes infeasible
-to measure beyond $k=3$ at low density. At $d=1/64$, the representative constraint of Section~ef{sec:repair-complexity}, the sweep reproduces $64^k$ exactly for $k=3,4,6$
+to measure beyond $k=3$ at low density. At $d=1/64$, the representative constraint of Section~
+ef{sec:repair-complexity}, the sweep reproduces $64^k$ exactly for $k=3,4,6$
 sweep reproduces $64^k$ exactly for $k=3,4,6$
 ($2.62\times10^{5}$, $1.68\times10^{7}$, $6.87\times10^{10}$).
 
@@ -457,7 +515,7 @@ on the draw, which matters when constraints are tight, when fields are
 numerous, or when unbounded tail latency is unacceptable.
 
 \subsection{Collision and uniformity}
-Per-field uniformity is measured directly rather than inferred from whole-UUID batteries, since an 8-bit field's deviation is invisible inside 122 bits under NIST monobit. Over $10^8$ 	exttt{dbkey} draws the observed shard frequencies match the closed-form prediction of Section~ef{sec:uniformity}, four classes at $51/256$ and one at $52/256$, to within $\pm0.01$ percentage points, and the 	exttt{multitenant} tenant and region fields are uniform to the same tolerance, as predicted by $m \mid 2^{12}$. We report agreement with the predicted distribution rather than a goodness-of-fit test against uniformity: at $n=10^8$ the analytically expected $1.95\%$ deviation is itself highly significant, so a chi-square against uniform would reject by design. As a negative control, 	exttt{Math.random} (Xorshift128+, insecure) passes the collision test in all nine CI environments under the same protocol, confirming that the 1M-draw collision gate has no discriminating power against a low-entropy source; only the analytical uniformity bound and NIST battery separate quality from speed.
+Per-field uniformity is measured directly rather than inferred from whole-UUID batteries, since an 8-bit field's deviation is invisible inside 122 bits under NIST monobit. Over $10^8$ \texttt{dbkey} draws the observed shard frequencies match the closed-form prediction of Section~\ref{sec:uniformity}, four classes at $51/256$ and one at $52/256$, to within $\pm0.01$ percentage points, and the \texttt{multitenant} tenant and region fields are uniform to the same tolerance, as predicted by $m \mid 2^{12}$. We report agreement with the predicted distribution rather than a goodness-of-fit test against uniformity: at $n=10^8$ the analytically expected $1.95\%$ deviation is itself highly significant, so a chi-square against uniform would reject by design. As a negative control, \texttt{Math.random} (Xorshift128+, insecure) passes the collision test in all nine CI environments under the same protocol, confirming that the 1M-draw collision gate has no discriminating power against a low-entropy source; only the analytical uniformity bound and NIST battery separate quality from speed.
 
 \subsection{NIST SP 800-22 and dieharder}
 \label{sec:nist}
@@ -541,7 +599,7 @@ Concurrent generation shows 0 cross-worker collisions. A SQLite B-tree index ben
 
 To turn the portability claim into a checkable artifact, the composition core was reimplemented in Rust and verified against golden vectors from the TypeScript reference. Every repair branch is total and tie-free (index-modulo has no ambiguous outputs), so byte-identity across languages is a constructive property of the algorithm rather than an accident of hash-map iteration order. A xorshift128+ PRNG with fixed seed and fixed \texttt{Date.now()} produce 1000 UUIDs per layout across all three structured layouts, then diffed byte-for-byte against committed golden files, achieving zero mismatches across $3\times1000=3000$ UUIDs.
 
-To establish that the vectors discriminate rather than merely agree, we re-ran the check against deliberately incorrect repair. Substituting nearest-value selection for index-modulo fails \texttt{dbkey} (1000/1000) and \texttt{multitenant} (986/1000), while leaving \texttt{eventsourcing, which declares no admissible-set constraint, untouched. Substituting a saturating counter for the tick-keyed one fails \texttt{dbkey} (1000/1000) and \texttt{eventsourcing} (999/1000) and leaves \texttt{multitenant}, which declares no counter, untouched. Each layout is sensitive to exactly the constraint kinds it declares. The residual agreements (14 and 1 line respectively) are draws on which both algorithms coincide.
+To establish that the vectors discriminate rather than merely agree, we re-ran the check against deliberately incorrect repair. Substituting nearest-value selection for index-modulo fails \texttt{dbkey} (1000/1000) and \texttt{multitenant} (986/1000), while leaving \texttt{eventsourcing}, which declares no admissible-set constraint, untouched. Substituting a saturating counter for the tick-keyed one fails \texttt{dbkey} (1000/1000) and \texttt{eventsourcing} (999/1000) and leaves \texttt{multitenant}, which declares no counter, untouched. Each layout is sensitive to exactly the constraint kinds it declares. The residual agreements (14 and 1 line respectively) are draws on which both algorithms coincide.
 
 The vectors were regenerated after the repair and counter algorithms changed during development; on re-verification the prior Rust port had diverged on both, a divergence a prose specification would not have surfaced. The vectors are checked into \texttt{golden/} and verified in CI on every push, serving as an executable specification for any future port.
 
