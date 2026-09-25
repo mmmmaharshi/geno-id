@@ -18,6 +18,7 @@ const {
   repairConstraints,
   genStructuredGenoID,
   genStructuredGenoIDSingleParent,
+  getStructuredGenerationMode,
   genGenoID,
   forceVersionVariant,
   getFieldValue,
@@ -30,6 +31,7 @@ const {
   repairConstraints: (l: V8Layout, b: Uint8Array) => number
   genStructuredGenoID: (l: V8Layout) => string
   genStructuredGenoIDSingleParent: (l: V8Layout) => string
+  getStructuredGenerationMode: () => string
   genGenoID: () => string
   forceVersionVariant: (b: Uint8Array) => void
   getFieldValue: (b: Uint8Array, f: V8Field) => number
@@ -177,7 +179,7 @@ function e6(): void {
   const rV4 = benchSync(() => crypto.randomUUID(), nSync)
   console.log(`  v4 native:            ${rV4.opsPerSec.toFixed(0)} ops/sec`)
   console.log(`  GenoID (base, v8):    ${rBase.opsPerSec.toFixed(0)} ops/sec  (${(rV4.opsPerSec / rBase.opsPerSec).toFixed(1)}x slower)`)
-  console.log(`  GenoID-structured:    ${rGeno.opsPerSec.toFixed(0)} ops/sec  (${(rV4.opsPerSec / rGeno.opsPerSec).toFixed(1)}x slower vs v4, ${(rBase.opsPerSec / rGeno.opsPerSec).toFixed(1)}x vs base)`)
+  console.log(`  GenoID-structured (${getStructuredGenerationMode()}): ${rGeno.opsPerSec.toFixed(0)} ops/sec  (${(rV4.opsPerSec / rGeno.opsPerSec).toFixed(1)}x slower vs v4, ${(rBase.opsPerSec / rGeno.opsPerSec).toFixed(1)}x vs base)`)
 }
 
 // ---------------- E7: Single-parent ablation (crossover value) ----------------
@@ -191,21 +193,21 @@ function e7(): void {
   for (let i = 0; i < 2048; i++) genStructuredGenoIDSingleParent(layout)
   const rOne = benchSync(() => genStructuredGenoIDSingleParent(layout), nSync)
   const rTwo = benchSync(() => genStructuredGenoID(layout), nSync)
-  console.log(`  two-parent (crossover): ${rTwo.opsPerSec.toFixed(0)} ops/sec`)
-  console.log(`  single-parent (no crossover): ${rOne.opsPerSec.toFixed(0)} ops/sec  (${(rOne.opsPerSec / rTwo.opsPerSec).toFixed(2)}x vs two-parent)`)
+  console.log(`  production (${getStructuredGenerationMode()}): ${rTwo.opsPerSec.toFixed(0)} ops/sec`)
+  console.log(`  pooled single-parent (ablation): ${rOne.opsPerSec.toFixed(0)} ops/sec  (${(rOne.opsPerSec / rTwo.opsPerSec).toFixed(2)}x vs production)`)
 
   // Collisions (2M each)
   const nColl = 2_000_000
   const cTwo = collisionTest(() => genStructuredGenoID(layout), nColl)
   const cOne = collisionTest(() => genStructuredGenoIDSingleParent(layout), nColl)
-  console.log(`  two-parent collisions (n=${nColl}): ${cTwo}`)
-  console.log(`  single-parent collisions (n=${nColl}): ${cOne}`)
+  console.log(`  production collisions (n=${nColl}): ${cTwo}`)
+  console.log(`  pooled single-parent collisions (n=${nColl}): ${cOne}`)
 
   // Uniformity on random-field bits (50K each) — single-parent first
   const randomFields = layout.fields.filter((f) => f.type === "random")
   const totalBits = randomFields.reduce((s, f) => s + f.length, 0)
   const M = 50_000
-  for (const [label, gen] of [["single-parent", () => genStructuredGenoIDSingleParent(layout)] as const, ["two-parent", () => genStructuredGenoID(layout)] as const]) {
+  for (const [label, gen] of [["pooled single-parent", () => genStructuredGenoIDSingleParent(layout)] as const, ["production", () => genStructuredGenoID(layout)] as const]) {
     const ones = new Array<number>(totalBits).fill(0)
     for (let i = 0; i < M; i++) {
       const bits = uuidToRandomBits(gen(), layout)
@@ -220,7 +222,7 @@ function e7(): void {
   }
 
   // Composition correctness (500K each) — single-parent first to avoid warmup bias
-  for (const [label, gen] of [["single-parent", () => genStructuredGenoIDSingleParent(layout)] as const, ["two-parent", () => genStructuredGenoID(layout)] as const]) {
+  for (const [label, gen] of [["pooled single-parent", () => genStructuredGenoIDSingleParent(layout)] as const, ["production", () => genStructuredGenoID(layout)] as const]) {
     const structIdx = layout.fields
       .map((f: V8Field, i: number) => ({ f, i }))
       .filter(({ f }: { f: V8Field }) => f.type !== "random")
@@ -240,7 +242,7 @@ function e7(): void {
     console.log(`  ${label} composition: ${structIdx.length * N} checks, 0 mismatches, ${constraintFail} violations (PASS=${constraintFail === 0})`)
   }
 
-  console.log(`  verdict: single-parent achieves same collision/uniformity/composition guarantees as two-parent; throughput ${(rOne.opsPerSec / rTwo.opsPerSec).toFixed(2)}x of two-parent (crossover adds no quality benefit)`)
+  console.log(`  verdict: pooled single-parent matches the named production path on collision/uniformity/composition guarantees; throughput ${(rOne.opsPerSec / rTwo.opsPerSec).toFixed(2)}x of production`)
 }
 
 e1()

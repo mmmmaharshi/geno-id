@@ -12,6 +12,8 @@ import {
   uuidToBytes,
   compileLayout,
   compileDatabaseLayout,
+  getStructuredGenerationMode,
+  configureRandom,
   DBKEY_LAYOUT,
   MULTITENANT_LAYOUT,
   EVENTSOURCING_LAYOUT,
@@ -392,6 +394,57 @@ test("compileDatabaseLayout requires workload weights", () => {
       return true
     },
   )
+})
+
+test("getStructuredGenerationMode names compiled and injected paths", () => {
+  assert.equal(getStructuredGenerationMode(), "compiled-direct-v8")
+  configureRandom((buf) => buf.fill(7))
+  try {
+    assert.equal(getStructuredGenerationMode(), "single-parent-pooled")
+  } finally {
+    configureRandom(null)
+  }
+  assert.equal(getStructuredGenerationMode(), "compiled-direct-v8")
+})
+
+test("named generation modes preserve public field semantics", () => {
+  const result = compileDatabaseLayout({
+    schema: {
+      name: "modes",
+      fields: [
+        { name: "marker", length: 8, type: "fixed", value: 5 },
+        { name: "shard", length: 8, type: "shard", constraint: { allowed: [1, 2, 3] } },
+        { name: "counter", length: 16, type: "counter", constraint: { monotonic: true } },
+        { name: "trace", length: 40, type: "process" },
+      ],
+    },
+    workload: {
+      readWeight: 1,
+      writeWeight: 1,
+      fields: [
+        { name: "marker", role: "lookup" },
+        { name: "shard", role: "partition" },
+        { name: "counter", role: "lookup" },
+        { name: "trace", role: "cluster" },
+      ],
+    },
+  })
+  const checkMode = (injected: boolean): void => {
+    configureRandom(injected ? (buf) => buf.fill(7) : null)
+    try {
+      for (let index = 0; index < 32; index++) {
+        const values = readStructured(genStructuredGenoID(result), result.layout)
+        assert.equal(values.marker, 5)
+        assert.ok([1, 2, 3].includes(values.shard))
+        assert.ok(Number.isInteger(values.counter))
+        assert.ok(Number.isInteger(values.trace))
+      }
+    } finally {
+      configureRandom(null)
+    }
+  }
+  checkMode(false)
+  checkMode(true)
 })
 
 test("DBKEY_LAYOUT round-trips through genStructuredGenoID and readStructured", () => {

@@ -369,6 +369,8 @@ export interface RepairPolicy {
   fixed: "deterministic"
 }
 
+export type StructuredGenerationMode = "compiled-direct-v8" | "single-parent-pooled"
+
 export interface GenerationPlan {
   name: "compiled-direct-v8"
   entropySource: "web-crypto"
@@ -1186,10 +1188,14 @@ const _compiledGenCache = new WeakMap<V8Layout, () => string>()
  * faster than the generic pooled path). Falls back to single-parent pool
  * if the runtime blocks `new Function` (CSP).
  */
+export function getStructuredGenerationMode(): StructuredGenerationMode {
+  return _fillRandom === _webCryptoFill && _hasWebCrypto ? "compiled-direct-v8" : "single-parent-pooled"
+}
+
 export function genStructuredGenoID(input: V8Layout | DatabaseLayoutCompilation): string {
   const layout = "layout" in input ? input.layout : input
   ensureValidated(layout)
-  if (_fillRandom === _webCryptoFill && _hasWebCrypto) {
+  if (getStructuredGenerationMode() === "compiled-direct-v8") {
     const fn = _compiledGenCache.get(layout)
     if (fn) return fn()
     try {
