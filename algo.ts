@@ -307,41 +307,160 @@ export interface V8Layout {
   fields: V8Field[]
 }
 
+export type WorkloadFieldRole = "partition" | "cluster" | "lookup"
+
+export interface WorkloadFieldProfile {
+  name: string
+  role: WorkloadFieldRole
+  selectivity?: number
+  skew?: number
+  readWeight?: number
+  writeWeight?: number
+}
+
+export interface DatabaseWorkloadProfile {
+  readWeight: number
+  writeWeight: number
+  fields: WorkloadFieldProfile[]
+}
+
+export type LayoutSchema = V8Layout
+
+export interface LayoutCompilerInput {
+  schema: LayoutSchema
+  workload: DatabaseWorkloadProfile
+}
+
+export type LayoutCompilerErrorCode =
+  | "invalid-schema"
+  | "invalid-workload"
+  | "unknown-workload-field"
+  | "duplicate-workload-field"
+
+export class LayoutCompilerError extends Error {
+  readonly code: LayoutCompilerErrorCode
+  readonly field: string | undefined
+
+  constructor(code: LayoutCompilerErrorCode, message: string, field?: string) {
+    super(message)
+    this.name = "LayoutCompilerError"
+    this.code = code
+    this.field = field
+  }
+}
+
+export type ConstraintKind = "allowed-set" | "range" | "monotonic" | "fixed"
+
+export interface FieldSemantics {
+  type: FieldType
+  constraints: ConstraintKind[]
+}
+
+export interface RepairPolicy {
+  name: "canonical-v1"
+  allowedSet: "index-modulo"
+  range: "clamp"
+  monotonic: "stateful"
+  fixed: "deterministic"
+}
+
+export interface GenerationPlan {
+  name: "compiled-direct-v8"
+  entropySource: "web-crypto"
+  poolMode: "direct"
+  repairMode: "canonical"
+  fieldSemantics: Record<string, FieldSemantics>
+}
+
+export interface LayoutCostReport {
+  objective: "hard-constraints-first"
+  structuredBits: number
+  randomBits: number
+  constrainedFields: number
+  localityFields: number
+  lookupFields: number
+  readWeight: number
+  writeWeight: number
+}
+
+export interface DatabaseLayoutCompilation {
+  layout: V8Layout
+  repairPolicy: RepairPolicy
+  generationPlan: GenerationPlan
+  costReport: LayoutCostReport
+}
+
 const MAX_FIELD_BITS = 48
+const FIELD_TYPES = new Set<FieldType>([
+  "timestamp-ms",
+  "timestamp-us",
+  "counter",
+  "shard",
+  "node",
+  "process",
+  "fixed",
+  "random",
+])
 const NIBBLE_BITS = new Set([48, 49, 50, 51, 64, 65])
 
-export function validateLayout(layout: V8Layout): void {
+interface LayoutValidationFailure {
+  message: string
+  field: string
+}
+
+function validateLayoutStructure(
+  fields: readonly V8Field[],
+  layoutName: string,
+  requireComplete: boolean,
+): LayoutValidationFailure | undefined {
   const covered = new Array<boolean>(128).fill(false)
-  for (const f of layout.fields) {
-    if (f.start < 0 || f.start + f.length > 128) {
-      throw new Error(`layout ${layout.name}: field ${f.name} out of range`)
+  const names = new Set<string>()
+  for (const field of fields) {
+    if (names.has(field.name)) {
+      return { message: `layout ${layoutName}: field ${field.name} is declared more than once`, field: field.name }
     }
-    if (f.length <= 0) {
-      throw new Error(`layout ${layout.name}: field ${f.name} length<=0`)
+    names.add(field.name)
+    if (!Number.isInteger(field.start) || !Number.isInteger(field.length) || field.start < 0) {
+      return { message: `layout ${layoutName}: field ${field.name} has invalid bounds`, field: field.name }
     }
-    if (f.type !== "random" && f.type !== "fixed" && f.length > MAX_FIELD_BITS) {
-      throw new Error(
-        `layout ${layout.name}: structured field ${f.name} length ${f.length} > ${MAX_FIELD_BITS}`,
-      )
+    if (field.length <= 0) {
+      return { message: `layout ${layoutName}: field ${field.name} length<=0`, field: field.name }
     }
-    for (let i = 0; i < f.length; i++) {
-      const bit = f.start + i
-      // The version nibble (bits 48-51) and variant (bits 64-65) are
-      // reserved by RFC 9562 and auto-forced at emit — fields must not
-      // overlap them, or composition would corrupt the v8 marker.
+    if (field.start + field.length > 128) {
+      return { message: `layout ${layoutName}: field ${field.name} out of range`, field: field.name }
+    }
+    if (field.type !== "random" && field.length > MAX_FIELD_BITS) {
+      return {
+        message: `layout ${layoutName}: structured field ${field.name} length ${field.length} > ${MAX_FIELD_BITS}`,
+        field: field.name,
+      }
+    }
+    for (let index = 0; index < field.length; index++) {
+      const bit = field.start + index
       if (NIBBLE_BITS.has(bit)) {
-        throw new Error(
-          `layout ${layout.name}: field ${f.name} overlaps reserved v8 nibble bit ${bit}`,
-        )
+        return {
+          message: `layout ${layoutName}: field ${field.name} overlaps reserved v8 nibble bit ${bit}`,
+          field: field.name,
+        }
+      }
+      if (covered[bit]) {
+        return { message: `layout ${layoutName}: field ${field.name} overlaps another field`, field: field.name }
       }
       covered[bit] = true
     }
   }
-  for (let i = 0; i < 128; i++) {
-    if (!covered[i] && !NIBBLE_BITS.has(i)) {
-      throw new Error(`layout ${layout.name}: bit ${i} not covered by any field`)
+  if (!requireComplete) return undefined
+  for (let index = 0; index < 128; index++) {
+    if (!covered[index] && !NIBBLE_BITS.has(index)) {
+      return { message: `layout ${layoutName}: bit ${index} not covered by any field`, field: `bit.${index}` }
     }
   }
+  return undefined
+}
+
+export function validateLayout(layout: V8Layout): void {
+  const failure = validateLayoutStructure(layout.fields, layout.name, true)
+  if (failure) throw new Error(failure.message)
 }
 
 export function getFieldValue(bytes: Uint8Array, f: V8Field): bigint {
@@ -539,6 +658,7 @@ export function completeLayout(name: string, fields: V8Field[]): V8Layout {
   }
   for (const i of NIBBLE_BITS) covered[i] = true
   const out: V8Field[] = [...fields]
+  const usedNames = new Set(fields.map((field) => field.name))
   let i = 0
   while (i < 128) {
     if (covered[i]) {
@@ -547,10 +667,219 @@ export function completeLayout(name: string, fields: V8Field[]): V8Layout {
     }
     let j = i
     while (j < 128 && !covered[j]) j++
-    out.push({ name: `rand_${i}`, start: i, length: j - i, type: "random" })
+    let generatedName = `rand_${i}`
+    let suffix = 0
+    while (usedNames.has(generatedName)) generatedName = `rand_${i}_${suffix++}`
+    usedNames.add(generatedName)
+    out.push({ name: generatedName, start: i, length: j - i, type: "random" })
     i = j
   }
   return { name, fields: out }
+}
+
+function validateSchema(schema: LayoutSchema): void {
+  if (typeof schema.name !== "string" || schema.name.trim() === "") {
+    throw new LayoutCompilerError("invalid-schema", "schema name must be a non-empty string", "schema.name")
+  }
+  const fieldPaths = new Map<string, string>()
+  for (const [index, field] of schema.fields.entries()) {
+    const path = `schema.fields[${index}]`
+    if (!field || typeof field !== "object") {
+      throw new LayoutCompilerError("invalid-schema", `${path} must be an object`, path)
+    }
+    if (typeof field.name !== "string" || field.name.length === 0) {
+      throw new LayoutCompilerError("invalid-schema", `${path}.name must be non-empty`, `${path}.name`)
+    }
+    if (!fieldPaths.has(field.name)) fieldPaths.set(field.name, path)
+    if (!FIELD_TYPES.has(field.type)) {
+      throw new LayoutCompilerError("invalid-schema", `${path}.type is unsupported`, `${path}.type`)
+    }
+  }
+  const structuralFailure = validateLayoutStructure(schema.fields, schema.name, false)
+  if (structuralFailure) {
+    throw new LayoutCompilerError(
+      "invalid-schema",
+      structuralFailure.message,
+      fieldPaths.get(structuralFailure.field) ?? structuralFailure.field,
+    )
+  }
+  for (const [index, field] of schema.fields.entries()) {
+    const path = `schema.fields[${index}]`
+    const constraint = field.constraint as V8FieldConstraint | null | undefined
+    const domainMax = 2 ** field.length - 1
+    if (constraint !== undefined && (constraint === null || typeof constraint !== "object")) {
+      throw new LayoutCompilerError("invalid-schema", `${path}.constraint must be an object`, `${path}.constraint`)
+    }
+    if (constraint !== undefined && constraint !== null) {
+      if (constraint.allowed !== undefined && !Array.isArray(constraint.allowed)) {
+        throw new LayoutCompilerError("invalid-schema", `${path}.constraint.allowed must be an array`, `${path}.constraint.allowed`)
+      }
+      if (
+        constraint.allowed !== undefined &&
+        (constraint.allowed.length === 0 || constraint.allowed.some((value) => !Number.isInteger(value) || value < 0 || value > domainMax))
+      ) {
+        throw new LayoutCompilerError("invalid-schema", `${path}.constraint.allowed must contain values in the field domain`, `${path}.constraint.allowed`)
+      }
+      if (constraint.min !== undefined && (!Number.isInteger(constraint.min) || constraint.min < 0 || constraint.min > domainMax)) {
+        throw new LayoutCompilerError("invalid-schema", `${path}.constraint.min must be in the field domain`, `${path}.constraint.min`)
+      }
+      if (constraint.max !== undefined && (!Number.isInteger(constraint.max) || constraint.max < 0 || constraint.max > domainMax)) {
+        throw new LayoutCompilerError("invalid-schema", `${path}.constraint.max must be in the field domain`, `${path}.constraint.max`)
+      }
+      if (constraint.min !== undefined && constraint.max !== undefined && constraint.min > constraint.max) {
+        throw new LayoutCompilerError("invalid-schema", `${path}.constraint min must not exceed max`, path)
+      }
+      if (constraint.monotonic !== undefined && typeof constraint.monotonic !== "boolean") {
+        throw new LayoutCompilerError("invalid-schema", `${path}.constraint.monotonic must be boolean`, `${path}.constraint.monotonic`)
+      }
+    }
+    if (field.type === "fixed" && (!Number.isInteger(field.value) || (field.value ?? -1) < 0 || (field.value ?? -1) > domainMax)) {
+      throw new LayoutCompilerError("invalid-schema", `${path}.value must be in the field domain`, `${path}.value`)
+    }
+  }
+}
+
+function assertNonnegative(
+  value: number | undefined,
+  code: LayoutCompilerErrorCode,
+  field: string,
+): void {
+  if (value !== undefined && (!Number.isFinite(value) || value < 0)) {
+    throw new LayoutCompilerError(code, `${field} must be a finite non-negative number`, field)
+  }
+}
+
+function constraintKinds(field: V8Field): ConstraintKind[] {
+  const constraints: ConstraintKind[] = []
+  if (field.constraint?.allowed !== undefined) constraints.push("allowed-set")
+  if (field.constraint?.min !== undefined || field.constraint?.max !== undefined) {
+    constraints.push("range")
+  }
+  if (field.constraint?.monotonic === true) constraints.push("monotonic")
+  if (field.type === "fixed") constraints.push("fixed")
+  return constraints
+}
+
+export function compileDatabaseLayout(input: LayoutCompilerInput): DatabaseLayoutCompilation {
+  if (!input || typeof input !== "object") {
+    throw new LayoutCompilerError("invalid-schema", "compiler input must be an object")
+  }
+  const { schema, workload } = input
+  if (!schema || typeof schema.name !== "string" || !Array.isArray(schema.fields)) {
+    throw new LayoutCompilerError("invalid-schema", "schema must contain a name and fields array")
+  }
+  validateSchema(schema)
+  if (!workload || !Array.isArray(workload.fields) || workload.fields.length === 0) {
+    throw new LayoutCompilerError("invalid-workload", "workload must contain at least one field")
+  }
+  if (typeof workload.readWeight !== "number") {
+    throw new LayoutCompilerError("invalid-workload", "workload.readWeight must be a number", "workload.readWeight")
+  }
+  if (typeof workload.writeWeight !== "number") {
+    throw new LayoutCompilerError("invalid-workload", "workload.writeWeight must be a number", "workload.writeWeight")
+  }
+  assertNonnegative(workload.readWeight, "invalid-workload", "workload.readWeight")
+  assertNonnegative(workload.writeWeight, "invalid-workload", "workload.writeWeight")
+  if (workload.readWeight + workload.writeWeight === 0) {
+    throw new LayoutCompilerError(
+      "invalid-workload",
+      "workload must have a positive readWeight or writeWeight",
+    )
+  }
+
+  const schemaFields = new Set(schema.fields.map((field) => field.name))
+  const seenWorkloadFields = new Set<string>()
+  for (const profile of workload.fields) {
+    if (!profile || typeof profile.name !== "string" || profile.name.length === 0) {
+      throw new LayoutCompilerError("invalid-workload", "workload field name must be non-empty")
+    }
+    if (seenWorkloadFields.has(profile.name)) {
+      throw new LayoutCompilerError(
+        "duplicate-workload-field",
+        `workload field ${profile.name} is declared more than once`,
+        profile.name,
+      )
+    }
+    seenWorkloadFields.add(profile.name)
+    if (!schemaFields.has(profile.name)) {
+      throw new LayoutCompilerError(
+        "unknown-workload-field",
+        `workload field ${profile.name} is not present in the schema`,
+        profile.name,
+      )
+    }
+    if (
+      profile.role !== "partition" &&
+      profile.role !== "cluster" &&
+      profile.role !== "lookup"
+    ) {
+      throw new LayoutCompilerError(
+        "invalid-workload",
+        `workload field ${profile.name} has an unsupported role`,
+        profile.name,
+      )
+    }
+    if (
+      profile.selectivity !== undefined &&
+      (!Number.isFinite(profile.selectivity) || profile.selectivity < 0 || profile.selectivity > 1)
+    ) {
+      throw new LayoutCompilerError(
+        "invalid-workload",
+        `workload field ${profile.name}.selectivity must be between 0 and 1`,
+        profile.name,
+      )
+    }
+    assertNonnegative(profile.skew, "invalid-workload", `${profile.name}.skew`)
+    assertNonnegative(profile.readWeight, "invalid-workload", `${profile.name}.readWeight`)
+    assertNonnegative(profile.writeWeight, "invalid-workload", `${profile.name}.writeWeight`)
+  }
+
+  const layout = completeLayout(schema.name, schema.fields)
+  const layoutFailure = validateLayoutStructure(layout.fields, layout.name, true)
+  if (layoutFailure) {
+    throw new LayoutCompilerError("invalid-schema", layoutFailure.message, layoutFailure.field)
+  }
+
+  const fieldSemantics: Record<string, FieldSemantics> = {}
+  const structuredBits = new Set<number>()
+  for (const field of layout.fields) {
+    fieldSemantics[field.name] = { type: field.type, constraints: constraintKinds(field) }
+    if (field.type !== "random") {
+      for (let bit = field.start; bit < field.start + field.length; bit++) {
+        structuredBits.add(bit)
+      }
+    }
+  }
+
+  return {
+    layout,
+    repairPolicy: {
+      name: "canonical-v1",
+      allowedSet: "index-modulo",
+      range: "clamp",
+      monotonic: "stateful",
+      fixed: "deterministic",
+    },
+    generationPlan: {
+      name: "compiled-direct-v8",
+      entropySource: "web-crypto",
+      poolMode: "direct",
+      repairMode: "canonical",
+      fieldSemantics,
+    },
+    costReport: {
+      objective: "hard-constraints-first",
+      structuredBits: structuredBits.size,
+      randomBits: 128 - NIBBLE_BITS.size - structuredBits.size,
+      constrainedFields: layout.fields.filter((field) => constraintKinds(field).length > 0).length,
+      localityFields: workload.fields.filter(
+        (field) => field.role === "partition" || field.role === "cluster",
+      ).length,
+      lookupFields: workload.fields.filter((field) => field.role === "lookup").length,
+      readWeight: workload.readWeight,
+      writeWeight: workload.writeWeight,
+    },
+  }
 }
 
 const _csprngBuf = new Uint8Array(256)
@@ -782,7 +1111,8 @@ const _compiledGenCache = new WeakMap<V8Layout, () => string>()
  * faster than the generic pooled path). Falls back to single-parent pool
  * if the runtime blocks `new Function` (CSP).
  */
-export function genStructuredGenoID(layout: V8Layout): string {
+export function genStructuredGenoID(input: V8Layout | DatabaseLayoutCompilation): string {
+  const layout = "layout" in input ? input.layout : input
   ensureValidated(layout)
   if (_fillRandom === _webCryptoFill && _hasWebCrypto) {
     const fn = _compiledGenCache.get(layout)

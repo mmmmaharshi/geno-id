@@ -11,6 +11,7 @@ import {
   toUuidString,
   uuidToBytes,
   compileLayout,
+  compileDatabaseLayout,
   DBKEY_LAYOUT,
   MULTITENANT_LAYOUT,
   EVENTSOURCING_LAYOUT,
@@ -22,6 +23,7 @@ import type {
   FieldConstraint,
   FieldType,
   CompiledLayout,
+  LayoutCompilerInput,
 } from "../dist/index.js"
 
 const __dirname = import.meta.dirname
@@ -132,6 +134,173 @@ test("compileLayout produces a CompiledLayout shape and its source round-trips t
     const got = readStructured(uuid, DBKEY_LAYOUT)
     assert.ok("shard" in got && "counter" in got && "timestamp" in got)
   }
+})
+
+test("compileDatabaseLayout returns a named, deterministic contract", () => {
+  const input: LayoutCompilerInput = {
+    schema: {
+      name: "dbkey",
+      fields: [
+        { name: "timestamp", start: 0, length: 48, type: "timestamp-ms" },
+        {
+          name: "shard",
+          start: 52,
+          length: 8,
+          type: "shard",
+          constraint: { allowed: [1, 2, 3, 4, 5] },
+        },
+        { name: "counter", start: 66, length: 16, type: "counter", constraint: { monotonic: true } },
+      ],
+    },
+    workload: {
+      readWeight: 0.25,
+      writeWeight: 0.75,
+      fields: [
+        { name: "shard", role: "partition", selectivity: 0.8 },
+        { name: "counter", role: "lookup", readWeight: 1, writeWeight: 1 },
+      ],
+    },
+  }
+  const originalFields = JSON.stringify(input.schema.fields)
+  const result = compileDatabaseLayout(input)
+  const repeated = compileDatabaseLayout(input)
+
+  assert.deepEqual(repeated, result)
+
+  assert.equal(result.layout.name, "dbkey")
+  assert.equal(result.generationPlan.name, "compiled-direct-v8")
+  assert.equal(result.generationPlan.entropySource, "web-crypto")
+  assert.equal(result.generationPlan.poolMode, "direct")
+  assert.equal(result.generationPlan.repairMode, "canonical")
+  assert.deepEqual(result.repairPolicy, {
+    name: "canonical-v1",
+    allowedSet: "index-modulo",
+    range: "clamp",
+    monotonic: "stateful",
+    fixed: "deterministic",
+  })
+  assert.deepEqual(result.generationPlan.fieldSemantics.shard, {
+    type: "shard",
+    constraints: ["allowed-set"],
+  })
+  assert.deepEqual(result.generationPlan.fieldSemantics.counter, {
+    type: "counter",
+    constraints: ["monotonic"],
+  })
+  assert.equal(result.costReport.objective, "hard-constraints-first")
+  assert.equal(result.costReport.structuredBits, 72)
+  assert.equal(result.costReport.randomBits, 50)
+  assert.equal(result.costReport.constrainedFields, 2)
+  assert.equal(result.costReport.localityFields, 1)
+  assert.equal(result.costReport.lookupFields, 1)
+  assert.equal(JSON.stringify(input.schema.fields), originalFields)
+})
+
+test("compiled database layouts remain consumable through the structured API", () => {
+  const result = compileDatabaseLayout({
+    schema: {
+      name: "dbkey",
+      fields: [{ name: "shard", start: 0, length: 8, type: "shard", constraint: { allowed: [1, 2, 3, 4, 5] } }],
+    },
+    workload: {
+      readWeight: 1,
+      writeWeight: 1,
+      fields: [{ name: "shard", role: "partition" }],
+    },
+  })
+  const uuid = genStructuredGenoID(result)
+  const values = readStructured(uuid, result.layout)
+  assert.match(uuid, UUID_V8_RE)
+  assert.ok("shard" in values && [1, 2, 3, 4, 5].includes(values.shard))
+})
+
+test("compileDatabaseLayout rejects reserved schema bits with stable field errors", () => {
+  const input: LayoutCompilerInput = {
+    schema: { name: "key", fields: [{ name: "version", start: 48, length: 1, type: "fixed", value: 1 }] },
+    workload: {
+      readWeight: 1,
+      writeWeight: 1,
+      fields: [{ name: "version", role: "lookup" }],
+    },
+  }
+
+  assert.throws(
+    () => compileDatabaseLayout(input),
+    (error: unknown) => {
+      assert.ok(error instanceof Error)
+      assert.equal((error as Error & { code?: string }).code, "invalid-schema")
+      assert.equal((error as Error & { field?: string }).field, "schema.fields[0]")
+      return true
+    },
+  )
+})
+
+test("compileDatabaseLayout rejects unknown workload fields with stable field errors", () => {
+  const input: LayoutCompilerInput = {
+    schema: { name: "key", fields: [{ name: "shard", start: 0, length: 8, type: "shard" }] },
+    workload: {
+      readWeight: 1,
+      writeWeight: 1,
+      fields: [{ name: "missing", role: "partition" }],
+    },
+  }
+
+  assert.throws(
+    () => compileDatabaseLayout(input),
+    (error: unknown) => {
+      assert.ok(error instanceof Error)
+      assert.equal((error as Error & { code?: string }).code, "unknown-workload-field")
+      assert.equal((error as Error & { field?: string }).field, "missing")
+      return true
+    },
+  )
+})
+
+test("compileDatabaseLayout rejects overlapping schema fields with stable errors", () => {
+  const input: LayoutCompilerInput = {
+    schema: {
+      name: "key",
+      fields: [
+        { name: "first", start: 0, length: 8, type: "shard" },
+        { name: "second", start: 4, length: 8, type: "shard" },
+      ],
+    },
+    workload: {
+      readWeight: 1,
+      writeWeight: 1,
+      fields: [{ name: "first", role: "partition" }],
+    },
+  }
+
+  assert.throws(
+    () => compileDatabaseLayout(input),
+    (error: unknown) => {
+      assert.ok(error instanceof Error)
+      assert.equal((error as Error & { code?: string }).code, "invalid-schema")
+      assert.equal((error as Error & { field?: string }).field, "schema.fields[1]")
+      return true
+    },
+  )
+})
+
+test("compileDatabaseLayout requires workload weights", () => {
+  const input = {
+    schema: { name: "key", fields: [{ name: "shard", start: 0, length: 8, type: "shard" }] },
+    workload: {
+      writeWeight: 1,
+      fields: [{ name: "shard", role: "partition" }],
+    },
+  } as unknown as LayoutCompilerInput
+
+  assert.throws(
+    () => compileDatabaseLayout(input),
+    (error: unknown) => {
+      assert.ok(error instanceof Error)
+      assert.equal((error as Error & { code?: string }).code, "invalid-workload")
+      assert.equal((error as Error & { field?: string }).field, "workload.readWeight")
+      return true
+    },
+  )
 })
 
 test("DBKEY_LAYOUT round-trips through genStructuredGenoID and readStructured", () => {
