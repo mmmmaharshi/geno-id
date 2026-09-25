@@ -136,6 +136,97 @@ test("compileLayout produces a CompiledLayout shape and its source round-trips t
   }
 })
 
+test("compileDatabaseLayout places locality fields first for offset-free schemas", () => {
+  const input: LayoutCompilerInput = {
+    schema: {
+      name: "dbkey",
+      fields: [
+        { name: "timestamp", length: 48, type: "timestamp-ms" },
+        { name: "shard", length: 8, type: "shard", constraint: { allowed: [1, 2, 3, 4, 5] } },
+        { name: "counter", length: 16, type: "counter", constraint: { monotonic: true } },
+      ],
+    },
+    workload: {
+      readWeight: 0.25,
+      writeWeight: 0.75,
+      fields: [
+        { name: "shard", role: "partition" },
+        { name: "counter", role: "lookup" },
+      ],
+    },
+  }
+  const result = compileDatabaseLayout(input)
+  const byName = new Map(result.layout.fields.map((field) => [field.name, field]))
+
+  assert.deepEqual(compileDatabaseLayout(input), result)
+  assert.equal(byName.get("shard")?.start, 0)
+  assert.equal(byName.get("counter")?.start, 8)
+  const timestamp = byName.get("timestamp")
+  if (!timestamp) throw new Error("timestamp field missing from compiled layout")
+  assert.equal(timestamp.start % 8, 0)
+  assert.ok(timestamp.start > 8)
+})
+
+test("compileDatabaseLayout keeps explicit offsets hard while placing remaining fields", () => {
+  const result = compileDatabaseLayout({
+    schema: {
+      name: "mixed",
+      fields: [
+        { name: "tenant", start: 0, length: 8, type: "shard" },
+        { name: "lookup", length: 8, type: "process" },
+      ],
+    },
+    workload: {
+      readWeight: 1,
+      writeWeight: 1,
+      fields: [
+        { name: "tenant", role: "partition" },
+        { name: "lookup", role: "lookup" },
+      ],
+    },
+  })
+  const byName = new Map(result.layout.fields.map((field) => [field.name, field]))
+  assert.equal(byName.get("tenant")?.start, 0)
+  assert.equal(byName.get("lookup")?.start, 8)
+})
+
+test("compileDatabaseLayout preserves wide fields and RFC 9562 markers", () => {
+  const allowed = [0x100000000, 0x100000001]
+  const result = compileDatabaseLayout({
+    schema: {
+      name: "wide",
+      fields: [{ name: "trace", length: 40, type: "process", constraint: { allowed } }],
+    },
+    workload: {
+      readWeight: 1,
+      writeWeight: 1,
+      fields: [{ name: "trace", role: "lookup" }],
+    },
+  })
+  for (let index = 0; index < 16; index++) {
+    const uuid = genStructuredGenoID(result)
+    const values = readStructured(uuid, result.layout)
+    assert.match(uuid, UUID_V8_RE)
+    assert.ok(allowed.includes(values.trace))
+  }
+})
+
+test("compileDatabaseLayout rejects an empty workload field list", () => {
+  const input = {
+    schema: { name: "key", fields: [{ name: "shard", start: 0, length: 8, type: "shard" }] },
+    workload: { readWeight: 1, writeWeight: 1, fields: [] },
+  } as unknown as LayoutCompilerInput
+
+  assert.throws(
+    () => compileDatabaseLayout(input),
+    (error: unknown) => {
+      assert.ok(error instanceof Error)
+      assert.equal((error as Error & { code?: string }).code, "invalid-workload")
+      return true
+    },
+  )
+})
+
 test("compileDatabaseLayout returns a named, deterministic contract", () => {
   const input: LayoutCompilerInput = {
     schema: {

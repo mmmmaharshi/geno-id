@@ -324,7 +324,12 @@ export interface DatabaseWorkloadProfile {
   fields: WorkloadFieldProfile[]
 }
 
-export type LayoutSchema = V8Layout
+export type LayoutSchemaField = Omit<V8Field, "start"> & { start?: number }
+
+export interface LayoutSchema {
+  name: string
+  fields: LayoutSchemaField[]
+}
 
 export interface LayoutCompilerInput {
   schema: LayoutSchema
@@ -681,7 +686,7 @@ function validateSchema(schema: LayoutSchema): void {
   if (typeof schema.name !== "string" || schema.name.trim() === "") {
     throw new LayoutCompilerError("invalid-schema", "schema name must be a non-empty string", "schema.name")
   }
-  const fieldPaths = new Map<string, string>()
+  const names = new Set<string>()
   for (const [index, field] of schema.fields.entries()) {
     const path = `schema.fields[${index}]`
     if (!field || typeof field !== "object") {
@@ -690,19 +695,17 @@ function validateSchema(schema: LayoutSchema): void {
     if (typeof field.name !== "string" || field.name.length === 0) {
       throw new LayoutCompilerError("invalid-schema", `${path}.name must be non-empty`, `${path}.name`)
     }
-    if (!fieldPaths.has(field.name)) fieldPaths.set(field.name, path)
+    if (names.has(field.name)) {
+      throw new LayoutCompilerError("invalid-schema", `${path}.name is declared more than once`, `${path}.name`)
+    }
+    names.add(field.name)
     if (!FIELD_TYPES.has(field.type)) {
       throw new LayoutCompilerError("invalid-schema", `${path}.type is unsupported`, `${path}.type`)
     }
   }
-  const structuralFailure = validateLayoutStructure(schema.fields, schema.name, false)
-  if (structuralFailure) {
-    throw new LayoutCompilerError(
-      "invalid-schema",
-      structuralFailure.message,
-      fieldPaths.get(structuralFailure.field) ?? structuralFailure.field,
-    )
-  }
+}
+
+function validateSchemaConstraints(schema: LayoutSchema): void {
   for (const [index, field] of schema.fields.entries()) {
     const path = `schema.fields[${index}]`
     const constraint = field.constraint as V8FieldConstraint | null | undefined
@@ -758,6 +761,75 @@ function constraintKinds(field: V8Field): ConstraintKind[] {
   if (field.constraint?.monotonic === true) constraints.push("monotonic")
   if (field.type === "fixed") constraints.push("fixed")
   return constraints
+}
+
+function placeSchemaFields(
+  fields: readonly LayoutSchemaField[],
+  profiles: readonly WorkloadFieldProfile[],
+): V8Field[] {
+  const starts = new Array<number | undefined>(fields.length)
+  const usedBits = new Set<number>()
+  for (const [index, field] of fields.entries()) {
+    const path = `schema.fields[${index}]`
+    if (!Number.isInteger(field.length) || field.length <= 0) {
+      throw new LayoutCompilerError("invalid-schema", `${path}.length must be a positive integer`, `${path}.length`)
+    }
+    if (field.type !== "random" && field.length > MAX_FIELD_BITS) {
+      throw new LayoutCompilerError("invalid-schema", `${path}.length exceeds ${MAX_FIELD_BITS} bits`, `${path}.length`)
+    }
+    if (field.start !== undefined) {
+      if (!Number.isInteger(field.start) || field.start < 0 || field.start + field.length > 128) {
+        throw new LayoutCompilerError("invalid-schema", `${path}.start is outside the 128-bit UUID`, `${path}.start`)
+      }
+      starts[index] = field.start
+      for (let bit = field.start; bit < field.start + field.length; bit++) usedBits.add(bit)
+    }
+  }
+  const roles = new Map(profiles.map((profile) => [profile.name, profile.role]))
+  const roleRank = (role: WorkloadFieldRole | undefined): number => {
+    if (role === "partition" || role === "cluster") return 0
+    if (role === "lookup") return 1
+    return 2
+  }
+  const autoFields = fields
+    .map((field, index) => ({ field, index, rank: roleRank(roles.get(field.name)) }))
+    .filter((entry) => entry.field.start === undefined)
+  for (let index = 1; index < autoFields.length; index++) {
+    const entry = autoFields[index]
+    let position = index - 1
+    while (position >= 0 && (autoFields[position].rank > entry.rank || (autoFields[position].rank === entry.rank && autoFields[position].index > entry.index))) {
+      autoFields[position + 1] = autoFields[position]
+      position--
+    }
+    autoFields[position + 1] = entry
+  }
+  for (const entry of autoFields) {
+    let start = 0
+    while (start < 128) {
+      let conflict = false
+      for (let index = 0; index < entry.field.length; index++) {
+        const bit = start + index
+        if (bit >= 128 || NIBBLE_BITS.has(bit) || usedBits.has(bit)) {
+          conflict = true
+          break
+        }
+      }
+      if (!conflict) break
+      start += 8
+    }
+    if (start + entry.field.length > 128) {
+      throw new LayoutCompilerError("invalid-schema", `field ${entry.field.name} does not fit in the UUID`, `schema.fields[${entry.index}]`)
+    }
+    starts[entry.index] = start
+    for (let index = 0; index < entry.field.length; index++) usedBits.add(start + index)
+  }
+  return fields.map((field, index) => {
+    const start = starts[index]
+    if (start === undefined) {
+      throw new LayoutCompilerError("invalid-schema", `field ${field.name} was not placed`, `schema.fields[${index}]`)
+    }
+    return { ...field, start }
+  })
 }
 
 export function compileDatabaseLayout(input: LayoutCompilerInput): DatabaseLayoutCompilation {
@@ -834,11 +906,14 @@ export function compileDatabaseLayout(input: LayoutCompilerInput): DatabaseLayou
     assertNonnegative(profile.writeWeight, "invalid-workload", `${profile.name}.writeWeight`)
   }
 
-  const layout = completeLayout(schema.name, schema.fields)
+  const layout = completeLayout(schema.name, placeSchemaFields(schema.fields, workload.fields))
   const layoutFailure = validateLayoutStructure(layout.fields, layout.name, true)
   if (layoutFailure) {
-    throw new LayoutCompilerError("invalid-schema", layoutFailure.message, layoutFailure.field)
+    const schemaIndex = schema.fields.findIndex((field) => field.name === layoutFailure.field)
+    const field = schemaIndex === -1 ? layoutFailure.field : `schema.fields[${schemaIndex}]`
+    throw new LayoutCompilerError("invalid-schema", layoutFailure.message, field)
   }
+  validateSchemaConstraints(schema)
 
   const fieldSemantics: Record<string, FieldSemantics> = {}
   const structuredBits = new Set<number>()

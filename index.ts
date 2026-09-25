@@ -33,6 +33,7 @@ export type {
   WorkloadFieldProfile,
   DatabaseWorkloadProfile,
   LayoutSchema,
+  LayoutSchemaField,
   LayoutCompilerInput,
   LayoutCompilerErrorCode,
   ConstraintKind,
