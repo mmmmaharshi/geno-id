@@ -38,6 +38,7 @@
     "export-dieharder": "bun run scripts/export-dieharder.ts",
     "dieharder": "bun run scripts/run-dieharder.ts",
     "test:stats": "bun run scripts/stats.ts",
+    "stats:evidence": "bun run scripts/stats-evidence.ts",
     "playwright": "tsx scripts/playwright.ts",
     "verify-playwright": "tsx scripts/playwright.dryrun.ts",
     "changeset": "changeset",
