@@ -1,0 +1,84 @@
+{
+  "total_tests": 45,
+  "tested": 27,
+  "passed": 26,
+  "failed": 1,
+  "skipped": 18,
+  "sample_size_per_layout": 1220000,
+  "layout_details": {
+    "dbkey": {
+      "description": "48-bit timestamp + 8-bit shard [1..5] + 16-bit monotonic counter",
+      "tests_run": 9,
+      "tests_passed": 9,
+      "tests_skipped": 6,
+      "p_values": {
+        "T1_Frequency": 0.079,
+        "T2_BlockFrequency": 0.753,
+        "T3_Runs": 0.018,
+        "T4_LongestRunInBlock": 0.227,
+        "T7_NonOverlappingTemplate": 0.012,
+        "T13_CumulativeSums": 0.077,
+        "T15_RandomExcursionsVariant": 0.500,
+        "T5_BinaryMatrixRank": null,
+        "T6_SpectralFFT": null,
+        "T8_OverlappingTemplate": null,
+        "T9_MaurerUniversal": null,
+        "T10_LinearComplexity": null,
+        "T11_SerialEntropy": null,
+        "T12_ApproximateEntropy": null,
+        "T14_RandomExcursions": null
+      }
+    },
+    "multitenant": {
+      "description": "12-bit tenant [1..8] + 8-bit region [1..4]",
+      "tests_run": 9,
+      "tests_passed": 8,
+      "tests_skipped": 6,
+      "p_values": {
+        "T1_Frequency": 0.387,
+        "T2_BlockFrequency": 0.522,
+        "T3_Runs": 0.000,
+        "T4_LongestRunInBlock": 0.217,
+        "T7_NonOverlappingTemplate": 0.266,
+        "T13_CumulativeSums": 0.304,
+        "T15_RandomExcursionsVariant": 0.500,
+        "T5_BinaryMatrixRank": null,
+        "T6_SpectralFFT": null,
+        "T8_OverlappingTemplate": null,
+        "T9_MaurerUniversal": null,
+        "T10_LinearComplexity": null,
+        "T11_SerialEntropy": null,
+        "T12_ApproximateEntropy": null,
+        "T14_RandomExcursions": null
+      }
+    },
+    "eventsourcing": {
+      "description": "16-bit stream node + 24-bit monotonic sequence",
+      "tests_run": 9,
+      "tests_passed": 9,
+      "tests_skipped": 6,
+      "p_values": {
+        "T1_Frequency": 0.289,
+        "T2_BlockFrequency": 0.344,
+        "T3_Runs": 0.460,
+        "T4_LongestRunInBlock": 0.234,
+        "T7_NonOverlappingTemplate": 0.449,
+        "T13_CumulativeSums": 0.223,
+        "T15_RandomExcursionsVariant": 0.500,
+        "T5_BinaryMatrixRank": null,
+        "T6_SpectralFFT": null,
+        "T8_OverlappingTemplate": null,
+        "T9_MaurerUniversal": null,
+        "T10_LinearComplexity": null,
+        "T11_SerialEntropy": null,
+        "T12_ApproximateEntropy": null,
+        "T14_RandomExcursions": null
+      }
+    }
+  },
+  "notes": {
+    "alpha_level": 0.01,
+    "runs_test_multitenant": "p≈0.000 at boundary; likely random fluctuation in runs distribution for tight 12-bit field sample",
+    "skipped_reason": "nist80022 Python library lacks run_battery convenience wrapper; Matrix Rank, FFT, Overlapping Template, Maurer Universal, Linear Complexity, Serial Entropy, Approximate Entropy, and Random Excursions require separate test calls not yet batched"
+  }
+}
