@@ -1,0 +1,63 @@
+{
+  "experiment": "E1-production-1500k",
+  "description": "Composition correctness against shipped prod path genStructuredGenoID(DBKEY_LAYOUT)",
+  "algorithm": "compiled-direct-v8",
+  "layout": "dbkey",
+  "layout_fields": [
+    {
+      "name": "timestamp",
+      "type": "timestamp-ms",
+      "start": 0,
+      "length": 48
+    },
+    {
+      "name": "shard",
+      "type": "shard",
+      "start": 52,
+      "length": 8,
+      "constraint": {
+        "allowed": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ]
+      }
+    },
+    {
+      "name": "counter",
+      "type": "counter",
+      "start": 66,
+      "length": 16,
+      "constraint": {
+        "monotonic": true
+      }
+    },
+    {
+      "name": "rand_60",
+      "type": "random",
+      "start": 60,
+      "length": 4
+    },
+    {
+      "name": "rand_82",
+      "type": "random",
+      "start": 82,
+      "length": 46
+    }
+  ],
+  "sample_count": 500000,
+  "structured_field_count": 3,
+  "total_field_checks": 1500000,
+  "mismatches": 0,
+  "constraint_violations": 0,
+  "monotonicity_violations": 0,
+  "pass": true,
+  "collision_test_n": 2000000,
+  "collision_count": 0,
+  "elapsed_ms": {
+    "e1": 10997.42,
+    "collision": 2410.54
+  }
+}

@@ -1,0 +1,65 @@
+{
+  "manifest_version": "1.0",
+  "commit": "6336841",
+  "package_version": "1.22.0",
+  "generated_at": "2026-08-14T00:00:00Z",
+  "artifacts": {
+    "sec_composition_correctness": {
+      "section": "Composition correctness (Section 5.1)",
+      "claim": "Over 1.5M structured-field checks: 0 mismatches and 0 constraint violations",
+      "artifact": "results/e1-production-1500k.json",
+      "command": "bun run scripts/e1-production.ts",
+      "verified": true
+    },
+    "sec_repair_vs_rejection": {
+      "section": "Repair versus rejection cost (Section 5.2)",
+      "claim": "Measured repairs follow k(1-d), rejection follows d^{-k}",
+      "artifact": "results/rejection-sweep.json + results/rejection-sweep.csv",
+      "command": "bun run bench-rejection",
+      "verified": true
+    },
+    "sec_collision_uniformity": {
+      "section": "Collision and uniformity (Section 5.3)",
+      "claim": "Zero collisions at 2M draws, 10^8 shard frequency matches prediction",
+      "artifact": "results/benchmark_results.json + results/shard-histogram-100m.json",
+      "command": "bun run playwright + bun run scripts/histogram-100m.ts"
+    },
+    "sec_nist_dieharder": {
+      "section": "NIST SP 800-22 and dieharder (Section 5.4)",
+      "claim": "All 15 NIST tests pass; dieharder 152/152 PASS",
+      "artifact": "pending: nist-bridge.py output, results/dieharder-results.md",
+      "command": "bun run scripts/export-structured.ts && python scripts/nist-bridge.py + bun run scripts/run-dieharder.ts"
+    },
+    "sec_throughput": {
+      "section": "Throughput (Section 5.5)",
+      "claim": "genoid-structured outperforms prior art 2.0-6.7x across nine CI environments",
+      "artifact": "dist/bench-ci-results.json",
+      "command": "bun run bench-ci"
+    },
+    "sec_deployability": {
+      "section": "Deployability (Section 5.7)",
+      "claim": "Concurrent generation zero cross-worker collisions, browser Playwright test 0 errors/collisions",
+      "artifact": "results/benchmark_results.json",
+      "command": "bun run playwright"
+    },
+    "sec_cross_lang": {
+      "section": "Cross-language reproducibility (Section 5.8)",
+      "claim": "Rust reimplementation byte-identical: 3000 UUIDs, zero mismatches",
+      "artifact": "golden/*.txt + golden-check/",
+      "command": "bun run scripts/export-golden.ts && cd golden-check && cargo run"
+    }
+  },
+  "notes": {
+    "unsupported_claims": [
+      "PostgreSQL measured results (untracked file results/db-native.json, not committed)",
+      "InnoDB/MySQL results (no artifact exists)",
+      "pg_uuid_v8 baseline described as RFC v8 in related work — corrected to v4-compatible"
+    ],
+    "future_work": [
+      "Full NIST SP 800-22 p-value table on three layouts",
+      "100M shard histogram experiment",
+      "PostgreSQL/InnoDB benchmarking infrastructure",
+      "GA ablation/degraded-source experiments"
+    ]
+  }
+}

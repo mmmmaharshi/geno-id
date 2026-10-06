@@ -1,18 +1,22 @@
 cff-version: 1.2.0
-message: "If you use GenoID in academic work, please cite it as below. A version-specific archival DOI (Zenodo) has not yet been minted — see sources/reproducibility.md section 4."
+message: "If you use GenoID in academic work, please cite it as below."
 title: "GenoID: A Declarative RFC 9562 v8 UUID Composition Framework"
 type: software
 authors:
   - given-names: Manohar Maharshi
     family-names: Padala
+    orcid: "https://orcid.org/0009-0006-5807-4151"
+  - given-names: Jasmine
+    family-names: Ouku
+    orcid: "https://orcid.org/0000-0002-3907-4501"
 repository-code: "https://github.com/mmmmaharshi/geno-id"
 license: MIT
-version: 1.13.1
-date-released: 2026-07-19
+version: 1.22.0
+date-released: 2026-08-14
 keywords:
   - UUID
   - RFC 9562
   - identifier generation
-  - genetic algorithm
+  - constraint repair
   - distributed systems
   - CSPRNG

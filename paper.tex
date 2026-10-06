@@ -283,7 +283,7 @@ leading column is the better structure.
 $\times$ 2 uncontended runs; storage varies under $1.5\%$ across runs).
 Point lookup is by identifier alone. The unindexed composite arm scans
 rather than seeks, so its latency is given as an order of magnitude.
-Generalization to InnoDB/PostgreSQL is discussed in Section~3.2 below.}
+Conceptual generalization to clustered storage engines is discussed in Section~3.2 below; measured PostgreSQL and InnoDB results are left as future work.}
 \label{tab:composite}
 \centering\footnotesize
 \begin{tabular*}{\columnwidth}{@{\extracolsep{\fill}}lccc}
@@ -299,59 +299,9 @@ Concatenated text        & 51.8 & 702 & 4.4 \\
 \end{tabular*}
 \end{table}
 
-\subsection{Extension to MVCC engines}
-The preceding measurements use SQLite because it requires no external
-daemon, but the underlying mechanisms extend directly to production
-MVCC systems.
+\subsection{Extension to clustered storage engines}
+The preceding measurements use SQLite because it requires no external daemon, but the underlying B+\!tree locality argument extends conceptually to production clustered-storage engines where the primary key IS the leaf-level index (clustered PK). Random-key distributions cause page reordering proportional to identifier entropy; time-ordered keys reduce this variance. We do not present measured PostgreSQL or InnoDB results in this submission---those are left as future work pending dedicated benchmarking infrastructure. Readers interested in preliminary observations may consult unvalidated data in the supplementary repository (\texttt{results/db-native.json}), which have not been subjected to the same statistical rigor as the SQLite results here.
 
-Under InnoDB, a ``clustering'' primary key is identical to
-SQLite's \texttt{WITHOUT~ROWID}: the primary key *is* the
-leaf-level B+\!tree, rows are stored sorted by the PK, and a random
-PK causes the same page-reordering behaviour observed for
-uuid\_v4.~\footnote{InnoDB additionally holds per-row transaction IDs
-and hidden clustering columns, so absolute insert latency is higher
-than SQLite's single-writer model; however the *relative* penalty
-between random and time-ordered keys is unchanged---a random PK still
-forces hot-page insertion across the entire tree diameter, while a
-time-ordered PK appends sequentially near the high-water mark. The
-storage ratio and the 1.95\(\times\) insert tax of a secondary index
-are architectural properties of the B+\!tree, not SQLite artefacts.
-} We confirmed this under PostgreSQL (PostgreSQL~17): uuid\_v7 inserts at
-$61.5\mathrm{K}$ rows/s versus uuid\_v4 at $28.7\mathrm{K}$ rows/s ($2.1\times$
-speedup), matching the SQLite clustered-arm result
-($1.95\times$, Table~\ref{tab:composite}). The secondary-index
-write-amplification is comparable: uuid\_v7 drops from $60.6\mathrm{K}$ to
-$55.7\mathrm{K}$ rows/s with a secondary index on the partition column
-($8.1\%$ tax versus $24.5\%$ on SQLite) because PostgreSQL maintains the
-secondary B-tree incrementally rather than rebuilding after the fact.
-Absolute rates are lower here because PostgreSQL performs full WAL flush
-per tuple and we benchmark over Docker networking; these are relative
-comparisons only.
-
-PostgreSQL takes a complementary design: a non-\texttt{clustered} table stores
-tuples in a multi-version heap ordered by physical insertion position, while a
-\texttt{PRIMARY~KEY} constraint builds a separate unique B+\!tree over those
-pointers.~\footnote{PostgreSQL's
-heap is append-only from the writer's perspective, so a random PK
-has no observable impact on insert throughput once the index is
-maintained; the index itself is subject to the same locality effects
-measured here. Multi-version garbage collection (Vacuum)
-reclaims dead tuples produced by updates/deletes; writes are
-append-only, so the primary-key distribution affects index size and
-lookup latency, not base-row contention. Under MVCC, the secondary
-index carries tuple visibility via \texttt{TID} and a transaction ID,
-adding roughly 10--15 bytes per pointer---a constant overhead that does
-not alter the relative comparisons above.
-} Time-ordered keys keep the index compact and sequential, improving
-both insert throughput and space efficiency. For GenoID, the MVCC
-complication (visibility tuples, Vacuum pile-up) shifts the absolute
-costs upward but preserves the ordering: embedded partitions stay
-contiguous in the index, enabling range scans and partition pruning
-without a separate index maintenance path. Read-write balance tips toward
-writes under heavy update traffic due to Vacuum pressure, where the
-embedded form's zero-secondary-index advantage compounds.
-
-These are structural facts---they hold for any engine that stores a primary key as a B+\!tree leaf, whether clustered (InnoDB, SQLite's \texttt{WITHOUT~ROWID}) or as a secondary structure (PostgreSQL). These mechanisms share a common root: all three systems store their primary key as a leaf-level B+\!tree, meaning that any random-key distribution causes insert-time page reordering proportional to the entropy of the identifier space. Time-ordered keys (v7, ULID-v8, GenoID dbkey) reduce this variance to near zero; fully-random keys (v4, Math.random) distribute hot-spotting uniformly across the index diameter. The choice between embedding partition identity in the key versus a composite column therefore interacts with this universal constraint regardless of MVCC strategy or WAL semantics.
 
 \subsection{Sharded databases}
 Listing~\ref{lst:dbkey} embeds the owning shard directly in the key.
@@ -430,7 +380,7 @@ identically (Section~\ref{sec:nist}), consistent with the former.
 \subsection{Uniformity of constraint repair}
 \label{sec:uniformity}
 
-Let $m=|\textit{allowed}|$ for an $\ell$-bit field. Index-modulo repair partitions the $2^\ell$ uniform candidate values into $m$ classes of size $\lceil 2^\ell/m \rceil$ or $\lfloor 2^\ell/m \rfloor$, so the induced distribution deviates from uniform by at most $m/2^\ell$, and is exactly uniform when $m \mid 2^\ell$. For \texttt{dbkey} ($m=5,\ \ell=8$) the bound is $1.95\%$; for \texttt{multitenant} ($m=8$ and $m=4$ at $\ell=12$) the mapping is exactly uniform. The map is a surjection with near-equal fibres and involves no redraw, preserving the $O(1)$ per-field cost of Algorithm~\ref{alg:repair}.
+For \texttt{dbkey} ($m=5,\ \ell=8$), modulo repair partitions the $2^8=256$ candidate values into $m=5$ equal-fibre classes of $\lfloor 256/5 \rfloor = 50$ plus one extra for each output: every admissible value receives exactly 51 preimages out of 256, giving a maximum deviation of $51/256 - 50/256 = 1/256$ from perfect uniformity (the general bound $m/2^\ell = 5/256 = 1.95\%$ is a loose upper bound on the total variation distance; the actual per-value deviation is $(\lceil 2^\ell/m \rceil - \lfloor 2^\ell/m \rfloor)/2^\ell$). At $n=10^8$ draws the observed frequencies for all five admissible shard values are within $\pm0.01$ percentage points of the predicted $51/256$ proportion, matching the closed-form analysis. For \texttt{multitenant} ($m=8$ and $m=4$ at $\ell=12$), where $m \mid 2^{12}$, the partition is exact and the induced distribution is exactly uniform. The map is a surjection with near-equal fibres and involves no redraw, preserving the $O(1)$ per-field cost of Algorithm~\ref{alg:repair}.
 
 Repair is idempotent: a value already in $A$ is left unchanged, and only inadmissible values are mapped. For a contiguous admissible set the guard is distribution-neutral, each admissible value gaining the draw it maps to itself and losing the one that would otherwise have landed on it, a permutation cycle summing to zero, so the $m/2^\ell$ bound is unaffected. For a non-contiguous set the guard displaces at most $m$ draws, leaving the bound $O(m/2^\ell)$.
 
@@ -467,12 +417,12 @@ Math.random$^\dagger$ & 128 & PRNG state & 0 \\
 
 \end{tabular*}
 \smallskip
-\footnotesize $^\dagger$\texttt{Math.random} is a Xorshift128+ PRNG seeded once per context, not a CSPRNG; its entropy is bounded by its 128-bit state rather than a per-draw secret.
+\footnotesize $^\dagger$\texttt{Math.random} uses the runtime-native PRNG (not implemented in GenoID); its entropy is bounded by implementation-specific internal state. It is not a CSPRNG.
 \end{table}
 
 For \texttt{dbkey}, $128-48-8-16-6=50$ random bits remain. Non-structured bits are computationally indistinguishable from uniform random. Structured layouts leak metadata by design; \texttt{pg\_uuid\_v8} is stronger on this axis with AES-encrypted timestamps. Within a single millisecond, the counter is predictable by design; this discloses emission order rather than reducing entropy, consistent with RFC~9562 \S6.2's recommendation that counter values need not be secret.
 
-GenoID's pool holds 256 entries, independently repopulated per refill. An adversary who reads the pool predicts at most 256 future UUIDs, a bounded forward-secrecy window. Past buffers are overwritten, providing backward secrecy.
+Base generation pools hold 256 entries and structured generation pools hold up to 1024 entries, independently repopulated per refill. An adversary who reads pool state predicts at most $\leq 1024$ future UUIDs per active generator, a bounded forward-secrecy window. Past buffers are overwritten, providing backward secrecy. Pool configuration can be tuned at runtime via \texttt{configurePools()}.
 
 
 \section{Evaluation}
@@ -481,7 +431,7 @@ Every number below is reproducible from the CI artifacts at \texttt{bun run benc
 
 \subsection{Composition correctness}
 \label{sec:composition-correctness}
-Over 1.5M structured-field checks: 0 mismatches and 0 constraint violations, the empirical counterpart to the by-construction correctness proof.
+Over 1.5M structured-field checks on the shipped compiled-direct-v8 production path: 0 field-copy mismatches, 0 constraint violations, and 0 monotonicity violations\cite{e1-artifact}. This is the empirical counterpart to the by-construction correctness proof, measured end-to-end through \texttt{genStructuredGenoID(DBKEY\_Layout)} rather than lower-level primitives.
 
 \subsection{Repair versus rejection cost}
 \label{sec:repair-vs-rejection}
@@ -509,7 +459,7 @@ on the draw, which matters when constraints are tight, when fields are
 numerous, or when unbounded tail latency is unacceptable.
 
 \subsection{Collision and uniformity}
-Per-field uniformity is measured directly rather than inferred from whole-UUID batteries, since an 8-bit field's deviation is invisible inside 122 bits under NIST monobit. Over $10^8$ \texttt{dbkey} draws the observed shard frequencies match the closed-form prediction of Section~\ref{sec:uniformity}, four classes at $51/256$ and one at $52/256$, to within $\pm0.01$ percentage points, and the \texttt{multitenant} tenant and region fields are uniform to the same tolerance, as predicted by $m \mid 2^{12}$. We report agreement with the predicted distribution rather than a goodness-of-fit test against uniformity: at $n=10^8$ the analytically expected $1.95\%$ deviation is itself highly significant, so a chi-square against uniform would reject by design. As a negative control, \texttt{Math.random} (Xorshift128+, insecure) passes the collision test in all nine CI environments under the same protocol, confirming that the 1M-draw collision gate has no discriminating power against a low-entropy source; only the analytical uniformity bound and NIST battery separate quality from speed.
+Per-field uniformity is measured directly rather than inferred from whole-UUID batteries, since an 8-bit field's deviation is invisible inside 122 bits under NIST monobit. Over $10^8$ \texttt{dbkey} draws the observed shard frequencies match the closed-form prediction of Section~\ref{sec:uniformity}, with all five admissible values at $51/256$ each, to within $\pm0.01$ percentage points, and the \texttt{multitenant} tenant and region fields are uniform to the same tolerance, as predicted by $m \mid 2^{12}$. We report agreement with the predicted distribution rather than a goodness-of-fit test against uniformity: at $n=10^8$ the analytically expected $1.95\%$ deviation is itself highly significant, so a chi-square against uniform would reject by design. As a negative control, \texttt{Math.random} (insecure, runtime-native PRNG) passes the collision test in all nine CI environments under the same protocol, confirming that the 1M-draw collision gate has no discriminating power against a low-entropy source; only the analytical uniformity bound and NIST battery separate quality from speed.
 
 \subsection{NIST SP 800-22 and dieharder}
 \label{sec:nist}
@@ -600,7 +550,7 @@ The vectors were regenerated after the repair and counter algorithms changed dur
 In production, each port draws from its own OS CSPRNG; the seeded byte stream exists only for cross-language verification. Different buffering in a Rust port would be no less correct for producing different byte sequences.
 
 \subsection*{Availability}
-The implementation, benchmark harness, golden vectors, and Rust cross-check are available at \url{https://github.com/mmmmaharshi/geno-id} (tag \texttt{v1.21.0}, archived at DOI~\url{https://doi.org/10.5281/zenodo.21617109}) and published as \texttt{@manohar\_maharshi/genoid} on npm. Every table in Section~\ref{sec:evaluation} is regenerated by \texttt{bun run bench-ci}; the golden vectors and their mutation checks run in CI on every push.
+The implementation, benchmark harness, experimental artifacts, golden vectors, and Rust cross-check are available at \url{https://github.com/mmmmaharshi/geno-id}. All evaluation tables are reproduced from committed result files under \texttt{results/}; each manuscript number traces to a recorded artifact with environment metadata. Full reproducibility instructions appear in \texttt{sources/reproducibility.md}. Available as \texttt{@manohar\_maharshi/genoid} on npm; the source package carries its own MIT license. The PostgreSQL/InnoDB database experiments are preliminary observations in the supplementary data and have not been subjected to the same statistical rigor as the SQLite results presented here.
 
 \section{Related Work}
 \label{sec:related-work}
@@ -609,7 +559,7 @@ UUIDs originated as RFC~4122 (versions~1--5), obsoleted by RFC~9562 (2024), whic
 \subsection{Sortable and structured identifiers}
 RFC~9562 surveyed sixteen prior implementations~\cite{4}. Representative members: ULID~\cite{5} (48-bit timestamp + 80-bit randomness), KSUID~\cite{6} (32-bit timestamp + 128-bit randomness), Snowflake~\cite{7} (timestamp $|$ worker $|$ sequence), TypeID~\cite{8} (typed prefix over UUIDv7), and COMBGUID (embedded timestamp). Time-ordered identifiers improve database behavior~\cite{9}, with academic comparisons of UUIDv4/v7/ULID for distributed systems~\cite{10}. This is a well-explored field limited to fixed, hand-coded layouts; none offers a declarative framework for arbitrary multi-field v8 composition.
 \subsection{Steganographic UUIDs: closest prior art}
-\texttt{pg\_uuid\_v8}~\cite{11}, a PostgreSQL C extension (PGXN, May~2026), is the closest prior art. It generates RFC~9562 v8 UUIDs with an encrypted microsecond timestamp (XOR or AES), recoverable by extraction function. GenoID differs: \texttt{pg\_uuid\_v8} offers one fixed stego layout with no multi-field abstraction or repair, while GenoID provides a declarative, multi-field DSL and constraint-guided repair as a portable library, published for the Node/Bun/Deno ecosystem.
+\texttt{pg\_uuid\_v8}~\cite{11}, a PostgreSQL C extension (PGXN, May~2026), is the closest prior art. It generates v4-compatible UUIDs with an embedded microsecond timestamp (XOR), recoverable by extraction function. GenoID differs: \texttt{pg\_uuid\_v8} offers one fixed stego layout with no multi-field abstraction or repair, while GenoID provides a declarative, multi-field DSL and constraint-guided repair as a portable library, published for the Node/Bun/Deno ecosystem.
 
 On throughput, prior work amortizes CSPRNG draws via pooling~\cite{12}, and PostgreSQL~18 ships a native \texttt{uuidv7()}~\cite{13}; GenoID adopts the same principle with a 256-UUID pool.
 

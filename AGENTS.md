@@ -2,6 +2,20 @@
 
 Novel GA-inspired UUIDv8 algorithm benchmarked against v4, v7, SHA-256 hash-derived, and Math.random baselines.
 
+## Agent skills
+
+### Issue tracker
+
+Issues live in GitHub Issues. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Triage uses the default five labels. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Domain documentation uses a single-context layout. See `docs/agents/domain.md`.
+
 ## Start here (next action)
 
 1. Pick the task. Implement code → run the **Quality gates** (below). Docs/config only → run gate 9 (verify) + ask before publish.
