@@ -1048,6 +1048,7 @@ export function genStructuredParent(
   const bytes = new Uint8Array(16)
   fillRandom(bytes)
   applyStructuredFields(bytes, layout, mask)
+  repairConstraints(layout, bytes)
   forceVersionVariant(bytes)
   return bytes
 }
@@ -1199,7 +1200,7 @@ export function genStructuredGenoID(input: V8Layout | DatabaseLayoutCompilation)
     const fn = _compiledGenCache.get(layout)
     if (fn) return fn()
     try {
-      const compiled = compileLayout(layout)
+      const compiled = compileLayout(layout, 256)
       _compiledGenCache.set(layout, compiled.fn)
       return compiled.fn()
     } catch {
@@ -1406,16 +1407,18 @@ function genFieldReadExpr(f: V8Field, buf = "b"): string {
   return result
 }
 
-function genValueExpr(f: V8Field, mod: number, bm: ByteMask[], raw?: boolean, buf = "b"): string {
+function genValueExpr(f: V8Field, mod: number, bm: ByteMask[], raw?: boolean, buf = "b", batchNow = false): string {
+   const pow2 = mod > 0 && (mod & (mod - 1)) === 0 && mod <= 0x7FFFFFFF
+   const ts = batchNow ? "_now" : "Date.now()"
   switch (f.type) {
     case "timestamp-ms": {
-      return raw ? `now%${mod}` : `Date.now()%${mod}`
+      return raw ? `now%${mod}` : pow2 ? `${ts}&${mod - 1}` : `${ts}%${mod}`
     }
     case "timestamp-us": {
-      return raw ? `(now*1000)%${mod}` : `(Date.now()*1000)%${mod}`
+      return raw ? `(now*1000)%${mod}` : pow2 ? `(${ts}*1000)&${mod - 1}` : `(${ts}*1000)%${mod}`
     }
     case "counter": {
-      return raw ? `ctr%${mod}` : `(++_ctr)%${mod}`
+      return raw ? `ctr%${mod}` : pow2 ? `(++_ctr)&${mod - 1}` : `(++_ctr)%${mod}`
     }
     case "shard":
     case "node":
@@ -1477,6 +1480,7 @@ function genLayoutSource(layout: V8Layout, raw: boolean, poolSize = 0): string {
     lines.push("return function(){")
     lines.push(`if(_pi>=${poolSize}){`)
     lines.push("cr.getRandomValues(_bp);")
+    lines.push("let _now=Date.now();")
     lines.push(`for(_pi=0;_pi<${poolSize};_pi++){const _o=_pi*16;`)
   } else {
     lines.push("const b=new Uint8Array(16);let _ctr=0;")
@@ -1511,7 +1515,7 @@ function genLayoutSource(layout: V8Layout, raw: boolean, poolSize = 0): string {
         emitFieldWrite(wp, target, "rv", mod)
         target.push("}")
       } else {
-        const vx = genValueExpr(f, mod, bm, raw)
+        const vx = genValueExpr(f, mod, bm, raw, "b", poolSize > 0)
         target.push("{")
         let varName = "v"
         if (c && (c.min !== undefined || c.max !== undefined || c.monotonic)) {

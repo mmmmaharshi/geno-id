@@ -5,6 +5,45 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.22.0] - 2026-08-14
+
+### Summary
+
+**Structured layout compiler gains pooled CSPRNG refill (~60% faster throughput), bitwise-modulo optimization for power-of-2 fields, and Date.now() batching per pool refill.**
+
+#### ✨ Highlights
+
+- **Pooled compiled path** — `compileLayout` now defaults to poolSize=256; `genStructuredGenoID` uses pooled CPU generation with one `getRandomValues` syscall per 256 UUIDs instead of one per UUID (`1.86M/s → 2.94M/s` via benchRepeated, `3.2M/s → 7.6M/s` direct fn).
+- **Bitwise modulo** — power-of-2 field constraints (counter, timestamp-ms) use `&` instead of `%` when the modulus fits in Int32 range (≤ 2^31−1); larger moduli correctly fall back to `%`.
+- **Date.now() batch** — timestamp computation is hoisted once per pool refill instead of per-UUID.
+- **Bug fix** — `genStructuredParent` now calls `repairConstraints` on generated parents (was producing invalid shard/tenant/region values in raw compositions).
+- **Bug fix** — fixed JS bitwise AND Int32 truncation bug that corrupted 48-bit timestamps (mask ≥ 2^31 was silently wrapping to 32 bits).
+
+#### 🔧 Internal
+
+- **`algo.ts`** — `genValueExpr`: added `batchNow` parameter and `pow2` guard (mod ≤ 0x7FFFFFFF); `genLayoutSource`: emits `let _now=Date.now()` and batches `_now` in pool mode; `genStructuredGenoID`: passes poolSize=256 to `compileLayout`; `genStructuredParent`: added `repairConstraints` call before `forceVersionVariant`.
+
+#### 📖 Documentation
+
+- Added performance benchmark results to internal notes.
+
+#### ⚠️ Breaking Changes
+
+None. All output remains byte-identical at equivalent pool sizes.
+
+#### 🔄 Upgrade Guide
+
+No action required. Upgrading automatically gains the pooled compilation path. For custom layouts, `configurePools({ structuredPoolSize: N })` controls pool size.
+
+#### 🐛 Known Issues
+
+The `wordTable` 65536-entry hex table (~3MB resident) provides ~2.5% formatting speedup over the 256-entry HEX8 table but increases initial memory footprint. Controlled via `configureFootprint("lean")`.
+
+#### 📦 Dependencies Updated
+
+None.
+
+
 ## [1.21.2] - 2026-07-27
 
 ### Summary
