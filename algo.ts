@@ -116,6 +116,12 @@ function fillRandom(buf: Uint8Array): void {
 export function resetSeededState(): void {
   _csprngPos = _csprngBuf.length
   _poolMonoTick.clear()
+  _layoutTick.clear()
+  _spPool.clear()
+  _compiledGenCache = new WeakMap<V8Layout, () => string>()
+  _hcTick = 0
+  _hcCtr = -1
+  _hcPoolIdx = HC_POOL_SIZE
 }
 
 export function createSeededRandom(seed0: number, seed1: number): RandomFill {
@@ -992,20 +998,34 @@ function fieldMod(f: V8Field): number {
 // Only computes values for timestamp fields and fixed fields. Counter, shard,
 // node, and process fields are left as CSPRNG bytes and handled by the
 // repairConstraints pass (Algorithm 1), which applies index-modulo for
-// allowed constraints and tick-keyed increment for monotonic constraints.
-function structuredValue(layout: V8Layout, f: V8Field, _rng: Rng): number {
+// allowed constraints. Monotonic counters are tick-keyed (see refillSingleParentPool
+// and the compiled prologue in genLayoutSource).
+function structuredValue(layout: V8Layout, f: V8Field, _rng: Rng, now?: number): number {
   const mod = fieldMod(f)
+  const tick = now ?? currentTick(layout)
   switch (f.type) {
     case "timestamp-ms": {
-      return Date.now() % mod
+      return tick % mod
     }
     case "timestamp-us": {
-      return (Date.now() * 1000) % mod
+      return (tick * 1000) % mod
     }
     default: {
       return 0
     }
   }
+}
+
+// Resolve a layout's monotonic tick (RFC 9562 §6.2): the wall clock
+// clamped to the last tick ever emitted for this layout. A backwards
+// clock therefore yields the previous tick — never a regressing
+// timestamp — and an advancing clock advances the stored tick.
+function currentTick(layout: V8Layout): number {
+  const now = Date.now()
+  const last = _layoutTick.get(layout.name)
+  if (last !== undefined && now < last) return last
+  _layoutTick.set(layout.name, now)
+  return now
 }
 
 const _validated = new Set<string>()
@@ -1019,18 +1039,21 @@ function ensureValidated(layout: V8Layout): void {
 
 // Populate timestamp and fixed fields. Counter, shard, node, process, and
 // random fields are left as CSPRNG bytes; repairConstraints (called after this)
-// handles all constraint satisfaction via index-modulo and tick-keyed increment.
+// handles all constraint satisfaction via index-modulo. `now`, when given, is
+// the caller-resolved monotonic tick (RFC 9562 §6.2); otherwise the tick is
+// resolved here via currentTick().
 function applyStructuredFields(
   bytes: Uint8Array,
   layout: V8Layout,
   _mask?: number[],
   _rng?: Rng,
+  now?: number,
 ): void {
   const fields = layout.fields
   for (const f of fields) {
     if (f.type === "fixed") writeFieldValue(bytes, f, f.value ?? 0)
     else if (f.type === "timestamp-ms" || f.type === "timestamp-us") {
-      writeFieldValue(bytes, f, structuredValue(layout, f, _rng ?? (() => 0)))
+      writeFieldValue(bytes, f, structuredValue(layout, f, _rng ?? (() => 0), now))
     }
     // counter, shard, node, process, random — stay as CSPRNG bytes
   }
@@ -1076,7 +1099,18 @@ export function composeStructured(
   return child
 }
 
-const _poolMonoTick = new Map<string, { tick: number; ctr: number }>()
+// RFC 9562 §6.2 monotonicity state for the interpreted structured
+// paths. `_layoutTick` is the last tick ever emitted per layout —
+// timestamp fields clamp to max(clock, last tick), so a backwards
+// clock re-emits the previous tick instead of regressing the sort
+// order. `_poolMonoTick` holds each monotonic counter field's global
+// incrementing value; it is reseeded from the CSPRNG only when it
+// exhausts, and only after the clock has advanced past the layout
+// tick (freeze-and-wait), so a reseed never shares a timestamp with
+// the previous UUID: the (timestamp, counter) pair is non-decreasing
+// in emission order.
+const _layoutTick = new Map<string, number>()
+const _poolMonoTick = new Map<string, number>()
 
 /**
  * Repair per-field constraint violations in place. Returns the number of
@@ -1127,31 +1161,49 @@ function refillSingleParentPool(layout: V8Layout): void {
     _spPool.set(layout.name, { pool, strs, idx: 0, size })
   }
   fillRandom(pool)
-  const poolNow = Date.now()
   for (let n = 0; n < size; n++) {
     const off = n * STRUCT_ENTRY
     const buf = pool.subarray(off, off + 16)
-    applyStructuredFields(buf, layout)
-    for (const f of layout.fields) {
-      if (f.constraint?.monotonic) {
-        const key = layout.name + ":" + f.name
-        let st = _poolMonoTick.get(key)
-        if (!st) {
-          st = { tick: poolNow, ctr: Number(getFieldValue(buf, f)) % (2 ** (f.length - 1)) }
-          _poolMonoTick.set(key, st)
-          writeFieldValue(buf, f, st.ctr)
-          continue
-        }
-        const tick = Math.max(poolNow, st.tick)
-        if (tick !== st.tick) {
-          st.tick = tick
-          st.ctr = Number(getFieldValue(buf, f)) % (2 ** (f.length - 1))
-        } else {
-          st.ctr = (st.ctr + 1) % (2 ** f.length)
-        }
-        writeFieldValue(buf, f, st.ctr)
-      }
+    // RFC 9562 §6.2: resolve this entry's tick once. The same
+    // clamped tick drives the timestamp field and every monotonic
+    // counter, so a counter reseed only ever accompanies a
+    // strictly larger timestamp.
+    let now = Date.now()
+    const lastTick = _layoutTick.get(layout.name)
+    if (lastTick !== undefined && now < lastTick) {
+      now = lastTick
+    } else {
+      _layoutTick.set(layout.name, now)
     }
+    for (const f of layout.fields) {
+      if (!f.constraint?.monotonic) continue
+      const key = layout.name + ":" + f.name
+      const reseedRange = 2 ** (f.length - 1)
+      const maxCtr = 2 ** f.length - 1
+      let ctr = _poolMonoTick.get(key)
+      if (ctr === undefined) {
+        ctr = Number(getFieldValue(buf, f)) % reseedRange
+      } else if (ctr >= maxCtr) {
+        // Counter exhausted. A wrap is only sortable with a
+        // strictly larger timestamp — freeze generation until the
+        // clock advances past the last tick (RFC 9562 §6.2).
+        if (lastTick !== undefined && now <= lastTick) {
+          // §6.2 freeze-and-wait: stall until the clock
+          // advances past the last tick (bounded stall).
+          while (Date.now() <= lastTick) {
+            // intentional busy-wait
+          }
+          now = Date.now()
+          _layoutTick.set(layout.name, now)
+        }
+        ctr = Number(getFieldValue(buf, f)) % reseedRange
+      } else {
+        ctr = (ctr + 1) & maxCtr
+      }
+      _poolMonoTick.set(key, ctr)
+      writeFieldValue(buf, f, ctr)
+    }
+    applyStructuredFields(buf, layout, undefined, undefined, now)
     forceVersionVariant(buf)
     repairConstraints(layout, buf)
     const c = buf
@@ -1182,7 +1234,7 @@ export function genStructuredGenoIDSingleParent(layout: V8Layout): string {
 }
 
 // Cache for compiled structured generators (per-layout).
-const _compiledGenCache = new WeakMap<V8Layout, () => string>()
+let _compiledGenCache = new WeakMap<V8Layout, () => string>()
 
 /**
  * Production API: compiles the layout into a specialized generator (~8x
@@ -1271,7 +1323,41 @@ export function getPoolConfig(): { simplePoolSize: number; structuredPoolSize: n
 // Per-call version: one CSPRNG fill + direct byte assembly per UUID.
 const _hcBuf = new Uint8Array(16)
 const _hcRnd = new Uint8Array(8)
-let _hcCounter = 0
+// RFC 9562 §6.2 monotonicity state, shared by the per-call and
+// pooled dbkey generators (one logical key space): `_hcTick` is
+// the last tick ever emitted — timestamps clamp to
+// max(clock, _hcTick) — and `_hcCtr` is the 16-bit counter, a
+// global incrementing value reseeded from the CSPRNG only when it
+// exhausts, and only after the clock has advanced past `_hcTick`
+// (freeze-and-wait), so the (timestamp, counter) pair never
+// regresses in emission order.
+let _hcTick = 0
+let _hcCtr = -1
+
+// Resolve the next dbkey tick and counter (RFC 9562 §6.2):
+// clamp a backwards clock to the last tick, increment the counter
+// within the tick, and on exhaustion freeze generation until the
+// clock advances before reseeding from the CSPRNG. Returns the
+// tick to stamp into the timestamp field.
+function hcTickAndCounter(reseed: number): number {
+  let now = Date.now()
+  if (_hcCtr < 0 || _hcCtr >= 0xffff) {
+    if (_hcCtr >= 0xffff && now <= _hcTick) {
+      // §6.2 freeze-and-wait: stall until the clock
+      // advances past the last tick (bounded stall).
+      while (Date.now() <= _hcTick) {
+        // intentional busy-wait
+      }
+      now = Date.now()
+    }
+    _hcCtr = reseed
+  } else {
+    _hcCtr = (_hcCtr + 1) & 0xffff
+  }
+  if (now < _hcTick) now = _hcTick
+  else _hcTick = now
+  return now
+}
 
 function pickFromAllowed(allowed: number[], byte: number): number {
   const n = allowed.length
@@ -1302,9 +1388,9 @@ function formatHex(b: Uint8Array): string {
 
 export function genHandCodedDbkey(): string {
   fillRandom(_hcRnd)
-  const ts = Date.now()
+  const ts = hcTickAndCounter(((_hcRnd[6] << 8) | _hcRnd[7]) & 0x7fff)
   const shard = pickFromAllowed([1, 2, 3, 4, 5], _hcRnd[0])
-  const ctr = (++_hcCounter) & 0xffff
+  const ctr = _hcCtr
   const b = _hcBuf
   b[0] = (ts / 2 ** 40) & 0xff
   b[1] = (ts / 2 ** 32) & 0xff
@@ -1338,9 +1424,12 @@ function refillHcPool(): void {
   const t = HEX8
   for (let n = 0; n < HC_POOL_SIZE; n++) {
     const off = n * 16
-    const ts = Date.now()
+    // Counter field bits 66-81 of this entry's raw CSPRNG bytes
+    // seed the next counter run (top bit clear, 2^(len-1) range).
+    const reseed = (((buf[off + 8] & 0x3f) << 10) | (buf[off + 9] << 2) | (buf[off + 10] >>> 6)) & 0x7fff
+    const ts = hcTickAndCounter(reseed)
     const shard = pickFromAllowed([1, 2, 3, 4, 5], buf[off + 15])
-    const ctr = (++_hcCounter) & 0xffff
+    const ctr = _hcCtr
     buf[off] = (ts / 2 ** 40) & 0xff
     buf[off + 1] = (ts / 2 ** 32) & 0xff
     buf[off + 2] = (ts / 2 ** 24) & 0xff
@@ -1470,11 +1559,28 @@ function genLayoutSource(layout: V8Layout, raw: boolean, poolSize = 0): string {
   const lines: string[] = []
   const fieldLines: string[] = []
 
+  // RFC 9562 §6.2 state for compiled generators: `_tick` is the
+  // last tick ever emitted (timestamp fields clamp to
+  // max(clock, _tick)) and `_mctr` holds each monotonic counter
+  // field's global incrementing value. Both live in the compiled
+  // closure, so every compiled generator instance owns an
+  // independent monotonic clock. The raw layout takes the clock
+  // and counter as caller-supplied parameters and opts out.
+  const needsTick =
+    !raw &&
+    fieldMeta.some(
+      (m) =>
+        m.f.type === "timestamp-ms" ||
+        m.f.type === "timestamp-us" ||
+        (m.f.type === "counter" && m.f.constraint?.monotonic === true),
+    )
+
   if (raw) {
     lines.push("const _last={};")
     lines.push("return function(b,now,ctr){")
   } else if (poolSize > 0) {
     lines.push("let _ctr=0;")
+    if (needsTick) lines.push("let _tick=0;const _mctr={};")
     const hasMono = fieldMeta.some((m) => m.f.constraint?.monotonic)
     if (hasMono) lines.push("const _last={};")
     lines.push(`const _bp=new Uint8Array(${poolSize * 16});`)
@@ -1483,10 +1589,10 @@ function genLayoutSource(layout: V8Layout, raw: boolean, poolSize = 0): string {
     lines.push("return function(){")
     lines.push(`if(_pi>=${poolSize}){`)
     lines.push("cr.getRandomValues(_bp);")
-    lines.push("let _now=Date.now();")
     lines.push(`for(_pi=0;_pi<${poolSize};_pi++){const _o=_pi*16;`)
   } else {
     lines.push("const b=new Uint8Array(16);let _ctr=0;")
+    if (needsTick) lines.push("let _tick=0;const _mctr={};")
     const hasMono = fieldMeta.some((m) => m.f.constraint?.monotonic)
     if (hasMono) lines.push("const _last={};")
     lines.push("return function(){")
@@ -1494,6 +1600,29 @@ function genLayoutSource(layout: V8Layout, raw: boolean, poolSize = 0): string {
   }
 
   const emitFieldBlock = (target: string[]) => {
+    // RFC 9562 §6.2 prologue, emitted once per invocation (per
+    // pool entry in pooled mode): resolve the tick and every
+    // monotonic counter BEFORE any field is written, so the
+    // reseed that ends an exhausted counter run always accompanies
+    // a strictly larger timestamp — the (timestamp, counter) pair
+    // is non-decreasing in emission order.
+    if (needsTick) {
+      target.push("let _now=Date.now();")
+      for (const m of fieldMeta) {
+        const f = m.f
+        if (f.type !== "counter" || f.constraint?.monotonic !== true) continue
+        const reseedMask = 2 ** (f.length - 1) - 1
+        const maxCtr = 2 ** f.length - 1
+        target.push(
+          `{const lk=${JSON.stringify(f.name)};let c=_mctr[lk];const rs=(${genFieldReadExpr(f)})&${reseedMask};` +
+            `if(c===undefined){c=rs}` +
+            `else if(c>=${maxCtr}){if(_now<=_tick){while(Date.now()<=_tick){};_now=Date.now()};c=rs}` +
+            `else{c=(c+1)&${maxCtr}}` +
+            `_mctr[lk]=c}`,
+        )
+      }
+      target.push("if(_now<_tick){_now=_tick}else{_tick=_now}")
+    }
     for (const m of fieldMeta) {
       const { f, wp, bm, mod, c } = m
       if (f.type === "random") continue
@@ -1518,14 +1647,25 @@ function genLayoutSource(layout: V8Layout, raw: boolean, poolSize = 0): string {
         emitFieldWrite(wp, target, "rv", mod)
         target.push("}")
       } else {
-        const vx = genValueExpr(f, mod, bm, raw, "b", poolSize > 0)
+        // Monotonic counters are resolved by the §6.2
+        // prologue (tick-keyed increment with freeze-and-
+        // wait) — except in raw mode, where the caller
+        // owns the clock and counter and the value-clamp
+        // below applies. Every other field draws its
+        // value straight from its layout expression, with
+        // `_now` the resolved tick.
+        const monoCounter =
+          !raw && f.type === "counter" && c?.monotonic === true
+        const vx = monoCounter
+          ? `_mctr[${JSON.stringify(f.name)}]`
+          : genValueExpr(f, mod, bm, raw, "b", true)
         target.push("{")
         let varName = "v"
-        if (c && (c.min !== undefined || c.max !== undefined || c.monotonic)) {
+        if (c && (c.min !== undefined || c.max !== undefined || (c.monotonic && !monoCounter))) {
           target.push(`let rv=${vx};`)
           if (c.min !== undefined) target.push(`if(rv<${c.min})rv=${c.min};`)
           if (c.max !== undefined) target.push(`if(rv>${c.max})rv=${c.max};`)
-          if (c.monotonic) {
+          if (c.monotonic && !monoCounter) {
             target.push(
               `{const lk="${f.name}";const lv=_last[lk];if(lv!==undefined&&rv<lv){rv=lv;}_last[lk]=rv;}`,
             )

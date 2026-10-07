@@ -20,6 +20,21 @@ const { genStructuredGenoID, uuidToBytes, getFieldValue, DBKEY_LAYOUT } = algo
 interface V8Field { name: string; start: number; length: number; type: string; constraint?: { allowed?: number[]; monotonic?: boolean } }
 interface V8Layout { name: string; fields: V8Field[] }
 
+// Manual bit-extraction of a field, mirroring the loop below
+// but for the timestamp field (independent code path).
+function vManualTs(bytes: Uint8Array, layout: V8Layout): bigint {
+  const f = layout.fields.find((field) => field.type === "timestamp-ms" || field.type === "timestamp-us")
+  if (!f) return -1n
+  let v = 0n
+  for (let bit = 0; bit < f.length; bit++) {
+    const pos = f.start + bit
+    const byteIdx = pos >> 3
+    const bitIdx = 7 - (pos & 7)
+    v = (v << 1n) | ((BigInt(bytes[byteIdx]) >> BigInt(bitIdx)) & 1n)
+  }
+  return v
+}
+
 // Warm up pools
 for (let i = 0; i < 2048; i++) genStructuredGenoID(DBKEY_LAYOUT)
 
@@ -31,7 +46,13 @@ const totalFieldChecks = N * structFields.length
 let mismatchCount = 0
 let constraintViolations = 0
 let monotonicityViolations = 0
-let lastCounterValue = -1n
+// RFC 9562 §6.2: the (timestamp, counter) pair must be
+// non-decreasing in emission order. The counter alone may
+// decrease exactly when its run exhausts and the clock has
+// advanced — the reseed always accompanies a strictly
+// larger timestamp, so the pair never regresses.
+let lastTs = -1n
+let lastCtr = -1n
 
 for (const f of structFields) {
   if (f.name === "counter") break
@@ -61,8 +82,10 @@ for (let i = 0; i < N; i++) {
     if (f.constraint?.allowed && !f.constraint.allowed.includes(vParsed)) constraintViolations++
 
     if (f.name === "counter") {
-      if (vManual < lastCounterValue) monotonicityViolations++
-      lastCounterValue = vManual
+      const ts = vManualTs(bytes, DBKEY_LAYOUT)
+      if (ts < lastTs || (ts === lastTs && vManual < lastCtr)) monotonicityViolations++
+      lastTs = ts
+      lastCtr = vManual
     }
   }
 }
@@ -102,7 +125,7 @@ console.log("UUIDs generated:", N)
 console.log("Total field checks:", totalFieldChecks)
 console.log("Field-copy mismatches:", mismatchCount)
 console.log("Constraint violations (shard in {1..5}):", constraintViolations)
-console.log("Monotonicity violations (counter):", monotonicityViolations)
+console.log("Monotonicity violations ((timestamp,counter) pair):", monotonicityViolations)
 console.log("PASS:", result.pass)
 console.log("Collision test (2M):", collisions, "collisions")
 console.log("Time: " + result.elapsed_ms.e1.toFixed(1) + "ms E1 + " + result.elapsed_ms.collision.toFixed(1) + "ms collision")

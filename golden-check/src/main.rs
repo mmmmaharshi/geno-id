@@ -32,12 +32,15 @@ impl Xorshift128p {
     }
 }
 
-// === Counter state (tick-keyed, matches TypeScript CounterState) ===
-#[derive(Clone, Copy)]
-struct CounterState {
-    tick: u64,
-    ctr: u64,
-}
+// === Counter state (RFC 9562 §6.2, matches TypeScript _poolMonoTick) ===
+// A monotonic counter field owns one global incrementing value per
+// layout. A new counter run is CSPRNG-seeded (raw field value %
+// reseed_range, top bit clear) and the value increments within a
+// tick; on exhaustion the run reseeds — only sortable with a
+// strictly larger timestamp, so generation freezes until the clock
+// advances. The frozen-clock golden model never exhausts within
+// POOL_SIZE entries, so the reseed-on-exhaustion arm is unreachable
+// here (it exists to mirror the TypeScript model exactly).
 
 // === Layout ===
 #[derive(Clone, Debug)]
@@ -104,11 +107,11 @@ fn to_uuid_string(buf: &[u8; 16]) -> String {
     )
 }
 
-// === Repair (matches TypeScript repairConstraints — index-modulo + tick-keyed counter) ===
+// === Repair (matches TypeScript repairConstraints — index-modulo + §6.2 counter) ===
 fn repair_constraints(
     buf: &mut [u8; 16],
     fields: &[Field],
-    counters: &mut HashMap<String, CounterState>,
+    counters: &mut HashMap<String, u64>,
     layout_name: &str,
     now: u64,
 ) {
@@ -138,36 +141,25 @@ fn repair_constraints(
             if v > max { v = max; changed = true; }
         }
 
-        // monotonic: tick-keyed counter, 1 guard bit (algo.ts:703-719).
-        // On first init TS seeds ctr = v % reseed_range and then falls through
-        // to the tick check, where tick == state.tick, taking the increment
-        // branch — so the effective first value is (v % reseed_range) + 1.
-        // On a genuine tick change TS reseeds to v % reseed_range with NO
-        // increment.
+        let _ = now;
+
+        // monotonic: global incrementing counter (RFC 9562 §6.2).
+        // First use seeds from the CSPRNG draw (v % reseed_range);
+        // each subsequent UUID increments; an exhausted run reseeds
+        // (only with a strictly larger timestamp — unreachable in
+        // the frozen-clock golden model within POOL_SIZE entries).
         if c.monotonic {
             let key = format!("{}:{}", layout_name, f.name);
             let field_range = 1u64 << f.length;
             let reseed_range = 1u64 << (f.length - 1); // guardBits = 1
 
-            match counters.get(&key).copied() {
-                // First init seeds only — no increment (algo.ts:706-711).
-                None => {
-                    let st = CounterState { tick: now, ctr: v % reseed_range };
-                    counters.insert(key, st);
-                    v = st.ctr;
-                }
-                Some(mut st) => {
-                    let tick = now.max(st.tick);
-                    if tick != st.tick {
-                        st.tick = tick;
-                        st.ctr = v % reseed_range;
-                    } else {
-                        st.ctr = (st.ctr + 1) % field_range;
-                    }
-                    counters.insert(key, st);
-                    v = st.ctr;
-                }
-            }
+            let next = match counters.get(&key).copied() {
+                None => v % reseed_range,
+                Some(ctr) if ctr >= field_range - 1 => v % reseed_range,
+                Some(ctr) => (ctr + 1) % field_range,
+            };
+            counters.insert(key, next);
+            v = next;
             changed = true;
         }
 
@@ -186,7 +178,7 @@ fn generate_batch(
     rng: &mut Xorshift128p,
     fields: &[Field],
     layout_name: &str,
-    counters: &mut HashMap<String, CounterState>,
+    counters: &mut HashMap<String, u64>,
     count: usize,
 ) -> Vec<String> {
     const STRUCT_ENTRY: usize = 34;
@@ -197,7 +189,7 @@ fn generate_batch(
     rng.fill_bytes(&mut pool);
 
     // Separate from `counters`: mirrors _poolMonoTick vs _counterStates.
-    let mut pool_mono: HashMap<String, CounterState> = HashMap::new();
+    let mut pool_mono: HashMap<String, u64> = HashMap::new();
 
     let mut strings = Vec::with_capacity(POOL_SIZE);
     for n in 0..POOL_SIZE {
@@ -218,10 +210,13 @@ fn generate_batch(
             }
         }
 
-        // Pool-level monotonic pass (algo.ts:736-753). This runs BEFORE
-        // repairConstraints and uses a SEPARATE state map (_poolMonoTick),
-        // so the counter is advanced twice per UUID; the repair pass writes
-        // last, but this pass determines the value repair reads at first init.
+        // Pool-level monotonic pass (algo.ts refillSingleParentPool).
+        // This runs BEFORE repairConstraints and uses a SEPARATE
+        // state map (_poolMonoTick), so the counter is advanced
+        // twice per UUID; the repair pass writes last, but this
+        // pass determines the value repair reads at first init.
+        // Both maps advance identically (§6.2 global increment),
+        // so the double advance converges on the TypeScript value.
         for f in fields {
             let is_mono = f.constraint.as_ref().map(|c| c.monotonic).unwrap_or(false);
             if !is_mono {
@@ -233,23 +228,11 @@ fn generate_batch(
             let v = read_bits(&buf, f.start, f.length);
 
             let out = match pool_mono.get(&key).copied() {
-                None => {
-                    let st = CounterState { tick: TIMESTAMP_MS, ctr: v % reseed_range };
-                    pool_mono.insert(key, st);
-                    st.ctr
-                }
-                Some(mut st) => {
-                    let tick = TIMESTAMP_MS.max(st.tick);
-                    if tick != st.tick {
-                        st.tick = tick;
-                        st.ctr = v % reseed_range;
-                    } else {
-                        st.ctr = (st.ctr + 1) % field_range;
-                    }
-                    pool_mono.insert(key, st);
-                    st.ctr
-                }
+                None => v % reseed_range,
+                Some(ctr) if ctr >= field_range - 1 => v % reseed_range,
+                Some(ctr) => (ctr + 1) % field_range,
             };
+            pool_mono.insert(key, out);
             write_bits(&mut buf, f.start, f.length, out);
         }
 

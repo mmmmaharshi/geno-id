@@ -170,8 +170,14 @@ test("compileLayout bytes identical to interpreted when using same CSPRNG draw",
   const expectedShard = allowed[rawShard % allowed.length]
   assert.equal(shard, expectedShard)
 
-  // counter starts at 1 (first call, ++ increments from 0 to 1)
-  assert.equal(ctr, 1)
+  // Counter (bits 66-81) starts from a CSPRNG reseed
+  // (RFC 9562 §6.2: a new counter run is seeded from the
+  // draw, top bit clear), then increments within the tick.
+  const rawCtr =
+    (deterministicBytes[8] & 0x3f) * 1024 +
+    deterministicBytes[9] * 4 +
+    (deterministicBytes[10] >>> 6)
+  assert.equal(ctr, rawCtr % 32768)
 
   Date.now = origNow
 })
