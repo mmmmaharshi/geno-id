@@ -23,10 +23,10 @@ compatible semver ranges.
 
 | Claim in README / CHANGELOG | Command | Output |
 |---|---|---|
-| Composition correctness (E1), repair-vs-rejection (E2), collision/uniformity (E3-E5), throughput (E6) | `bun run scripts/bench-structured.ts` | stdout table |
+| Composition correctness (E1), repair-vs-rejection (E2), collision/uniformity (E3-E5), throughput (E6), single-parent ablation (E7) | `bun run scripts/bench-structured.ts` | stdout table + `results/structured-evidence.json` |
 | Node.js speed + uniformity + collision (v4/v7/hash/mr/GenoID) | `bun run bench` | stdout, with mean±std/95%CI + Welch t-test (v1.9.0+) |
 | CI-style condensed JSON benchmark | `bun run bench-ci` | `dist/bench-ci-results.json` |
-| NIST SP 800-22, all 15 tests, all sample layouts | `bun run test:stats` (wraps `scripts/nist-bridge.py`) | stdout PASS/FAIL per test |
+| NIST SP 800-22, all 15 tests, all sample layouts | `python scripts/nist-full-battery.py` (after `bun scripts/export-structured.ts`) | `results/nist-sp800-22-results.json` + stdout per-test p-values |
 | Concurrent generation, cross-worker collision (Task B) | `bun run bench-concurrent` | stdout |
 | SQLite B-tree index locality (Task C) | `bun run bench-sqlite` | stdout |
 | 100M-scale collision test, all cores (Task D) | `bun run collision-100m` | stdout |

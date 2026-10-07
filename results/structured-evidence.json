@@ -1,0 +1,80 @@
+{
+  "e1": {
+    "fieldsChecked": 1500000,
+    "mismatches": 0,
+    "constraintViolations": 0,
+    "pass": true
+  },
+  "e2": [
+    {
+      "k": 1,
+      "gaRepairsPerUuid": 0.98373,
+      "rejectionTrialsPerUuid": "64.2",
+      "gaMs": 103.04370000000017,
+      "rejectMs": 159.88990000000013
+    },
+    {
+      "k": 2,
+      "gaRepairsPerUuid": 1.96909,
+      "rejectionTrialsPerUuid": "4058.8",
+      "gaMs": 202.6875999999993,
+      "rejectMs": 10473.142499999998
+    },
+    {
+      "k": 3,
+      "gaRepairsPerUuid": 2.952985,
+      "rejectionTrialsPerUuid": "64^3 = 2.62e+5 (analytic)",
+      "gaMs": 284.5844999999972,
+      "rejectMs": 0
+    },
+    {
+      "k": 4,
+      "gaRepairsPerUuid": 3.937515,
+      "rejectionTrialsPerUuid": "64^4 = 1.68e+7 (analytic)",
+      "gaMs": 398.3150000000023,
+      "rejectMs": 0
+    },
+    {
+      "k": 5,
+      "gaRepairsPerUuid": 4.92167,
+      "rejectionTrialsPerUuid": "64^5 = 1.07e+9 (analytic)",
+      "gaMs": 486.19230000000243,
+      "rejectMs": 0
+    },
+    {
+      "k": 6,
+      "gaRepairsPerUuid": 5.90502,
+      "rejectionTrialsPerUuid": "64^6 = 6.87e+10 (analytic)",
+      "gaMs": 719.8680999999997,
+      "rejectMs": 0
+    }
+  ],
+  "e3e4e5": {
+    "layout": "dbkey",
+    "n": 2000000,
+    "collisions": 0,
+    "birthdayBound50": "2.71e+18",
+    "uniformityMaxDev": 0.006259999999999988,
+    "pass": true
+  },
+  "e6": {
+    "v4NativeOpsPerSec": 12506753.646969374,
+    "baseOpsPerSec": 2445955.3926223237,
+    "structuredOpsPerSec": 2132455.3303919365,
+    "mode": "compiled-direct-v8",
+    "slowerVsV4": 5.8649545754708425,
+    "vsBase": 1.1470136596825065
+  },
+  "e7": {
+    "productionOpsPerSec": 2524753.9501038166,
+    "singleParentOpsPerSec": 399104.7601304553,
+    "singleParentRatio": 0.158076695003901,
+    "productionCollisions": 0,
+    "singleParentCollisions": 0,
+    "singleParentUniformityMaxDev": 0.005659999999999998,
+    "productionUniformityMaxDev": 0.00548000000000004,
+    "compositionChecks": 1500000,
+    "compositionViolations": 0,
+    "pass": true
+  }
+}

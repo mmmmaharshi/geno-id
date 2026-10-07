@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.24.0] - 2026-08-15
+
+### Summary
+
+**Structured experiments E1–E7 now emit machine-readable evidence; paper NIST section upgraded to the full 15-test battery (123/123 PASS).**
+
+#### ✨ Highlights
+
+- **`results/structured-evidence.json`** — `scripts/bench-structured.ts` writes all E1–E7 measurements: composition (1.5M checks, 0 mismatches, 0 violations), repair curve (GA repairs/UUID ≈ k vs rejection 64^k, 6.87e10 at k=6), collision (0 at n=2M), uniformity (max dev ≤ 0.0063), throughput (compiled-direct-v8), single-parent ablation (0.14–0.16× production, identical guarantees).
+- **Paper §NIST** — replaced the "7 of 15 sub-tests, follow-up instrumentation needed" claim with the full-battery result: 123/123 p-values ≥ α=0.01 on fresh 10M-bit exports, including the 8 Random Excursions and 16 Random Excursions Variant states, with the Type-I caveat (one prior draw had a single Random Excursions state at p=0.0057, within the expected ~1.2/123 false-positive rate).
+- **Reproducibility table** — `sources/reproducibility.md` now lists the exact commands and artifacts for both the structured evidence and the full NIST battery.
+
+#### 🔧 Internal
+
+- **`scripts/bench-structured.ts`** — E1–E7 functions return typed results; JSON written at exit. Renamed shadowing local `fs` → `fieldSelect` (lint).
+
+#### ⚠️ Breaking Changes
+
+None. Generation code untouched; measurement and documentation only.
+
+#### 🔄 Upgrade Guide
+
+No action required. Reproduce: `bun run scripts/bench-structured.ts` → `results/structured-evidence.json`.
+
+#### 🐛 Known Issues
+
+None new.
+
+#### 📦 Dependencies Updated
+
+None.
+
+
 ## [1.23.0] - 2026-08-15
 
 ### Summary
