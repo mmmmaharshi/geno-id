@@ -17,8 +17,8 @@ const algo = await import(algoPath) as {
 
 const { genStructuredGenoID, uuidToBytes, getFieldValue, DBKEY_LAYOUT } = algo
 
-type V8Field = { name: string; start: number; length: number; type: string; constraint?: { allowed?: number[]; monotonic?: boolean } }
-type V8Layout = { name: string; fields: V8Field[] }
+interface V8Field { name: string; start: number; length: number; type: string; constraint?: { allowed?: number[]; monotonic?: boolean } }
+interface V8Layout { name: string; fields: V8Field[] }
 
 // Warm up pools
 for (let i = 0; i < 2048; i++) genStructuredGenoID(DBKEY_LAYOUT)

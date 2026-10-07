@@ -1412,13 +1412,16 @@ function genValueExpr(f: V8Field, mod: number, bm: ByteMask[], raw?: boolean, bu
    const ts = batchNow ? "_now" : "Date.now()"
   switch (f.type) {
     case "timestamp-ms": {
-      return raw ? `now%${mod}` : pow2 ? `${ts}&${mod - 1}` : `${ts}%${mod}`
+      if (raw) return `now%${mod}`
+      return pow2 ? `${ts}&${mod - 1}` : `${ts}%${mod}`
     }
     case "timestamp-us": {
-      return raw ? `(now*1000)%${mod}` : pow2 ? `(${ts}*1000)&${mod - 1}` : `(${ts}*1000)%${mod}`
+      if (raw) return `(now*1000)%${mod}`
+      return pow2 ? `(${ts}*1000)&${mod - 1}` : `(${ts}*1000)%${mod}`
     }
     case "counter": {
-      return raw ? `ctr%${mod}` : pow2 ? `(++_ctr)&${mod - 1}` : `(++_ctr)%${mod}`
+      if (raw) return `ctr%${mod}`
+      return pow2 ? `(++_ctr)&${mod - 1}` : `(++_ctr)%${mod}`
     }
     case "shard":
     case "node":
