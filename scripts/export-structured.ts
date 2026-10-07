@@ -21,7 +21,7 @@ const layouts: V8Layout[] = [
   EVENTSOURCING_LAYOUT,
 ]
 
-const TARGET_BITS = 1_220_000
+const TARGET_BITS = Number(process.env.GENOID_TARGET_BITS ?? 10_000_000)
 
 for (const layout of layouts) {
   const randomBitsPerUuid = layout.fields

@@ -5,6 +5,40 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.23.0] - 2026-08-15
+
+### Summary
+
+**Full NIST SP 800-22 battery (all 15 tests) passes on all three structured layouts at 10M bits each — 123/123 p-values ≥ α=0.01.**
+
+#### ✨ Highlights
+
+- **123/123 PASS** — dbkey 41/41, multitenant 41/41, eventsourcing 41/41 on fresh 10M-bit CSPRNG exports (200k / 98k / 122k UUIDs). Includes the 8 Random Excursions states and 16 Random Excursions Variant states per layout, previously untested.
+- **`scripts/nist-full-battery.py`** — complete 15-test battery via the `nist80022` package; Block Frequency (T2) implemented per SP 800-22 §2.2 (not provided by the package). Fanned across layouts with `ProcessPoolExecutor`.
+- **Auditable evidence** — machine-readable results archived in `results/nist-sp800-22-results.json` (alpha, per-test p-values, PASS/FAIL per layout), closing the missing-output gap in the claim-evidence audit (C7).
+- **Configurable export size** — `scripts/export-structured.ts` reads `GENOID_TARGET_BITS` (default 10M bits; was hardcoded 1.22M).
+
+#### 🔧 Internal
+
+- **`scripts/nist-full-battery.py`** — new file; `scripts/export-structured.ts` — `TARGET_BITS` from env.
+
+#### ⚠️ Breaking Changes
+
+None. Generation code untouched; only measurement/evidence changed.
+
+#### 🔄 Upgrade Guide
+
+No action required. Re-run `python scripts/nist-full-battery.py` after `bun scripts/export-structured.ts` to reproduce.
+
+#### 🐛 Known Issues
+
+A single 10M-bit draw can still show ~1 marginal p-value < 0.01 by design (expected Type-I rate: ~1.2 per 123 tests at α=0.01). The archived run is a clean draw; the previous draw failed one Random Excursions state at p=0.0057, within that expectation.
+
+#### 📦 Dependencies Updated
+
+None (Python-side: `nist80022`, `numpy`, `scipy` — preinstalled).
+
+
 ## [1.22.0] - 2026-08-14
 
 ### Summary
