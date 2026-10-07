@@ -5,6 +5,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.24.1] - 2026-08-15
+
+### Summary
+
+**DB locality read-experiment methodology fix: repeated trials with 95% CI replace single-shot reads — and the corrected measurement flips the finding.**
+
+#### 🐛 Bug Fix
+
+- **`scripts/bench-db.ts`** — read experiments (point lookup, shard-prune range scan, uuid_v7 baseline) ran once per arm and reported a single number, contradicting the paper's stated "mean ± SD over trials with 95% CI" methodology. Single-shot point lookups swung 47.5–72.8 µs across runs and mislabeled `genoid_shardfirst` as the slowest arm. Every read metric now repeats over `--read-reps` (default 5) probe sets and reports mean ± 95% CI, matching the insert side of the same benchmark.
+
+#### ✨ Highlights
+
+- **Corrected locality signal** — with repeated measurement, `genoid_shardfirst` point lookup is the fastest arm at 33.5 µs (CI 33.3–33.7), and the GenoID PK range scan answers a partition query in 8.4 ms vs 87.8 ms for an unindexed uuid_v7 table scan (10.4×, zero index bytes). The uuid_v7 +tenant-index path (3.1 ms) wins reads only by paying a 5.4% insert tax + 7.3 MB storage.
+- **Testable + import-safe** — `import.meta.main` guard (importing the module no longer runs the benchmark), exported `aggregateReps` and `shardRangeKeys` helpers, and `scripts/bench-db.test.ts` (5 tests: CI bracketing, zero-width CI cases, half-open shard range keys).
+
+#### ⚠️ Breaking Changes
+
+None. `results/db-sqlite.json` read fields change shape from single numbers to `{mean, ci95}`; no in-repo consumers beyond the console report.
+
+#### 🔄 Upgrade Guide
+
+No action required. Reproduce: `bun run bench-db` (add `--read-reps=10` for the paper's 10-trial protocol).
+
+#### 🐛 Known Issues
+
+The GenoID PK range scan CI is wide (3.1–13.7 ms) because the first rep is cache-cold; later reps are cache-warm. Reported honestly as mean ± CI rather than discarding the cold rep.
+
+#### 📦 Dependencies Updated
+
+None.
+
+
 ## [1.24.0] - 2026-08-15
 
 ### Summary
