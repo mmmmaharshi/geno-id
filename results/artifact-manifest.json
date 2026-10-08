@@ -1,12 +1,13 @@
 {
   "manifest_version": "1.0",
   "commit": "6336841",
-  "package_version": "1.22.0",
+  "package_version": "1.24.2",
   "generated_at": "2026-08-14T00:00:00Z",
+  "note": "artifact map maintained alongside the manuscript; each entry names the committed file under results/ that backs the claim",
   "artifacts": {
     "sec_composition_correctness": {
       "section": "Composition correctness (Section 5.1)",
-      "claim": "Over 1.5M structured-field checks: 0 mismatches and 0 constraint violations",
+      "claim": "Over 1.5M structured-field checks on the shipped compiled-direct-v8 path: 0 mismatches, 0 constraint violations, 0 monotonicity violations",
       "artifact": "results/e1-production-1500k.json",
       "command": "bun run scripts/e1-production.ts",
       "verified": true
@@ -20,45 +21,64 @@
     },
     "sec_collision_uniformity": {
       "section": "Collision and uniformity (Section 5.3)",
-      "claim": "Zero collisions at 2M draws, 10^8 shard frequency matches prediction",
+      "claim": "Zero collisions at 2M draws; 10^8 shard histogram matches the index-modulo fibre prediction (max dev 0.012 pp, 2.9 sigma)",
       "artifact": "results/benchmark_results.json + results/shard-histogram-100m.json",
-      "command": "bun run playwright + bun run scripts/histogram-100m.ts"
+      "command": "bun run playwright + bun run histogram-100m",
+      "verified": true
     },
     "sec_nist_dieharder": {
       "section": "NIST SP 800-22 and dieharder (Section 5.4)",
-      "claim": "All 15 NIST tests pass; dieharder 152/152 PASS",
-      "artifact": "pending: nist-bridge.py output, results/dieharder-results.md",
-      "command": "bun run scripts/export-structured.ts && python scripts/nist-bridge.py + bun run scripts/run-dieharder.ts"
+      "claim": "43 reported p-values per layout (41 test categories plus decomposition states), all p >= 0.01; dieharder curated subset 152/152 PASS",
+      "artifact": "results/nist-sp800-22-results.json, results/dieharder-results.md",
+      "command": "bun run scripts/export-structured.ts && python scripts/nist-bridge.py + bun run scripts/run-dieharder.ts",
+      "verified": true
     },
     "sec_throughput": {
       "section": "Throughput (Section 5.5)",
       "claim": "genoid-structured outperforms prior art 2.0-6.7x across nine CI environments",
-      "artifact": "dist/bench-ci-results.json",
-      "command": "bun run bench-ci"
+      "artifact": "dist/bench-ci-results.json, dist/all-results.json",
+      "command": "bun run bench-ci (CI matrix, .github/workflows/bench.yml)",
+      "verified": true
     },
     "sec_deployability": {
       "section": "Deployability (Section 5.7)",
       "claim": "Concurrent generation zero cross-worker collisions, browser Playwright test 0 errors/collisions",
       "artifact": "results/benchmark_results.json",
-      "command": "bun run playwright"
+      "command": "bun run playwright",
+      "verified": true
     },
     "sec_cross_lang": {
       "section": "Cross-language reproducibility (Section 5.8)",
       "claim": "Rust reimplementation byte-identical: 3000 UUIDs, zero mismatches",
       "artifact": "golden/*.txt + golden-check/",
-      "command": "bun run scripts/export-golden.ts && cd golden-check && cargo run"
+      "command": "bun run scripts/export-golden.ts && cd golden-check && cargo run",
+      "verified": true
+    },
+    "sec_db_localities": {
+      "section": "Database locality (Section 3.3)",
+      "claim": "Indexed probe baseline reported alongside GenoID primary-key scans, with 95% CIs and Welch tests",
+      "artifact": "results/db-sqlite.json",
+      "command": "bun run bench-db",
+      "verified": true
     }
   },
   "notes": {
+    "release_identity": {
+      "policy": "the manuscript freezes to one release tag; every cited artifact must exist in that tag's tree",
+      "package_version": "1.24.2",
+      "frozen_commit": "dae7937",
+      "stale_dois_not_cited": [
+        "10.5281/zenodo.21617109 (v1.21.0)",
+        "10.5281/zenodo.21618258 (v1.21.2)"
+      ],
+      "note": "both Zenodo records precede the RFC 9562 §6.2 monotonicity fix, the E1 production-path rewrite, and the 10^8 histogram, so citing either would point readers at code that does not contain the reported behavior; the canonical resolver is the GitHub repository plus the frozen tag"
+    },
     "unsupported_claims": [
-      "PostgreSQL measured results (untracked file results/db-native.json, not committed)",
-      "InnoDB/MySQL results (no artifact exists)",
+      "InnoDB/MySQL results (no artifact exists; not claimed in the manuscript)",
       "pg_uuid_v8 baseline described as RFC v8 in related work — corrected to v4-compatible"
     ],
     "future_work": [
-      "Full NIST SP 800-22 p-value table on three layouts",
-      "100M shard histogram experiment",
-      "PostgreSQL/InnoDB benchmarking infrastructure",
+      "InnoDB/MySQL benchmarking infrastructure",
       "GA ablation/degraded-source experiments"
     ]
   }

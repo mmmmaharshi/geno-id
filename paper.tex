@@ -52,7 +52,7 @@ Bharath Institute of Engineering and Technology, Ranga Reddy, Telangana, India \
 \maketitle              % typeset the title of the contribution
 
 \begin{abstract}
-Standard UUID generators cannot embed application-defined structure (a shard, a tenant, or a monotonic counter) inside a standards-compliant identifier without paying rejection sampling's exponential cost. RFC 9562 makes this gap explicit: version 8 reserves 122 bits for exactly this purpose but defines no algorithm to fill them. We close this gap with GenoID, a declarative composition framework that produces valid v8 UUIDs from arbitrary constrained fields at $O(k)$ cost, against rejection sampling's $O(64^k)$ expected cost under tight constraints, with a proven $m/2^\ell$ uniformity bound on every repaired field, measured throughput $2.0$--$6.7\times$ that of the closest prior art across nine runtime environments, and byte-identity across an independent Rust reimplementation. The design is backed by formal complexity and entropy accounting and an explicit adversarial security analysis that separates GenoID's architectural contribution from the CSPRNG-inherited randomness quality beneath it. By making shard, tenant, and sequence identity a declarative property of the key itself, GenoID targets the data-systems layer directly.
+Standard UUID generators cannot embed application-defined structure (a shard, a tenant, or a monotonic counter) inside a standards-compliant identifier without paying rejection sampling's exponential cost. RFC 9562 makes this gap explicit: version 8 reserves 122 bits for exactly this purpose but defines no algorithm to fill them. We close this gap with GenoID, a declarative composition framework that produces valid v8 UUIDs from arbitrary constrained fields at $O(k)$ cost, against rejection sampling's $O(64^k)$ expected cost under tight constraints, with a proven total-variation bound $m/2^\ell$ on every repaired field, measured throughput $2.0$--$6.7\times$ that of the closest prior art across nine runtime environments, and byte-identity across an independent Rust reimplementation. The design is backed by formal complexity and entropy accounting and an explicit adversarial security analysis that separates GenoID's architectural contribution from the CSPRNG-inherited randomness quality beneath it. By making shard, tenant, and sequence identity a declarative property of the key itself, GenoID targets the data-systems layer directly.
 \keywords{distributed data systems, sharding, UUID, RFC 9562, constraints, evaluation}
 \end{abstract}
 
@@ -67,9 +67,9 @@ Existing UUIDs fall short: v4 carries no structure, v7 fixes one timestamp layou
     \item A declarative RFC~9562 v8 layout abstraction for typed, constrained fields.
     \item A pooled generation architecture that amortizes CSPRNG draws, entropy-neutral by construction.
     \item Constraint-guided repair: $O(k)$ per UUID vs $O(64^k)$ rejection sampling.
-    \item Proven $m/2^\ell$ uniformity bound on repaired constrained fields, exactly uniform when $m \mid 2^\ell$.
+    \item A proven total-variation bound $m/2^\ell$ on repaired constrained fields, with exact-fibre conditions on both shipped repair paths.
     \item An adversarial security analysis disclosing the bounded forward-secrecy window and by-design metadata leakage of structured layouts.
-    \item Validation across per-field uniformity at $10^8$ scale (matching the closed-form $m/2^\ell$ bound to $\pm0.01$ percentage points), NIST and dieharder batteries, and multi-runtime throughput benchmarks, with limitations disclosed openly.
+    \item Validation across per-field uniformity at $10^8$ scale (matching the closed-form $m/2^\ell$ bound to within $0.012$ percentage points, consistent with the $0.004$ pp binomial sampling noise at $n=10^8$), NIST and dieharder batteries, and multi-runtime throughput benchmarks, with limitations disclosed openly.
 \end{itemize}
 
 \section{Design}
@@ -344,19 +344,7 @@ const multitenant: V8Layout = {
 \end{lstlisting}
 
 \subsection{Event sourcing}
-Pairing a 48-bit timestamp with a monotonic counter yields
-identifiers that sort in emission order within a node, with the
-counter breaking ties inside a single millisecond. An append-only
-log therefore orders by primary key alone, without a sequence
-server or a coordination round trip. Ordering rests on a single
-non-decreasing pair: the timestamp is clamped to
-$\max(\text{clock}, \textit{last tick})$, and the counter increments
-within a tick rather than being redrawn. A backwards clock therefore
-yields the previous tick with an incremented counter, monotonic by construction, rather than an out-of-order key. Counter exhaustion
-within a tick freezes generation until the clock advances, following
-RFC~9562 \S6.2, which prefers a bounded stall to a broken sort order.
-Ordering is per-generator; cross-node total order still
-requires an external mechanism.
+The shipped \texttt{eventsourcing} layout pairs a 16-bit \texttt{stream} node at bit~0 with a 24-bit monotonic \texttt{seq} counter at bit~66, leaving 82 random bits. The layout is deliberately not timestamped: within one process, log position is carried by the counter, and the stream field separates concurrent writers, so an append-only log orders by primary key alone without a sequence server or a coordination round trip. Ordering rests on a single non-decreasing pair, the same one \texttt{dbkey} uses: the counter increments within a tick rather than being redrawn, and on exhaustion generation freezes until the clock advances, following RFC~9562 \S6.2, which prefers a bounded stall to a broken sort order. A timestamped variant of this layout is obtained by declaring a \texttt{timestamp-ms} field; that variant inherits the identical clamp and freeze-and-wait behaviour. Ordering is per-generator; cross-node total order still requires an external mechanism.
 
 \section{Formal Analysis}
 Rejection bets that a lucky whole-UUID draw arrives before an unlucky run; repair guarantees success by fixing only the fields that need it. The gap below quantifies that bet, and the entropy argument shows it costs nothing in randomness quality.
@@ -380,13 +368,24 @@ identically (Section~\ref{sec:nist}), consistent with the former.
 \subsection{Uniformity of constraint repair}
 \label{sec:uniformity}
 
-For \texttt{dbkey} ($m=5,\ \ell=8$), modulo repair partitions the $2^8=256$ candidates into fibre classes of $\lfloor 256/5 \rfloor = 50$ and $\lceil 256/5 \rceil = 51$: since $256 \bmod 5 = 1$, one admissible value receives 52 preimages (itself plus 51 invalid values mapping via index-modulo) while the other four receive 51 each. This yields a maximum per-value frequency deviation of $(52-51)/256 \approx 0.39\%$. The general bound $m/2^\ell = 1.95\%$ is an upper bound on total variation distance; the actual worst-case per-class difference is $(\lceil 2^\ell/m \rceil - \lfloor 2^\ell/m \rfloor)/2^\ell$. For \texttt{multitenant} ($m=8$ and $m=4$ at $\ell=12$), where $m \mid 2^{12}$, the partition is exact and the induced distribution is exactly uniform. The map is a surjection with near-equal fibres and involves no redraw, preserving the $O(1)$ per-field cost of Algorithm~\ref{alg:repair}.
+Let $A = (a_0, a_1, \dots, a_{m-1})$ be the admissible set in declaration order, $m = |A|$, and let $C_i = \left\lfloor (2^\ell - 1 - i)/m \right\rfloor + 1$ be the number of $\ell$-bit values congruent to $i$ modulo $m$. Index-modulo repair sends a raw value $v$ to $a_{v \bmod m}$, so the fibre of $a_i$ is exactly $C_i$. Total variation distance is bounded by
+\[
+  \|p - u\|_{\mathrm{TV}} \;\le\; \frac{m}{2^\ell}, \qquad
+  \max_i |p(a_i) - 1/m| \;\le\; \frac{\lceil 2^\ell/m \rceil}{2^\ell},
+\]
+where $u$ is uniform on $A$; the second bound follows from the first because no admissible value can gain more than a whole excess class.
 
-Repair is idempotent: a value already in $A$ is left unchanged, and only inadmissible values are mapped. For a contiguous admissible set the guard is distribution-neutral, each admissible value gaining the draw it maps to itself and losing the one that would otherwise have landed on it, a permutation cycle summing to zero, so the $m/2^\ell$ bound is unaffected. For a non-contiguous set the guard displaces at most $m$ draws, leaving the bound $O(m/2^\ell)$.
+\textbf{Theorem (fibre sizes).} On the compiled path, which applies $A[v \bmod m]$ unconditionally, the probability of drawing $a_i$ is $C_i / 2^\ell$, and the repaired distribution is exactly uniform \emph{iff} $m \mid 2^\ell$.
 
-Nearest-value repair admits no such bound: its fibres are Hamming balls whose sizes depend on the bit patterns of the admissible set rather than its cardinality. Under \texttt{dbkey} all five admissible values lie below $2^3$, so the upper five bits cannot affect the arg-min and the induced shard distribution is $(25,25,25,12.5,12.5)\%$, a $2\times$ load imbalance, with $37.5\%$ of draws landing on an arg-min tie whose resolution is implementation-defined. Index-modulo eliminates both. We therefore treat field width as a declaration-time obligation: the layout validator warns when $m \nmid 2^\ell$ and reports the residual bound.
+The pooled path keeps an already-admissible value as itself before falling back to $A[v \bmod m]$, so it partitions the raw values differently. Writing $G_i = |\{a \in A : a \equiv i \pmod m\}|$, the fibre of $a_i$ on that path is $1 + C_i - G_i$. The two agree on every contiguous admissible set, and differ as soon as the set skips a residue class.
 
-The \textsc{range} branch clamps rather than folds, and is therefore not uniformity-preserving: draws outside $[\textit{min},\textit{max}]$ accumulate at the endpoints. Neither layout evaluated here declares a range constraint; a layout that does should size the field so that out-of-range draws are rare, or declare an admissible set instead.
+\textbf{Corollary (pooled-path uniformity).} On the pooled path the repaired distribution is exactly uniform \emph{iff} $m \mid 2^\ell$ and $G_i = 1$ for every $i$, i.e.\ the admissible set occupies every residue class exactly once.
+
+Both conditions are satisfied by every layout this paper evaluates, which is why the measurement in Section~\ref{sec:evaluation} is path-independent for them. The conditions are also tight, and the two paths really do diverge when they fail. Take $m=2$, $\ell=2$, $A = \{0,2\}$: $m \mid 2^\ell$ holds, so the compiled path stays uniform at $(50\%, 50\%)$, whereas the pooled path folds the residue-1 draws onto $a_1 = 2$ and emits $(25\%, 75\%)$; the accompanying test suite pins both the prediction and the empirical split. This is the precise sense in which a declarative layout's field width and admissible set are correctness obligations on the author, not tuning parameters: a declaration that skips residue classes is still \emph{admissible} on every draw, but its per-value frequencies are path-dependent and the validator reports the residual bound rather than silently accepting it.
+
+For \texttt{dbkey} ($m=5$, $\ell=8$), $256 \bmod 5 = 1$, so one residue class holds 52 raw values and the other four hold 51; with the contiguous set $A = \{1,2,3,4,5\}$ the class of index~0 (value~1) is the heavy one, giving $(52,51,51,51,51)$ preimages out of 256, a maximum per-value deviation of $(52 - 51.2)/256 \approx 0.31\%$ from uniform $51.2/256$, and a worst-case spread between classes of $(52-51)/256 = 0.39\%$. For \texttt{multitenant}, the region field ($m=4$, $\ell=8$) and the tenant field ($m=8$, $\ell=12$) both satisfy $m \mid 2^\ell$ with $G_i = 1$ throughout, so both are exactly uniform on either path; no multitenant field is declared at $\ell=12$ with $m=4$. The map is a surjection with near-equal fibres and involves no redraw, preserving the $O(1)$ per-field cost of Algorithm~\ref{alg:repair}.
+
+The \textsc{range} branch clamps rather than folds, and is therefore not uniformity-preserving: draws outside $[\textit{min},\textit{max}]$ accumulate at the endpoints. Neither layout evaluated here declares a range constraint; a layout that does should size the field so that out-of-range draws are rare, or declare an admissible set instead. The validator reports the residual bound for any declared field.
 
 \section{Security Analysis}
 \label{sec:security}
@@ -427,7 +426,7 @@ Base generation pools hold 256 entries and structured generation pools hold up t
 
 \section{Evaluation}
 \label{sec:evaluation}
-Every number below is reproducible from the CI artifacts at \texttt{bun run bench-ci} across a nine-job matrix spanning three OSes and three runtimes (Bun, Node~22, Deno~2.9.3).
+Each result below names its own artifact; Table~\ref{tab:artifact-map} in the Availability section maps every table and figure to the exact command and archived output path. Throughput figures come from a nine-job CI matrix spanning three OSes and three runtimes (Bun, Node~22, Deno~2.9.3) and are stated as same-rig relative ratios rather than cross-host absolute rates.
 
 \subsection{Composition correctness}
 \label{sec:composition-correctness}
@@ -459,7 +458,7 @@ on the draw, which matters when constraints are tight, when fields are
 numerous, or when unbounded tail latency is unacceptable.
 
 \subsection{Collision and uniformity}
-Per-field uniformity is measured directly rather than inferred from whole-UUID batteries, since an 8-bit field's deviation is invisible inside 122 bits under NIST monobit. Over $10^8$ \texttt{dbkey} draws, one shard value appears at $52/256$ and four appear at $51/256$, matching the closed-form index-modulo prediction of Section~\ref{sec:uniformity} to within $\pm0.0005$ percentage points. The \texttt{multitenant} tenant and region fields are exactly uniform, as predicted by $m \mid 2^{12}$. We report agreement with the predicted distribution rather than a goodness-of-fit test against strict uniformity: at $n=10^8$ even the analytically expected $\leq 0.39\%$ per-value deviation would cause chi-square against uniform to reject by design, so rejection is inevitable when testing against perfect uniformity. As a negative control, \texttt{Math.random} (insecure, runtime-native PRNG) passes the collision test in all nine CI environments under the same protocol, confirming that the 1M-draw collision gate has no discriminating power against a low-entropy source; only the analytical uniformity bound and NIST battery separate quality from speed.
+Per-field uniformity is measured directly rather than inferred from whole-UUID batteries, since an 8-bit field's deviation is invisible inside 122 bits under NIST monobit. Over $10^8$ \texttt{dbkey} draws on the shipped compiled path, one shard value ($1$) appears at $52/256$ and the other four at $51/256$, matching the closed-form index-modulo prediction of Section~\ref{sec:uniformity}; the maximum absolute deviation from the predicted fibre frequency is $0.012$ percentage points, which is $2.9$ of that cell's own binomial sampling standard deviation ($0.004$ pp at $n=10^8$), i.e.\ at the edge of ordinary sampling noise for the largest of 17 cells tested. The \texttt{multitenant} tenant ($m=8$ at $\ell=12$) and region ($m=4$ at $\ell=8$) fields are uniform to within $0.008$ pp, consistent with $m \mid 2^{\ell}$ making the partition exact. No admissible value ever falls outside its declared set across $2\times10^8$ draws. We report agreement with the predicted distribution rather than a goodness-of-fit test against strict uniformity: at $n=10^8$ even the analytically expected $\leq 0.39\%$ per-value deviation would cause chi-square against uniform to reject by design, so rejection is inevitable when testing against perfect uniformity. As a negative control, \texttt{Math.random} (insecure, runtime-native PRNG) passes the collision test in all nine CI environments under the same protocol, confirming that the 1M-draw collision gate has no discriminating power against a low-entropy source; only the analytical uniformity bound and NIST battery separate quality from speed. \texttt{results/shard-histogram-100m.json} records the raw counts, per-cell binomial standard deviations, commit SHA, host, and elapsed time.
 
 \subsection{NIST SP 800-22 and dieharder}
 \label{sec:nist}
@@ -550,7 +549,28 @@ The vectors were regenerated after the repair and counter algorithms changed dur
 In production, each port draws from its own OS CSPRNG; the seeded byte stream exists only for cross-language verification. Different buffering in a Rust port would be no less correct for producing different byte sequences.
 
 \subsection*{Availability}
-The implementation, benchmark harness, experimental artifacts, golden vectors, and Rust cross-check are available at \url{https://github.com/mmmmaharshi/geno-id}. All evaluation tables are reproduced from committed result files under \texttt{results/}; each manuscript number traces to a recorded artifact with environment metadata. Full reproducibility instructions appear in \texttt{sources/reproducibility.md}. Available as \texttt{@manohar\_maharshi/genoid} on npm; the source package carries its own MIT license. The PostgreSQL/InnoDB database experiments are preliminary observations in the supplementary data and have not been subjected to the same statistical rigor as the SQLite results presented here.
+The implementation, benchmark harness, experimental artifacts, golden vectors, and Rust cross-check are available at \url{https://github.com/mmmmaharshi/geno-id}. Each evaluation number traces to a committed artifact under \texttt{results/} carrying its own environment metadata. No single command regenerates the full evaluation; Table~\ref{tab:artifact-map} maps every manuscript table and figure to the exact command, output path, and archived file, so a reader can reproduce each result independently of the others. Full reproducibility instructions appear in \texttt{sources/reproducibility.md}. Available as \texttt{@manohar\_maharshi/genoid} on npm under the MIT license. The manuscript is frozen to the release tag recorded in \texttt{results/artifact-manifest.json}, together with the frozen commit SHA; that manifest also records which earlier release DOIs are deliberately not cited, because each predates behaviour reported here (the RFC~9562 \S6.2 monotonicity fix, the production-path E1 rewrite, and the $10^8$ field histogram). The PostgreSQL database experiment (\S\ref{sec:composite-bench}) is reported separately from the SQLite results, with its own arms and confidence intervals; no InnoDB/MySQL measurement is claimed.
+
+\begin{table}[!ht]
+\caption{Artifact map: manuscript result $\to$ exact command and archived output.}
+\label{tab:artifact-map}
+\centering\footnotesize
+\begin{tabular*}{\columnwidth}{@{\extracolsep{\fill}}lp{4.6cm}p{3.0cm}}
+\hline\noalign{\smallskip}
+\textbf{Manuscript result} & \textbf{Command} & \textbf{Archived artifact} \\
+\noalign{\smallskip}\hline\noalign{\smallskip}
+E1 composition correctness (\S\ref{sec:composition-correctness}) & \texttt{bun run scripts/e1-production.ts} & \texttt{results/e1-production-1500k.json} \\
+Repair vs rejection sweep (\S\ref{sec:repair-vs-rejection}) & \texttt{bun run bench-rejection} & \texttt{results/rejection-sweep.json}, \texttt{.csv} \\
+$10^8$ field histogram (\S\ref{sec:evaluation}) & \texttt{bun run histogram-100m} & \texttt{results/shard-histogram-100m.json} \\
+NIST SP 800-22 battery (\S\ref{sec:nist}) & \texttt{bun run scripts/export-structured.ts} \emph{then} \texttt{python scripts/nist-bridge.py} & \texttt{results/nist-sp800-22-results.json} \\
+dieharder subset (\S\ref{sec:nist}) & \texttt{bun run dieharder} & \texttt{results/dieharder-results.md} \\
+Nine-environment throughput (\S\ref{sec:throughput}) & \texttt{bun run bench-ci} (CI matrix) & \texttt{dist/bench-ci-results.json}, \texttt{dist/all-results.json} \\
+Browser benchmark (\S\ref{sec:deployability}) & \texttt{bun run playwright} & \texttt{results/benchmark\_results.json} \\
+SQLite composite key (\S\ref{sec:composite-bench}) & \texttt{bun run bench-sqlite} & \texttt{results/db-sqlite.json} \\
+Rust cross-language check (\S\ref{sec:cross-lang}) & \texttt{bun run scripts/export-golden.ts} \emph{then} \texttt{cd golden-check \&\& cargo run} & \texttt{golden/*.txt} \\
+\noalign{\smallskip}\hline
+\end{tabular*}
+\end{table}
 
 \section{Related Work}
 \label{sec:related-work}
@@ -580,7 +600,7 @@ We disclose these openly, ranked by expected reviewer pressure.
 
 
 \section{Conclusion and Future Work}
-RFC~9562 leaves version~8's 122 bits undefined; GenoID fills them with a declarative, portable algorithm. Its core contribution is the \texttt{V8Layout} abstraction: typed, constrained multi-field composition with a single shared repair pass, validated through per-field uniformity at $10^8$ scale, an adversarial security analysis, and a cross-language reproducibility check. The measured $2.0$--$6.7\times$ throughput advantage over the closest prior art is a secondary result; the primary result is a framework for making shard, tenant, and sequence identity a property of the key itself, with proven $O(k)$ repair cost and $m/2^\ell$ uniformity.
+RFC~9562 leaves version~8's 122 bits undefined; GenoID fills them with a declarative, portable algorithm. Its core contribution is the \texttt{V8Layout} abstraction: typed, constrained multi-field composition with a single shared repair pass, validated through per-field uniformity at $10^8$ scale, an adversarial security analysis, and a cross-language reproducibility check. The measured $2.0$--$6.7\times$ throughput advantage over the closest prior art is a secondary result; the primary result is a framework for making shard, tenant, and sequence identity a property of the key itself, with proven $O(k)$ repair cost and the total-variation bound $m/2^\ell$ on repaired fields.
 
 \begin{thebibliography}{00}
 

@@ -1,0 +1,263 @@
+{
+  "experiment": "shard-histogram-100m",
+  "description": "Per-field value histogram for declared admissible-set layouts, measured through the shipped genStructuredGenoID() production path",
+  "draws_per_layout": 100000000,
+  "structured_generation_mode": "compiled-direct-v8",
+  "layouts": [
+    "dbkey",
+    "multitenant"
+  ],
+  "repair_operator": "index-modulo: v in A ? v : A[v mod |A|]",
+  "sampling_model": "binomial; sampling SD = 100 * sqrt(p(1-p)/n) in percentage points, reported per cell",
+  "exact_uniformity_condition": "the admissible set is a complete residue system mod |A| and |A| divides 2^ell; then every admissible value has exactly 2^ell/|A| preimages and the repaired distribution is uniform",
+  "environment": {
+    "os": "win32 10.0.26300 x64",
+    "cpu_model": "11th Gen Intel(R) Core(TM) i3-1115G4 @ 3.00GHz",
+    "logical_cores": "4",
+    "runtime": "Bun 1.4.2",
+    "commit_sha": "dae7937d42a3094ed23c5c0e3ec41a206f9de16f",
+    "generated_at": "2026-10-08T18:42:54.645Z"
+  },
+  "elapsed_ms_total": 100773.57,
+  "per_layout": {
+    "dbkey": {
+      "fields": [
+        {
+          "field": "shard",
+          "bit_start": 52,
+          "bit_length": 8,
+          "allowed": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "repair_operator": "v in A ? v : A[v mod 5]  (A=[1,2,3,4,5], ell=8)",
+          "exact_uniform": false,
+          "counts": [
+            {
+              "value": 1,
+              "count": 20300842,
+              "predicted_preimages": 52,
+              "observed_pp": 20.300842,
+              "predicted_pp": 20.3125,
+              "abs_dev_pp": 0.011658,
+              "sampling_sd_pp": 0.004023,
+              "z": -2.898
+            },
+            {
+              "value": 2,
+              "count": 19922785,
+              "predicted_preimages": 51,
+              "observed_pp": 19.922785,
+              "predicted_pp": 19.921875,
+              "abs_dev_pp": 0.00091,
+              "sampling_sd_pp": 0.003994,
+              "z": 0.228
+            },
+            {
+              "value": 3,
+              "count": 19923685,
+              "predicted_preimages": 51,
+              "observed_pp": 19.923685,
+              "predicted_pp": 19.921875,
+              "abs_dev_pp": 0.00181,
+              "sampling_sd_pp": 0.003994,
+              "z": 0.453
+            },
+            {
+              "value": 4,
+              "count": 19928746,
+              "predicted_preimages": 51,
+              "observed_pp": 19.928746,
+              "predicted_pp": 19.921875,
+              "abs_dev_pp": 0.006871,
+              "sampling_sd_pp": 0.003994,
+              "z": 1.72
+            },
+            {
+              "value": 5,
+              "count": 19923942,
+              "predicted_preimages": 51,
+              "observed_pp": 19.923942,
+              "predicted_pp": 19.921875,
+              "abs_dev_pp": 0.002067,
+              "sampling_sd_pp": 0.003994,
+              "z": 0.518
+            }
+          ],
+          "out_of_allowed_set": 0,
+          "max_abs_dev_pp": 0.011658,
+          "max_abs_z": 2.898
+        }
+      ],
+      "elapsed_ms": 48543.52
+    },
+    "multitenant": {
+      "fields": [
+        {
+          "field": "tenant",
+          "bit_start": 0,
+          "bit_length": 12,
+          "allowed": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8
+          ],
+          "repair_operator": "v in A ? v : A[v mod 8]  (A=[1,2,3,4,5,6,7,8], ell=12)",
+          "exact_uniform": true,
+          "counts": [
+            {
+              "value": 1,
+              "count": 12497200,
+              "predicted_preimages": 512,
+              "observed_pp": 12.4972,
+              "predicted_pp": 12.5,
+              "abs_dev_pp": 0.0028,
+              "sampling_sd_pp": 0.003307,
+              "z": -0.847
+            },
+            {
+              "value": 2,
+              "count": 12505284,
+              "predicted_preimages": 512,
+              "observed_pp": 12.505284,
+              "predicted_pp": 12.5,
+              "abs_dev_pp": 0.005284,
+              "sampling_sd_pp": 0.003307,
+              "z": 1.598
+            },
+            {
+              "value": 3,
+              "count": 12498747,
+              "predicted_preimages": 512,
+              "observed_pp": 12.498747,
+              "predicted_pp": 12.5,
+              "abs_dev_pp": 0.001253,
+              "sampling_sd_pp": 0.003307,
+              "z": -0.379
+            },
+            {
+              "value": 4,
+              "count": 12496218,
+              "predicted_preimages": 512,
+              "observed_pp": 12.496218,
+              "predicted_pp": 12.5,
+              "abs_dev_pp": 0.003782,
+              "sampling_sd_pp": 0.003307,
+              "z": -1.144
+            },
+            {
+              "value": 5,
+              "count": 12493125,
+              "predicted_preimages": 512,
+              "observed_pp": 12.493125,
+              "predicted_pp": 12.5,
+              "abs_dev_pp": 0.006875,
+              "sampling_sd_pp": 0.003307,
+              "z": -2.079
+            },
+            {
+              "value": 6,
+              "count": 12508242,
+              "predicted_preimages": 512,
+              "observed_pp": 12.508242,
+              "predicted_pp": 12.5,
+              "abs_dev_pp": 0.008242,
+              "sampling_sd_pp": 0.003307,
+              "z": 2.492
+            },
+            {
+              "value": 7,
+              "count": 12499330,
+              "predicted_preimages": 512,
+              "observed_pp": 12.49933,
+              "predicted_pp": 12.5,
+              "abs_dev_pp": 0.00067,
+              "sampling_sd_pp": 0.003307,
+              "z": -0.203
+            },
+            {
+              "value": 8,
+              "count": 12501854,
+              "predicted_preimages": 512,
+              "observed_pp": 12.501854,
+              "predicted_pp": 12.5,
+              "abs_dev_pp": 0.001854,
+              "sampling_sd_pp": 0.003307,
+              "z": 0.561
+            }
+          ],
+          "out_of_allowed_set": 0,
+          "max_abs_dev_pp": 0.008242,
+          "max_abs_z": 2.492
+        },
+        {
+          "field": "region",
+          "bit_start": 52,
+          "bit_length": 8,
+          "allowed": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "repair_operator": "v in A ? v : A[v mod 4]  (A=[1,2,3,4], ell=8)",
+          "exact_uniform": true,
+          "counts": [
+            {
+              "value": 1,
+              "count": 25004068,
+              "predicted_preimages": 64,
+              "observed_pp": 25.004068,
+              "predicted_pp": 25,
+              "abs_dev_pp": 0.004068,
+              "sampling_sd_pp": 0.00433,
+              "z": 0.939
+            },
+            {
+              "value": 2,
+              "count": 25000991,
+              "predicted_preimages": 64,
+              "observed_pp": 25.000991,
+              "predicted_pp": 25,
+              "abs_dev_pp": 0.000991,
+              "sampling_sd_pp": 0.00433,
+              "z": 0.229
+            },
+            {
+              "value": 3,
+              "count": 24999556,
+              "predicted_preimages": 64,
+              "observed_pp": 24.999556,
+              "predicted_pp": 25,
+              "abs_dev_pp": 0.000444,
+              "sampling_sd_pp": 0.00433,
+              "z": -0.103
+            },
+            {
+              "value": 4,
+              "count": 24995385,
+              "predicted_preimages": 64,
+              "observed_pp": 24.995385,
+              "predicted_pp": 25,
+              "abs_dev_pp": 0.004615,
+              "sampling_sd_pp": 0.00433,
+              "z": -1.066
+            }
+          ],
+          "out_of_allowed_set": 0,
+          "max_abs_dev_pp": 0.004615,
+          "max_abs_z": 1.066
+        }
+      ],
+      "elapsed_ms": 52219.54
+    }
+  }
+}

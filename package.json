@@ -1,6 +1,6 @@
 {
   "name": "@manohar_maharshi/genoid",
-  "version": "1.24.1",
+  "version": "1.24.2",
   "description": "GenoID — a declarative RFC 9562 v8 UUID library: GA-inspired pooled-CSPRNG generation plus structured layouts (shard, tenant, counter, timestamp) with constraint-guided repair, no rejection sampling",
   "type": "module",
   "main": "./dist/index.js",
@@ -35,6 +35,7 @@
     "bench-concurrent": "bun run scripts/bench-concurrent.ts",
     "bench-sqlite": "bun run scripts/bench-sqlite.ts",
     "collision-100m": "bun run scripts/collision-100m.ts",
+    "histogram-100m": "bun run scripts/histogram-100m.ts",
     "export-dieharder": "bun run scripts/export-dieharder.ts",
     "dieharder": "bun run scripts/run-dieharder.ts",
     "test:stats": "bun run scripts/stats.ts",
