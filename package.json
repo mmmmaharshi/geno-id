@@ -31,6 +31,7 @@
     "bench-ci": "bun run scripts/bench-ci.ts",
     "bench-db": "bun run scripts/bench-db.ts",
     "bench-rejection": "bun run scripts/bench-rejection.ts",
+    "bench-bit-allocation": "bun run scripts/bench-bit-allocation.ts",
     "bench-db-native": "bun run scripts/bench-db-native.ts",
     "evidence:fixture": "bun run scripts/evidence-fixture.ts",
     "bench-concurrent": "bun run scripts/bench-concurrent.ts",

@@ -409,6 +409,96 @@ For \texttt{dbkey} ($m=5$, $\ell=8$), $256 \bmod 5 = 1$, so one residue class ho
 
 The \textsc{range} branch clamps rather than folds, and is therefore not uniformity-preserving: draws outside $[\textit{min},\textit{max}]$ accumulate at the endpoints. Neither layout evaluated here declares a range constraint; a layout that does should size the field so that out-of-range draws are rare, or declare an admissible set instead. The validator reports the residual bound for any declared field.
 
+\subsection{Bit allocation}
+\label{sec:bit-allocation}
+
+Declaring a field answers two questions at once: how wide it must be, and where
+it sits. Width is an entropy question --- a field holding one of five values
+needs three bits, not eight, and every surplus bit comes out of the residual
+entropy the collision guarantee depends on. Position is a locality question ---
+a field a query filters on costs more the deeper it sits, because every
+comparison walks past it. The planner that shipped with earlier revisions
+answered neither: widths were caller-declared and never checked against the
+cardinality they must represent, and position was chosen by sorting fields into
+three workload-role ranks and, inside a rank, by descending width.
+
+\noindent\emph{Widths first.} A field whose domain contains $c$ values requires
+$\lceil \log_2 c \rceil$ bits, so that is a hard floor, and it is the
+entropy-minimising width because weighted depth is non-decreasing in every
+width. A second constraint is new to this compiler: the residual random bits
+$r$ must satisfy the collision target. For $n$ identifiers drawn with $r$
+random bits the collision probability is bounded by
+$1 - \exp(-n(n-1)/2^{r+2})$, so the smallest safe $r$ is
+$\lceil \log_2\, n(n-1)\,/\,4\ln\frac{1}{1-\tau} \rceil$. Two million
+identifiers at $\tau = 10^{-2}$ need 47 bits; at $\tau = 10^{-9}$ they need 70.
+A declaration whose floors and required residual exceed the 122-bit payload is
+refused with a reason naming the shortfall, rather than being silently
+truncated.
+
+\noindent\emph{Position next.} Weighted depth $D = \sum_i w_i (o_i + \ell_i)$
+--- weight times end-offset, summed over fields --- is the comparison work a
+range of queries performs. Treating each field as a job of length $\ell_i$
+completing at $o_i+\ell_i$, this is exactly the single-machine
+weighted-completion-time objective. By Smith's exchange argument, $D$ is
+minimised by ordering fields in non-increasing $w_i/\ell_i$: swapping an
+adjacent inverted pair changes $D$ by
+$\ell_a \ell_b (w_a/\ell_a - w_b/\ell_b) \le 0$. \texttt{planBitAllocation}
+implements that order. The role-rank order is neither Smith order nor a special
+case of it, and the difference is measurable.
+
+\begin{table}[!ht]
+\caption{Bit allocation. E-A1 compares the allocator against the exhaustive
+optimum over every permutation and against the role-rank order it replaces;
+E-A2 widens one field a bit at a time and records the cost of each bit.}
+\label{tab:bit-allocation}
+\centering\footnotesize
+\begin{tabular*}{\columnwidth}{@{\extracolsep{\fill}}lrr}
+\hline\noalign{\smallskip}
+\textbf{Quantity} & \textbf{Value} & \textbf{Basis} \\
+\noalign{\smallskip}\hline\noalign{\smallskip}
+Instances attaining the exhaustive optimum & 495/500 & 99.0\% \\
+Optimal when structure fits one free segment & 1.000 & exhaustive \\Suboptimal instances, `structuredBits` range & $[51,54]$ & 5 of 500 \\
+Relative excess on those five & 0.39--2.40\% & exhaustive \\
+Role-rank order strictly worse & 418/500 & same objective \\
+Median relative gap vs role-rank & 23.26\% & 500 instances \\
+Maximum relative gap vs role-rank & 200.95\% & 500 instances \\
+Cost per structural bit in $D$ & $\approx 95$ & E-A2 frontier \\
+Cost per structural bit in collision risk & $\times 2$ & exact \\
+Shipped \texttt{dbkey}: structured / residual & 67 / 55 bits & C1 floor \\
+Shipped \texttt{dbkey}: required residual at $2\times10^6$ & 47 & $\tau=10^{-2}$ \\
+Shipped \texttt{dbkey}: gain over role-rank order & 0 & already optimal \\
+\noalign{\smallskip}\hline
+\end{tabular*}
+\end{table}
+
+The guarantee is stated exactly where it holds. The six reserved bits split the
+free payload into the segments $[0,48)$, $[52,64)$, and $[66,128)$; Smith's
+rule is exact on one unconstrained timeline, so the allocator is provably
+optimal for any declaration whose fields fit inside a single segment, and misses
+the optimum by at most a few percent when structure spills across a reserved
+region. Every one of the five suboptimal instances in Table~\ref{tab:bit-allocation}
+crosses bit~48, and no instance that stays inside $[0,48)$ is suboptimal.
+
+The trade this makes explicit is linear in depth and logarithmic in risk
+(Table~\ref{tab:bit-allocation}, E-A2): widening a declared field by one bit
+costs about 95 units of $D$ and exactly doubles the collision probability. E-A3
+plays the allocator back over the shipped \texttt{dbkey} declaration and finds
+it already optimal, with the timestamp pinned at offset~0 and only two free
+fields --- a validation of the hand-written layout rather than a
+disagreement. The one thing it gets wrong is width: the shard field is declared
+at 8 bits for five admissible values, and $\lceil \log_2 5 \rceil = 3$ recovers
+the five surplus bits as residual entropy.
+
+Two limits are worth stating. Weighted depth is a proxy for comparison work, not
+a measurement of query throughput; the database experiment in
+Section~\ref{sec:composite-bench} is the closest empirical check and it measures
+latency, not $D$. And nothing here infers the weight $w_i$ from a workload: the
+caller supplies it, and mapping \texttt{DatabaseWorkloadProfile}'s read weight
+and skew onto $w_i$ is left to the caller. The reduction to scheduling is not
+new --- Smith's rule is from 1956 --- so the contribution is the reduction
+itself, the collision-safety constraint the compiler lacked, and the measurement
+of what the role-rank order was costing.
+
 \section{Security Analysis}
 \label{sec:security}
 
@@ -584,6 +674,7 @@ The implementation, benchmark harness, experimental artifacts, golden vectors, a
 E1 composition correctness (\S\ref{sec:composition-correctness}) & \texttt{bun run scripts/e1-production.ts} & \texttt{results/e1-production-1500k.json} \\
 Repair vs rejection sweep (\S\ref{sec:repair-vs-rejection}) & \texttt{bun run bench-rejection} & \texttt{results/rejection-sweep.json}, \texttt{.csv} \\
 $10^8$ field histogram (\S\ref{sec:evaluation}) & \texttt{bun run histogram-100m} & \texttt{results/shard-histogram-100m.json} \\
+Bit allocation, optimality and frontier (\S\ref{sec:bit-allocation}) & \texttt{bun run bench-bit-allocation} & \texttt{results/bit-allocation.json} \\
 NIST SP 800-22 battery (\S\ref{sec:nist}) & \texttt{bun run scripts/export-structured.ts} \emph{then} \texttt{python scripts/nist-bridge.py} & \texttt{results/nist-sp800-22-results.json} \\
 dieharder subset (\S\ref{sec:nist}) & \texttt{bun run dieharder} & \texttt{results/dieharder-results.md} \\
 Nine-environment throughput (\S\ref{sec:throughput}) & \texttt{bun run bench-ci} (CI matrix) & \texttt{dist/bench-ci-results.json}, \texttt{dist/all-results.json} \\

@@ -1,0 +1,5186 @@
+{
+  "experiment": "bit-allocation",
+  "description": "RQ-A: bit allocation in a fixed-length identifier as single-machine weighted completion time, solved by Smith's rule",
+  "algorithm": "smith-rule",
+  "budgetBits": 122,
+  "reservedBits": [
+    48,
+    49,
+    50,
+    51,
+    64,
+    65
+  ],
+  "environment": {
+    "os": "win32 10.0.26300 x64",
+    "cpuModel": "11th Gen Intel(R) Core(TM) i3-1115G4 @ 3.00GHz",
+    "runtime": "Bun 1.4.2",
+    "commitSha": "40e8af6062078ae28e6e645a34a7eccc5a8c7f36",
+    "generatedAt": "2026-10-09T05:38:06.784Z"
+  },
+  "e_a1_optimality": {
+    "trialsRequested": 500,
+    "instancesPacked": 500,
+    "perInstance": [
+      {
+        "instance": 0,
+        "fieldCount": 2,
+        "structuredBits": 22,
+        "smithDepth": 737,
+        "rankDepth": 1342,
+        "bruteForceDepth": 737,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.820896
+      },
+      {
+        "instance": 1,
+        "fieldCount": 2,
+        "structuredBits": 23,
+        "smithDepth": 371,
+        "rankDepth": 371,
+        "bruteForceDepth": 371,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 2,
+        "fieldCount": 3,
+        "structuredBits": 34,
+        "smithDepth": 3593,
+        "rankDepth": 3593,
+        "bruteForceDepth": 3593,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 3,
+        "fieldCount": 3,
+        "structuredBits": 33,
+        "smithDepth": 2379,
+        "rankDepth": 2448,
+        "bruteForceDepth": 2379,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.029004
+      },
+      {
+        "instance": 4,
+        "fieldCount": 3,
+        "structuredBits": 35,
+        "smithDepth": 2187,
+        "rankDepth": 3800,
+        "bruteForceDepth": 2187,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.73754
+      },
+      {
+        "instance": 5,
+        "fieldCount": 3,
+        "structuredBits": 36,
+        "smithDepth": 2820,
+        "rankDepth": 4152,
+        "bruteForceDepth": 2820,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.47234
+      },
+      {
+        "instance": 6,
+        "fieldCount": 4,
+        "structuredBits": 44,
+        "smithDepth": 3968,
+        "rankDepth": 4108,
+        "bruteForceDepth": 3968,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.035282
+      },
+      {
+        "instance": 7,
+        "fieldCount": 4,
+        "structuredBits": 42,
+        "smithDepth": 4002,
+        "rankDepth": 5250,
+        "bruteForceDepth": 4002,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.311844
+      },
+      {
+        "instance": 8,
+        "fieldCount": 2,
+        "structuredBits": 24,
+        "smithDepth": 1380,
+        "rankDepth": 2148,
+        "bruteForceDepth": 1380,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.556522
+      },
+      {
+        "instance": 9,
+        "fieldCount": 4,
+        "structuredBits": 44,
+        "smithDepth": 6177,
+        "rankDepth": 6389,
+        "bruteForceDepth": 6177,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.034321
+      },
+      {
+        "instance": 10,
+        "fieldCount": 2,
+        "structuredBits": 22,
+        "smithDepth": 1892,
+        "rankDepth": 2332,
+        "bruteForceDepth": 1892,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.232558
+      },
+      {
+        "instance": 11,
+        "fieldCount": 3,
+        "structuredBits": 33,
+        "smithDepth": 1787,
+        "rankDepth": 2188,
+        "bruteForceDepth": 1787,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.224398
+      },
+      {
+        "instance": 12,
+        "fieldCount": 4,
+        "structuredBits": 48,
+        "smithDepth": 5976,
+        "rankDepth": 7656,
+        "bruteForceDepth": 5976,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.281124
+      },
+      {
+        "instance": 13,
+        "fieldCount": 5,
+        "structuredBits": 57,
+        "smithDepth": 6818,
+        "rankDepth": 10455,
+        "bruteForceDepth": 6818,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.533441
+      },
+      {
+        "instance": 14,
+        "fieldCount": 3,
+        "structuredBits": 36,
+        "smithDepth": 2976,
+        "rankDepth": 3588,
+        "bruteForceDepth": 2976,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.205645
+      },
+      {
+        "instance": 15,
+        "fieldCount": 2,
+        "structuredBits": 24,
+        "smithDepth": 2760,
+        "rankDepth": 2760,
+        "bruteForceDepth": 2760,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 16,
+        "fieldCount": 3,
+        "structuredBits": 32,
+        "smithDepth": 1088,
+        "rankDepth": 1756,
+        "bruteForceDepth": 1088,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.613971
+      },
+      {
+        "instance": 17,
+        "fieldCount": 3,
+        "structuredBits": 32,
+        "smithDepth": 3250,
+        "rankDepth": 3530,
+        "bruteForceDepth": 3250,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.086154
+      },
+      {
+        "instance": 18,
+        "fieldCount": 2,
+        "structuredBits": 23,
+        "smithDepth": 2298,
+        "rankDepth": 2298,
+        "bruteForceDepth": 2298,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 19,
+        "fieldCount": 5,
+        "structuredBits": 58,
+        "smithDepth": 6036,
+        "rankDepth": 8346,
+        "bruteForceDepth": 6036,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.382704
+      },
+      {
+        "instance": 20,
+        "fieldCount": 3,
+        "structuredBits": 35,
+        "smithDepth": 2352,
+        "rankDepth": 3377,
+        "bruteForceDepth": 2352,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.435799
+      },
+      {
+        "instance": 21,
+        "fieldCount": 2,
+        "structuredBits": 20,
+        "smithDepth": 527,
+        "rankDepth": 636,
+        "bruteForceDepth": 527,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.206831
+      },
+      {
+        "instance": 22,
+        "fieldCount": 3,
+        "structuredBits": 34,
+        "smithDepth": 2548,
+        "rankDepth": 3294,
+        "bruteForceDepth": 2548,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.292779
+      },
+      {
+        "instance": 23,
+        "fieldCount": 3,
+        "structuredBits": 36,
+        "smithDepth": 2352,
+        "rankDepth": 2352,
+        "bruteForceDepth": 2352,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 24,
+        "fieldCount": 5,
+        "structuredBits": 53,
+        "smithDepth": 4184,
+        "rankDepth": 4972,
+        "bruteForceDepth": 4184,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.188337
+      },
+      {
+        "instance": 25,
+        "fieldCount": 3,
+        "structuredBits": 27,
+        "smithDepth": 1530,
+        "rankDepth": 2973,
+        "bruteForceDepth": 1530,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.943137
+      },
+      {
+        "instance": 26,
+        "fieldCount": 2,
+        "structuredBits": 24,
+        "smithDepth": 1500,
+        "rankDepth": 1776,
+        "bruteForceDepth": 1500,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.184
+      },
+      {
+        "instance": 27,
+        "fieldCount": 4,
+        "structuredBits": 39,
+        "smithDepth": 5445,
+        "rankDepth": 7560,
+        "bruteForceDepth": 5445,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.38843
+      },
+      {
+        "instance": 28,
+        "fieldCount": 5,
+        "structuredBits": 51,
+        "smithDepth": 1970,
+        "rankDepth": 4926,
+        "bruteForceDepth": 1970,
+        "smithIsOptimal": true,
+        "gapVsRank": 1.500508
+      },
+      {
+        "instance": 29,
+        "fieldCount": 4,
+        "structuredBits": 43,
+        "smithDepth": 5661,
+        "rankDepth": 7636,
+        "bruteForceDepth": 5661,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.348878
+      },
+      {
+        "instance": 30,
+        "fieldCount": 2,
+        "structuredBits": 24,
+        "smithDepth": 1740,
+        "rankDepth": 2364,
+        "bruteForceDepth": 1740,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.358621
+      },
+      {
+        "instance": 31,
+        "fieldCount": 2,
+        "structuredBits": 23,
+        "smithDepth": 1768,
+        "rankDepth": 2614,
+        "bruteForceDepth": 1768,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.478507
+      },
+      {
+        "instance": 32,
+        "fieldCount": 2,
+        "structuredBits": 24,
+        "smithDepth": 900,
+        "rankDepth": 1584,
+        "bruteForceDepth": 900,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.76
+      },
+      {
+        "instance": 33,
+        "fieldCount": 2,
+        "structuredBits": 22,
+        "smithDepth": 1708,
+        "rankDepth": 2338,
+        "bruteForceDepth": 1708,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.368852
+      },
+      {
+        "instance": 34,
+        "fieldCount": 3,
+        "structuredBits": 35,
+        "smithDepth": 1617,
+        "rankDepth": 2279,
+        "bruteForceDepth": 1617,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.4094
+      },
+      {
+        "instance": 35,
+        "fieldCount": 2,
+        "structuredBits": 24,
+        "smithDepth": 2616,
+        "rankDepth": 2616,
+        "bruteForceDepth": 2616,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 36,
+        "fieldCount": 4,
+        "structuredBits": 47,
+        "smithDepth": 5579,
+        "rankDepth": 7275,
+        "bruteForceDepth": 5579,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.303997
+      },
+      {
+        "instance": 37,
+        "fieldCount": 4,
+        "structuredBits": 39,
+        "smithDepth": 7109,
+        "rankDepth": 8973,
+        "bruteForceDepth": 7109,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.262203
+      },
+      {
+        "instance": 38,
+        "fieldCount": 4,
+        "structuredBits": 43,
+        "smithDepth": 4112,
+        "rankDepth": 6785,
+        "bruteForceDepth": 4112,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.650049
+      },
+      {
+        "instance": 39,
+        "fieldCount": 5,
+        "structuredBits": 57,
+        "smithDepth": 5606,
+        "rankDepth": 8978,
+        "bruteForceDepth": 5606,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.601498
+      },
+      {
+        "instance": 40,
+        "fieldCount": 5,
+        "structuredBits": 57,
+        "smithDepth": 3941,
+        "rankDepth": 5703,
+        "bruteForceDepth": 3941,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.447095
+      },
+      {
+        "instance": 41,
+        "fieldCount": 5,
+        "structuredBits": 55,
+        "smithDepth": 6582,
+        "rankDepth": 10123,
+        "bruteForceDepth": 6582,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.537982
+      },
+      {
+        "instance": 42,
+        "fieldCount": 3,
+        "structuredBits": 32,
+        "smithDepth": 1709,
+        "rankDepth": 1755,
+        "bruteForceDepth": 1709,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.026916
+      },
+      {
+        "instance": 43,
+        "fieldCount": 2,
+        "structuredBits": 24,
+        "smithDepth": 1116,
+        "rankDepth": 1116,
+        "bruteForceDepth": 1116,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 44,
+        "fieldCount": 5,
+        "structuredBits": 59,
+        "smithDepth": 5245,
+        "rankDepth": 6510,
+        "bruteForceDepth": 5245,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.241182
+      },
+      {
+        "instance": 45,
+        "fieldCount": 2,
+        "structuredBits": 22,
+        "smithDepth": 942,
+        "rankDepth": 942,
+        "bruteForceDepth": 942,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 46,
+        "fieldCount": 3,
+        "structuredBits": 28,
+        "smithDepth": 4050,
+        "rankDepth": 5428,
+        "bruteForceDepth": 4050,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.340247
+      },
+      {
+        "instance": 47,
+        "fieldCount": 2,
+        "structuredBits": 22,
+        "smithDepth": 2123,
+        "rankDepth": 2662,
+        "bruteForceDepth": 2123,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.253886
+      },
+      {
+        "instance": 48,
+        "fieldCount": 3,
+        "structuredBits": 36,
+        "smithDepth": 3912,
+        "rankDepth": 3912,
+        "bruteForceDepth": 3912,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 49,
+        "fieldCount": 3,
+        "structuredBits": 34,
+        "smithDepth": 2608,
+        "rankDepth": 2696,
+        "bruteForceDepth": 2608,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.033742
+      },
+      {
+        "instance": 50,
+        "fieldCount": 5,
+        "structuredBits": 56,
+        "smithDepth": 6933,
+        "rankDepth": 7358,
+        "bruteForceDepth": 6933,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.061301
+      },
+      {
+        "instance": 51,
+        "fieldCount": 2,
+        "structuredBits": 22,
+        "smithDepth": 1982,
+        "rankDepth": 1982,
+        "bruteForceDepth": 1982,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 52,
+        "fieldCount": 3,
+        "structuredBits": 31,
+        "smithDepth": 2613,
+        "rankDepth": 3421,
+        "bruteForceDepth": 2613,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.309223
+      },
+      {
+        "instance": 53,
+        "fieldCount": 2,
+        "structuredBits": 20,
+        "smithDepth": 1683,
+        "rankDepth": 2235,
+        "bruteForceDepth": 1683,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.327986
+      },
+      {
+        "instance": 54,
+        "fieldCount": 4,
+        "structuredBits": 45,
+        "smithDepth": 3821,
+        "rankDepth": 6101,
+        "bruteForceDepth": 3821,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.596702
+      },
+      {
+        "instance": 55,
+        "fieldCount": 3,
+        "structuredBits": 34,
+        "smithDepth": 2580,
+        "rankDepth": 2652,
+        "bruteForceDepth": 2580,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.027907
+      },
+      {
+        "instance": 56,
+        "fieldCount": 4,
+        "structuredBits": 44,
+        "smithDepth": 5998,
+        "rankDepth": 7882,
+        "bruteForceDepth": 5998,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.314105
+      },
+      {
+        "instance": 57,
+        "fieldCount": 5,
+        "structuredBits": 51,
+        "smithDepth": 5857,
+        "rankDepth": 9677,
+        "bruteForceDepth": 5834,
+        "smithIsOptimal": false,
+        "gapVsRank": 0.652211
+      },
+      {
+        "instance": 58,
+        "fieldCount": 4,
+        "structuredBits": 45,
+        "smithDepth": 7445,
+        "rankDepth": 7445,
+        "bruteForceDepth": 7445,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 59,
+        "fieldCount": 4,
+        "structuredBits": 46,
+        "smithDepth": 6502,
+        "rankDepth": 7110,
+        "bruteForceDepth": 6502,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.09351
+      },
+      {
+        "instance": 60,
+        "fieldCount": 5,
+        "structuredBits": 56,
+        "smithDepth": 9197,
+        "rankDepth": 9581,
+        "bruteForceDepth": 9197,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.041753
+      },
+      {
+        "instance": 61,
+        "fieldCount": 2,
+        "structuredBits": 15,
+        "smithDepth": 306,
+        "rankDepth": 306,
+        "bruteForceDepth": 306,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 62,
+        "fieldCount": 2,
+        "structuredBits": 23,
+        "smithDepth": 1446,
+        "rankDepth": 1652,
+        "bruteForceDepth": 1446,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.142462
+      },
+      {
+        "instance": 63,
+        "fieldCount": 4,
+        "structuredBits": 43,
+        "smithDepth": 4022,
+        "rankDepth": 5620,
+        "bruteForceDepth": 4022,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.397315
+      },
+      {
+        "instance": 64,
+        "fieldCount": 2,
+        "structuredBits": 23,
+        "smithDepth": 1488,
+        "rankDepth": 1488,
+        "bruteForceDepth": 1488,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 65,
+        "fieldCount": 5,
+        "structuredBits": 58,
+        "smithDepth": 7744,
+        "rankDepth": 10526,
+        "bruteForceDepth": 7744,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.359246
+      },
+      {
+        "instance": 66,
+        "fieldCount": 2,
+        "structuredBits": 21,
+        "smithDepth": 2094,
+        "rankDepth": 2370,
+        "bruteForceDepth": 2094,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.131805
+      },
+      {
+        "instance": 67,
+        "fieldCount": 4,
+        "structuredBits": 46,
+        "smithDepth": 5432,
+        "rankDepth": 6338,
+        "bruteForceDepth": 5432,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.166789
+      },
+      {
+        "instance": 68,
+        "fieldCount": 2,
+        "structuredBits": 17,
+        "smithDepth": 661,
+        "rankDepth": 661,
+        "bruteForceDepth": 661,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 69,
+        "fieldCount": 2,
+        "structuredBits": 24,
+        "smithDepth": 2100,
+        "rankDepth": 2100,
+        "bruteForceDepth": 2100,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 70,
+        "fieldCount": 5,
+        "structuredBits": 54,
+        "smithDepth": 3683,
+        "rankDepth": 6638,
+        "bruteForceDepth": 3683,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.802335
+      },
+      {
+        "instance": 71,
+        "fieldCount": 3,
+        "structuredBits": 35,
+        "smithDepth": 4051,
+        "rankDepth": 4051,
+        "bruteForceDepth": 4051,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 72,
+        "fieldCount": 4,
+        "structuredBits": 44,
+        "smithDepth": 6000,
+        "rankDepth": 8072,
+        "bruteForceDepth": 6000,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.345333
+      },
+      {
+        "instance": 73,
+        "fieldCount": 4,
+        "structuredBits": 41,
+        "smithDepth": 2833,
+        "rankDepth": 2989,
+        "bruteForceDepth": 2833,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.055065
+      },
+      {
+        "instance": 74,
+        "fieldCount": 3,
+        "structuredBits": 34,
+        "smithDepth": 1752,
+        "rankDepth": 2762,
+        "bruteForceDepth": 1752,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.576484
+      },
+      {
+        "instance": 75,
+        "fieldCount": 5,
+        "structuredBits": 52,
+        "smithDepth": 4608,
+        "rankDepth": 8039,
+        "bruteForceDepth": 4608,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.744575
+      },
+      {
+        "instance": 76,
+        "fieldCount": 4,
+        "structuredBits": 47,
+        "smithDepth": 4679,
+        "rankDepth": 6227,
+        "bruteForceDepth": 4679,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.33084
+      },
+      {
+        "instance": 77,
+        "fieldCount": 2,
+        "structuredBits": 21,
+        "smithDepth": 561,
+        "rankDepth": 814,
+        "bruteForceDepth": 561,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.45098
+      },
+      {
+        "instance": 78,
+        "fieldCount": 3,
+        "structuredBits": 32,
+        "smithDepth": 2912,
+        "rankDepth": 2912,
+        "bruteForceDepth": 2912,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 79,
+        "fieldCount": 2,
+        "structuredBits": 23,
+        "smithDepth": 1421,
+        "rankDepth": 1421,
+        "bruteForceDepth": 1421,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 80,
+        "fieldCount": 3,
+        "structuredBits": 33,
+        "smithDepth": 1593,
+        "rankDepth": 2559,
+        "bruteForceDepth": 1593,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.606403
+      },
+      {
+        "instance": 81,
+        "fieldCount": 2,
+        "structuredBits": 22,
+        "smithDepth": 1111,
+        "rankDepth": 1892,
+        "bruteForceDepth": 1111,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.70297
+      },
+      {
+        "instance": 82,
+        "fieldCount": 4,
+        "structuredBits": 45,
+        "smithDepth": 4116,
+        "rankDepth": 6540,
+        "bruteForceDepth": 4116,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.588921
+      },
+      {
+        "instance": 83,
+        "fieldCount": 5,
+        "structuredBits": 57,
+        "smithDepth": 5509,
+        "rankDepth": 6284,
+        "bruteForceDepth": 5509,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.140679
+      },
+      {
+        "instance": 84,
+        "fieldCount": 4,
+        "structuredBits": 40,
+        "smithDepth": 5596,
+        "rankDepth": 6684,
+        "bruteForceDepth": 5596,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.194425
+      },
+      {
+        "instance": 85,
+        "fieldCount": 3,
+        "structuredBits": 33,
+        "smithDepth": 4244,
+        "rankDepth": 4419,
+        "bruteForceDepth": 4244,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.041235
+      },
+      {
+        "instance": 86,
+        "fieldCount": 2,
+        "structuredBits": 23,
+        "smithDepth": 2689,
+        "rankDepth": 3060,
+        "bruteForceDepth": 2689,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.13797
+      },
+      {
+        "instance": 87,
+        "fieldCount": 4,
+        "structuredBits": 48,
+        "smithDepth": 3420,
+        "rankDepth": 5220,
+        "bruteForceDepth": 3420,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.526316
+      },
+      {
+        "instance": 88,
+        "fieldCount": 4,
+        "structuredBits": 46,
+        "smithDepth": 2786,
+        "rankDepth": 3625,
+        "bruteForceDepth": 2786,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.301149
+      },
+      {
+        "instance": 89,
+        "fieldCount": 5,
+        "structuredBits": 51,
+        "smithDepth": 8052,
+        "rankDepth": 11307,
+        "bruteForceDepth": 8052,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.404247
+      },
+      {
+        "instance": 90,
+        "fieldCount": 4,
+        "structuredBits": 38,
+        "smithDepth": 4224,
+        "rankDepth": 4472,
+        "bruteForceDepth": 4224,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.058712
+      },
+      {
+        "instance": 91,
+        "fieldCount": 5,
+        "structuredBits": 54,
+        "smithDepth": 3374,
+        "rankDepth": 5590,
+        "bruteForceDepth": 3374,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.656787
+      },
+      {
+        "instance": 92,
+        "fieldCount": 5,
+        "structuredBits": 54,
+        "smithDepth": 4407,
+        "rankDepth": 6236,
+        "bruteForceDepth": 4407,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.415022
+      },
+      {
+        "instance": 93,
+        "fieldCount": 2,
+        "structuredBits": 24,
+        "smithDepth": 1512,
+        "rankDepth": 2196,
+        "bruteForceDepth": 1512,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.452381
+      },
+      {
+        "instance": 94,
+        "fieldCount": 2,
+        "structuredBits": 21,
+        "smithDepth": 830,
+        "rankDepth": 1081,
+        "bruteForceDepth": 830,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.30241
+      },
+      {
+        "instance": 95,
+        "fieldCount": 3,
+        "structuredBits": 33,
+        "smithDepth": 3020,
+        "rankDepth": 5167,
+        "bruteForceDepth": 3020,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.710927
+      },
+      {
+        "instance": 96,
+        "fieldCount": 3,
+        "structuredBits": 29,
+        "smithDepth": 764,
+        "rankDepth": 1246,
+        "bruteForceDepth": 764,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.63089
+      },
+      {
+        "instance": 97,
+        "fieldCount": 4,
+        "structuredBits": 43,
+        "smithDepth": 4018,
+        "rankDepth": 7957,
+        "bruteForceDepth": 4018,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.980338
+      },
+      {
+        "instance": 98,
+        "fieldCount": 2,
+        "structuredBits": 23,
+        "smithDepth": 2157,
+        "rankDepth": 2157,
+        "bruteForceDepth": 2157,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 99,
+        "fieldCount": 5,
+        "structuredBits": 47,
+        "smithDepth": 4211,
+        "rankDepth": 7582,
+        "bruteForceDepth": 4211,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.800522
+      },
+      {
+        "instance": 100,
+        "fieldCount": 3,
+        "structuredBits": 34,
+        "smithDepth": 1510,
+        "rankDepth": 2646,
+        "bruteForceDepth": 1510,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.752318
+      },
+      {
+        "instance": 101,
+        "fieldCount": 3,
+        "structuredBits": 35,
+        "smithDepth": 3515,
+        "rankDepth": 3707,
+        "bruteForceDepth": 3515,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.054623
+      },
+      {
+        "instance": 102,
+        "fieldCount": 2,
+        "structuredBits": 19,
+        "smithDepth": 1117,
+        "rankDepth": 1322,
+        "bruteForceDepth": 1117,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.183527
+      },
+      {
+        "instance": 103,
+        "fieldCount": 2,
+        "structuredBits": 19,
+        "smithDepth": 1203,
+        "rankDepth": 1458,
+        "bruteForceDepth": 1203,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.21197
+      },
+      {
+        "instance": 104,
+        "fieldCount": 4,
+        "structuredBits": 48,
+        "smithDepth": 3612,
+        "rankDepth": 7008,
+        "bruteForceDepth": 3612,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.940199
+      },
+      {
+        "instance": 105,
+        "fieldCount": 5,
+        "structuredBits": 54,
+        "smithDepth": 4279,
+        "rankDepth": 4296,
+        "bruteForceDepth": 4279,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.003973
+      },
+      {
+        "instance": 106,
+        "fieldCount": 5,
+        "structuredBits": 54,
+        "smithDepth": 2452,
+        "rankDepth": 2768,
+        "bruteForceDepth": 2452,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.128874
+      },
+      {
+        "instance": 107,
+        "fieldCount": 5,
+        "structuredBits": 56,
+        "smithDepth": 10216,
+        "rankDepth": 13104,
+        "bruteForceDepth": 10216,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.282694
+      },
+      {
+        "instance": 108,
+        "fieldCount": 3,
+        "structuredBits": 30,
+        "smithDepth": 4626,
+        "rankDepth": 6000,
+        "bruteForceDepth": 4626,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.297017
+      },
+      {
+        "instance": 109,
+        "fieldCount": 4,
+        "structuredBits": 46,
+        "smithDepth": 6440,
+        "rankDepth": 8778,
+        "bruteForceDepth": 6440,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.363043
+      },
+      {
+        "instance": 110,
+        "fieldCount": 4,
+        "structuredBits": 47,
+        "smithDepth": 2809,
+        "rankDepth": 3061,
+        "bruteForceDepth": 2809,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.089712
+      },
+      {
+        "instance": 111,
+        "fieldCount": 3,
+        "structuredBits": 35,
+        "smithDepth": 2460,
+        "rankDepth": 2460,
+        "bruteForceDepth": 2460,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 112,
+        "fieldCount": 3,
+        "structuredBits": 33,
+        "smithDepth": 1689,
+        "rankDepth": 2901,
+        "bruteForceDepth": 1689,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.717584
+      },
+      {
+        "instance": 113,
+        "fieldCount": 2,
+        "structuredBits": 19,
+        "smithDepth": 214,
+        "rankDepth": 440,
+        "bruteForceDepth": 214,
+        "smithIsOptimal": true,
+        "gapVsRank": 1.056075
+      },
+      {
+        "instance": 114,
+        "fieldCount": 5,
+        "structuredBits": 55,
+        "smithDepth": 7707,
+        "rankDepth": 11814,
+        "bruteForceDepth": 7707,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.532892
+      },
+      {
+        "instance": 115,
+        "fieldCount": 3,
+        "structuredBits": 35,
+        "smithDepth": 2629,
+        "rankDepth": 3121,
+        "bruteForceDepth": 2629,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.187143
+      },
+      {
+        "instance": 116,
+        "fieldCount": 4,
+        "structuredBits": 45,
+        "smithDepth": 2512,
+        "rankDepth": 2968,
+        "bruteForceDepth": 2512,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.181529
+      },
+      {
+        "instance": 117,
+        "fieldCount": 5,
+        "structuredBits": 54,
+        "smithDepth": 14060,
+        "rankDepth": 15040,
+        "bruteForceDepth": 14060,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.069701
+      },
+      {
+        "instance": 118,
+        "fieldCount": 4,
+        "structuredBits": 40,
+        "smithDepth": 4537,
+        "rankDepth": 5629,
+        "bruteForceDepth": 4537,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.240688
+      },
+      {
+        "instance": 119,
+        "fieldCount": 3,
+        "structuredBits": 30,
+        "smithDepth": 1924,
+        "rankDepth": 1924,
+        "bruteForceDepth": 1924,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 120,
+        "fieldCount": 2,
+        "structuredBits": 22,
+        "smithDepth": 452,
+        "rankDepth": 452,
+        "bruteForceDepth": 452,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 121,
+        "fieldCount": 4,
+        "structuredBits": 43,
+        "smithDepth": 1720,
+        "rankDepth": 3449,
+        "bruteForceDepth": 1720,
+        "smithIsOptimal": true,
+        "gapVsRank": 1.005233
+      },
+      {
+        "instance": 122,
+        "fieldCount": 2,
+        "structuredBits": 21,
+        "smithDepth": 1602,
+        "rankDepth": 1602,
+        "bruteForceDepth": 1602,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 123,
+        "fieldCount": 2,
+        "structuredBits": 22,
+        "smithDepth": 1652,
+        "rankDepth": 1652,
+        "bruteForceDepth": 1652,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 124,
+        "fieldCount": 2,
+        "structuredBits": 22,
+        "smithDepth": 2000,
+        "rankDepth": 2000,
+        "bruteForceDepth": 2000,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 125,
+        "fieldCount": 2,
+        "structuredBits": 23,
+        "smithDepth": 1746,
+        "rankDepth": 1774,
+        "bruteForceDepth": 1746,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.016037
+      },
+      {
+        "instance": 126,
+        "fieldCount": 4,
+        "structuredBits": 46,
+        "smithDepth": 5457,
+        "rankDepth": 6895,
+        "bruteForceDepth": 5457,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.263515
+      },
+      {
+        "instance": 127,
+        "fieldCount": 4,
+        "structuredBits": 45,
+        "smithDepth": 4004,
+        "rankDepth": 4672,
+        "bruteForceDepth": 4004,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.166833
+      },
+      {
+        "instance": 128,
+        "fieldCount": 4,
+        "structuredBits": 48,
+        "smithDepth": 2292,
+        "rankDepth": 2796,
+        "bruteForceDepth": 2292,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.219895
+      },
+      {
+        "instance": 129,
+        "fieldCount": 3,
+        "structuredBits": 29,
+        "smithDepth": 2958,
+        "rankDepth": 2958,
+        "bruteForceDepth": 2958,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 130,
+        "fieldCount": 4,
+        "structuredBits": 47,
+        "smithDepth": 7712,
+        "rankDepth": 8288,
+        "bruteForceDepth": 7712,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.074689
+      },
+      {
+        "instance": 131,
+        "fieldCount": 3,
+        "structuredBits": 34,
+        "smithDepth": 2648,
+        "rankDepth": 3356,
+        "bruteForceDepth": 2648,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.267372
+      },
+      {
+        "instance": 132,
+        "fieldCount": 3,
+        "structuredBits": 32,
+        "smithDepth": 3731,
+        "rankDepth": 4404,
+        "bruteForceDepth": 3731,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.180381
+      },
+      {
+        "instance": 133,
+        "fieldCount": 2,
+        "structuredBits": 22,
+        "smithDepth": 604,
+        "rankDepth": 1074,
+        "bruteForceDepth": 604,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.778146
+      },
+      {
+        "instance": 134,
+        "fieldCount": 3,
+        "structuredBits": 32,
+        "smithDepth": 2613,
+        "rankDepth": 4138,
+        "bruteForceDepth": 2613,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.58362
+      },
+      {
+        "instance": 135,
+        "fieldCount": 4,
+        "structuredBits": 47,
+        "smithDepth": 2941,
+        "rankDepth": 3097,
+        "bruteForceDepth": 2941,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.053043
+      },
+      {
+        "instance": 136,
+        "fieldCount": 2,
+        "structuredBits": 21,
+        "smithDepth": 1470,
+        "rankDepth": 1470,
+        "bruteForceDepth": 1470,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 137,
+        "fieldCount": 5,
+        "structuredBits": 59,
+        "smithDepth": 6135,
+        "rankDepth": 8319,
+        "bruteForceDepth": 6135,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.35599
+      },
+      {
+        "instance": 138,
+        "fieldCount": 5,
+        "structuredBits": 54,
+        "smithDepth": 2404,
+        "rankDepth": 2808,
+        "bruteForceDepth": 2404,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.168053
+      },
+      {
+        "instance": 139,
+        "fieldCount": 5,
+        "structuredBits": 57,
+        "smithDepth": 6316,
+        "rankDepth": 10649,
+        "bruteForceDepth": 6316,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.686035
+      },
+      {
+        "instance": 140,
+        "fieldCount": 3,
+        "structuredBits": 30,
+        "smithDepth": 217,
+        "rankDepth": 224,
+        "bruteForceDepth": 217,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.032258
+      },
+      {
+        "instance": 141,
+        "fieldCount": 3,
+        "structuredBits": 34,
+        "smithDepth": 3864,
+        "rankDepth": 4814,
+        "bruteForceDepth": 3864,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.245859
+      },
+      {
+        "instance": 142,
+        "fieldCount": 4,
+        "structuredBits": 39,
+        "smithDepth": 4200,
+        "rankDepth": 4801,
+        "bruteForceDepth": 4200,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.143095
+      },
+      {
+        "instance": 143,
+        "fieldCount": 2,
+        "structuredBits": 22,
+        "smithDepth": 1556,
+        "rankDepth": 2222,
+        "bruteForceDepth": 1556,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.428021
+      },
+      {
+        "instance": 144,
+        "fieldCount": 4,
+        "structuredBits": 47,
+        "smithDepth": 9522,
+        "rankDepth": 10018,
+        "bruteForceDepth": 9522,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.05209
+      },
+      {
+        "instance": 145,
+        "fieldCount": 3,
+        "structuredBits": 34,
+        "smithDepth": 5271,
+        "rankDepth": 5417,
+        "bruteForceDepth": 5271,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.027699
+      },
+      {
+        "instance": 146,
+        "fieldCount": 3,
+        "structuredBits": 35,
+        "smithDepth": 2748,
+        "rankDepth": 4427,
+        "bruteForceDepth": 2748,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.61099
+      },
+      {
+        "instance": 147,
+        "fieldCount": 2,
+        "structuredBits": 21,
+        "smithDepth": 2295,
+        "rankDepth": 2580,
+        "bruteForceDepth": 2295,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.124183
+      },
+      {
+        "instance": 148,
+        "fieldCount": 3,
+        "structuredBits": 36,
+        "smithDepth": 2208,
+        "rankDepth": 3300,
+        "bruteForceDepth": 2208,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.494565
+      },
+      {
+        "instance": 149,
+        "fieldCount": 2,
+        "structuredBits": 23,
+        "smithDepth": 2284,
+        "rankDepth": 2284,
+        "bruteForceDepth": 2284,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 150,
+        "fieldCount": 4,
+        "structuredBits": 46,
+        "smithDepth": 4286,
+        "rankDepth": 5517,
+        "bruteForceDepth": 4286,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.287214
+      },
+      {
+        "instance": 151,
+        "fieldCount": 4,
+        "structuredBits": 45,
+        "smithDepth": 5946,
+        "rankDepth": 6603,
+        "bruteForceDepth": 5946,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.110494
+      },
+      {
+        "instance": 152,
+        "fieldCount": 2,
+        "structuredBits": 16,
+        "smithDepth": 779,
+        "rankDepth": 779,
+        "bruteForceDepth": 779,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 153,
+        "fieldCount": 2,
+        "structuredBits": 23,
+        "smithDepth": 1439,
+        "rankDepth": 1439,
+        "bruteForceDepth": 1439,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 154,
+        "fieldCount": 2,
+        "structuredBits": 20,
+        "smithDepth": 741,
+        "rankDepth": 844,
+        "bruteForceDepth": 741,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.139001
+      },
+      {
+        "instance": 155,
+        "fieldCount": 5,
+        "structuredBits": 59,
+        "smithDepth": 8334,
+        "rankDepth": 9342,
+        "bruteForceDepth": 8334,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.12095
+      },
+      {
+        "instance": 156,
+        "fieldCount": 3,
+        "structuredBits": 35,
+        "smithDepth": 4679,
+        "rankDepth": 4679,
+        "bruteForceDepth": 4679,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 157,
+        "fieldCount": 3,
+        "structuredBits": 35,
+        "smithDepth": 3249,
+        "rankDepth": 3249,
+        "bruteForceDepth": 3249,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 158,
+        "fieldCount": 4,
+        "structuredBits": 48,
+        "smithDepth": 3060,
+        "rankDepth": 5052,
+        "bruteForceDepth": 3060,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.65098
+      },
+      {
+        "instance": 159,
+        "fieldCount": 4,
+        "structuredBits": 44,
+        "smithDepth": 3433,
+        "rankDepth": 3696,
+        "bruteForceDepth": 3433,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.076609
+      },
+      {
+        "instance": 160,
+        "fieldCount": 4,
+        "structuredBits": 46,
+        "smithDepth": 2294,
+        "rankDepth": 3133,
+        "bruteForceDepth": 2294,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.365737
+      },
+      {
+        "instance": 161,
+        "fieldCount": 2,
+        "structuredBits": 22,
+        "smithDepth": 3069,
+        "rankDepth": 3102,
+        "bruteForceDepth": 3069,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.010753
+      },
+      {
+        "instance": 162,
+        "fieldCount": 5,
+        "structuredBits": 52,
+        "smithDepth": 7681,
+        "rankDepth": 9262,
+        "bruteForceDepth": 7681,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.205833
+      },
+      {
+        "instance": 163,
+        "fieldCount": 3,
+        "structuredBits": 35,
+        "smithDepth": 384,
+        "rankDepth": 715,
+        "bruteForceDepth": 384,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.861979
+      },
+      {
+        "instance": 164,
+        "fieldCount": 4,
+        "structuredBits": 48,
+        "smithDepth": 3648,
+        "rankDepth": 5544,
+        "bruteForceDepth": 3648,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.519737
+      },
+      {
+        "instance": 165,
+        "fieldCount": 5,
+        "structuredBits": 58,
+        "smithDepth": 8161,
+        "rankDepth": 9899,
+        "bruteForceDepth": 8161,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.212964
+      },
+      {
+        "instance": 166,
+        "fieldCount": 5,
+        "structuredBits": 59,
+        "smithDepth": 2487,
+        "rankDepth": 2547,
+        "bruteForceDepth": 2487,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.024125
+      },
+      {
+        "instance": 167,
+        "fieldCount": 2,
+        "structuredBits": 23,
+        "smithDepth": 2069,
+        "rankDepth": 2069,
+        "bruteForceDepth": 2069,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 168,
+        "fieldCount": 4,
+        "structuredBits": 41,
+        "smithDepth": 5502,
+        "rankDepth": 6738,
+        "bruteForceDepth": 5502,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.224646
+      },
+      {
+        "instance": 169,
+        "fieldCount": 4,
+        "structuredBits": 46,
+        "smithDepth": 4918,
+        "rankDepth": 6350,
+        "bruteForceDepth": 4918,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.291175
+      },
+      {
+        "instance": 170,
+        "fieldCount": 3,
+        "structuredBits": 34,
+        "smithDepth": 1928,
+        "rankDepth": 3544,
+        "bruteForceDepth": 1928,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.838174
+      },
+      {
+        "instance": 171,
+        "fieldCount": 2,
+        "structuredBits": 21,
+        "smithDepth": 1548,
+        "rankDepth": 1548,
+        "bruteForceDepth": 1548,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 172,
+        "fieldCount": 5,
+        "structuredBits": 59,
+        "smithDepth": 4757,
+        "rankDepth": 7461,
+        "bruteForceDepth": 4757,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.568425
+      },
+      {
+        "instance": 173,
+        "fieldCount": 4,
+        "structuredBits": 42,
+        "smithDepth": 5429,
+        "rankDepth": 5753,
+        "bruteForceDepth": 5429,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.059679
+      },
+      {
+        "instance": 174,
+        "fieldCount": 2,
+        "structuredBits": 22,
+        "smithDepth": 1716,
+        "rankDepth": 1716,
+        "bruteForceDepth": 1716,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 175,
+        "fieldCount": 4,
+        "structuredBits": 39,
+        "smithDepth": 3834,
+        "rankDepth": 5502,
+        "bruteForceDepth": 3834,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.435055
+      },
+      {
+        "instance": 176,
+        "fieldCount": 4,
+        "structuredBits": 45,
+        "smithDepth": 6372,
+        "rankDepth": 7125,
+        "bruteForceDepth": 6372,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.118173
+      },
+      {
+        "instance": 177,
+        "fieldCount": 2,
+        "structuredBits": 21,
+        "smithDepth": 1728,
+        "rankDepth": 1728,
+        "bruteForceDepth": 1728,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 178,
+        "fieldCount": 2,
+        "structuredBits": 23,
+        "smithDepth": 1354,
+        "rankDepth": 1354,
+        "bruteForceDepth": 1354,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 179,
+        "fieldCount": 4,
+        "structuredBits": 46,
+        "smithDepth": 3827,
+        "rankDepth": 3839,
+        "bruteForceDepth": 3827,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.003136
+      },
+      {
+        "instance": 180,
+        "fieldCount": 3,
+        "structuredBits": 36,
+        "smithDepth": 1176,
+        "rankDepth": 1176,
+        "bruteForceDepth": 1176,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 181,
+        "fieldCount": 5,
+        "structuredBits": 58,
+        "smithDepth": 9224,
+        "rankDepth": 10168,
+        "bruteForceDepth": 9224,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.102342
+      },
+      {
+        "instance": 182,
+        "fieldCount": 2,
+        "structuredBits": 22,
+        "smithDepth": 2880,
+        "rankDepth": 3060,
+        "bruteForceDepth": 2880,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.0625
+      },
+      {
+        "instance": 183,
+        "fieldCount": 4,
+        "structuredBits": 45,
+        "smithDepth": 4354,
+        "rankDepth": 6803,
+        "bruteForceDepth": 4354,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.562471
+      },
+      {
+        "instance": 184,
+        "fieldCount": 2,
+        "structuredBits": 23,
+        "smithDepth": 432,
+        "rankDepth": 432,
+        "bruteForceDepth": 432,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 185,
+        "fieldCount": 4,
+        "structuredBits": 42,
+        "smithDepth": 4792,
+        "rankDepth": 7062,
+        "bruteForceDepth": 4792,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.473706
+      },
+      {
+        "instance": 186,
+        "fieldCount": 4,
+        "structuredBits": 46,
+        "smithDepth": 5146,
+        "rankDepth": 5916,
+        "bruteForceDepth": 5146,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.149631
+      },
+      {
+        "instance": 187,
+        "fieldCount": 3,
+        "structuredBits": 34,
+        "smithDepth": 1964,
+        "rankDepth": 2462,
+        "bruteForceDepth": 1964,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.253564
+      },
+      {
+        "instance": 188,
+        "fieldCount": 4,
+        "structuredBits": 41,
+        "smithDepth": 2170,
+        "rankDepth": 3317,
+        "bruteForceDepth": 2170,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.528571
+      },
+      {
+        "instance": 189,
+        "fieldCount": 2,
+        "structuredBits": 24,
+        "smithDepth": 612,
+        "rankDepth": 1116,
+        "bruteForceDepth": 612,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.823529
+      },
+      {
+        "instance": 190,
+        "fieldCount": 2,
+        "structuredBits": 23,
+        "smithDepth": 995,
+        "rankDepth": 995,
+        "bruteForceDepth": 995,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 191,
+        "fieldCount": 5,
+        "structuredBits": 54,
+        "smithDepth": 6608,
+        "rankDepth": 10102,
+        "bruteForceDepth": 6608,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.528753
+      },
+      {
+        "instance": 192,
+        "fieldCount": 5,
+        "structuredBits": 56,
+        "smithDepth": 9881,
+        "rankDepth": 10757,
+        "bruteForceDepth": 9881,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.088655
+      },
+      {
+        "instance": 193,
+        "fieldCount": 2,
+        "structuredBits": 24,
+        "smithDepth": 1572,
+        "rankDepth": 1572,
+        "bruteForceDepth": 1572,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 194,
+        "fieldCount": 5,
+        "structuredBits": 54,
+        "smithDepth": 2264,
+        "rankDepth": 4012,
+        "bruteForceDepth": 2264,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.772085
+      },
+      {
+        "instance": 195,
+        "fieldCount": 4,
+        "structuredBits": 41,
+        "smithDepth": 5521,
+        "rankDepth": 5521,
+        "bruteForceDepth": 5521,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 196,
+        "fieldCount": 4,
+        "structuredBits": 44,
+        "smithDepth": 1982,
+        "rankDepth": 2314,
+        "bruteForceDepth": 1982,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.167508
+      },
+      {
+        "instance": 197,
+        "fieldCount": 5,
+        "structuredBits": 54,
+        "smithDepth": 4302,
+        "rankDepth": 8663,
+        "bruteForceDepth": 4302,
+        "smithIsOptimal": true,
+        "gapVsRank": 1.013715
+      },
+      {
+        "instance": 198,
+        "fieldCount": 4,
+        "structuredBits": 44,
+        "smithDepth": 2535,
+        "rankDepth": 5962,
+        "bruteForceDepth": 2535,
+        "smithIsOptimal": true,
+        "gapVsRank": 1.351874
+      },
+      {
+        "instance": 199,
+        "fieldCount": 5,
+        "structuredBits": 56,
+        "smithDepth": 4111,
+        "rankDepth": 4567,
+        "bruteForceDepth": 4111,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.110922
+      },
+      {
+        "instance": 200,
+        "fieldCount": 5,
+        "structuredBits": 58,
+        "smithDepth": 6288,
+        "rankDepth": 11620,
+        "bruteForceDepth": 6288,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.847964
+      },
+      {
+        "instance": 201,
+        "fieldCount": 3,
+        "structuredBits": 36,
+        "smithDepth": 3720,
+        "rankDepth": 4692,
+        "bruteForceDepth": 3720,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.26129
+      },
+      {
+        "instance": 202,
+        "fieldCount": 2,
+        "structuredBits": 23,
+        "smithDepth": 1202,
+        "rankDepth": 1611,
+        "bruteForceDepth": 1202,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.340266
+      },
+      {
+        "instance": 203,
+        "fieldCount": 2,
+        "structuredBits": 24,
+        "smithDepth": 3312,
+        "rankDepth": 3384,
+        "bruteForceDepth": 3312,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.021739
+      },
+      {
+        "instance": 204,
+        "fieldCount": 2,
+        "structuredBits": 24,
+        "smithDepth": 1524,
+        "rankDepth": 1524,
+        "bruteForceDepth": 1524,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 205,
+        "fieldCount": 4,
+        "structuredBits": 47,
+        "smithDepth": 6165,
+        "rankDepth": 6429,
+        "bruteForceDepth": 6165,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.042822
+      },
+      {
+        "instance": 206,
+        "fieldCount": 2,
+        "structuredBits": 22,
+        "smithDepth": 649,
+        "rankDepth": 1232,
+        "bruteForceDepth": 649,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.898305
+      },
+      {
+        "instance": 207,
+        "fieldCount": 2,
+        "structuredBits": 20,
+        "smithDepth": 2330,
+        "rankDepth": 2330,
+        "bruteForceDepth": 2330,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 208,
+        "fieldCount": 3,
+        "structuredBits": 32,
+        "smithDepth": 1438,
+        "rankDepth": 1832,
+        "bruteForceDepth": 1438,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.273992
+      },
+      {
+        "instance": 209,
+        "fieldCount": 4,
+        "structuredBits": 44,
+        "smithDepth": 3288,
+        "rankDepth": 4168,
+        "bruteForceDepth": 3288,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.26764
+      },
+      {
+        "instance": 210,
+        "fieldCount": 3,
+        "structuredBits": 30,
+        "smithDepth": 2293,
+        "rankDepth": 2410,
+        "bruteForceDepth": 2293,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.051025
+      },
+      {
+        "instance": 211,
+        "fieldCount": 4,
+        "structuredBits": 43,
+        "smithDepth": 4153,
+        "rankDepth": 4574,
+        "bruteForceDepth": 4153,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.101373
+      },
+      {
+        "instance": 212,
+        "fieldCount": 5,
+        "structuredBits": 51,
+        "smithDepth": 5370,
+        "rankDepth": 7949,
+        "bruteForceDepth": 5370,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.480261
+      },
+      {
+        "instance": 213,
+        "fieldCount": 2,
+        "structuredBits": 23,
+        "smithDepth": 1591,
+        "rankDepth": 1591,
+        "bruteForceDepth": 1591,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 214,
+        "fieldCount": 5,
+        "structuredBits": 56,
+        "smithDepth": 5264,
+        "rankDepth": 8600,
+        "bruteForceDepth": 5264,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.633739
+      },
+      {
+        "instance": 215,
+        "fieldCount": 2,
+        "structuredBits": 22,
+        "smithDepth": 992,
+        "rankDepth": 2146,
+        "bruteForceDepth": 992,
+        "smithIsOptimal": true,
+        "gapVsRank": 1.163306
+      },
+      {
+        "instance": 216,
+        "fieldCount": 4,
+        "structuredBits": 35,
+        "smithDepth": 1326,
+        "rankDepth": 2233,
+        "bruteForceDepth": 1326,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.684012
+      },
+      {
+        "instance": 217,
+        "fieldCount": 5,
+        "structuredBits": 54,
+        "smithDepth": 9742,
+        "rankDepth": 11744,
+        "bruteForceDepth": 9742,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.205502
+      },
+      {
+        "instance": 218,
+        "fieldCount": 4,
+        "structuredBits": 44,
+        "smithDepth": 3123,
+        "rankDepth": 4727,
+        "bruteForceDepth": 3123,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.513609
+      },
+      {
+        "instance": 219,
+        "fieldCount": 4,
+        "structuredBits": 46,
+        "smithDepth": 6169,
+        "rankDepth": 6934,
+        "bruteForceDepth": 6169,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.124007
+      },
+      {
+        "instance": 220,
+        "fieldCount": 5,
+        "structuredBits": 48,
+        "smithDepth": 5535,
+        "rankDepth": 9085,
+        "bruteForceDepth": 5535,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.641373
+      },
+      {
+        "instance": 221,
+        "fieldCount": 5,
+        "structuredBits": 55,
+        "smithDepth": 10520,
+        "rankDepth": 12514,
+        "bruteForceDepth": 10520,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.189544
+      },
+      {
+        "instance": 222,
+        "fieldCount": 5,
+        "structuredBits": 56,
+        "smithDepth": 4515,
+        "rankDepth": 7787,
+        "bruteForceDepth": 4515,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.724695
+      },
+      {
+        "instance": 223,
+        "fieldCount": 4,
+        "structuredBits": 42,
+        "smithDepth": 4058,
+        "rankDepth": 5399,
+        "bruteForceDepth": 4058,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.330458
+      },
+      {
+        "instance": 224,
+        "fieldCount": 4,
+        "structuredBits": 48,
+        "smithDepth": 3420,
+        "rankDepth": 4500,
+        "bruteForceDepth": 3420,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.315789
+      },
+      {
+        "instance": 225,
+        "fieldCount": 5,
+        "structuredBits": 59,
+        "smithDepth": 7203,
+        "rankDepth": 8127,
+        "bruteForceDepth": 7203,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.12828
+      },
+      {
+        "instance": 226,
+        "fieldCount": 5,
+        "structuredBits": 56,
+        "smithDepth": 7994,
+        "rankDepth": 12360,
+        "bruteForceDepth": 7994,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.54616
+      },
+      {
+        "instance": 227,
+        "fieldCount": 5,
+        "structuredBits": 57,
+        "smithDepth": 5076,
+        "rankDepth": 7184,
+        "bruteForceDepth": 5076,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.415288
+      },
+      {
+        "instance": 228,
+        "fieldCount": 4,
+        "structuredBits": 44,
+        "smithDepth": 4333,
+        "rankDepth": 5245,
+        "bruteForceDepth": 4333,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.210478
+      },
+      {
+        "instance": 229,
+        "fieldCount": 3,
+        "structuredBits": 31,
+        "smithDepth": 3369,
+        "rankDepth": 4278,
+        "bruteForceDepth": 3369,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.269813
+      },
+      {
+        "instance": 230,
+        "fieldCount": 2,
+        "structuredBits": 22,
+        "smithDepth": 1306,
+        "rankDepth": 1306,
+        "bruteForceDepth": 1306,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 231,
+        "fieldCount": 5,
+        "structuredBits": 52,
+        "smithDepth": 3751,
+        "rankDepth": 7968,
+        "bruteForceDepth": 3751,
+        "smithIsOptimal": true,
+        "gapVsRank": 1.124234
+      },
+      {
+        "instance": 232,
+        "fieldCount": 2,
+        "structuredBits": 24,
+        "smithDepth": 2412,
+        "rankDepth": 2664,
+        "bruteForceDepth": 2412,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.104478
+      },
+      {
+        "instance": 233,
+        "fieldCount": 4,
+        "structuredBits": 43,
+        "smithDepth": 3168,
+        "rankDepth": 5423,
+        "bruteForceDepth": 3168,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.711806
+      },
+      {
+        "instance": 234,
+        "fieldCount": 4,
+        "structuredBits": 47,
+        "smithDepth": 2392,
+        "rankDepth": 4960,
+        "bruteForceDepth": 2392,
+        "smithIsOptimal": true,
+        "gapVsRank": 1.073579
+      },
+      {
+        "instance": 235,
+        "fieldCount": 3,
+        "structuredBits": 34,
+        "smithDepth": 2100,
+        "rankDepth": 2704,
+        "bruteForceDepth": 2100,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.287619
+      },
+      {
+        "instance": 236,
+        "fieldCount": 5,
+        "structuredBits": 57,
+        "smithDepth": 5632,
+        "rankDepth": 7698,
+        "bruteForceDepth": 5632,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.366832
+      },
+      {
+        "instance": 237,
+        "fieldCount": 3,
+        "structuredBits": 35,
+        "smithDepth": 2098,
+        "rankDepth": 3704,
+        "bruteForceDepth": 2098,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.765491
+      },
+      {
+        "instance": 238,
+        "fieldCount": 4,
+        "structuredBits": 45,
+        "smithDepth": 2956,
+        "rankDepth": 4501,
+        "bruteForceDepth": 2956,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.522666
+      },
+      {
+        "instance": 239,
+        "fieldCount": 5,
+        "structuredBits": 56,
+        "smithDepth": 2077,
+        "rankDepth": 4626,
+        "bruteForceDepth": 2077,
+        "smithIsOptimal": true,
+        "gapVsRank": 1.227251
+      },
+      {
+        "instance": 240,
+        "fieldCount": 2,
+        "structuredBits": 20,
+        "smithDepth": 2256,
+        "rankDepth": 2296,
+        "bruteForceDepth": 2256,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.01773
+      },
+      {
+        "instance": 241,
+        "fieldCount": 3,
+        "structuredBits": 32,
+        "smithDepth": 4926,
+        "rankDepth": 5652,
+        "bruteForceDepth": 4926,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.147381
+      },
+      {
+        "instance": 242,
+        "fieldCount": 4,
+        "structuredBits": 39,
+        "smithDepth": 2311,
+        "rankDepth": 5165,
+        "bruteForceDepth": 2311,
+        "smithIsOptimal": true,
+        "gapVsRank": 1.234963
+      },
+      {
+        "instance": 243,
+        "fieldCount": 3,
+        "structuredBits": 36,
+        "smithDepth": 2460,
+        "rankDepth": 3396,
+        "bruteForceDepth": 2460,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.380488
+      },
+      {
+        "instance": 244,
+        "fieldCount": 3,
+        "structuredBits": 30,
+        "smithDepth": 4377,
+        "rankDepth": 5055,
+        "bruteForceDepth": 4377,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.154901
+      },
+      {
+        "instance": 245,
+        "fieldCount": 4,
+        "structuredBits": 42,
+        "smithDepth": 2278,
+        "rankDepth": 2578,
+        "bruteForceDepth": 2278,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.131694
+      },
+      {
+        "instance": 246,
+        "fieldCount": 3,
+        "structuredBits": 35,
+        "smithDepth": 5058,
+        "rankDepth": 5058,
+        "bruteForceDepth": 5058,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 247,
+        "fieldCount": 4,
+        "structuredBits": 47,
+        "smithDepth": 5812,
+        "rankDepth": 7680,
+        "bruteForceDepth": 5812,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.321404
+      },
+      {
+        "instance": 248,
+        "fieldCount": 3,
+        "structuredBits": 31,
+        "smithDepth": 1608,
+        "rankDepth": 1764,
+        "bruteForceDepth": 1608,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.097015
+      },
+      {
+        "instance": 249,
+        "fieldCount": 4,
+        "structuredBits": 43,
+        "smithDepth": 2652,
+        "rankDepth": 5502,
+        "bruteForceDepth": 2652,
+        "smithIsOptimal": true,
+        "gapVsRank": 1.074661
+      },
+      {
+        "instance": 250,
+        "fieldCount": 4,
+        "structuredBits": 41,
+        "smithDepth": 2731,
+        "rankDepth": 6366,
+        "bruteForceDepth": 2731,
+        "smithIsOptimal": true,
+        "gapVsRank": 1.331014
+      },
+      {
+        "instance": 251,
+        "fieldCount": 5,
+        "structuredBits": 58,
+        "smithDepth": 6772,
+        "rankDepth": 7868,
+        "bruteForceDepth": 6772,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.161843
+      },
+      {
+        "instance": 252,
+        "fieldCount": 5,
+        "structuredBits": 60,
+        "smithDepth": 3700,
+        "rankDepth": 5152,
+        "bruteForceDepth": 3700,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.392432
+      },
+      {
+        "instance": 253,
+        "fieldCount": 2,
+        "structuredBits": 23,
+        "smithDepth": 2491,
+        "rankDepth": 2491,
+        "bruteForceDepth": 2491,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 254,
+        "fieldCount": 2,
+        "structuredBits": 22,
+        "smithDepth": 1668,
+        "rankDepth": 1668,
+        "bruteForceDepth": 1668,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 255,
+        "fieldCount": 4,
+        "structuredBits": 45,
+        "smithDepth": 2835,
+        "rankDepth": 3819,
+        "bruteForceDepth": 2835,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.34709
+      },
+      {
+        "instance": 256,
+        "fieldCount": 5,
+        "structuredBits": 59,
+        "smithDepth": 13685,
+        "rankDepth": 14025,
+        "bruteForceDepth": 13685,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.024845
+      },
+      {
+        "instance": 257,
+        "fieldCount": 3,
+        "structuredBits": 34,
+        "smithDepth": 3336,
+        "rankDepth": 3534,
+        "bruteForceDepth": 3336,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.059353
+      },
+      {
+        "instance": 258,
+        "fieldCount": 3,
+        "structuredBits": 33,
+        "smithDepth": 3104,
+        "rankDepth": 3752,
+        "bruteForceDepth": 3104,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.208763
+      },
+      {
+        "instance": 259,
+        "fieldCount": 2,
+        "structuredBits": 16,
+        "smithDepth": 1264,
+        "rankDepth": 1264,
+        "bruteForceDepth": 1264,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 260,
+        "fieldCount": 5,
+        "structuredBits": 56,
+        "smithDepth": 4470,
+        "rankDepth": 6435,
+        "bruteForceDepth": 4470,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.439597
+      },
+      {
+        "instance": 261,
+        "fieldCount": 4,
+        "structuredBits": 48,
+        "smithDepth": 4860,
+        "rankDepth": 6768,
+        "bruteForceDepth": 4860,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.392593
+      },
+      {
+        "instance": 262,
+        "fieldCount": 2,
+        "structuredBits": 18,
+        "smithDepth": 1188,
+        "rankDepth": 1188,
+        "bruteForceDepth": 1188,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 263,
+        "fieldCount": 2,
+        "structuredBits": 24,
+        "smithDepth": 612,
+        "rankDepth": 612,
+        "bruteForceDepth": 612,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 264,
+        "fieldCount": 4,
+        "structuredBits": 44,
+        "smithDepth": 3642,
+        "rankDepth": 5362,
+        "bruteForceDepth": 3642,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.472268
+      },
+      {
+        "instance": 265,
+        "fieldCount": 4,
+        "structuredBits": 45,
+        "smithDepth": 2811,
+        "rankDepth": 5506,
+        "bruteForceDepth": 2811,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.958734
+      },
+      {
+        "instance": 266,
+        "fieldCount": 5,
+        "structuredBits": 57,
+        "smithDepth": 9592,
+        "rankDepth": 14685,
+        "bruteForceDepth": 9592,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.530963
+      },
+      {
+        "instance": 267,
+        "fieldCount": 4,
+        "structuredBits": 47,
+        "smithDepth": 7360,
+        "rankDepth": 7550,
+        "bruteForceDepth": 7360,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.025815
+      },
+      {
+        "instance": 268,
+        "fieldCount": 2,
+        "structuredBits": 19,
+        "smithDepth": 1752,
+        "rankDepth": 1752,
+        "bruteForceDepth": 1752,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 269,
+        "fieldCount": 5,
+        "structuredBits": 57,
+        "smithDepth": 4501,
+        "rankDepth": 8620,
+        "bruteForceDepth": 4501,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.91513
+      },
+      {
+        "instance": 270,
+        "fieldCount": 5,
+        "structuredBits": 55,
+        "smithDepth": 6082,
+        "rankDepth": 7139,
+        "bruteForceDepth": 6082,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.173792
+      },
+      {
+        "instance": 271,
+        "fieldCount": 2,
+        "structuredBits": 21,
+        "smithDepth": 1247,
+        "rankDepth": 1394,
+        "bruteForceDepth": 1247,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.117883
+      },
+      {
+        "instance": 272,
+        "fieldCount": 2,
+        "structuredBits": 17,
+        "smithDepth": 1751,
+        "rankDepth": 2025,
+        "bruteForceDepth": 1751,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.156482
+      },
+      {
+        "instance": 273,
+        "fieldCount": 5,
+        "structuredBits": 46,
+        "smithDepth": 2903,
+        "rankDepth": 4970,
+        "bruteForceDepth": 2903,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.712022
+      },
+      {
+        "instance": 274,
+        "fieldCount": 2,
+        "structuredBits": 24,
+        "smithDepth": 600,
+        "rankDepth": 600,
+        "bruteForceDepth": 600,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 275,
+        "fieldCount": 5,
+        "structuredBits": 55,
+        "smithDepth": 3689,
+        "rankDepth": 3749,
+        "bruteForceDepth": 3689,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.016265
+      },
+      {
+        "instance": 276,
+        "fieldCount": 2,
+        "structuredBits": 23,
+        "smithDepth": 1055,
+        "rankDepth": 1055,
+        "bruteForceDepth": 1055,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 277,
+        "fieldCount": 2,
+        "structuredBits": 23,
+        "smithDepth": 2698,
+        "rankDepth": 2754,
+        "bruteForceDepth": 2698,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.020756
+      },
+      {
+        "instance": 278,
+        "fieldCount": 3,
+        "structuredBits": 32,
+        "smithDepth": 1680,
+        "rankDepth": 2108,
+        "bruteForceDepth": 1680,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.254762
+      },
+      {
+        "instance": 279,
+        "fieldCount": 3,
+        "structuredBits": 33,
+        "smithDepth": 3355,
+        "rankDepth": 3630,
+        "bruteForceDepth": 3355,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.081967
+      },
+      {
+        "instance": 280,
+        "fieldCount": 4,
+        "structuredBits": 40,
+        "smithDepth": 4040,
+        "rankDepth": 5648,
+        "bruteForceDepth": 4040,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.39802
+      },
+      {
+        "instance": 281,
+        "fieldCount": 2,
+        "structuredBits": 24,
+        "smithDepth": 2124,
+        "rankDepth": 2664,
+        "bruteForceDepth": 2124,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.254237
+      },
+      {
+        "instance": 282,
+        "fieldCount": 2,
+        "structuredBits": 24,
+        "smithDepth": 2244,
+        "rankDepth": 2244,
+        "bruteForceDepth": 2244,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 283,
+        "fieldCount": 5,
+        "structuredBits": 56,
+        "smithDepth": 9446,
+        "rankDepth": 11308,
+        "bruteForceDepth": 9446,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.19712
+      },
+      {
+        "instance": 284,
+        "fieldCount": 4,
+        "structuredBits": 44,
+        "smithDepth": 4486,
+        "rankDepth": 5868,
+        "bruteForceDepth": 4486,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.30807
+      },
+      {
+        "instance": 285,
+        "fieldCount": 4,
+        "structuredBits": 42,
+        "smithDepth": 5478,
+        "rankDepth": 6168,
+        "bruteForceDepth": 5478,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.125958
+      },
+      {
+        "instance": 286,
+        "fieldCount": 5,
+        "structuredBits": 52,
+        "smithDepth": 7078,
+        "rankDepth": 10246,
+        "bruteForceDepth": 7078,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.447584
+      },
+      {
+        "instance": 287,
+        "fieldCount": 2,
+        "structuredBits": 23,
+        "smithDepth": 2756,
+        "rankDepth": 2767,
+        "bruteForceDepth": 2756,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.003991
+      },
+      {
+        "instance": 288,
+        "fieldCount": 5,
+        "structuredBits": 45,
+        "smithDepth": 6253,
+        "rankDepth": 9305,
+        "bruteForceDepth": 6253,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.488086
+      },
+      {
+        "instance": 289,
+        "fieldCount": 3,
+        "structuredBits": 27,
+        "smithDepth": 315,
+        "rankDepth": 948,
+        "bruteForceDepth": 315,
+        "smithIsOptimal": true,
+        "gapVsRank": 2.009524
+      },
+      {
+        "instance": 290,
+        "fieldCount": 5,
+        "structuredBits": 45,
+        "smithDepth": 7015,
+        "rankDepth": 7929,
+        "bruteForceDepth": 7015,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.130292
+      },
+      {
+        "instance": 291,
+        "fieldCount": 3,
+        "structuredBits": 28,
+        "smithDepth": 3845,
+        "rankDepth": 4421,
+        "bruteForceDepth": 3845,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.149805
+      },
+      {
+        "instance": 292,
+        "fieldCount": 2,
+        "structuredBits": 20,
+        "smithDepth": 1390,
+        "rankDepth": 1818,
+        "bruteForceDepth": 1390,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.307914
+      },
+      {
+        "instance": 293,
+        "fieldCount": 5,
+        "structuredBits": 59,
+        "smithDepth": 10307,
+        "rankDepth": 11817,
+        "bruteForceDepth": 10307,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.146502
+      },
+      {
+        "instance": 294,
+        "fieldCount": 3,
+        "structuredBits": 33,
+        "smithDepth": 2404,
+        "rankDepth": 2574,
+        "bruteForceDepth": 2404,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.070715
+      },
+      {
+        "instance": 295,
+        "fieldCount": 2,
+        "structuredBits": 18,
+        "smithDepth": 603,
+        "rankDepth": 603,
+        "bruteForceDepth": 603,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 296,
+        "fieldCount": 5,
+        "structuredBits": 57,
+        "smithDepth": 6741,
+        "rankDepth": 6970,
+        "bruteForceDepth": 6741,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.033971
+      },
+      {
+        "instance": 297,
+        "fieldCount": 5,
+        "structuredBits": 60,
+        "smithDepth": 4412,
+        "rankDepth": 8720,
+        "bruteForceDepth": 4412,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.976428
+      },
+      {
+        "instance": 298,
+        "fieldCount": 3,
+        "structuredBits": 33,
+        "smithDepth": 1937,
+        "rankDepth": 3500,
+        "bruteForceDepth": 1937,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.806918
+      },
+      {
+        "instance": 299,
+        "fieldCount": 5,
+        "structuredBits": 57,
+        "smithDepth": 3467,
+        "rankDepth": 5279,
+        "bruteForceDepth": 3467,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.522642
+      },
+      {
+        "instance": 300,
+        "fieldCount": 3,
+        "structuredBits": 36,
+        "smithDepth": 2820,
+        "rankDepth": 4092,
+        "bruteForceDepth": 2820,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.451064
+      },
+      {
+        "instance": 301,
+        "fieldCount": 5,
+        "structuredBits": 53,
+        "smithDepth": 6571,
+        "rankDepth": 9969,
+        "bruteForceDepth": 6571,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.517121
+      },
+      {
+        "instance": 302,
+        "fieldCount": 2,
+        "structuredBits": 22,
+        "smithDepth": 698,
+        "rankDepth": 1026,
+        "bruteForceDepth": 698,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.469914
+      },
+      {
+        "instance": 303,
+        "fieldCount": 3,
+        "structuredBits": 35,
+        "smithDepth": 3529,
+        "rankDepth": 4325,
+        "bruteForceDepth": 3529,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.22556
+      },
+      {
+        "instance": 304,
+        "fieldCount": 4,
+        "structuredBits": 44,
+        "smithDepth": 2737,
+        "rankDepth": 4344,
+        "bruteForceDepth": 2737,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.587139
+      },
+      {
+        "instance": 305,
+        "fieldCount": 5,
+        "structuredBits": 50,
+        "smithDepth": 6045,
+        "rankDepth": 10232,
+        "bruteForceDepth": 6045,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.692639
+      },
+      {
+        "instance": 306,
+        "fieldCount": 4,
+        "structuredBits": 46,
+        "smithDepth": 7767,
+        "rankDepth": 8660,
+        "bruteForceDepth": 7767,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.114974
+      },
+      {
+        "instance": 307,
+        "fieldCount": 3,
+        "structuredBits": 35,
+        "smithDepth": 6284,
+        "rankDepth": 6599,
+        "bruteForceDepth": 6284,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.050127
+      },
+      {
+        "instance": 308,
+        "fieldCount": 2,
+        "structuredBits": 24,
+        "smithDepth": 1596,
+        "rankDepth": 1680,
+        "bruteForceDepth": 1596,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.052632
+      },
+      {
+        "instance": 309,
+        "fieldCount": 3,
+        "structuredBits": 35,
+        "smithDepth": 2242,
+        "rankDepth": 2314,
+        "bruteForceDepth": 2242,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.032114
+      },
+      {
+        "instance": 310,
+        "fieldCount": 3,
+        "structuredBits": 34,
+        "smithDepth": 3208,
+        "rankDepth": 4032,
+        "bruteForceDepth": 3208,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.256858
+      },
+      {
+        "instance": 311,
+        "fieldCount": 5,
+        "structuredBits": 46,
+        "smithDepth": 7103,
+        "rankDepth": 8224,
+        "bruteForceDepth": 7103,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.157821
+      },
+      {
+        "instance": 312,
+        "fieldCount": 4,
+        "structuredBits": 45,
+        "smithDepth": 6672,
+        "rankDepth": 6840,
+        "bruteForceDepth": 6672,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.02518
+      },
+      {
+        "instance": 313,
+        "fieldCount": 3,
+        "structuredBits": 36,
+        "smithDepth": 3000,
+        "rankDepth": 3300,
+        "bruteForceDepth": 3000,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.1
+      },
+      {
+        "instance": 314,
+        "fieldCount": 5,
+        "structuredBits": 56,
+        "smithDepth": 9560,
+        "rankDepth": 11112,
+        "bruteForceDepth": 9560,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.162343
+      },
+      {
+        "instance": 315,
+        "fieldCount": 3,
+        "structuredBits": 35,
+        "smithDepth": 2627,
+        "rankDepth": 4655,
+        "bruteForceDepth": 2627,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.771983
+      },
+      {
+        "instance": 316,
+        "fieldCount": 5,
+        "structuredBits": 53,
+        "smithDepth": 4693,
+        "rankDepth": 8217,
+        "bruteForceDepth": 4671,
+        "smithIsOptimal": false,
+        "gapVsRank": 0.750906
+      },
+      {
+        "instance": 317,
+        "fieldCount": 3,
+        "structuredBits": 33,
+        "smithDepth": 525,
+        "rankDepth": 918,
+        "bruteForceDepth": 525,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.748571
+      },
+      {
+        "instance": 318,
+        "fieldCount": 2,
+        "structuredBits": 21,
+        "smithDepth": 1320,
+        "rankDepth": 1320,
+        "bruteForceDepth": 1320,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 319,
+        "fieldCount": 2,
+        "structuredBits": 21,
+        "smithDepth": 836,
+        "rankDepth": 1557,
+        "bruteForceDepth": 836,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.86244
+      },
+      {
+        "instance": 320,
+        "fieldCount": 5,
+        "structuredBits": 50,
+        "smithDepth": 3342,
+        "rankDepth": 4106,
+        "bruteForceDepth": 3342,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.228606
+      },
+      {
+        "instance": 321,
+        "fieldCount": 5,
+        "structuredBits": 53,
+        "smithDepth": 5777,
+        "rankDepth": 8348,
+        "bruteForceDepth": 5733,
+        "smithIsOptimal": false,
+        "gapVsRank": 0.445041
+      },
+      {
+        "instance": 322,
+        "fieldCount": 4,
+        "structuredBits": 40,
+        "smithDepth": 4557,
+        "rankDepth": 7331,
+        "bruteForceDepth": 4557,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.608734
+      },
+      {
+        "instance": 323,
+        "fieldCount": 3,
+        "structuredBits": 28,
+        "smithDepth": 1593,
+        "rankDepth": 2115,
+        "bruteForceDepth": 1593,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.327684
+      },
+      {
+        "instance": 324,
+        "fieldCount": 3,
+        "structuredBits": 34,
+        "smithDepth": 3506,
+        "rankDepth": 3823,
+        "bruteForceDepth": 3506,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.090416
+      },
+      {
+        "instance": 325,
+        "fieldCount": 5,
+        "structuredBits": 59,
+        "smithDepth": 5155,
+        "rankDepth": 8331,
+        "bruteForceDepth": 5155,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.616101
+      },
+      {
+        "instance": 326,
+        "fieldCount": 5,
+        "structuredBits": 57,
+        "smithDepth": 5967,
+        "rankDepth": 7910,
+        "bruteForceDepth": 5967,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.325624
+      },
+      {
+        "instance": 327,
+        "fieldCount": 2,
+        "structuredBits": 19,
+        "smithDepth": 191,
+        "rankDepth": 343,
+        "bruteForceDepth": 191,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.795812
+      },
+      {
+        "instance": 328,
+        "fieldCount": 2,
+        "structuredBits": 24,
+        "smithDepth": 2700,
+        "rankDepth": 2952,
+        "bruteForceDepth": 2700,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.093333
+      },
+      {
+        "instance": 329,
+        "fieldCount": 4,
+        "structuredBits": 41,
+        "smithDepth": 3697,
+        "rankDepth": 6271,
+        "bruteForceDepth": 3697,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.69624
+      },
+      {
+        "instance": 330,
+        "fieldCount": 2,
+        "structuredBits": 19,
+        "smithDepth": 1861,
+        "rankDepth": 2092,
+        "bruteForceDepth": 1861,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.124127
+      },
+      {
+        "instance": 331,
+        "fieldCount": 3,
+        "structuredBits": 33,
+        "smithDepth": 438,
+        "rankDepth": 1152,
+        "bruteForceDepth": 438,
+        "smithIsOptimal": true,
+        "gapVsRank": 1.630137
+      },
+      {
+        "instance": 332,
+        "fieldCount": 4,
+        "structuredBits": 42,
+        "smithDepth": 2848,
+        "rankDepth": 4352,
+        "bruteForceDepth": 2848,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.52809
+      },
+      {
+        "instance": 333,
+        "fieldCount": 3,
+        "structuredBits": 29,
+        "smithDepth": 1527,
+        "rankDepth": 1663,
+        "bruteForceDepth": 1527,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.089064
+      },
+      {
+        "instance": 334,
+        "fieldCount": 3,
+        "structuredBits": 34,
+        "smithDepth": 2269,
+        "rankDepth": 2269,
+        "bruteForceDepth": 2269,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 335,
+        "fieldCount": 4,
+        "structuredBits": 41,
+        "smithDepth": 2980,
+        "rankDepth": 3890,
+        "bruteForceDepth": 2980,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.305369
+      },
+      {
+        "instance": 336,
+        "fieldCount": 4,
+        "structuredBits": 40,
+        "smithDepth": 2628,
+        "rankDepth": 3408,
+        "bruteForceDepth": 2628,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.296804
+      },
+      {
+        "instance": 337,
+        "fieldCount": 4,
+        "structuredBits": 46,
+        "smithDepth": 4048,
+        "rankDepth": 6724,
+        "bruteForceDepth": 4048,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.661067
+      },
+      {
+        "instance": 338,
+        "fieldCount": 5,
+        "structuredBits": 52,
+        "smithDepth": 7232,
+        "rankDepth": 7573,
+        "bruteForceDepth": 7232,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.047152
+      },
+      {
+        "instance": 339,
+        "fieldCount": 3,
+        "structuredBits": 31,
+        "smithDepth": 3351,
+        "rankDepth": 5251,
+        "bruteForceDepth": 3351,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.566995
+      },
+      {
+        "instance": 340,
+        "fieldCount": 2,
+        "structuredBits": 21,
+        "smithDepth": 1029,
+        "rankDepth": 1029,
+        "bruteForceDepth": 1029,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 341,
+        "fieldCount": 4,
+        "structuredBits": 44,
+        "smithDepth": 3735,
+        "rankDepth": 5705,
+        "bruteForceDepth": 3735,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.527443
+      },
+      {
+        "instance": 342,
+        "fieldCount": 4,
+        "structuredBits": 45,
+        "smithDepth": 3432,
+        "rankDepth": 4370,
+        "bruteForceDepth": 3432,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.27331
+      },
+      {
+        "instance": 343,
+        "fieldCount": 4,
+        "structuredBits": 43,
+        "smithDepth": 5049,
+        "rankDepth": 5343,
+        "bruteForceDepth": 5049,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.058229
+      },
+      {
+        "instance": 344,
+        "fieldCount": 2,
+        "structuredBits": 21,
+        "smithDepth": 1293,
+        "rankDepth": 1293,
+        "bruteForceDepth": 1293,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 345,
+        "fieldCount": 5,
+        "structuredBits": 55,
+        "smithDepth": 8656,
+        "rankDepth": 9188,
+        "bruteForceDepth": 8656,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.06146
+      },
+      {
+        "instance": 346,
+        "fieldCount": 3,
+        "structuredBits": 36,
+        "smithDepth": 1968,
+        "rankDepth": 3744,
+        "bruteForceDepth": 1968,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.902439
+      },
+      {
+        "instance": 347,
+        "fieldCount": 4,
+        "structuredBits": 47,
+        "smithDepth": 5646,
+        "rankDepth": 7136,
+        "bruteForceDepth": 5646,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.263904
+      },
+      {
+        "instance": 348,
+        "fieldCount": 4,
+        "structuredBits": 47,
+        "smithDepth": 2671,
+        "rankDepth": 4706,
+        "bruteForceDepth": 2671,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.761887
+      },
+      {
+        "instance": 349,
+        "fieldCount": 5,
+        "structuredBits": 56,
+        "smithDepth": 8946,
+        "rankDepth": 12797,
+        "bruteForceDepth": 8946,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.430472
+      },
+      {
+        "instance": 350,
+        "fieldCount": 5,
+        "structuredBits": 54,
+        "smithDepth": 4813,
+        "rankDepth": 5155,
+        "bruteForceDepth": 4759,
+        "smithIsOptimal": false,
+        "gapVsRank": 0.071058
+      },
+      {
+        "instance": 351,
+        "fieldCount": 4,
+        "structuredBits": 45,
+        "smithDepth": 2871,
+        "rankDepth": 4434,
+        "bruteForceDepth": 2871,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.54441
+      },
+      {
+        "instance": 352,
+        "fieldCount": 3,
+        "structuredBits": 30,
+        "smithDepth": 1776,
+        "rankDepth": 1836,
+        "bruteForceDepth": 1776,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.033784
+      },
+      {
+        "instance": 353,
+        "fieldCount": 3,
+        "structuredBits": 35,
+        "smithDepth": 1683,
+        "rankDepth": 2475,
+        "bruteForceDepth": 1683,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.470588
+      },
+      {
+        "instance": 354,
+        "fieldCount": 5,
+        "structuredBits": 51,
+        "smithDepth": 6779,
+        "rankDepth": 8585,
+        "bruteForceDepth": 6779,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.266411
+      },
+      {
+        "instance": 355,
+        "fieldCount": 4,
+        "structuredBits": 42,
+        "smithDepth": 3804,
+        "rankDepth": 4734,
+        "bruteForceDepth": 3804,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.244479
+      },
+      {
+        "instance": 356,
+        "fieldCount": 2,
+        "structuredBits": 23,
+        "smithDepth": 1202,
+        "rankDepth": 1202,
+        "bruteForceDepth": 1202,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 357,
+        "fieldCount": 3,
+        "structuredBits": 29,
+        "smithDepth": 3156,
+        "rankDepth": 3246,
+        "bruteForceDepth": 3156,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.028517
+      },
+      {
+        "instance": 358,
+        "fieldCount": 2,
+        "structuredBits": 20,
+        "smithDepth": 617,
+        "rankDepth": 617,
+        "bruteForceDepth": 617,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 359,
+        "fieldCount": 3,
+        "structuredBits": 36,
+        "smithDepth": 2976,
+        "rankDepth": 4188,
+        "bruteForceDepth": 2976,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.407258
+      },
+      {
+        "instance": 360,
+        "fieldCount": 4,
+        "structuredBits": 39,
+        "smithDepth": 3051,
+        "rankDepth": 3051,
+        "bruteForceDepth": 3051,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 361,
+        "fieldCount": 2,
+        "structuredBits": 22,
+        "smithDepth": 188,
+        "rankDepth": 268,
+        "bruteForceDepth": 188,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.425532
+      },
+      {
+        "instance": 362,
+        "fieldCount": 5,
+        "structuredBits": 58,
+        "smithDepth": 4074,
+        "rankDepth": 7308,
+        "bruteForceDepth": 4074,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.793814
+      },
+      {
+        "instance": 363,
+        "fieldCount": 3,
+        "structuredBits": 34,
+        "smithDepth": 3484,
+        "rankDepth": 4696,
+        "bruteForceDepth": 3484,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.347876
+      },
+      {
+        "instance": 364,
+        "fieldCount": 2,
+        "structuredBits": 23,
+        "smithDepth": 634,
+        "rankDepth": 634,
+        "bruteForceDepth": 634,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 365,
+        "fieldCount": 3,
+        "structuredBits": 35,
+        "smithDepth": 2678,
+        "rankDepth": 2738,
+        "bruteForceDepth": 2678,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.022405
+      },
+      {
+        "instance": 366,
+        "fieldCount": 5,
+        "structuredBits": 55,
+        "smithDepth": 6266,
+        "rankDepth": 9067,
+        "bruteForceDepth": 6266,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.447016
+      },
+      {
+        "instance": 367,
+        "fieldCount": 2,
+        "structuredBits": 24,
+        "smithDepth": 924,
+        "rankDepth": 1524,
+        "bruteForceDepth": 924,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.649351
+      },
+      {
+        "instance": 368,
+        "fieldCount": 5,
+        "structuredBits": 45,
+        "smithDepth": 4636,
+        "rankDepth": 6650,
+        "bruteForceDepth": 4636,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.434426
+      },
+      {
+        "instance": 369,
+        "fieldCount": 5,
+        "structuredBits": 51,
+        "smithDepth": 5837,
+        "rankDepth": 9645,
+        "bruteForceDepth": 5837,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.65239
+      },
+      {
+        "instance": 370,
+        "fieldCount": 4,
+        "structuredBits": 39,
+        "smithDepth": 5743,
+        "rankDepth": 7258,
+        "bruteForceDepth": 5743,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.263799
+      },
+      {
+        "instance": 371,
+        "fieldCount": 5,
+        "structuredBits": 57,
+        "smithDepth": 8596,
+        "rankDepth": 8944,
+        "bruteForceDepth": 8596,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.040484
+      },
+      {
+        "instance": 372,
+        "fieldCount": 4,
+        "structuredBits": 40,
+        "smithDepth": 2478,
+        "rankDepth": 4146,
+        "bruteForceDepth": 2478,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.673123
+      },
+      {
+        "instance": 373,
+        "fieldCount": 4,
+        "structuredBits": 40,
+        "smithDepth": 2100,
+        "rankDepth": 2256,
+        "bruteForceDepth": 2100,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.074286
+      },
+      {
+        "instance": 374,
+        "fieldCount": 4,
+        "structuredBits": 45,
+        "smithDepth": 3944,
+        "rankDepth": 4472,
+        "bruteForceDepth": 3944,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.133874
+      },
+      {
+        "instance": 375,
+        "fieldCount": 2,
+        "structuredBits": 24,
+        "smithDepth": 2184,
+        "rankDepth": 2184,
+        "bruteForceDepth": 2184,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 376,
+        "fieldCount": 2,
+        "structuredBits": 23,
+        "smithDepth": 710,
+        "rankDepth": 871,
+        "bruteForceDepth": 710,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.226761
+      },
+      {
+        "instance": 377,
+        "fieldCount": 4,
+        "structuredBits": 44,
+        "smithDepth": 1908,
+        "rankDepth": 2366,
+        "bruteForceDepth": 1908,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.240042
+      },
+      {
+        "instance": 378,
+        "fieldCount": 2,
+        "structuredBits": 23,
+        "smithDepth": 1269,
+        "rankDepth": 1715,
+        "bruteForceDepth": 1269,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.351458
+      },
+      {
+        "instance": 379,
+        "fieldCount": 4,
+        "structuredBits": 48,
+        "smithDepth": 5664,
+        "rankDepth": 7992,
+        "bruteForceDepth": 5664,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.411017
+      },
+      {
+        "instance": 380,
+        "fieldCount": 4,
+        "structuredBits": 41,
+        "smithDepth": 3821,
+        "rankDepth": 4670,
+        "bruteForceDepth": 3821,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.222193
+      },
+      {
+        "instance": 381,
+        "fieldCount": 2,
+        "structuredBits": 23,
+        "smithDepth": 2402,
+        "rankDepth": 2496,
+        "bruteForceDepth": 2402,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.039134
+      },
+      {
+        "instance": 382,
+        "fieldCount": 5,
+        "structuredBits": 55,
+        "smithDepth": 8625,
+        "rankDepth": 11740,
+        "bruteForceDepth": 8625,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.361159
+      },
+      {
+        "instance": 383,
+        "fieldCount": 5,
+        "structuredBits": 53,
+        "smithDepth": 5057,
+        "rankDepth": 8901,
+        "bruteForceDepth": 5057,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.760134
+      },
+      {
+        "instance": 384,
+        "fieldCount": 4,
+        "structuredBits": 44,
+        "smithDepth": 4950,
+        "rankDepth": 6742,
+        "bruteForceDepth": 4950,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.36202
+      },
+      {
+        "instance": 385,
+        "fieldCount": 2,
+        "structuredBits": 23,
+        "smithDepth": 1157,
+        "rankDepth": 1553,
+        "bruteForceDepth": 1157,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.342264
+      },
+      {
+        "instance": 386,
+        "fieldCount": 4,
+        "structuredBits": 46,
+        "smithDepth": 4424,
+        "rankDepth": 4424,
+        "bruteForceDepth": 4424,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 387,
+        "fieldCount": 3,
+        "structuredBits": 32,
+        "smithDepth": 4260,
+        "rankDepth": 5065,
+        "bruteForceDepth": 4260,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.188967
+      },
+      {
+        "instance": 388,
+        "fieldCount": 4,
+        "structuredBits": 45,
+        "smithDepth": 2087,
+        "rankDepth": 3212,
+        "bruteForceDepth": 2087,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.539051
+      },
+      {
+        "instance": 389,
+        "fieldCount": 2,
+        "structuredBits": 23,
+        "smithDepth": 1301,
+        "rankDepth": 1301,
+        "bruteForceDepth": 1301,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 390,
+        "fieldCount": 2,
+        "structuredBits": 22,
+        "smithDepth": 2938,
+        "rankDepth": 3224,
+        "bruteForceDepth": 2938,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.097345
+      },
+      {
+        "instance": 391,
+        "fieldCount": 3,
+        "structuredBits": 35,
+        "smithDepth": 2930,
+        "rankDepth": 3774,
+        "bruteForceDepth": 2930,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.288055
+      },
+      {
+        "instance": 392,
+        "fieldCount": 3,
+        "structuredBits": 35,
+        "smithDepth": 3036,
+        "rankDepth": 4120,
+        "bruteForceDepth": 3036,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.357049
+      },
+      {
+        "instance": 393,
+        "fieldCount": 5,
+        "structuredBits": 56,
+        "smithDepth": 1918,
+        "rankDepth": 2108,
+        "bruteForceDepth": 1918,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.099062
+      },
+      {
+        "instance": 394,
+        "fieldCount": 3,
+        "structuredBits": 27,
+        "smithDepth": 3611,
+        "rankDepth": 4207,
+        "bruteForceDepth": 3611,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.165051
+      },
+      {
+        "instance": 395,
+        "fieldCount": 2,
+        "structuredBits": 23,
+        "smithDepth": 1415,
+        "rankDepth": 1415,
+        "bruteForceDepth": 1415,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 396,
+        "fieldCount": 2,
+        "structuredBits": 23,
+        "smithDepth": 2864,
+        "rankDepth": 3065,
+        "bruteForceDepth": 2864,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.070182
+      },
+      {
+        "instance": 397,
+        "fieldCount": 3,
+        "structuredBits": 32,
+        "smithDepth": 2152,
+        "rankDepth": 3018,
+        "bruteForceDepth": 2152,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.402416
+      },
+      {
+        "instance": 398,
+        "fieldCount": 5,
+        "structuredBits": 57,
+        "smithDepth": 4906,
+        "rankDepth": 6226,
+        "bruteForceDepth": 4906,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.269058
+      },
+      {
+        "instance": 399,
+        "fieldCount": 3,
+        "structuredBits": 35,
+        "smithDepth": 2607,
+        "rankDepth": 2607,
+        "bruteForceDepth": 2607,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 400,
+        "fieldCount": 4,
+        "structuredBits": 47,
+        "smithDepth": 1923,
+        "rankDepth": 4903,
+        "bruteForceDepth": 1923,
+        "smithIsOptimal": true,
+        "gapVsRank": 1.549662
+      },
+      {
+        "instance": 401,
+        "fieldCount": 4,
+        "structuredBits": 47,
+        "smithDepth": 3912,
+        "rankDepth": 4772,
+        "bruteForceDepth": 3912,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.219836
+      },
+      {
+        "instance": 402,
+        "fieldCount": 3,
+        "structuredBits": 34,
+        "smithDepth": 4370,
+        "rankDepth": 5178,
+        "bruteForceDepth": 4370,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.184897
+      },
+      {
+        "instance": 403,
+        "fieldCount": 2,
+        "structuredBits": 24,
+        "smithDepth": 2316,
+        "rankDepth": 2316,
+        "bruteForceDepth": 2316,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 404,
+        "fieldCount": 2,
+        "structuredBits": 21,
+        "smithDepth": 816,
+        "rankDepth": 1515,
+        "bruteForceDepth": 816,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.856618
+      },
+      {
+        "instance": 405,
+        "fieldCount": 3,
+        "structuredBits": 29,
+        "smithDepth": 951,
+        "rankDepth": 1032,
+        "bruteForceDepth": 951,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.085174
+      },
+      {
+        "instance": 406,
+        "fieldCount": 3,
+        "structuredBits": 35,
+        "smithDepth": 1667,
+        "rankDepth": 2291,
+        "bruteForceDepth": 1667,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.374325
+      },
+      {
+        "instance": 407,
+        "fieldCount": 2,
+        "structuredBits": 24,
+        "smithDepth": 1968,
+        "rankDepth": 1968,
+        "bruteForceDepth": 1968,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 408,
+        "fieldCount": 2,
+        "structuredBits": 23,
+        "smithDepth": 918,
+        "rankDepth": 918,
+        "bruteForceDepth": 918,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 409,
+        "fieldCount": 4,
+        "structuredBits": 43,
+        "smithDepth": 3619,
+        "rankDepth": 4074,
+        "bruteForceDepth": 3619,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.125725
+      },
+      {
+        "instance": 410,
+        "fieldCount": 4,
+        "structuredBits": 36,
+        "smithDepth": 2105,
+        "rankDepth": 3641,
+        "bruteForceDepth": 2105,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.729691
+      },
+      {
+        "instance": 411,
+        "fieldCount": 3,
+        "structuredBits": 33,
+        "smithDepth": 4081,
+        "rankDepth": 5082,
+        "bruteForceDepth": 4081,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.245283
+      },
+      {
+        "instance": 412,
+        "fieldCount": 4,
+        "structuredBits": 46,
+        "smithDepth": 5454,
+        "rankDepth": 6582,
+        "bruteForceDepth": 5454,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.206821
+      },
+      {
+        "instance": 413,
+        "fieldCount": 3,
+        "structuredBits": 35,
+        "smithDepth": 1880,
+        "rankDepth": 2635,
+        "bruteForceDepth": 1880,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.401596
+      },
+      {
+        "instance": 414,
+        "fieldCount": 4,
+        "structuredBits": 45,
+        "smithDepth": 4560,
+        "rankDepth": 4902,
+        "bruteForceDepth": 4560,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.075
+      },
+      {
+        "instance": 415,
+        "fieldCount": 5,
+        "structuredBits": 56,
+        "smithDepth": 11891,
+        "rankDepth": 13043,
+        "bruteForceDepth": 11891,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.09688
+      },
+      {
+        "instance": 416,
+        "fieldCount": 3,
+        "structuredBits": 33,
+        "smithDepth": 5225,
+        "rankDepth": 6145,
+        "bruteForceDepth": 5225,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.176077
+      },
+      {
+        "instance": 417,
+        "fieldCount": 3,
+        "structuredBits": 35,
+        "smithDepth": 1829,
+        "rankDepth": 2207,
+        "bruteForceDepth": 1829,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.20667
+      },
+      {
+        "instance": 418,
+        "fieldCount": 3,
+        "structuredBits": 36,
+        "smithDepth": 2364,
+        "rankDepth": 2604,
+        "bruteForceDepth": 2364,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.101523
+      },
+      {
+        "instance": 419,
+        "fieldCount": 2,
+        "structuredBits": 22,
+        "smithDepth": 1144,
+        "rankDepth": 1144,
+        "bruteForceDepth": 1144,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 420,
+        "fieldCount": 4,
+        "structuredBits": 47,
+        "smithDepth": 2087,
+        "rankDepth": 2087,
+        "bruteForceDepth": 2087,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 421,
+        "fieldCount": 5,
+        "structuredBits": 51,
+        "smithDepth": 6205,
+        "rankDepth": 9797,
+        "bruteForceDepth": 6205,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.578888
+      },
+      {
+        "instance": 422,
+        "fieldCount": 2,
+        "structuredBits": 22,
+        "smithDepth": 1408,
+        "rankDepth": 1408,
+        "bruteForceDepth": 1408,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 423,
+        "fieldCount": 3,
+        "structuredBits": 35,
+        "smithDepth": 1752,
+        "rankDepth": 3252,
+        "bruteForceDepth": 1752,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.856164
+      },
+      {
+        "instance": 424,
+        "fieldCount": 3,
+        "structuredBits": 35,
+        "smithDepth": 3151,
+        "rankDepth": 3175,
+        "bruteForceDepth": 3151,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.007617
+      },
+      {
+        "instance": 425,
+        "fieldCount": 4,
+        "structuredBits": 43,
+        "smithDepth": 4334,
+        "rankDepth": 4555,
+        "bruteForceDepth": 4334,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.050992
+      },
+      {
+        "instance": 426,
+        "fieldCount": 5,
+        "structuredBits": 54,
+        "smithDepth": 5312,
+        "rankDepth": 11340,
+        "bruteForceDepth": 5312,
+        "smithIsOptimal": true,
+        "gapVsRank": 1.134789
+      },
+      {
+        "instance": 427,
+        "fieldCount": 3,
+        "structuredBits": 30,
+        "smithDepth": 1701,
+        "rankDepth": 1926,
+        "bruteForceDepth": 1701,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.132275
+      },
+      {
+        "instance": 428,
+        "fieldCount": 5,
+        "structuredBits": 60,
+        "smithDepth": 5676,
+        "rankDepth": 8876,
+        "bruteForceDepth": 5676,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.563777
+      },
+      {
+        "instance": 429,
+        "fieldCount": 2,
+        "structuredBits": 21,
+        "smithDepth": 936,
+        "rankDepth": 2073,
+        "bruteForceDepth": 936,
+        "smithIsOptimal": true,
+        "gapVsRank": 1.214744
+      },
+      {
+        "instance": 430,
+        "fieldCount": 2,
+        "structuredBits": 21,
+        "smithDepth": 1050,
+        "rankDepth": 1599,
+        "bruteForceDepth": 1050,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.522857
+      },
+      {
+        "instance": 431,
+        "fieldCount": 5,
+        "structuredBits": 50,
+        "smithDepth": 4954,
+        "rankDepth": 7992,
+        "bruteForceDepth": 4954,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.613242
+      },
+      {
+        "instance": 432,
+        "fieldCount": 3,
+        "structuredBits": 34,
+        "smithDepth": 645,
+        "rankDepth": 930,
+        "bruteForceDepth": 645,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.44186
+      },
+      {
+        "instance": 433,
+        "fieldCount": 2,
+        "structuredBits": 23,
+        "smithDepth": 1305,
+        "rankDepth": 1305,
+        "bruteForceDepth": 1305,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 434,
+        "fieldCount": 3,
+        "structuredBits": 32,
+        "smithDepth": 2525,
+        "rankDepth": 3654,
+        "bruteForceDepth": 2525,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.447129
+      },
+      {
+        "instance": 435,
+        "fieldCount": 5,
+        "structuredBits": 58,
+        "smithDepth": 4983,
+        "rankDepth": 6103,
+        "bruteForceDepth": 4983,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.224764
+      },
+      {
+        "instance": 436,
+        "fieldCount": 2,
+        "structuredBits": 21,
+        "smithDepth": 1116,
+        "rankDepth": 1116,
+        "bruteForceDepth": 1116,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 437,
+        "fieldCount": 2,
+        "structuredBits": 17,
+        "smithDepth": 591,
+        "rankDepth": 1340,
+        "bruteForceDepth": 591,
+        "smithIsOptimal": true,
+        "gapVsRank": 1.267343
+      },
+      {
+        "instance": 438,
+        "fieldCount": 3,
+        "structuredBits": 34,
+        "smithDepth": 910,
+        "rankDepth": 2466,
+        "bruteForceDepth": 910,
+        "smithIsOptimal": true,
+        "gapVsRank": 1.70989
+      },
+      {
+        "instance": 439,
+        "fieldCount": 4,
+        "structuredBits": 42,
+        "smithDepth": 3984,
+        "rankDepth": 7608,
+        "bruteForceDepth": 3984,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.909639
+      },
+      {
+        "instance": 440,
+        "fieldCount": 5,
+        "structuredBits": 54,
+        "smithDepth": 5915,
+        "rankDepth": 6131,
+        "bruteForceDepth": 5915,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.036517
+      },
+      {
+        "instance": 441,
+        "fieldCount": 4,
+        "structuredBits": 39,
+        "smithDepth": 2932,
+        "rankDepth": 4702,
+        "bruteForceDepth": 2932,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.603683
+      },
+      {
+        "instance": 442,
+        "fieldCount": 5,
+        "structuredBits": 57,
+        "smithDepth": 3989,
+        "rankDepth": 7379,
+        "bruteForceDepth": 3989,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.849837
+      },
+      {
+        "instance": 443,
+        "fieldCount": 3,
+        "structuredBits": 30,
+        "smithDepth": 4246,
+        "rankDepth": 4819,
+        "bruteForceDepth": 4246,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.134951
+      },
+      {
+        "instance": 444,
+        "fieldCount": 4,
+        "structuredBits": 45,
+        "smithDepth": 5535,
+        "rankDepth": 6351,
+        "bruteForceDepth": 5535,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.147425
+      },
+      {
+        "instance": 445,
+        "fieldCount": 4,
+        "structuredBits": 41,
+        "smithDepth": 3007,
+        "rankDepth": 5133,
+        "bruteForceDepth": 3007,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.707017
+      },
+      {
+        "instance": 446,
+        "fieldCount": 3,
+        "structuredBits": 24,
+        "smithDepth": 1879,
+        "rankDepth": 1892,
+        "bruteForceDepth": 1879,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.006919
+      },
+      {
+        "instance": 447,
+        "fieldCount": 3,
+        "structuredBits": 33,
+        "smithDepth": 1230,
+        "rankDepth": 2661,
+        "bruteForceDepth": 1230,
+        "smithIsOptimal": true,
+        "gapVsRank": 1.163415
+      },
+      {
+        "instance": 448,
+        "fieldCount": 5,
+        "structuredBits": 57,
+        "smithDepth": 7771,
+        "rankDepth": 9877,
+        "bruteForceDepth": 7771,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.271008
+      },
+      {
+        "instance": 449,
+        "fieldCount": 2,
+        "structuredBits": 24,
+        "smithDepth": 2556,
+        "rankDepth": 2952,
+        "bruteForceDepth": 2556,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.15493
+      },
+      {
+        "instance": 450,
+        "fieldCount": 3,
+        "structuredBits": 34,
+        "smithDepth": 861,
+        "rankDepth": 861,
+        "bruteForceDepth": 861,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 451,
+        "fieldCount": 4,
+        "structuredBits": 44,
+        "smithDepth": 2122,
+        "rankDepth": 3171,
+        "bruteForceDepth": 2122,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.494345
+      },
+      {
+        "instance": 452,
+        "fieldCount": 2,
+        "structuredBits": 18,
+        "smithDepth": 2052,
+        "rankDepth": 2489,
+        "bruteForceDepth": 2052,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.212963
+      },
+      {
+        "instance": 453,
+        "fieldCount": 4,
+        "structuredBits": 44,
+        "smithDepth": 4544,
+        "rankDepth": 6021,
+        "bruteForceDepth": 4544,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.325044
+      },
+      {
+        "instance": 454,
+        "fieldCount": 5,
+        "structuredBits": 56,
+        "smithDepth": 5746,
+        "rankDepth": 8178,
+        "bruteForceDepth": 5746,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.423251
+      },
+      {
+        "instance": 455,
+        "fieldCount": 5,
+        "structuredBits": 58,
+        "smithDepth": 6066,
+        "rankDepth": 11312,
+        "bruteForceDepth": 6066,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.86482
+      },
+      {
+        "instance": 456,
+        "fieldCount": 3,
+        "structuredBits": 34,
+        "smithDepth": 2636,
+        "rankDepth": 3298,
+        "bruteForceDepth": 2636,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.251138
+      },
+      {
+        "instance": 457,
+        "fieldCount": 5,
+        "structuredBits": 51,
+        "smithDepth": 6526,
+        "rankDepth": 10812,
+        "bruteForceDepth": 6526,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.656758
+      },
+      {
+        "instance": 458,
+        "fieldCount": 4,
+        "structuredBits": 47,
+        "smithDepth": 3607,
+        "rankDepth": 4185,
+        "bruteForceDepth": 3607,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.160244
+      },
+      {
+        "instance": 459,
+        "fieldCount": 3,
+        "structuredBits": 35,
+        "smithDepth": 2120,
+        "rankDepth": 2120,
+        "bruteForceDepth": 2120,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 460,
+        "fieldCount": 3,
+        "structuredBits": 36,
+        "smithDepth": 4416,
+        "rankDepth": 5184,
+        "bruteForceDepth": 4416,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.173913
+      },
+      {
+        "instance": 461,
+        "fieldCount": 5,
+        "structuredBits": 51,
+        "smithDepth": 9840,
+        "rankDepth": 11695,
+        "bruteForceDepth": 9609,
+        "smithIsOptimal": false,
+        "gapVsRank": 0.188516
+      },
+      {
+        "instance": 462,
+        "fieldCount": 2,
+        "structuredBits": 23,
+        "smithDepth": 2135,
+        "rankDepth": 2443,
+        "bruteForceDepth": 2135,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.144262
+      },
+      {
+        "instance": 463,
+        "fieldCount": 4,
+        "structuredBits": 45,
+        "smithDepth": 2147,
+        "rankDepth": 3898,
+        "bruteForceDepth": 2147,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.815557
+      },
+      {
+        "instance": 464,
+        "fieldCount": 2,
+        "structuredBits": 22,
+        "smithDepth": 1964,
+        "rankDepth": 2610,
+        "bruteForceDepth": 1964,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.328921
+      },
+      {
+        "instance": 465,
+        "fieldCount": 5,
+        "structuredBits": 59,
+        "smithDepth": 7022,
+        "rankDepth": 7950,
+        "bruteForceDepth": 7022,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.132156
+      },
+      {
+        "instance": 466,
+        "fieldCount": 5,
+        "structuredBits": 53,
+        "smithDepth": 10256,
+        "rankDepth": 10998,
+        "bruteForceDepth": 10256,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.072348
+      },
+      {
+        "instance": 467,
+        "fieldCount": 2,
+        "structuredBits": 21,
+        "smithDepth": 1848,
+        "rankDepth": 2292,
+        "bruteForceDepth": 1848,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.24026
+      },
+      {
+        "instance": 468,
+        "fieldCount": 4,
+        "structuredBits": 48,
+        "smithDepth": 4044,
+        "rankDepth": 6180,
+        "bruteForceDepth": 4044,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.52819
+      },
+      {
+        "instance": 469,
+        "fieldCount": 3,
+        "structuredBits": 33,
+        "smithDepth": 2562,
+        "rankDepth": 2724,
+        "bruteForceDepth": 2562,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.063232
+      },
+      {
+        "instance": 470,
+        "fieldCount": 4,
+        "structuredBits": 42,
+        "smithDepth": 4998,
+        "rankDepth": 5568,
+        "bruteForceDepth": 4998,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.114046
+      },
+      {
+        "instance": 471,
+        "fieldCount": 3,
+        "structuredBits": 31,
+        "smithDepth": 485,
+        "rankDepth": 1013,
+        "bruteForceDepth": 485,
+        "smithIsOptimal": true,
+        "gapVsRank": 1.08866
+      },
+      {
+        "instance": 472,
+        "fieldCount": 2,
+        "structuredBits": 23,
+        "smithDepth": 989,
+        "rankDepth": 1310,
+        "bruteForceDepth": 989,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.32457
+      },
+      {
+        "instance": 473,
+        "fieldCount": 3,
+        "structuredBits": 31,
+        "smithDepth": 3046,
+        "rankDepth": 4004,
+        "bruteForceDepth": 3046,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.314511
+      },
+      {
+        "instance": 474,
+        "fieldCount": 2,
+        "structuredBits": 19,
+        "smithDepth": 1450,
+        "rankDepth": 2155,
+        "bruteForceDepth": 1450,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.486207
+      },
+      {
+        "instance": 475,
+        "fieldCount": 2,
+        "structuredBits": 24,
+        "smithDepth": 3144,
+        "rankDepth": 3228,
+        "bruteForceDepth": 3144,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.026718
+      },
+      {
+        "instance": 476,
+        "fieldCount": 2,
+        "structuredBits": 21,
+        "smithDepth": 237,
+        "rankDepth": 294,
+        "bruteForceDepth": 237,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.240506
+      },
+      {
+        "instance": 477,
+        "fieldCount": 3,
+        "structuredBits": 32,
+        "smithDepth": 4020,
+        "rankDepth": 4700,
+        "bruteForceDepth": 4020,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.169154
+      },
+      {
+        "instance": 478,
+        "fieldCount": 4,
+        "structuredBits": 45,
+        "smithDepth": 3228,
+        "rankDepth": 5745,
+        "bruteForceDepth": 3228,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.77974
+      },
+      {
+        "instance": 479,
+        "fieldCount": 5,
+        "structuredBits": 57,
+        "smithDepth": 6072,
+        "rankDepth": 6540,
+        "bruteForceDepth": 6072,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.077075
+      },
+      {
+        "instance": 480,
+        "fieldCount": 3,
+        "structuredBits": 33,
+        "smithDepth": 3620,
+        "rankDepth": 3709,
+        "bruteForceDepth": 3620,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.024586
+      },
+      {
+        "instance": 481,
+        "fieldCount": 5,
+        "structuredBits": 57,
+        "smithDepth": 7878,
+        "rankDepth": 9781,
+        "bruteForceDepth": 7878,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.241559
+      },
+      {
+        "instance": 482,
+        "fieldCount": 5,
+        "structuredBits": 57,
+        "smithDepth": 8619,
+        "rankDepth": 9363,
+        "bruteForceDepth": 8619,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.086321
+      },
+      {
+        "instance": 483,
+        "fieldCount": 2,
+        "structuredBits": 21,
+        "smithDepth": 1769,
+        "rankDepth": 1769,
+        "bruteForceDepth": 1769,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 484,
+        "fieldCount": 4,
+        "structuredBits": 43,
+        "smithDepth": 3652,
+        "rankDepth": 4492,
+        "bruteForceDepth": 3652,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.230011
+      },
+      {
+        "instance": 485,
+        "fieldCount": 3,
+        "structuredBits": 36,
+        "smithDepth": 3192,
+        "rankDepth": 3324,
+        "bruteForceDepth": 3192,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.041353
+      },
+      {
+        "instance": 486,
+        "fieldCount": 3,
+        "structuredBits": 30,
+        "smithDepth": 1843,
+        "rankDepth": 3385,
+        "bruteForceDepth": 1843,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.836679
+      },
+      {
+        "instance": 487,
+        "fieldCount": 5,
+        "structuredBits": 59,
+        "smithDepth": 2514,
+        "rankDepth": 3498,
+        "bruteForceDepth": 2514,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.391408
+      },
+      {
+        "instance": 488,
+        "fieldCount": 5,
+        "structuredBits": 58,
+        "smithDepth": 6956,
+        "rankDepth": 7943,
+        "bruteForceDepth": 6956,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.141892
+      },
+      {
+        "instance": 489,
+        "fieldCount": 5,
+        "structuredBits": 51,
+        "smithDepth": 6108,
+        "rankDepth": 10170,
+        "bruteForceDepth": 6108,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.665029
+      },
+      {
+        "instance": 490,
+        "fieldCount": 2,
+        "structuredBits": 19,
+        "smithDepth": 697,
+        "rankDepth": 863,
+        "bruteForceDepth": 697,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.238164
+      },
+      {
+        "instance": 491,
+        "fieldCount": 2,
+        "structuredBits": 23,
+        "smithDepth": 1592,
+        "rankDepth": 1592,
+        "bruteForceDepth": 1592,
+        "smithIsOptimal": true,
+        "gapVsRank": 0
+      },
+      {
+        "instance": 492,
+        "fieldCount": 5,
+        "structuredBits": 50,
+        "smithDepth": 6788,
+        "rankDepth": 9453,
+        "bruteForceDepth": 6788,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.392605
+      },
+      {
+        "instance": 493,
+        "fieldCount": 3,
+        "structuredBits": 35,
+        "smithDepth": 2922,
+        "rankDepth": 3722,
+        "bruteForceDepth": 2922,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.273785
+      },
+      {
+        "instance": 494,
+        "fieldCount": 4,
+        "structuredBits": 45,
+        "smithDepth": 7742,
+        "rankDepth": 8012,
+        "bruteForceDepth": 7742,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.034875
+      },
+      {
+        "instance": 495,
+        "fieldCount": 4,
+        "structuredBits": 48,
+        "smithDepth": 5028,
+        "rankDepth": 6924,
+        "bruteForceDepth": 5028,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.377088
+      },
+      {
+        "instance": 496,
+        "fieldCount": 3,
+        "structuredBits": 36,
+        "smithDepth": 3648,
+        "rankDepth": 4092,
+        "bruteForceDepth": 3648,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.121711
+      },
+      {
+        "instance": 497,
+        "fieldCount": 3,
+        "structuredBits": 34,
+        "smithDepth": 4378,
+        "rankDepth": 4642,
+        "bruteForceDepth": 4378,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.060302
+      },
+      {
+        "instance": 498,
+        "fieldCount": 5,
+        "structuredBits": 53,
+        "smithDepth": 7371,
+        "rankDepth": 12378,
+        "bruteForceDepth": 7371,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.679284
+      },
+      {
+        "instance": 499,
+        "fieldCount": 5,
+        "structuredBits": 57,
+        "smithDepth": 9391,
+        "rankDepth": 11726,
+        "bruteForceDepth": 9391,
+        "smithIsOptimal": true,
+        "gapVsRank": 0.248642
+      }
+    ],
+    "bruteForceAgreement": 0.99,
+    "suboptimalInstances": [
+      {
+        "instance": 57,
+        "smithDepth": 5857,
+        "bruteForceDepth": 5834
+      },
+      {
+        "instance": 316,
+        "smithDepth": 4693,
+        "bruteForceDepth": 4671
+      },
+      {
+        "instance": 321,
+        "smithDepth": 5777,
+        "bruteForceDepth": 5733
+      },
+      {
+        "instance": 350,
+        "smithDepth": 4813,
+        "bruteForceDepth": 4759
+      },
+      {
+        "instance": 461,
+        "smithDepth": 9840,
+        "bruteForceDepth": 9609
+      }
+    ],
+    "rankOrderWorseOn": 418,
+    "medianGapVsRankOrder": 0.232558,
+    "maxGapVsRankOrder": 2.009524,
+    "suboptimalCount": 5,
+    "suboptimalRelativeExcess": [
+      0.003942,
+      0.00471,
+      0.007675,
+      0.011347,
+      0.02404
+    ],
+    "suboptimalStructuredBitsRange": [
+      51,
+      54
+    ],
+    "agreementWithinFirstSegment": 1,
+    "note": "smithDepth is compared against the exact optimum over every permutation of the same instance; bruteForceAgreement is the fraction of instances where the allocator attains it"
+  },
+  "e_a2_entropy_locality_frontier": {
+    "note": "the tenant field is widened one bit at a time; structuredBits and randomBits sum to the 122-bit payload budget, and the collision probability is the exact upper bound for 2M ids at the residual width",
+    "points": [
+      {
+        "structuredBits": 46,
+        "randomBits": 76,
+        "weightedDepth": 706,
+        "collisionProbabilityAt2M": 1.323e-11
+      },
+      {
+        "structuredBits": 47,
+        "randomBits": 75,
+        "weightedDepth": 842,
+        "collisionProbabilityAt2M": 2.647e-11
+      },
+      {
+        "structuredBits": 48,
+        "randomBits": 74,
+        "weightedDepth": 978,
+        "collisionProbabilityAt2M": 5.294e-11
+      },
+      {
+        "structuredBits": 49,
+        "randomBits": 73,
+        "weightedDepth": 1147,
+        "collisionProbabilityAt2M": 1.059e-10
+      },
+      {
+        "structuredBits": 50,
+        "randomBits": 72,
+        "weightedDepth": 1272,
+        "collisionProbabilityAt2M": 2.118e-10
+      },
+      {
+        "structuredBits": 51,
+        "randomBits": 71,
+        "weightedDepth": 1367,
+        "collisionProbabilityAt2M": 4.235e-10
+      },
+      {
+        "structuredBits": 52,
+        "randomBits": 70,
+        "weightedDepth": 1462,
+        "collisionProbabilityAt2M": 8.47e-10
+      },
+      {
+        "structuredBits": 53,
+        "randomBits": 69,
+        "weightedDepth": 1557,
+        "collisionProbabilityAt2M": 1.694e-9
+      },
+      {
+        "structuredBits": 54,
+        "randomBits": 68,
+        "weightedDepth": 1652,
+        "collisionProbabilityAt2M": 3.388e-9
+      },
+      {
+        "structuredBits": 55,
+        "randomBits": 67,
+        "weightedDepth": 1747,
+        "collisionProbabilityAt2M": 6.776e-9
+      },
+      {
+        "structuredBits": 56,
+        "randomBits": 66,
+        "weightedDepth": 1842,
+        "collisionProbabilityAt2M": 1.355e-8
+      },
+      {
+        "structuredBits": 57,
+        "randomBits": 65,
+        "weightedDepth": 1937,
+        "collisionProbabilityAt2M": 2.711e-8
+      },
+      {
+        "structuredBits": 58,
+        "randomBits": 64,
+        "weightedDepth": 2032,
+        "collisionProbabilityAt2M": 5.421e-8
+      }
+    ],
+    "widthAtWhichCollisionBudgetFails50Percent": null,
+    "widthAtWhichCollisionBudgetFails1Percent": null
+  },
+  "e_a3_shipped_dbkey": {
+    "fields": [
+      {
+        "name": "timestamp",
+        "bits": 48,
+        "offset": 0,
+        "priority": 0
+      },
+      {
+        "name": "shard",
+        "bits": 3,
+        "offset": 52,
+        "priority": 13.3333
+      },
+      {
+        "name": "counter",
+        "bits": 16,
+        "offset": 66,
+        "priority": 0.3125
+      }
+    ],
+    "structuredBits": 67,
+    "randomBits": 55,
+    "requiredRandomBitsFor2MAt1Percent": 47,
+    "weightedDepth": 2610,
+    "depthHeadroomVsRankOrder": 0,
+    "collisionProbabilityAt2M": 0.000027755176555843697
+  },
+  "elapsedMsTotal": 77.63
+}

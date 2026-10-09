@@ -340,6 +340,10 @@ export interface LayoutSchema {
 export interface LayoutCompilerInput {
   schema: LayoutSchema
   workload: DatabaseWorkloadProfile
+  /** Identifiers the layout must support without exceeding the collision target. */
+  volume?: number
+  /** Target probability of any collision at `volume`. Defaults to 1e-2. */
+  collisionTarget?: number
 }
 
 export type LayoutCompilerErrorCode =
@@ -347,7 +351,6 @@ export type LayoutCompilerErrorCode =
   | "invalid-workload"
   | "unknown-workload-field"
   | "duplicate-workload-field"
-
 export class LayoutCompilerError extends Error {
   readonly code: LayoutCompilerErrorCode
   readonly field: string | undefined
@@ -389,6 +392,10 @@ export interface LayoutCostReport {
   objective: "hard-constraints-first"
   structuredBits: number
   randomBits: number
+  requiredRandomBits: number
+  collisionTarget: number
+  collisionProbabilityAtVolume: number
+  widthFloorsMet: boolean
   constrainedFields: number
   localityFields: number
   lookupFields: number
@@ -404,6 +411,18 @@ export interface DatabaseLayoutCompilation {
 }
 
 const MAX_FIELD_BITS = 48
+/** Default collision target for a compiled layout: 1% over 2M identifiers. */
+const DEFAULT_COLLISION_VOLUME = 2_000_000
+const DEFAULT_COLLISION_TARGET = 1e-2
+
+/** Distinct values a field can hold, or null when the domain is the whole width. */
+function fieldDomainSize(field: V8Field): number | null {
+  const c = field.constraint
+  if (c?.allowed && c.allowed.length > 0) return c.allowed.length
+  if (c?.min !== undefined && c?.max !== undefined) return c.max - c.min + 1
+  return null
+}
+
 const FIELD_TYPES = new Set<FieldType>([
   "timestamp-ms",
   "timestamp-us",
@@ -925,6 +944,7 @@ export function compileDatabaseLayout(input: LayoutCompilerInput): DatabaseLayou
 
   const fieldSemantics: Record<string, FieldSemantics> = {}
   const structuredBits = new Set<number>()
+  const widthFloors: { field: string; declaredBits: number; floor: number; domain: number }[] = []
   for (const field of layout.fields) {
     fieldSemantics[field.name] = { type: field.type, constraints: constraintKinds(field) }
     if (field.type !== "random") {
@@ -932,7 +952,21 @@ export function compileDatabaseLayout(input: LayoutCompilerInput): DatabaseLayou
         structuredBits.add(bit)
       }
     }
+    const domain = fieldDomainSize(field)
+    if (domain !== null && field.type !== "random") {
+      widthFloors.push({
+        field: field.name,
+        declaredBits: field.length,
+        floor: minBitsForCardinality(domain),
+        domain,
+      })
+    }
   }
+  const widthFloorsMet = widthFloors.every((entry) => entry.declaredBits >= entry.floor)
+
+  const volumeTarget = input.volume ?? DEFAULT_COLLISION_VOLUME
+  const tau = input.collisionTarget ?? DEFAULT_COLLISION_TARGET
+  const requiredRandomBits = minRandomBitsForCollisionBudget(volumeTarget, tau)
 
   return {
     layout,
@@ -954,6 +988,13 @@ export function compileDatabaseLayout(input: LayoutCompilerInput): DatabaseLayou
       objective: "hard-constraints-first",
       structuredBits: structuredBits.size,
       randomBits: 128 - NIBBLE_BITS.size - structuredBits.size,
+      requiredRandomBits,
+      collisionTarget: tau,
+      collisionProbabilityAtVolume: collisionProbabilityUpperBound(
+        volumeTarget,
+        128 - NIBBLE_BITS.size - structuredBits.size,
+      ),
+      widthFloorsMet,
       constrainedFields: layout.fields.filter((field) => constraintKinds(field).length > 0).length,
       localityFields: workload.fields.filter(
         (field) => field.role === "partition" || field.role === "cluster",
@@ -962,6 +1003,326 @@ export function compileDatabaseLayout(input: LayoutCompilerInput): DatabaseLayou
       readWeight: workload.readWeight,
       writeWeight: workload.writeWeight,
     },
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Bit allocation.
+//
+// Choosing where a declared field sits inside a fixed-length identifier is a
+// single-timeline scheduling problem: each field is a job, its length is the
+// processing time, its end offset is the completion time, and the objective
+// is to keep the fields a query actually filters on as close to the front of
+// the key as possible. Weighted completion time on one machine is solved by
+// Smith's rule (1956): order by non-increasing weight / length. The shipped
+// planner instead ordered by workload role rank, which is not optimal for
+// that objective.
+// ---------------------------------------------------------------------------
+
+/** Locality class: lower sorts earlier in the key. */
+export type LocalityClass = "partition" | "cluster" | "lookup" | "opaque"
+
+function localityRank(locality: LocalityClass | undefined): number {
+  if (locality === "partition") return 0
+  if (locality === "cluster") return 1
+  if (locality === "lookup") return 2
+  return 3
+}
+
+export interface BitAllocationField {
+  name: string
+  /** Distinct values that must be representable. */
+  cardinality: number
+  /** Weight of the queries this field filters, i.e. the cost of burying it. */
+  weight: number
+  locality?: LocalityClass
+  /** Offset granularity in bits. 8 keeps the field byte-extractable. */
+  align?: 1 | 4 | 8
+  /** Forces offset 0 (timestamp / monotonic prefix). */
+  leading?: boolean
+}
+
+export interface BitAllocationInput {
+  budget?: number
+  fields: readonly BitAllocationField[]
+  volume?: number
+  collisionTarget?: number
+  minRandomBits?: number
+}
+
+export interface AllocatedField {
+  name: string
+  cardinality: number
+  weight: number
+  locality: LocalityClass
+  align: 1 | 4 | 8
+  minBits: number
+  bits: number
+  offset: number
+  slackBits: number
+  /** weight / bits, the Smith-rule key. */
+  priority: number
+}
+
+export interface BitAllocationPlan {
+  fields: AllocatedField[]
+  filler: { offset: number; bits: number }[]
+  structuredBits: number
+  randomBits: number
+  requiredRandomBits: number
+  feasible: boolean
+  reason?: string
+  /** Sum of weight x end-offset; the scheduling objective, lower is better. */
+  weightedDepth: number
+  /** weightedDepth of the rank-ordered (pre-Smith) allocation, for the gap. */
+  weightedDepthRankOrder: number
+  algorithm: "smith-rule"
+}
+
+export function minBitsForCardinality(cardinality: number): number {
+  if (!Number.isInteger(cardinality) || cardinality < 1) {
+    throw new RangeError(`minBitsForCardinality: cardinality must be a positive integer, got ${cardinality}`)
+  }
+  return Math.max(1, Math.ceil(Math.log2(cardinality)))
+}
+
+/** Upper bound on P(at least one collision) for n ids drawn from 2^r values. */
+export function collisionProbabilityUpperBound(n: number, randomBits: number): number {
+  if (n <= 1) return 0
+  const exponent = (n * (n - 1)) / (2 * 2 ** (randomBits + 1))
+  return 1 - Math.exp(-exponent)
+}
+
+/**
+ * Smallest r whose collision bound is at most `target` for `volume` ids.
+ * Closed form: 2^r >= n(n-1) / (4 ln(1/(1-target))).
+ */
+export function minRandomBitsForCollisionBudget(volume: number, target: number): number {
+  if (!Number.isInteger(volume) || volume < 1) {
+    throw new RangeError(`minRandomBitsForCollisionBudget: volume must be a positive integer, got ${volume}`)
+  }
+  if (!(target > 0 && target < 1)) {
+    throw new RangeError(`minRandomBitsForCollisionBudget: target must be in (0,1), got ${target}`)
+  }
+  const closed = Math.log2((volume * (volume - 1)) / (4 * -Math.log(1 - target)))
+  let r = Math.max(0, Math.ceil(closed))
+  while (collisionProbabilityUpperBound(volume, r) > target) r++
+  while (r > 0 && collisionProbabilityUpperBound(volume, r - 1) <= target) r--
+  return r
+}
+
+function fits(offset: number, bits: number, used: Set<number>): boolean {
+  for (let b = offset; b < offset + bits; b++) {
+    if (NIBBLE_BITS.has(b) || b >= 128 || used.has(b)) return false
+  }
+  return true
+}
+
+/** Stable sort by a comparator, matching the insertion sort the planner already uses. */
+function sortBy<T>(items: readonly T[], compare: (a: T, b: T) => number): T[] {
+  const out = [...items]
+  for (let index = 1; index < out.length; index++) {
+    const entry = out[index]
+    let position = index - 1
+    while (position >= 0 && compare(out[position], entry) > 0) {
+      out[position + 1] = out[position]
+      position--
+    }
+    out[position + 1] = entry
+  }
+  return out
+}
+
+/** Rank order, the pre-Smith rule the shipped planner used. */
+function byLocalityRank(fields: readonly BitAllocationField[]): BitAllocationField[] {
+  return sortBy(fields, (a, b) => {
+    const ra = localityRank(a.locality)
+    const rb = localityRank(b.locality)
+    if (ra !== rb) return ra - rb
+    return minBitsForCardinality(b.cardinality) - minBitsForCardinality(a.cardinality)
+  })
+}
+
+function pack(
+  order: readonly BitAllocationField[],
+): {
+  placed: { field: BitAllocationField; offset: number }[]
+  filler: { offset: number; bits: number }[]
+  used: Set<number>
+} {
+  const used = new Set<number>()
+  const placed: { field: BitAllocationField; offset: number }[] = []
+  for (const field of order) {
+    const bits = minBitsForCardinality(field.cardinality)
+    const align = field.align ?? 8
+    let offset = field.leading === true ? 0 : -1
+    if (offset === -1) {
+      for (let candidate = 0; candidate + bits <= 128; candidate += align) {
+        if (fits(candidate, bits, used)) {
+          offset = candidate
+          break
+        }
+      }
+    }
+    if (offset === -1 || !fits(offset, bits, used) || offset + bits > 128) {
+      throw new RangeError(`field ${field.name} does not fit in the UUID`)
+    }
+    for (let b = offset; b < offset + bits; b++) used.add(b)
+    placed.push({ field, offset })
+  }
+  const filler: { offset: number; bits: number }[] = []
+  let cursor = 0
+  while (cursor < 128) {
+    if (used.has(cursor) || NIBBLE_BITS.has(cursor)) {
+      cursor++
+      continue
+    }
+    let end = cursor
+    while (end < 128 && !used.has(end) && !NIBBLE_BITS.has(end)) end++
+    if (end - cursor > 0) filler.push({ offset: cursor, bits: end - cursor })
+    cursor = end
+  }
+  return { placed, filler, used }
+}
+
+function depthOf(order: readonly { field: BitAllocationField; offset: number }[]): number {
+  let total = 0
+  for (const entry of order) {
+    total += entry.field.weight * (entry.offset + minBitsForCardinality(entry.field.cardinality))
+  }
+  return total
+}
+
+export function planBitAllocation(input: BitAllocationInput): BitAllocationPlan {
+  if (!input || !Array.isArray(input.fields) || input.fields.length === 0) {
+    throw new RangeError("planBitAllocation: fields must be a non-empty array")
+  }
+  const budget = input.budget ?? 122
+  if (!Number.isInteger(budget) || budget < 1) {
+    throw new RangeError(`planBitAllocation: budget must be a positive integer, got ${budget}`)
+  }
+  for (const field of input.fields) {
+    if (!field || typeof field.name !== "string" || field.name.length === 0) {
+      throw new RangeError("planBitAllocation: every field needs a non-empty name")
+    }
+    if (!Number.isInteger(field.cardinality) || field.cardinality < 1) {
+      throw new RangeError(`planBitAllocation: ${field.name}.cardinality must be a positive integer`)
+    }
+    if (!Number.isFinite(field.weight) || field.weight < 0) {
+      throw new RangeError(`planBitAllocation: ${field.name}.weight must be a finite non-negative number`)
+    }
+    if (field.align !== undefined && field.align !== 1 && field.align !== 4 && field.align !== 8) {
+      throw new RangeError(`planBitAllocation: ${field.name}.align must be 1, 4, or 8`)
+    }
+  }
+
+  const required = input.minRandomBits ??
+    (input.volume !== undefined && input.collisionTarget !== undefined
+      ? minRandomBitsForCollisionBudget(input.volume, input.collisionTarget)
+      : 0)
+
+  const floors = new Map(input.fields.map((f) => [f.name, minBitsForCardinality(f.cardinality)]))
+  const totalFloor = [...floors.values()].reduce((a, b) => a + b, 0)
+
+  if (totalFloor > budget) {
+    return {
+      fields: [],
+      filler: [],
+      structuredBits: totalFloor,
+      randomBits: 0,
+      requiredRandomBits: required,
+      feasible: false,
+      reason:
+        `structured floors total ${totalFloor} bits against a ${budget}-bit budget; ` +
+        `reduce cardinalities or drop ${totalFloor - budget} bits of declared structure`,
+      weightedDepth: Number.POSITIVE_INFINITY,
+      weightedDepthRankOrder: Number.POSITIVE_INFINITY,
+      algorithm: "smith-rule",
+    }
+  }
+  if (totalFloor + required > budget) {
+    return {
+      fields: [],
+      filler: [],
+      structuredBits: totalFloor,
+      randomBits: 0,
+      requiredRandomBits: required,
+      feasible: false,
+      reason:
+        `the collision budget needs ${required} random bits but only ${budget - totalFloor} remain ` +
+        `after ${totalFloor} bits of declared structure`,
+      weightedDepth: Number.POSITIVE_INFINITY,
+      weightedDepthRankOrder: Number.POSITIVE_INFINITY,
+      algorithm: "smith-rule",
+    }
+  }
+
+  // Smith's rule: non-increasing weight / length, ties broken by locality
+  // class then name so the allocation is deterministic.
+  const smith = sortBy(input.fields, (a, b) => {
+    const pa = a.weight / minBitsForCardinality(a.cardinality)
+    const pb = b.weight / minBitsForCardinality(b.cardinality)
+    if (pb !== pa) return pb - pa
+    const ra = localityRank(a.locality)
+    const rb = localityRank(b.locality)
+    if (ra !== rb) return ra - rb
+    return a.name.localeCompare(b.name)
+  })
+  const leading = smith.filter((f) => f.leading === true)
+  const rest = smith.filter((f) => f.leading !== true)
+  const order = [...leading, ...rest]
+
+  let placed: { field: BitAllocationField; offset: number }[]
+  let filler: { offset: number; bits: number }[]
+  let used: Set<number>
+  let ranked: ReturnType<typeof pack>
+  try {
+    ;({ placed, filler, used } = pack(order))
+    ranked = pack(byLocalityRank(input.fields))
+  } catch (error) {
+    return {
+      fields: [],
+      filler: [],
+      structuredBits: totalFloor,
+      randomBits: 0,
+      requiredRandomBits: required,
+      feasible: false,
+      reason: (error as Error).message,
+      weightedDepth: Number.POSITIVE_INFINITY,
+      weightedDepthRankOrder: Number.POSITIVE_INFINITY,
+      algorithm: "smith-rule",
+    }
+  }
+
+  const allocated: AllocatedField[] = placed.map((entry) => {
+    const minBits = minBitsForCardinality(entry.field.cardinality)
+    return {
+      name: entry.field.name,
+      cardinality: entry.field.cardinality,
+      weight: entry.field.weight,
+      locality: entry.field.locality ?? "opaque",
+      align: entry.field.align ?? 8,
+      minBits,
+      bits: minBits,
+      offset: entry.offset,
+      slackBits: 0,
+      priority: entry.field.weight / minBits,
+    }
+  })
+
+  const structuredBits = used.size
+  const randomBits = filler.reduce((sum, run) => sum + run.bits, 0)
+
+  return {
+    fields: allocated,
+    filler,
+    structuredBits,
+    randomBits,
+    requiredRandomBits: required,
+    feasible: true,
+    weightedDepth: depthOf(placed),
+    weightedDepthRankOrder: depthOf(ranked.placed),
+    algorithm: "smith-rule",
   }
 }
 
