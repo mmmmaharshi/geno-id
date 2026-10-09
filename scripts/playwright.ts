@@ -18,7 +18,7 @@ const MIME: Record<string, string> = {
 // Firefox and WebKit refuse to load ES modules over file:// (cross-origin
 // module fetch is blocked), so the harness serves the repo root over HTTP and
 // loads index.html from there. Chromium works either way.
-function startServer(): Promise<{ close: () => Promise<void>; origin: string }> {
+export function startServer(): Promise<{ close: () => Promise<void>; origin: string }> {
   const server = http.createServer((req, res) => {
     const urlPath = decodeURIComponent((req.url || "/").split("?")[0])
     const rel = urlPath === "/" ? "index.html" : urlPath.replace(/^\/+/, "")
@@ -104,8 +104,13 @@ function makeLaunch(browser: BrowserName): LaunchFn {
 
 async function runBenchmark(
   args: Record<string, string | boolean>,
-  { launch = makeLaunch("chromium"), browser = "chromium" }: BenchOptions = {},
+  { launch, browser = "chromium" }: BenchOptions = {},
 ): Promise<BenchOutput> {
+  // The launch function must follow the requested engine. Binding it as a
+  // destructuring default pinned every caller to chromium, so the firefox
+  // and webkit rows in results/benchmark_results.json were chromium runs
+  // under a different label. Resolve it from `browser` instead.
+  const start = launch ?? makeLaunch(browser)
   const htmlPath = path.resolve(
     typeof args.html === "string" ? args.html : path.join(root, "index.html"),
   )
@@ -131,7 +136,7 @@ async function runBenchmark(
   }
 
   console.log(`Launching ${browser} (headless=${headless})...`)
-  const browserInstance = await launch(launchOpts)
+  const browserInstance = await start(launchOpts)
   const page = await browserInstance.newPage()
 
   const browserErrors: string[] = []

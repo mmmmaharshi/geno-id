@@ -15,6 +15,28 @@ export type Workload = (typeof WORKLOADS)[number]
 export const ENGINES = ["postgresql", "mysql-innodb"] as const
 export type EngineName = (typeof ENGINES)[number]
 
+export const SERVER_ENV: Record<EngineName, string> = {
+  postgresql: "PG_HOST / PG_PORT / PG_USER / PG_PASSWORD / PG_DB",
+  "mysql-innodb": "MYSQL_HOST / MYSQL_PORT / MYSQL_USER / MYSQL_PASSWORD / MYSQL_DB",
+}
+
+export function serverTarget(
+  name: EngineName,
+  env: Record<string, string | undefined>,
+): { host: string; port: number } {
+  return name === "postgresql"
+    ? { host: env.PG_HOST ?? "localhost", port: Number(env.PG_PORT ?? 5432) }
+    : { host: env.MYSQL_HOST ?? "localhost", port: Number(env.MYSQL_PORT ?? 3306) }
+}
+
+export function unreachableMessage(name: EngineName, target: { host: string; port: number }): string[] {
+  return [
+    `No ${name} server reachable at ${target.host}:${target.port}.`,
+    "This benchmark measures a real database server, so it cannot run here.",
+    `Start the server, or point the harness at one with: ${SERVER_ENV[name]}`,
+  ]
+}
+
 export interface Percentiles {
   p50: number
   p95: number

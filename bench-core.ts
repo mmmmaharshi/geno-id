@@ -52,13 +52,25 @@ export function collisionTest(fn: () => string, n: number): number {
 export async function collisionTestAsync(
   fn: () => Promise<string>,
   n: number,
+  batchSize = 1000,
 ): Promise<number> {
+  // WebCrypto is awaited one call at a time in the sequential form, and
+  // Playwright's WebKit build resolves each SubtleCrypto call in ~15 ms.
+  // 20,000 sequential calls therefore take ~304 s and blow the 300 s run
+  // timeout, so the batch is issued concurrently and the duplicate count is
+  // taken over the completed set. The count is order-independent, so the
+  // result is unchanged.
   const set = new Set<string>()
   let collisions = 0
-  for (let i = 0; i < n; i++) {
-    const v = await fn()
-    if (set.has(v)) collisions++
-    else set.add(v)
+  let done = 0
+  while (done < n) {
+    const b = Math.min(batchSize, n - done)
+    const batch = await Promise.all(Array.from({ length: b }, () => fn()))
+    for (const v of batch) {
+      if (set.has(v)) collisions++
+      else set.add(v)
+    }
+    done += b
   }
   return collisions
 }

@@ -3,6 +3,7 @@ import mysql from "mysql2/promise"
 import type { RowDataPacket } from "mysql2"
 import { execFileSync } from "node:child_process"
 import { mkdirSync, writeFileSync } from "node:fs"
+import net from "node:net"
 import path from "node:path"
 import { pathToFileURL } from "node:url"
 import {
@@ -10,7 +11,10 @@ import {
   ENGINES,
   WORKLOADS,
   percentiles,
+  serverTarget,
+  SERVER_ENV,
   tenantFor,
+  unreachableMessage,
   validateNativeResult,
 } from "./bench-db-native-core.ts"
 import type { EngineName, EngineResult, Percentiles } from "./bench-db-native-core.ts"
@@ -492,6 +496,37 @@ const out: Record<string, unknown> = {
 const MODE_ALIASES: Record<string, EngineName> = { pg: "postgresql", mysql: "mysql-innodb" }
 const targets: EngineName[] =
   MODE === "both" ? [...ENGINES] : [MODE_ALIASES[MODE] ?? (MODE as EngineName)]
+
+const isServerReachable = (host: string, port: number, timeoutMs = 4000): Promise<boolean> =>
+  new Promise((resolve) => {
+    const socket = net.connect(port, host)
+    const done = (ok: boolean) => {
+      socket.destroy()
+      resolve(ok)
+    }
+    socket.setTimeout(timeoutMs, () => done(false))
+    socket.once("connect", () => done(true))
+    socket.once("error", () => done(false))
+  })
+
+// A missing server is an environment precondition, not a measurement. Fail
+// with the connection target and the env vars to set instead of a raw
+// ECONNREFUSED stack trace from the pg/mysql2 driver.
+const SERVER_TARGETS = Object.fromEntries(
+  targets.map((name) => [
+    name,
+    { ...serverTarget(name, process.env), env: SERVER_ENV[name] },
+  ]),
+) as Record<EngineName, { host: string; port: number; env: string }>
+
+for (const name of targets) {
+  const target = SERVER_TARGETS[name]
+  if (!(await isServerReachable(target.host, target.port))) {
+    console.error(`\n${unreachableMessage(name, target).join("\n")}`)
+    process.exit(2)
+  }
+}
+
 for (const name of targets) {
   const engine = name === "postgresql" ? await postgres() : await mysqlInnoDB()
   console.log(`\n=== ${name} rows=${ROWS} reps=${REPS} distributions=${DISTRIBUTIONS.length} arms=${Object.keys(ARMS).length} ===`)
