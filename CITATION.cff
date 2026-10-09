@@ -11,8 +11,8 @@ authors:
     orcid: "https://orcid.org/0000-0002-3907-4501"
 repository-code: "https://github.com/mmmmaharshi/geno-id"
 license: MIT
-version: 1.25.0
-date-released: 2026-10-09
+version: 1.25.1
+date-released: '2026-10-09'
 keywords:
   - UUID
   - RFC 9562

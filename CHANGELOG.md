@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.25.1] - 2026-10-09
+
+### Summary
+
+**Two measurement defects fixed: the browser benchmark had been running Chromium for all three "engines", and the async collision loop took 304 seconds under WebKit. The archived artifact now genuinely covers Chromium, Firefox, and WebKit.**
+
+### Highlights
+
+- 🐛 **The cross-browser claim was never true in code.** `runBenchmark` bound its launch function as a destructuring default, so `main()` passing `{ browser: b }` still launched Chromium. All three rows in `results/benchmark_results.json` were Chromium runs under different labels, each carrying the same `HeadlessChrome` user agent. The launch now follows the requested engine. `scripts/playwright-engines.test.ts` asserts the per-engine user-agent fingerprint and that the three agents differ, so a silent fallback fails the suite.
+- ⏱️ **WebKit could not finish the collision test.** `collisionTestAsync` awaited each WebCrypto call in sequence. Playwright's WebKit build resolves a SubtleCrypto call in ~15 ms, so 20,000 samples took 304 s — measured at 127 ms (n=10), 1.52 s (n=100), 15.2 s (n=1,000), 76.0 s (n=5,000), 304 s (n=20,000) — and missed the 300 s run timeout. The batch is now issued concurrently and the duplicate count is taken over the completed set. The count is order-independent, so the result is unchanged; `scripts/bench-core-collision-async.test.ts` pins the equivalence against a sequential reference and across batch boundaries.
+- 🛠️ **`startServer()` is exported.** The harness already documented that Firefox and WebKit refuse ES modules over `file://`, but the server factory was private, so tests could not use it. Serving from `http://127.0.0.1` is now the only supported test path.
+- 🧭 **`bench-db-native` fails with a diagnosis, not a stack trace.** A missing server is an environment precondition. The port is preflight-probed and the script exits `2` naming the target and the retargeting env vars (`PG_HOST`/`MYSQL_HOST`, …) instead of dumping a raw `ECONNREFUSED` from the driver.
+- 📦 **`playwright` npm script runs under Bun, not `tsx`.** The EPERM `mkdtemp 'playwright-artifacts-XXXXXX'` failure was runtime-specific: the identical launch succeeds under Bun and fails under Node. Bun is the project runtime.
+
+### Breaking Changes
+
+None. `collisionTestAsync(fn, n)` keeps its signature; an optional third `batchSize` parameter defaults to 1000.
+
+### Upgrade Guide
+
+No action required. Rebuild (`bun run build`) to pick up the new `dist/bench-core.js`.
+
+### Known Issues
+
+- **PostgreSQL and MySQL/InnoDB remain unmeasured.** No server is reachable on this machine and no Docker is available, so no native-database result is claimed. `scripts/bench-db-native.ts` is committed and now preflight-diagnoses a missing server; its output is not archived.
+- The recorded WebKit throughput is slower than Chromium by a larger factor than the other engines, and this is a WebKit SubtleCrypto cost, not an identifier-quality signal. Read the engine rows for the deployable check, not as a comparison of identifier generators across engines.
+
+### Dependencies Updated
+
+None.
+
 ## [1.25.0] - 2026-10-09
 
 ### Summary
