@@ -5,6 +5,75 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.25.0] - 2026-10-09
+
+### Summary
+
+**Bit allocation becomes a solved problem: Smith's-rule allocator, cardinality width floors, a collision-safety constraint, and RFC 9562 §6.2 monotonicity. This release also closes the paper's blocking revision tier with archived evidence for every claim.**
+
+> **Note on versioning.** `1.24.2` was written to `package.json` by the monotonicity commit but was never tagged and never received a CHANGELOG entry. That work is released here as part of `1.25.0`; `1.24.2` should be treated as an internal bump, not a published release. The previous tagged release is `v1.24.1`.
+
+#### ✨ Highlights
+
+- **New public API — `planBitAllocation`** (`algo.ts`) allocates declared fields to bit offsets by reducing the problem to single-machine weighted completion time and applying Smith's rule (order by non-increasing `weight / bits`). The planner it replaces sorted fields by workload role rank and then width, which is neither Smith order nor a special case of it: on 500 randomized instances the old order is strictly worse on **418 of them**, median gap **23.26%**, maximum **200.95%**. The allocator attains the exhaustive optimum over every permutation on **495 of 500** instances, and on **100%** of instances whose structure fits inside one free bit segment.
+- **New public API — cardinality floors.** `minBitsForCardinality(c)` returns the `⌈log₂ c⌉` floor a field width must clear. The shipped `dbkey` shard field is declared at 8 bits for 5 admissible values; the floor is 3, and the declaration surrenders 5 bits of residual entropy the collision guarantee depends on.
+- **New public API — collision-safety constraint.** `collisionProbabilityUpperBound(n, r)` bounds P(any collision) as `1 − exp(−n(n−1)/2^(r+2))`, and `minRandomBitsForCollisionBudget(n, τ)` inverts it. Two million identifiers at τ = 10⁻² need 47 bits; at τ = 10⁻⁹ they need 70. `compileDatabaseLayout` now reports `requiredRandomBits`, `collisionTarget`, `collisionProbabilityAtVolume`, and `widthFloorsMet`, and refuses an infeasible declaration with a reason naming the shortfall rather than silently truncating it.
+- **RFC 9562 §6.2 monotonicity, now actually implemented.** Timestamp fields clamp to `max(clock, last tick)` and counter exhaustion freezes generation until the clock advances, on the compiled production path, the single-parent pool, and both hand-coded generators. Previously both paths wrote raw `Date.now()`; the paper described behaviour the code did not deliver.
+
+#### 🧪 Evidence
+
+- `results/bit-allocation.json` — E-A1 optimality vs the exhaustive optimum, E-A2 the entropy–locality frontier (one structural bit costs ≈95 weighted-depth units and exactly doubles collision probability), E-A3 the shipped `dbkey` layout, which the allocator confirms is **already Smith-optimal** (gain 0).
+- `results/shard-histogram-100m.json` — 10⁸ draws per layout through the shipped production path: `dbkey.shard` at 52/51/51/51/51 preimages, max deviation 0.012 pp at 2.9σ, zero out-of-set draws across 2×10⁸.
+- `results/db-sqlite-composite.json` — the paper's composite-key table now traces to a committed artifact: 10 trials × 1000 lookups, per-trial arrays, query plans, host metadata.
+
+#### 📝 Corrections to previously published claims
+
+Two claims were withdrawn because measurement contradicted them, not because of re-wording:
+
+- **"A byte-aligned shard offset (56) gives 14% faster lookups"** — across four repeated runs the effect reversed direction three times (+14%, −2%, +4.7%, +4%). It is noise. The aligned-offset arm stays in the table as design guidance; no performance claim is made for it.
+- **The uniformity theorem's sufficiency condition** — the two shipped repair operators have *different* distributions. For `allowed = [0, 2]` the compiled path emits 50/50 while the pooled path emits 25/75. The theorem is now stated per operator with its own exact-fibre condition, and the m=2, ℓ=2 case is the tight counterexample. `scripts/fibres.test.ts` pins both the prediction and the empirical split.
+
+#### 🐛 Bug Fix
+
+- **`scripts/playwright.ts` destroyed committed evidence on failure.** It wrote `results/benchmark_results.json` unconditionally, so a run in which every browser failed to launch replaced three real engine records with `{"runs": []}`. The write decision is now `planPlaywrightWrite()`, which refuses the write and exits non-zero when no browser produced a result. Reproduced and verified in this environment.
+
+#### ⚠️ Breaking Changes
+
+None to the generation API. Two additive changes:
+
+- `LayoutCompilerInput` gained optional `volume` and `collisionTarget`; both default to 2×10⁶ identifiers at 1%, so existing callers are unaffected.
+- `LayoutCostReport` gained `requiredRandomBits`, `collisionTarget`, `collisionProbabilityAtVolume`, and `widthFloorsMet`.
+
+Structural-field generation is **not** byte-compatible with 1.24.1: the RFC 9562 §6.2 monotonicity fix changes the emitted timestamp/counter stream, and every `golden/*.txt` vector was regenerated.
+
+#### 🔄 Upgrade Guide
+
+No action required for most callers. If you rely on sort order of structured identifiers, the monotonicity fix is the one you want: a backwards system clock previously produced out-of-order keys, and counter exhaustion previously wrapped instead of waiting for the next tick.
+
+Read your layout's entropy position before declaring wide fields:
+
+```ts
+import { minBitsForCardinality, minRandomBitsForCollisionBudget } from "@manohar_maharshi/genoid"
+
+minBitsForCardinality(5)                     // 3, not the 8 the dbkey shard declares
+minRandomBitsForCollisionBudget(2e6, 0.01)   // 47 residual bits required
+```
+
+New commands: `bun run bench-bit-allocation`, `bun run histogram-100m`, `bun run bench-sqlite-artifact`, `bun run bench-db-native`.
+
+#### 🐛 Known Issues
+
+- **Smith's rule is exact only within one free segment.** The six reserved bits split the payload into `[0,48)`, `[52,64)`, `[66,128)`. All five suboptimal instances in the sweep cross bit 48 (`structuredBits` 51–54) and exceed the optimum by 0.39–2.40%. No instance that stays inside `[0,48)` is suboptimal.
+- **Weighted depth is a proxy, not a measurement.** It models comparison work; the SQLite composite-key experiment measures latency and does not validate `D` directly.
+- **The allocation weight `w` is caller-declared.** Nothing infers it from a workload; mapping `DatabaseWorkloadProfile`'s read weight and skew onto `w` is left to the caller.
+- **Native-database results remain unarchived.** No PostgreSQL or MySQL/InnoDB measurement is claimed. The harness is committed (`scripts/bench-db-native.ts`) and needs a reachable server.
+- **`bun run playwright` cannot run in a sandbox without Playwright temp-dir access.** The jsdom dry run (`bun run verify-playwright`) passes; the browser artifact is left untouched rather than overwritten by a failed run.
+
+#### 📦 Dependencies Updated
+
+None.
+
+
 ## [1.24.1] - 2026-08-15
 
 ### Summary
