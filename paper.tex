@@ -258,43 +258,65 @@ that matters, since any deployment facing this access pattern would add
 one.
 
 The secondary index is what embedding avoids. It carries $1.98\times$ the
-storage per row ($54.5$ against $27.5$ bytes) and sustains $1.95\times$
-lower insert throughput, while still resolving lookups $1.45\times$
+storage per row ($54.6$ against $27.6$ bytes) and sustains $1.79\times$
+lower insert throughput, while still resolving lookups $1.39\times$
 slower, since resolution descends the secondary index and then the primary
 key, where the embedded form descends once. Embedding serves both access
-paths with a single index.
+paths with a single index. Its advantage is the \emph{combination}: the
+embedded arm is the only arm that is simultaneously near-best on insert,
+near-best on bare-identifier lookup, and free of the second index.
 
 Two comparisons show no difference and we report them as such: insert
 throughput is indistinguishable between the embedded key and an
-unindexed composite key, and point-lookup latency is indistinguishable
-between the embedded key and a concatenated text key. Concatenation
-nonetheless costs $1.88\times$ the storage and $1.37\times$ lower insert
-throughput, and is no longer a UUID, forfeiting the native 16-byte column
-type and RFC~9562 tooling. Declaring the shard at a byte-aligned offset
-(56 rather than 52) yields a further $14\%$ on lookup, since the field
-becomes extractable by a single-byte predicate, which is a design rule the
-layout validator can enforce.
+unindexed composite key ($992$K vs $918$K rows/s, 95\% CIs overlap), and
+point-lookup latency is indistinguishable between the embedded key and a
+concatenated text key ($3.3$ vs $3.2\,\mu$s). Concatenation nonetheless
+costs $1.90\times$ the storage and $1.21\times$ lower insert throughput, and
+is no longer a UUID, forfeiting the native 16-byte column type and RFC~9562
+tooling.
+
+We also withdraw a claim an earlier revision of this paper made, that
+declaring the shard at a byte-aligned offset (56 rather than 52) yields a
+lookup advantage. Across four repeated runs of the same experiment the
+direction of the effect reversed three times ($+14\%$, $-2\%$, $+4.7\%$,
+$+4\%$ in favour of the aligned offset), i.e.\ it is not separable from
+run-to-run variance at these trial counts, and SQLite evidently evaluates
+the straddling two-byte predicate as cheaply as the byte-aligned one. We
+keep the aligned-offset arm in the table because a single-byte predicate
+remains sound design guidance for engines with a different cost model, and
+because the layout validator can enforce it, but it is not a measured win
+here and we make no claim for it.
 
 We claim no advantage on shard-major scans, where the composite key's
-leading column is the better structure.
+leading column is the better structure: the composite and
+composite-indexed arms resolve the shard range scan in $2.2$--$2.3$\,ms
+against $6.0$--$6.5$\,ms for the embedded arms, a $2.8\times$ difference.
+Embedding trades partition-scan speed for single-index storage and
+bare-identifier seeks.
 
 \begin{table}[!ht]
-\caption{Schema comparison (SQLite, file-backed, $N=10^5$, 10 trials
-$\times$ 2 uncontended runs; storage varies under $1.5\%$ across runs).
-Point lookup is by identifier alone. The unindexed composite arm scans
-rather than seeks, so its latency is given as an order of magnitude.
-Conceptual generalization to clustered storage engines is discussed in Section~3.2 below; measured PostgreSQL and InnoDB results are left as future work.}
+\caption{Schema comparison (SQLite, file-backed, $N=10^5$, 10 trials, 1000
+point lookups per trial; every arm uses the same timestamp-sorted GenoID
+\texttt{dbkey} identifier, so the only variable is where the shard field
+resides). Point lookup is by identifier alone. The unindexed composite arm
+scans rather than seeks, so its lookup latency is three orders of
+magnitude worse and is shown as an order of magnitude, not a mean.
+Means with 95\% CI, raw per-trial arrays, query plans, and host metadata are
+archived in \texttt{results/db-sqlite-composite.json}.
+Conceptual generalization to clustered storage engines is discussed in
+Section~3.2 below; measured PostgreSQL and InnoDB results are left as
+future work.}
 \label{tab:composite}
 \centering\footnotesize
-\begin{tabular*}{\columnwidth}{@{\extracolsep{\fill}}lccc}
+\begin{tabular*}{\columnwidth}{@{\extracolsep{\fill}}lcccc}
 \hline\noalign{\smallskip}
-\textbf{Schema} & \textbf{B/row} & \textbf{Insert (K/s)} & \textbf{Lookup ($\mu$s)} \\
+\textbf{Schema} & \textbf{B/row} & \textbf{Insert (K/s)} & \textbf{Lookup ($\mu$s)} & \textbf{Shard scan (ms)} \\
 \noalign{\smallskip}\hline\noalign{\smallskip}
-Embedded, offset 56      & \textbf{27.5} & \textbf{961} & \textbf{3.8} \\
-Embedded, offset 52      & 27.6 & 914 & 4.4 \\
-Composite, PK only       & 28.9 & 873 & $\sim$3200 (scan) \\
-Composite $+$ index      & 54.5 & 492 & 5.5 \\
-Concatenated text        & 51.8 & 702 & 4.4 \\
+Embedded, offset 56      & 27.6 & 1040 & 3.2 & 6.52 \\
+Embedded, offset 52      & \textbf{27.6} & 992 & 3.3 & \textbf{6.36} \\
+Composite, PK only       & 29.0 & 918 & $\sim$3\,090 (scan) & \textbf{2.27} \\
+Composite $+$ index      & 54.6 & 555 & 4.6 & 2.19 \\
+Concatenated text        & 52.5 & 821 & 3.2 & 5.97 \\
 \noalign{\smallskip}\hline
 \end{tabular*}
 \end{table}
@@ -566,7 +588,7 @@ NIST SP 800-22 battery (\S\ref{sec:nist}) & \texttt{bun run scripts/export-struc
 dieharder subset (\S\ref{sec:nist}) & \texttt{bun run dieharder} & \texttt{results/dieharder-results.md} \\
 Nine-environment throughput (\S\ref{sec:throughput}) & \texttt{bun run bench-ci} (CI matrix) & \texttt{dist/bench-ci-results.json}, \texttt{dist/all-results.json} \\
 Browser benchmark (\S\ref{sec:deployability}) & \texttt{bun run playwright} & \texttt{results/benchmark\_results.json} \\
-SQLite composite key (\S\ref{sec:composite-bench}) & \texttt{bun run bench-sqlite} & \texttt{results/db-sqlite.json} \\
+SQLite composite key (\S\ref{sec:composite-bench}) & \texttt{bun run bench-sqlite-artifact} & \texttt{results/db-sqlite-composite.json} \\
 Rust cross-language check (\S\ref{sec:cross-lang}) & \texttt{bun run scripts/export-golden.ts} \emph{then} \texttt{cd golden-check \&\& cargo run} & \texttt{golden/*.txt} \\
 \noalign{\smallskip}\hline
 \end{tabular*}
@@ -590,6 +612,8 @@ We disclose these openly, ranked by expected reviewer pressure.
 \textbf{External validity.} Rust reimplementation produces byte-identical output across 3000 seeded UUIDs and three layouts. Performance portability remains future work. Benchmarks run on shared CI runners; numbers are relative comparisons.
 
 \textbf{Construct validity.} NIST PASS/FAIL is necessary but not sufficient for security; Section~\ref{sec:security} provides a threat model and entropy accounting.
+
+\textbf{Run-to-run stability.} The SQLite composite-key lookup measurement is the least stable quantity in this paper: the offset-56 versus offset-52 lookup difference reversed direction three times across four repeated runs of the same experiment ($+14\%$, $-2\%$, $+4.7\%$, $+4\%$), so we make no claim for it and report only the direction every arm agrees on. Insert throughput carried a similar instability in an earlier experiment, where one of three runs was uniformly $1.3$--$2.5\times$ slower under background load; the composite-key table above reports ten trials on one uncontended host, and the per-trial arrays in \texttt{results/db-sqlite-composite.json} let a reader re-check that no trial is an outlier.
 
 \textbf{Internal validity.} Benchmark confounds are mitigated by mean $\pm$ SD over 10 trials with 95\% CI and Welch $t$-tests. Two implementation bugs (a byte-consumption mismatch in \texttt{eventsourcing}'s \texttt{node}-typed field and a missing seed-state reset) were caught by the test suite before publication. A dead-code-elimination (DCE) hazard in the timing loop was identified and corrected after early throughput runs: an unconsumed loop elides the pure-JavaScript generators' work, inflating measured rates by roughly $2\times$ while leaving native \texttt{crypto.randomUUID()} unchanged; every number in Table~\ref{tab:throughput} post-dates the correction, confirmed by consuming each generated value at a sink (\texttt{.codePointAt(0)}) that the JIT cannot prove is a no-op. NIST runs unconditionally; dieharder is a CI-budget curation. The SQLite composite-key benchmark (Section~\ref{sec:composite-bench}) revealed a between-run variance component not captured by within-run CIs; one of three runs was contaminated by system-level background load (all arms uniformly $1.3$--$2.5\times$ slower), and we report the two uncontended runs with a note that ratios were preserved under perturbation. Absolute per-identifier times in the density sweep (Section~\ref{sec:repair-vs-rejection}) carry a warm-up ordering effect; the repair-count and trial-count results, on which the analysis rests, are order-independent.
 

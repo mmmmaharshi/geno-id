@@ -35,6 +35,7 @@
     "evidence:fixture": "bun run scripts/evidence-fixture.ts",
     "bench-concurrent": "bun run scripts/bench-concurrent.ts",
     "bench-sqlite": "bun run scripts/bench-sqlite.ts",
+    "bench-sqlite-artifact": "bun run scripts/bench-sqlite-artifact.ts",
     "collision-100m": "bun run scripts/collision-100m.ts",
     "histogram-100m": "bun run scripts/histogram-100m.ts",
     "export-dieharder": "bun run scripts/export-dieharder.ts",

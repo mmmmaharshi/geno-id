@@ -1,0 +1,587 @@
+{
+  "experiment": "db-sqlite-composite",
+  "description": "Five-arm SQLite composite-key comparison under WITHOUT ROWID clustered storage; the only variable is where the shard field resides",
+  "engine": "sqlite",
+  "rows": 100000,
+  "trials": 10,
+  "lookupsPerTrial": 1000,
+  "arms": {
+    "composite": {
+      "insertRowsPerSec": {
+        "mean": 917787.7404296786,
+        "ci95": [
+          883516.4773246055,
+          952059.0035347517
+        ]
+      },
+      "pointLookupUs": {
+        "mean": 3087.58916,
+        "ci95": [
+          2982.862591787085,
+          3192.315728212915
+        ]
+      },
+      "shardRangeScanMs": {
+        "mean": 2.2705700000003164,
+        "ci95": [
+          2.1217036989925147,
+          2.419436301008118
+        ]
+      },
+      "bytesPerRow": 28.999680000000005,
+      "integrityOk": true,
+      "freelistCountMax": 0,
+      "perTrial": [
+        {
+          "insertRowsPerSec": 877047.5771999202,
+          "pointLookupUs": 2966.9626000000003,
+          "shardRangeScanMs": 2.235700000000179,
+          "bytesPerRow": 28.99968,
+          "pageCount": 708,
+          "pageSize": 4096
+        },
+        {
+          "insertRowsPerSec": 799334.953318837,
+          "pointLookupUs": 3398.9764000000005,
+          "shardRangeScanMs": 2.220999999999549,
+          "bytesPerRow": 28.99968,
+          "pageCount": 708,
+          "pageSize": 4096
+        },
+        {
+          "insertRowsPerSec": 966363.776047127,
+          "pointLookupUs": 2987.083699999999,
+          "shardRangeScanMs": 2.203300000001036,
+          "bytesPerRow": 28.99968,
+          "pageCount": 708,
+          "pageSize": 4096
+        },
+        {
+          "insertRowsPerSec": 923245.9481043435,
+          "pointLookupUs": 3071.1455000000005,
+          "shardRangeScanMs": 2.2335000000002765,
+          "bytesPerRow": 28.99968,
+          "pageCount": 708,
+          "pageSize": 4096
+        },
+        {
+          "insertRowsPerSec": 913680.9097338156,
+          "pointLookupUs": 3148.2049000000006,
+          "shardRangeScanMs": 2.2613000000001193,
+          "bytesPerRow": 28.99968,
+          "pageCount": 708,
+          "pageSize": 4096
+        },
+        {
+          "insertRowsPerSec": 937186.9209941981,
+          "pointLookupUs": 2951.6539999999986,
+          "shardRangeScanMs": 2.371500000001106,
+          "bytesPerRow": 28.99968,
+          "pageCount": 708,
+          "pageSize": 4096
+        },
+        {
+          "insertRowsPerSec": 934438.8367731839,
+          "pointLookupUs": 3258.5184999999983,
+          "shardRangeScanMs": 2.262400000003254,
+          "bytesPerRow": 28.99968,
+          "pageCount": 708,
+          "pageSize": 4096
+        },
+        {
+          "insertRowsPerSec": 947077.3193923575,
+          "pointLookupUs": 3046.8271999999997,
+          "shardRangeScanMs": 2.799699999999575,
+          "bytesPerRow": 28.99968,
+          "pageCount": 708,
+          "pageSize": 4096
+        },
+        {
+          "insertRowsPerSec": 946311.0429767091,
+          "pointLookupUs": 3092.9913000000015,
+          "shardRangeScanMs": 2.0516999999999825,
+          "bytesPerRow": 28.99968,
+          "pageCount": 708,
+          "pageSize": 4096
+        },
+        {
+          "insertRowsPerSec": 933190.1197562937,
+          "pointLookupUs": 2953.5275,
+          "shardRangeScanMs": 2.065599999998085,
+          "bytesPerRow": 28.99968,
+          "pageCount": 708,
+          "pageSize": 4096
+        }
+      ]
+    },
+    "composite-indexed": {
+      "insertRowsPerSec": {
+        "mean": 555373.4739843488,
+        "ci95": [
+          546682.9157989915,
+          564064.0321697062
+        ]
+      },
+      "pointLookupUs": {
+        "mean": 4.610349999999016,
+        "ci95": [
+          3.865486287908328,
+          5.3552137120897045
+        ]
+      },
+      "shardRangeScanMs": {
+        "mean": 2.1852900000012596,
+        "ci95": [
+          2.007327516938915,
+          2.3632524830636044
+        ]
+      },
+      "bytesPerRow": 54.55872000000001,
+      "integrityOk": true,
+      "freelistCountMax": 0,
+      "perTrial": [
+        {
+          "insertRowsPerSec": 530356.5481001554,
+          "pointLookupUs": 4.675100000000384,
+          "shardRangeScanMs": 2.111400000001595,
+          "bytesPerRow": 54.55872,
+          "pageCount": 1332,
+          "pageSize": 4096
+        },
+        {
+          "insertRowsPerSec": 570851.1962186828,
+          "pointLookupUs": 3.8660999999992782,
+          "shardRangeScanMs": 2.2004000000015367,
+          "bytesPerRow": 54.55872,
+          "pageCount": 1332,
+          "pageSize": 4096
+        },
+        {
+          "insertRowsPerSec": 570079.6002145722,
+          "pointLookupUs": 4.326300000000629,
+          "shardRangeScanMs": 2.1598999999987427,
+          "bytesPerRow": 54.55872,
+          "pageCount": 1332,
+          "pageSize": 4096
+        },
+        {
+          "insertRowsPerSec": 556565.4125763756,
+          "pointLookupUs": 3.9483999999938533,
+          "shardRangeScanMs": 2.0125000000043656,
+          "bytesPerRow": 54.55872,
+          "pageCount": 1332,
+          "pageSize": 4096
+        },
+        {
+          "insertRowsPerSec": 562349.9931393323,
+          "pointLookupUs": 5.6578000000008615,
+          "shardRangeScanMs": 2.143000000003667,
+          "bytesPerRow": 54.55872,
+          "pageCount": 1332,
+          "pageSize": 4096
+        },
+        {
+          "insertRowsPerSec": 560193.6477401435,
+          "pointLookupUs": 4.54490000000078,
+          "shardRangeScanMs": 2.085299999998824,
+          "bytesPerRow": 54.55872,
+          "pageCount": 1332,
+          "pageSize": 4096
+        },
+        {
+          "insertRowsPerSec": 552559.1500756182,
+          "pointLookupUs": 7.1348999999972875,
+          "shardRangeScanMs": 2.8686000000016065,
+          "bytesPerRow": 54.55872,
+          "pageCount": 1332,
+          "pageSize": 4096
+        },
+        {
+          "insertRowsPerSec": 556739.245050455,
+          "pointLookupUs": 3.8699999999953434,
+          "shardRangeScanMs": 2.0512000000016997,
+          "bytesPerRow": 54.55872,
+          "pageCount": 1332,
+          "pageSize": 4096
+        },
+        {
+          "insertRowsPerSec": 543547.090473959,
+          "pointLookupUs": 4.105799999997544,
+          "shardRangeScanMs": 2.1907999999966705,
+          "bytesPerRow": 54.55872,
+          "pageCount": 1332,
+          "pageSize": 4096
+        },
+        {
+          "insertRowsPerSec": 550492.8562541945,
+          "pointLookupUs": 3.974200000004203,
+          "shardRangeScanMs": 2.0298000000038883,
+          "bytesPerRow": 54.55872,
+          "pageCount": 1332,
+          "pageSize": 4096
+        }
+      ]
+    },
+    "embedded": {
+      "insertRowsPerSec": {
+        "mean": 992299.3657788828,
+        "ci95": [
+          942467.2182845455,
+          1042131.51327322
+        ]
+      },
+      "pointLookupUs": {
+        "mean": 3.310269999999582,
+        "ci95": [
+          3.054241697269802,
+          3.566298302729362
+        ]
+      },
+      "shardRangeScanMs": {
+        "mean": 6.357170000000769,
+        "ci95": [
+          5.771819442402914,
+          6.942520557598624
+        ]
+      },
+      "bytesPerRow": 27.56608,
+      "integrityOk": true,
+      "freelistCountMax": 0,
+      "perTrial": [
+        {
+          "insertRowsPerSec": 814772.1448957905,
+          "pointLookupUs": 3.0072000000000116,
+          "shardRangeScanMs": 6.030800000000454,
+          "bytesPerRow": 27.56608,
+          "pageCount": 673,
+          "pageSize": 4096
+        },
+        {
+          "insertRowsPerSec": 1031787.3032381197,
+          "pointLookupUs": 3.408900000002177,
+          "shardRangeScanMs": 5.6877000000022235,
+          "bytesPerRow": 27.56608,
+          "pageCount": 673,
+          "pageSize": 4096
+        },
+        {
+          "insertRowsPerSec": 991953.2750328961,
+          "pointLookupUs": 3.3514999999970314,
+          "shardRangeScanMs": 6.118099999999686,
+          "bytesPerRow": 27.56608,
+          "pageCount": 673,
+          "pageSize": 4096
+        },
+        {
+          "insertRowsPerSec": 1051483.8013663017,
+          "pointLookupUs": 3.3813000000009197,
+          "shardRangeScanMs": 5.727099999996426,
+          "bytesPerRow": 27.56608,
+          "pageCount": 673,
+          "pageSize": 4096
+        },
+        {
+          "insertRowsPerSec": 948369.7997327438,
+          "pointLookupUs": 4.165399999998044,
+          "shardRangeScanMs": 8.34100000000035,
+          "bytesPerRow": 27.56608,
+          "pageCount": 673,
+          "pageSize": 4096
+        },
+        {
+          "insertRowsPerSec": 1050776.6815842134,
+          "pointLookupUs": 3.325199999999313,
+          "shardRangeScanMs": 6.240799999999581,
+          "bytesPerRow": 27.56608,
+          "pageCount": 673,
+          "pageSize": 4096
+        },
+        {
+          "insertRowsPerSec": 1018668.1118171018,
+          "pointLookupUs": 2.9130999999979394,
+          "shardRangeScanMs": 7.040100000005623,
+          "bytesPerRow": 27.56608,
+          "pageCount": 673,
+          "pageSize": 4096
+        },
+        {
+          "insertRowsPerSec": 1006869.8731444686,
+          "pointLookupUs": 3.282100000003993,
+          "shardRangeScanMs": 5.7203000000008615,
+          "bytesPerRow": 27.56608,
+          "pageCount": 673,
+          "pageSize": 4096
+        },
+        {
+          "insertRowsPerSec": 1020935.2992462937,
+          "pointLookupUs": 3.349099999999453,
+          "shardRangeScanMs": 6.020100000001548,
+          "bytesPerRow": 27.56608,
+          "pageCount": 673,
+          "pageSize": 4096
+        },
+        {
+          "insertRowsPerSec": 987377.3677308997,
+          "pointLookupUs": 2.9188999999969383,
+          "shardRangeScanMs": 6.645700000000943,
+          "bytesPerRow": 27.56608,
+          "pageCount": 673,
+          "pageSize": 4096
+        }
+      ]
+    },
+    "embedded56": {
+      "insertRowsPerSec": {
+        "mean": 1040021.2923518373,
+        "ci95": [
+          1015230.2260695702,
+          1064812.3586341045
+        ]
+      },
+      "pointLookupUs": {
+        "mean": 3.1700499999991734,
+        "ci95": [
+          2.873273013404148,
+          3.4668269865941985
+        ]
+      },
+      "shardRangeScanMs": {
+        "mean": 6.520099999999365,
+        "ci95": [
+          6.060485143313232,
+          6.979714856685498
+        ]
+      },
+      "bytesPerRow": 27.56608,
+      "integrityOk": true,
+      "freelistCountMax": 0,
+      "perTrial": [
+        {
+          "insertRowsPerSec": 950411.3380270657,
+          "pointLookupUs": 3.0315999999947962,
+          "shardRangeScanMs": 6.703799999995681,
+          "bytesPerRow": 27.56608,
+          "pageCount": 673,
+          "pageSize": 4096
+        },
+        {
+          "insertRowsPerSec": 1062420.3848724053,
+          "pointLookupUs": 2.925600000002305,
+          "shardRangeScanMs": 6.499600000002829,
+          "bytesPerRow": 27.56608,
+          "pageCount": 673,
+          "pageSize": 4096
+        },
+        {
+          "insertRowsPerSec": 1033902.7035521767,
+          "pointLookupUs": 4.171999999998661,
+          "shardRangeScanMs": 7.243900000001304,
+          "bytesPerRow": 27.56608,
+          "pageCount": 673,
+          "pageSize": 4096
+        },
+        {
+          "insertRowsPerSec": 1055332.1182942844,
+          "pointLookupUs": 2.92160000000149,
+          "shardRangeScanMs": 6.286399999997229,
+          "bytesPerRow": 27.56608,
+          "pageCount": 673,
+          "pageSize": 4096
+        },
+        {
+          "insertRowsPerSec": 1044211.9332539376,
+          "pointLookupUs": 3.0931999999957043,
+          "shardRangeScanMs": 6.96929999999702,
+          "bytesPerRow": 27.56608,
+          "pageCount": 673,
+          "pageSize": 4096
+        },
+        {
+          "insertRowsPerSec": 1022321.3646762851,
+          "pointLookupUs": 3.027799999996205,
+          "shardRangeScanMs": 5.867600000005041,
+          "bytesPerRow": 27.56608,
+          "pageCount": 673,
+          "pageSize": 4096
+        },
+        {
+          "insertRowsPerSec": 1053935.1302927337,
+          "pointLookupUs": 2.9685000000026776,
+          "shardRangeScanMs": 5.908199999998033,
+          "bytesPerRow": 27.56608,
+          "pageCount": 673,
+          "pageSize": 4096
+        },
+        {
+          "insertRowsPerSec": 1050784.4105624708,
+          "pointLookupUs": 2.916000000004715,
+          "shardRangeScanMs": 5.932200000002922,
+          "bytesPerRow": 27.56608,
+          "pageCount": 673,
+          "pageSize": 4096
+        },
+        {
+          "insertRowsPerSec": 1051844.3564868707,
+          "pointLookupUs": 2.985099999998056,
+          "shardRangeScanMs": 7.753599999996368,
+          "bytesPerRow": 27.56608,
+          "pageCount": 673,
+          "pageSize": 4096
+        },
+        {
+          "insertRowsPerSec": 1075049.1835001425,
+          "pointLookupUs": 3.6590999999971245,
+          "shardRangeScanMs": 6.036399999997229,
+          "bytesPerRow": 27.56608,
+          "pageCount": 673,
+          "pageSize": 4096
+        }
+      ]
+    },
+    "concatenated": {
+      "insertRowsPerSec": {
+        "mean": 821484.8222976626,
+        "ci95": [
+          756374.4985036335,
+          886595.1460916917
+        ]
+      },
+      "pointLookupUs": {
+        "mean": 3.1805299999999987,
+        "ci95": [
+          3.0613931752138317,
+          3.299666824786166
+        ]
+      },
+      "shardRangeScanMs": {
+        "mean": 5.972120000000723,
+        "ci95": [
+          5.780269709300521,
+          6.1639702907009255
+        ]
+      },
+      "bytesPerRow": 52.510720000000006,
+      "integrityOk": true,
+      "freelistCountMax": 0,
+      "perTrial": [
+        {
+          "insertRowsPerSec": 626928.9821118277,
+          "pointLookupUs": 3.2370000000009895,
+          "shardRangeScanMs": 6.1762000000017,
+          "bytesPerRow": 52.51072,
+          "pageCount": 1282,
+          "pageSize": 4096
+        },
+        {
+          "insertRowsPerSec": 878477.5632438082,
+          "pointLookupUs": 3.4588000000003376,
+          "shardRangeScanMs": 5.9407999999966705,
+          "bytesPerRow": 52.51072,
+          "pageCount": 1282,
+          "pageSize": 4096
+        },
+        {
+          "insertRowsPerSec": 827075.8155587963,
+          "pointLookupUs": 3.0776999999943655,
+          "shardRangeScanMs": 5.841700000004494,
+          "bytesPerRow": 52.51072,
+          "pageCount": 1282,
+          "pageSize": 4096
+        },
+        {
+          "insertRowsPerSec": 842871.832909089,
+          "pointLookupUs": 2.9527999999991152,
+          "shardRangeScanMs": 6.509699999995064,
+          "bytesPerRow": 52.51072,
+          "pageCount": 1282,
+          "pageSize": 4096
+        },
+        {
+          "insertRowsPerSec": 880853.9350387821,
+          "pointLookupUs": 3.3233000000036554,
+          "shardRangeScanMs": 5.778800000000047,
+          "bytesPerRow": 52.51072,
+          "pageCount": 1282,
+          "pageSize": 4096
+        },
+        {
+          "insertRowsPerSec": 877664.1495258585,
+          "pointLookupUs": 3.0830000000059954,
+          "shardRangeScanMs": 5.723200000000361,
+          "bytesPerRow": 52.51072,
+          "pageCount": 1282,
+          "pageSize": 4096
+        },
+        {
+          "insertRowsPerSec": 684920.2478863475,
+          "pointLookupUs": 3.397399999994377,
+          "shardRangeScanMs": 5.659300000006624,
+          "bytesPerRow": 52.51072,
+          "pageCount": 1282,
+          "pageSize": 4096
+        },
+        {
+          "insertRowsPerSec": 870489.4501031132,
+          "pointLookupUs": 3.1134000000020023,
+          "shardRangeScanMs": 6.139999999999418,
+          "bytesPerRow": 52.51072,
+          "pageCount": 1282,
+          "pageSize": 4096
+        },
+        {
+          "insertRowsPerSec": 832478.6552472669,
+          "pointLookupUs": 3.1325999999971827,
+          "shardRangeScanMs": 5.784200000001874,
+          "bytesPerRow": 52.51072,
+          "pageCount": 1282,
+          "pageSize": 4096
+        },
+        {
+          "insertRowsPerSec": 893087.5913517353,
+          "pointLookupUs": 3.0293000000019674,
+          "shardRangeScanMs": 6.167300000000978,
+          "bytesPerRow": 52.51072,
+          "pageCount": 1282,
+          "pageSize": 4096
+        }
+      ]
+    }
+  },
+  "queryPlans": {
+    "composite_bare_id_lookup": [
+      {
+        "id": 2,
+        "parent": 0,
+        "notused": 215,
+        "detail": "SCAN ids"
+      }
+    ],
+    "composite_indexed_bare_id_lookup": [
+      {
+        "id": 3,
+        "parent": 0,
+        "notused": 62,
+        "detail": "SEARCH ids USING INDEX idx_id (id=?)"
+      }
+    ]
+  },
+  "derived": {
+    "secondary_index_storage_ratio": 1.9791976225854386,
+    "secondary_index_insert_ratio": 0.559683391058525,
+    "secondary_index_lookup_ratio": 1.3927413775914346,
+    "concatenated_storage_ratio": 1.9049034175334327,
+    "concatenated_insert_ratio": 0.8278598683300143,
+    "embedded_off56_lookup_ratio": 0.9576409175081106,
+    "composite_insert_ratio_vs_embedded": 0.9249101350672355,
+    "composite_shard_scan_ratio_vs_embedded": 0.35716678962494974
+  },
+  "environment": {
+    "os": "win32 10.0.26300 x64",
+    "cpuModel": "11th Gen Intel(R) Core(TM) i3-1115G4 @ 3.00GHz",
+    "logicalCores": 4,
+    "runtime": "Bun 1.4.2",
+    "commitSha": "dfc47bcfdf5df068975065a2fe38e88f59cb526b",
+    "generatedAt": "2026-10-08T19:19:52.508Z"
+  },
+  "elapsedMsTotal": 38604.71
+}

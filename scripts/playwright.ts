@@ -289,6 +289,27 @@ function assertRun(output: BenchOutput): void {
   }
 }
 
+interface PlaywrightWritePlan {
+  write: boolean
+  message: string
+}
+
+// results/benchmark_results.json is a tracked artifact. A browser run in
+// which every engine failed to launch produces an empty run set, and
+// writing that would silently destroy the committed evidence. Refuse the
+// write instead and say why.
+export function planPlaywrightWrite(runCount: number, outPath: string): PlaywrightWritePlan {
+  if (runCount === 0) {
+    return {
+      write: false,
+      message:
+        `No browser produced a result; ${outPath} was left untouched. ` +
+        `Fix the launch failure (or point --out at a scratch file) before rerunning.`,
+    }
+  }
+  return { write: true, message: `Full JSON written to ${outPath}` }
+}
+
 async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2))
   const browserArg = typeof args.browser === "string" ? args.browser : "all"
@@ -330,11 +351,16 @@ async function main(): Promise<void> {
   const outPath = path.resolve(
     typeof args.out === "string" ? args.out : "results/benchmark_results.json",
   )
-  try {
-    fs.writeFileSync(outPath, JSON.stringify({ runs }, null, 2))
-    console.log(`\nFull JSON written to ${outPath}`)
-  } catch (error) {
-    console.error(`Failed to write ${outPath}: ${(error as Error).message}`)
+  const plan = planPlaywrightWrite(runs.length, outPath)
+  if (!plan.write) {
+    console.error(`\n${plan.message}`)
+  } else {
+    try {
+      fs.writeFileSync(outPath, JSON.stringify({ runs }, null, 2))
+      console.log(`\n${plan.message}`)
+    } catch (error) {
+      console.error(`Failed to write ${outPath}: ${(error as Error).message}`)
+    }
   }
 
   if (failed) {
