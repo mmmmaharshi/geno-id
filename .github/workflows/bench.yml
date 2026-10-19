@@ -130,8 +130,18 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - run: bun install
       - run: bun run build
-      - run: bun run scripts/export-golden.ts
+      # The Rust check compares against the COMMITTED vectors, before anything
+      # regenerates them. Regenerating first would make the comparison
+      # vacuous: a change to the TypeScript implementation would be written
+      # into the file, and Rust would then agree with the new file. The hash
+      # check makes the input immutable; the export afterwards proves the
+      # committed vectors are still reproducible.
+      - run: bun run scripts/verify-golden-hashes.ts
       - run: cargo run --manifest-path golden-check/Cargo.toml --release
+      - name: Export golden vectors (reproducibility check)
+        run: bun run scripts/export-golden.ts
+      - name: Verify the export reproduces the committed vectors
+        run: bun run scripts/verify-golden-hashes.ts
       - name: Upload golden vectors
         uses: actions/upload-artifact@v4
         if: always()

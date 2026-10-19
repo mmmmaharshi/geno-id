@@ -108,12 +108,27 @@ fn to_uuid_string(buf: &[u8; 16]) -> String {
 }
 
 // === Repair (matches TypeScript repairConstraints — index-modulo + §6.2 counter) ===
+//
+// The `mutate` argument enables a negative control: it deliberately breaks
+// the repair or counter semantics so the comparison against the committed
+// vectors must fail. A check that cannot fail when the semantics change
+// proves nothing, so the control runs in the same pass.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Mutation {
+    None,
+    /// Break the index-modulo allowed-set repair.
+    Repair,
+    /// Break the monotonic counter increment.
+    Counter,
+}
+
 fn repair_constraints(
     buf: &mut [u8; 16],
     fields: &[Field],
     counters: &mut HashMap<String, u64>,
     layout_name: &str,
     now: u64,
+    mutate: Mutation,
 ) {
     for f in fields {
         let c = match &f.constraint {
@@ -127,7 +142,11 @@ fn repair_constraints(
         // allowed: idempotent index-modulo — only pick when v not already valid (algo.ts:691-693)
         if let Some(allowed) = &c.allowed {
             if !allowed.is_empty() && !allowed.contains(&(v as u32)) {
-                let picked = allowed[(v as usize) % allowed.len()] as u64;
+                let index = match mutate {
+                    Mutation::Repair => (v as usize + 1) % allowed.len(),
+                    _ => v as usize % allowed.len(),
+                };
+                let picked = allowed[index] as u64;
                 v = picked;
                 changed = true;
             }
@@ -135,10 +154,16 @@ fn repair_constraints(
 
         // min/max: clamp (algo.ts:701-702)
         if let Some(min) = c.min {
-            if v < min { v = min; changed = true; }
+            if v < min {
+                v = min;
+                changed = true;
+            }
         }
         if let Some(max) = c.max {
-            if v > max { v = max; changed = true; }
+            if v > max {
+                v = max;
+                changed = true;
+            }
         }
 
         let _ = now;
@@ -156,7 +181,10 @@ fn repair_constraints(
             let next = match counters.get(&key).copied() {
                 None => v % reseed_range,
                 Some(ctr) if ctr >= field_range - 1 => v % reseed_range,
-                Some(ctr) => (ctr + 1) % field_range,
+                Some(ctr) => match mutate {
+                    Mutation::Counter => ctr % field_range,
+                    _ => (ctr + 1) % field_range,
+                },
             };
             counters.insert(key, next);
             v = next;
@@ -180,6 +208,7 @@ fn generate_batch(
     layout_name: &str,
     counters: &mut HashMap<String, u64>,
     count: usize,
+    mutate: Mutation,
 ) -> Vec<String> {
     const STRUCT_ENTRY: usize = 34;
     const POOL_SIZE: usize = 1024;
@@ -203,7 +232,11 @@ fn generate_batch(
             match f.ftype {
                 FieldType::TimestampMs => {
                     let m = if f.length < 64 { 1u64 << f.length } else { 0 };
-                    let val = if m > 0 { TIMESTAMP_MS % m } else { TIMESTAMP_MS };
+                    let val = if m > 0 {
+                        TIMESTAMP_MS % m
+                    } else {
+                        TIMESTAMP_MS
+                    };
                     write_bits(&mut buf, f.start, f.length, val);
                 }
                 _ => {}
@@ -237,7 +270,14 @@ fn generate_batch(
         }
 
         force_version_variant(&mut buf);
-        repair_constraints(&mut buf, fields, counters, layout_name, TIMESTAMP_MS);
+        repair_constraints(
+            &mut buf,
+            fields,
+            counters,
+            layout_name,
+            TIMESTAMP_MS,
+            mutate,
+        );
         strings.push(to_uuid_string(&buf));
     }
     strings.truncate(count);
@@ -247,28 +287,80 @@ fn generate_batch(
 // === Layout definitions ===
 fn dbkey_layout() -> Vec<Field> {
     vec![
-        Field { name: "timestamp".into(), start: 0, length: 48, ftype: FieldType::TimestampMs, constraint: None },
-        Field { name: "shard".into(), start: 52, length: 8, ftype: FieldType::Shard,
-            constraint: Some(Constraint { allowed: Some(vec![1, 2, 3, 4, 5]), ..Default::default() }) },
-        Field { name: "counter".into(), start: 66, length: 16, ftype: FieldType::Counter,
-            constraint: Some(Constraint { monotonic: true, ..Default::default() }) },
+        Field {
+            name: "timestamp".into(),
+            start: 0,
+            length: 48,
+            ftype: FieldType::TimestampMs,
+            constraint: None,
+        },
+        Field {
+            name: "shard".into(),
+            start: 52,
+            length: 8,
+            ftype: FieldType::Shard,
+            constraint: Some(Constraint {
+                allowed: Some(vec![1, 2, 3, 4, 5]),
+                ..Default::default()
+            }),
+        },
+        Field {
+            name: "counter".into(),
+            start: 66,
+            length: 16,
+            ftype: FieldType::Counter,
+            constraint: Some(Constraint {
+                monotonic: true,
+                ..Default::default()
+            }),
+        },
     ]
 }
 
 fn multitenant_layout() -> Vec<Field> {
     vec![
-        Field { name: "tenant".into(), start: 0, length: 12, ftype: FieldType::Shard,
-            constraint: Some(Constraint { allowed: Some(vec![1, 2, 3, 4, 5, 6, 7, 8]), ..Default::default() }) },
-        Field { name: "region".into(), start: 52, length: 8, ftype: FieldType::Shard,
-            constraint: Some(Constraint { allowed: Some(vec![1, 2, 3, 4]), ..Default::default() }) },
+        Field {
+            name: "tenant".into(),
+            start: 0,
+            length: 12,
+            ftype: FieldType::Shard,
+            constraint: Some(Constraint {
+                allowed: Some(vec![1, 2, 3, 4, 5, 6, 7, 8]),
+                ..Default::default()
+            }),
+        },
+        Field {
+            name: "region".into(),
+            start: 52,
+            length: 8,
+            ftype: FieldType::Shard,
+            constraint: Some(Constraint {
+                allowed: Some(vec![1, 2, 3, 4]),
+                ..Default::default()
+            }),
+        },
     ]
 }
 
 fn eventsourcing_layout() -> Vec<Field> {
     vec![
-        Field { name: "stream".into(), start: 0, length: 16, ftype: FieldType::Node, constraint: None },
-        Field { name: "seq".into(), start: 66, length: 24, ftype: FieldType::Counter,
-            constraint: Some(Constraint { monotonic: true, ..Default::default() }) },
+        Field {
+            name: "stream".into(),
+            start: 0,
+            length: 16,
+            ftype: FieldType::Node,
+            constraint: None,
+        },
+        Field {
+            name: "seq".into(),
+            start: 66,
+            length: 24,
+            ftype: FieldType::Counter,
+            constraint: Some(Constraint {
+                monotonic: true,
+                ..Default::default()
+            }),
+        },
     ]
 }
 
@@ -276,12 +368,50 @@ const SEED0: u32 = 0xdeadbeef;
 const SEED1: u32 = 0x4f15f00d;
 const N: usize = 1000;
 
+/// Compare the Rust output against the committed vectors for one layout.
+/// Returns the number of mismatching lines.
+fn compare(golden_dir: &Path, label: &str, layout: &[Field], mutate: Mutation) -> usize {
+    let ts_path = golden_dir.join(format!("{}.txt", label));
+    let content_ts = fs::read_to_string(&ts_path).unwrap_or_else(|_| {
+        panic!(
+            "missing golden/{}.txt — run `bun run scripts/export-golden.ts` first",
+            label
+        )
+    });
+    let ts_lines: Vec<&str> = content_ts.lines().collect();
+
+    let mut rng = Xorshift128p::new(SEED0, SEED1);
+    let mut counters = HashMap::new();
+    let rust_uuids = generate_batch(&mut rng, layout, label, &mut counters, N, mutate);
+
+    let mut diff_count = 0;
+    for i in 0..N {
+        if rust_uuids[i] != ts_lines[i] {
+            if diff_count < 5 {
+                eprintln!(
+                    "  mismatch [{}] line {}: Rust={}, TS={}",
+                    label,
+                    i + 1,
+                    rust_uuids[i],
+                    ts_lines[i]
+                );
+            }
+            diff_count += 1;
+        }
+    }
+    diff_count
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let manifest_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
     let golden_dir = manifest_dir.parent().unwrap().join("golden");
 
     eprintln!("=== Rust golden-vector check ===");
-    eprintln!("seed: ({:#x}, {:#x}), n={}, fixed-time={}", SEED0, SEED1, N, TIMESTAMP_MS);
+    eprintln!(
+        "seed: ({:#x}, {:#x}), n={}, fixed-time={}",
+        SEED0, SEED1, N, TIMESTAMP_MS
+    );
+    eprintln!("rustc: {}", env!("RUSTC_VERSION"));
 
     let entries = [
         ("dbkey-single-parent", dbkey_layout()),
@@ -291,28 +421,30 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut all_pass = true;
     for (label, layout) in &entries {
-        let ts_path = golden_dir.join(format!("{}.txt", label));
-        let content_ts = fs::read_to_string(&ts_path)
-            .unwrap_or_else(|_| panic!("missing golden/{}.txt — run `bun run scripts/export-golden.ts` first", label));
-        let ts_lines: Vec<&str> = content_ts.lines().collect();
-
-        let mut rng = Xorshift128p::new(SEED0, SEED1);
-        let mut counters = HashMap::new();
-        let rust_uuids = generate_batch(&mut rng, layout, label, &mut counters, N);
-
-        let mut diff_count = 0;
-        for i in 0..N {
-            if rust_uuids[i] != ts_lines[i] {
-                if diff_count < 5 {
-                    eprintln!("  mismatch [{}] line {}: Rust={}, TS={}",
-                        label, i + 1, rust_uuids[i], ts_lines[i]);
-                }
-                diff_count += 1;
-            }
-        }
+        let diff_count = compare(&golden_dir, label, layout, Mutation::None);
         let status = if diff_count == 0 { "PASS" } else { "FAIL" };
         eprintln!("  {}: {} ({} mismatches)", label, status, diff_count);
-        if diff_count > 0 { all_pass = false; }
+        if diff_count > 0 {
+            all_pass = false;
+        }
+    }
+
+    // Negative controls: break the repair and counter semantics and require
+    // the comparison to notice. A check that passes even when the semantics
+    // it verifies are wrong is not evidence of anything.
+    for (name, mutate) in [("repair", Mutation::Repair), ("counter", Mutation::Counter)] {
+        let mut detected = false;
+        for (label, layout) in &entries {
+            if compare(&golden_dir, label, layout, mutate) > 0 {
+                detected = true;
+            }
+        }
+        if detected {
+            eprintln!("  negative control ({}): DETECTED", name);
+        } else {
+            eprintln!("  negative control ({}): NOT DETECTED", name);
+            all_pass = false;
+        }
     }
 
     if all_pass {
