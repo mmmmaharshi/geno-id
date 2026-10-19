@@ -19,3 +19,5 @@ golden-check/target/
 .claude/
 .opencode/
 .agents/
+agent/
+.commandcode/
