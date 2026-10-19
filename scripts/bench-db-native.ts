@@ -99,6 +99,8 @@ interface Engine {
   storage: () => Promise<Record<string, number>>
   walBytes: () => Promise<number | null>
   identity: () => Promise<{ serverVersion: string; serverConfig: Record<string, string> }>
+  /** Release the driver's connections; without it the process never exits. */
+  close: () => Promise<void>
 }
 
 const payloadHex = (random: () => number): string => {
@@ -213,6 +215,9 @@ async function postgres(): Promise<Engine> {
         serverVersion: version.rows[0]?.v ?? "",
         serverConfig: Object.fromEntries(settings.rows.map((row) => [row.name, row.setting])),
       }
+    },
+    async close() {
+      await client.end()
     },
   }
 }
@@ -339,6 +344,9 @@ async function mysqlInnoDB(): Promise<Engine> {
           max_connections: String(row?.max_conn ?? ""),
         },
       }
+    },
+    async close() {
+      await client.end()
     },
   }
 }
@@ -527,13 +535,21 @@ for (const name of targets) {
   }
 }
 
+async function measureEngine(engine: Engine): Promise<EngineResult> {
+  try {
+    const result = await runEngine(engine)
+    validateNativeResult(result)
+    return result
+  } finally {
+    await engine.close()
+  }
+}
+
 for (const name of targets) {
   const engine = name === "postgresql" ? await postgres() : await mysqlInnoDB()
   console.log(`\n=== ${name} rows=${ROWS} reps=${REPS} distributions=${DISTRIBUTIONS.length} arms=${Object.keys(ARMS).length} ===`)
   const started = now()
-  const result = await runEngine(engine)
-  validateNativeResult(result)
-  out[name] = result
+  out[name] = await measureEngine(engine)
   console.log(`${name} complete in ${((now() - started) / 1000).toFixed(1)}s`)
 }
 
