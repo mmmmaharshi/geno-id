@@ -22,7 +22,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.scripts.json --noEmit",
-    "test": "bun test scripts",
+    "test": "bun test scripts --timeout=30000",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
     "format": "ultracite fix",

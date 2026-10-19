@@ -88,20 +88,31 @@ test("the async collision count agrees with the sync count on identical input", 
   assert.equal(asyncCount, syncCount)
 })
 
-test("the async path stays flat rather than superlinear in sample count", async () => {
-  const values = unique(1000)
-  const small = await (async () => {
-    const t = performance.now()
-    await collisionTestAsync(deterministic(values), 200, 200)
-    return performance.now() - t
-  })()
-  const large = await (async () => {
-    const t = performance.now()
-    await collisionTestAsync(deterministic(values), 1000, 1000)
-    return performance.now() - t
-  })()
-  // The sequential implementation was strictly linear with a ~15 ms per-call
-  // WebKit constant, so 5x the samples took 5x the time. Concurrency caps the
-  // per-batch cost, so the growth must be strictly sublinear here.
-  assert.ok(large < small * 5, `expected sublinear growth, small=${small.toFixed(1)}ms large=${large.toFixed(1)}ms`)
+test("the async path issues the whole batch concurrently, not one call at a time", async () => {
+  // The sequential implementation awaited each call individually, so 20,000
+  // WebKit SubtleCrypto calls at ~15 ms each blew the 300 s run timeout. The
+  // batched implementation issues a whole batch concurrently, so the batch
+  // width is the number of calls in flight at once. That is directly
+  // observable, whereas a wall-clock ratio between two sub-millisecond
+  // measurements is noise: the sequential path would show one call in
+  // flight, and any implementation that regressed to sequential awaiting
+  // shows the same.
+  const values = unique(50)
+  let next = 0
+  let inFlight = 0
+  let maxInFlight = 0
+  const track = async (): Promise<string> => {
+    inFlight++
+    if (inFlight > maxInFlight) maxInFlight = inFlight
+    await Promise.resolve()
+    inFlight--
+    return values[next++ % values.length]
+  }
+
+  await collisionTestAsync(track, 50, 25)
+  assert.equal(maxInFlight, 25, "a batch of 25 must run 25 calls concurrently")
+
+  maxInFlight = 0
+  await collisionTestAsync(track, 10, 1)
+  assert.equal(maxInFlight, 1, "a batch of 1 must run one call at a time")
 })

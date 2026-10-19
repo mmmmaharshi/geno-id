@@ -141,6 +141,12 @@ test("fibre theorem: dbkey shard predicted profile is (52,51,51,51,51) with valu
 
 const DRAWS = 200_000
 
+// bun caps ordinary tests at 5s. These draw-count tests cost 0.4-1.6s alone
+// but run 3x slower in the full suite, where the Playwright engine tests
+// saturate the cores. A per-test timeout is the portable lever both bun and
+// node honor.
+const DRAWS_TIMEOUT = 30_000
+
 test("fibre theorem: multitenant tenant and region are exactly uniform on both paths", () => {
   for (const name of ["tenant", "region"]) {
     const f = MULTITENANT_LAYOUT.fields.find((x) => x.name === name)!
@@ -152,16 +158,16 @@ test("fibre theorem: multitenant tenant and region are exactly uniform on both p
   }
 })
 
-test("fibre theorem: compiled production path reproduces the predicted dbkey profile", () => {
+test("fibre theorem: compiled production path reproduces the predicted dbkey profile", { timeout: DRAWS_TIMEOUT }, () => {
   const compiled = compileLayout(DBKEY_LAYOUT)
   assertFibreProfile("compiled dbkey", compiled.fn, DBKEY_LAYOUT, "shard", dbkeyAllowed, 8, DRAWS)
 })
 
-test("fibre theorem: single-parent pooled path reproduces the predicted guarded dbkey profile", () => {
+test("fibre theorem: single-parent pooled path reproduces the predicted guarded dbkey profile", { timeout: DRAWS_TIMEOUT }, () => {
   assertGuardedFibreProfile("pooled dbkey", () => genStructuredGenoIDSingleParent(DBKEY_LAYOUT), DRAWS)
 })
 
-test("fibre theorem: production genStructuredGenoID reproduces the predicted dbkey profile", () => {
+test("fibre theorem: production genStructuredGenoID reproduces the predicted dbkey profile", { timeout: DRAWS_TIMEOUT }, () => {
   assertFibreProfile("production dbkey", () => genStructuredGenoID(DBKEY_LAYOUT), DBKEY_LAYOUT, "shard", dbkeyAllowed, 8, DRAWS)
 })
 
@@ -186,7 +192,7 @@ test("fibre theorem: compiled and pooled paths agree on contiguous sets and diff
 // Empirical counterpart of the path divergence: the pooled generator
 // really does emit ≈3:1 on allowed=[0,2] where the compiled default
 // stays 50/50.
-test("fibre theorem: pooled path emits 75/25 on allowed=[0,2] where the compiled path stays uniform", () => {
+test("fibre theorem: pooled path emits 75/25 on allowed=[0,2] where the compiled path stays uniform", { timeout: DRAWS_TIMEOUT }, () => {
   const layout = completeLayout("fibre-counterexample", [
     { name: "f", start: 0, length: 2, type: "shard", constraint: { allowed: [0, 2] } },
   ])
