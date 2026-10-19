@@ -1,0 +1,71 @@
+{
+  "implementationCommit": "7ecdcf84a1c1e84f408d0f1742eb47e1976e8682",
+  "compilerInput": {
+    "layout": "dbkey",
+    "mode": "compiled-direct-v8"
+  },
+  "generationPlan": {
+    "name": "compiled-direct-v8",
+    "entropySource": "web-crypto",
+    "poolMode": "direct",
+    "repairMode": "canonical",
+    "fieldSemantics": {
+      "timestamp": {
+        "type": "timestamp-ms",
+        "constraints": []
+      },
+      "shard": {
+        "type": "shard",
+        "constraints": [
+          "allowed-set"
+        ]
+      },
+      "counter": {
+        "type": "counter",
+        "constraints": [
+          "monotonic"
+        ]
+      },
+      "rand_60": {
+        "type": "random",
+        "constraints": []
+      },
+      "rand_82": {
+        "type": "random",
+        "constraints": []
+      }
+    }
+  },
+  "repairPolicy": {
+    "name": "canonical-v1",
+    "allowedSet": "index-modulo",
+    "range": "clamp",
+    "monotonic": "stateful",
+    "fixed": "deterministic"
+  },
+  "command": "bun run evidence:fixture",
+  "environment": {
+    "runtime": "bun",
+    "runtimeVersion": "1.4.3",
+    "platform": "win32",
+    "arch": "x64"
+  },
+  "claims": [
+    {
+      "id": "fixture-structured-collision",
+      "statement": "Structured UUID generation produces no duplicates in a bounded fixture run.",
+      "type": "measured",
+      "summary": "0 collisions across 10000 identifiers from the compiled dbkey layout.",
+      "uncertainty": "One bounded run on one machine.",
+      "limitation": "Does not estimate collision probability at production volume.",
+      "artifacts": [
+        {
+          "path": "results/evidence-fixture/uuids.txt",
+          "sha256": "32bb5883ae001f953f6ceae4c87bb31f0f0163cecbe64daeb5badf2116b74810",
+          "bytes": 370000
+        }
+      ]
+    }
+  ],
+  "sourceHash": "5e8e5e874063503eb3f2bdaf685f37ed817972dded0af5b0ccb6c49a2ccf86d4"
+}

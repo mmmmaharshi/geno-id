@@ -1,8 +1,8 @@
 {
   "manifest_version": "1.0",
-  "commit": "6336841",
-  "package_version": "1.24.2",
-  "generated_at": "2026-08-14T00:00:00Z",
+  "commit": "3126287",
+  "package_version": "1.25.1",
+  "generated_at": "2026-10-09T00:00:00Z",
   "note": "artifact map maintained alongside the manuscript; each entry names the committed file under results/ that backs the claim",
   "artifacts": {
     "sec_composition_correctness": {
@@ -60,13 +60,20 @@
       "artifact": "results/db-sqlite.json",
       "command": "bun run bench-db",
       "verified": true
+    },
+    "sec_statistics": {
+      "section": "NIST SP 800-22 and dieharder (Section 5.4)",
+      "claim": "Suite-by-suite evidence status: which statistical suites were measured, which are archived external results, and which could not be run here, with sample sizes, p-values, and multiple-testing treatment",
+      "artifact": "results/statistics-evidence.json",
+      "command": "bun run stats:evidence",
+      "verified": true
     }
   },
   "notes": {
     "release_identity": {
       "policy": "the manuscript freezes to one release tag; every cited artifact must exist in that tag's tree",
-      "package_version": "1.25.0",
-      "frozen_commit": "see tag v1.25.0",
+      "package_version": "1.25.1",
+      "frozen_commit": "see tag v1.25.1",
       "stale_dois_not_cited": [
         "10.5281/zenodo.21617109 (v1.21.0)",
         "10.5281/zenodo.21618258 (v1.21.2)"
@@ -80,6 +87,13 @@
     "future_work": [
       "InnoDB/MySQL benchmarking infrastructure",
       "GA ablation/degraded-source experiments"
+    ],
+    "unarchived_artifacts": [
+      {
+        "path": "results/db-native.json",
+        "status": "committed, PostgreSQL only",
+        "note": "measured against a local PostgreSQL 18.6 server: 50,000 rows, 5 reps, 3 distributions, 7 arms, 7 workloads, query plans, storage, and WAL accounting. The result file lists engines: [postgresql], so no InnoDB measurement is implied. The manuscript presents SQLite as its only measured engine; this artifact is archived as the harness's own output, not as a manuscript claim"
+      }
     ]
   }
 }
