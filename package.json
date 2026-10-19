@@ -34,6 +34,7 @@
     "bench-bit-allocation": "bun run scripts/bench-bit-allocation.ts",
     "bench-db-native": "bun run scripts/bench-db-native.ts",
     "evidence:fixture": "bun run scripts/evidence-fixture.ts",
+    "evidence:verify": "bun run scripts/verify-evidence.ts",
     "bench-concurrent": "bun run scripts/bench-concurrent.ts",
     "bench-sqlite": "bun run scripts/bench-sqlite.ts",
     "bench-sqlite-artifact": "bun run scripts/bench-sqlite-artifact.ts",

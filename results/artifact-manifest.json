@@ -36,7 +36,11 @@
     "sec_throughput": {
       "section": "Throughput (Section 5.5)",
       "claim": "genoid-structured outperforms prior art 2.0-6.7x across nine CI environments",
-      "artifact": "dist/bench-ci-results.json, dist/all-results.json",
+      "artifact": "results/benchmark_results.json",
+      "generated": [
+        "dist/bench-ci-results.json",
+        "dist/all-results.json"
+      ],
       "command": "bun run bench-ci (CI matrix, .github/workflows/bench.yml)",
       "verified": true
     },
@@ -59,6 +63,34 @@
       "claim": "Indexed probe baseline reported alongside GenoID primary-key scans, with 95% CIs and Welch tests",
       "artifact": "results/db-sqlite.json",
       "command": "bun run bench-db",
+      "verified": true
+    },
+    "sec_db_composite": {
+      "section": "Cost of embedding versus a composite key (Section 3.2)",
+      "claim": "Schema comparison at N=10^5 with per-trial arrays, query plans, and host metadata",
+      "artifact": "results/db-sqlite-composite.json",
+      "command": "bun run bench-sqlite-artifact",
+      "verified": true
+    },
+    "sec_bit_allocation": {
+      "section": "Bit allocation (Section 4.4)",
+      "claim": "Smith-rule allocator optimality against the exhaustive optimum on randomized instances, and the entropy-locality frontier",
+      "artifact": "results/bit-allocation.json",
+      "command": "bun run bench-bit-allocation",
+      "verified": true
+    },
+    "sec_structured_evidence": {
+      "section": "Composition correctness and repair cost (Section 5.1)",
+      "claim": "Structured-layout evidence bundle: production plan, per-layout constraint checks, and the repair-cost model",
+      "artifact": "results/structured-evidence.json",
+      "command": "bun run scripts/bench-structured.ts",
+      "verified": true
+    },
+    "sec_evidence_fixture": {
+      "section": "Availability",
+      "claim": "Bounded fixture reproduction through the compiled-direct-v8 production path, with a hash-verified manifest",
+      "artifact": "results/evidence-fixture/manifest.json + results/evidence-fixture/uuids.txt",
+      "command": "bun run evidence:fixture",
       "verified": true
     },
     "sec_statistics": {

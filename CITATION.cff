@@ -1,6 +1,6 @@
 cff-version: 1.2.0
 message: "If you use GenoID in academic work, please cite it as below."
-title: "GenoID: A Declarative RFC 9562 v8 UUID Composition Framework"
+title: "GenoID: A Declarative Framework for Structured RFC 9562 v8 UUIDs via Constraint-Guided Repair"
 type: software
 authors:
   - given-names: Manohar Maharshi
