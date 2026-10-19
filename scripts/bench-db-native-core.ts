@@ -15,6 +15,16 @@ export type Workload = (typeof WORKLOADS)[number]
 export const ENGINES = ["postgresql", "mysql-innodb"] as const
 export type EngineName = (typeof ENGINES)[number]
 
+/**
+ * The engines an artifact actually measured, in canonical order. The result
+ * file must list only these, not every engine the harness supports: a
+ * PostgreSQL-only run declares `engines: [postgresql]`, so no reader infers
+ * an InnoDB measurement that was never taken.
+ */
+export function enginesWithResults(results: Record<string, unknown>): EngineName[] {
+  return ENGINES.filter((name) => name in results)
+}
+
 export const SERVER_ENV: Record<EngineName, string> = {
   postgresql: "PG_HOST / PG_PORT / PG_USER / PG_PASSWORD / PG_DB",
   "mysql-innodb": "MYSQL_HOST / MYSQL_PORT / MYSQL_USER / MYSQL_PASSWORD / MYSQL_DB",

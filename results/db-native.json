@@ -1,0 +1,401 @@
+{
+  "generatedAt": "2026-10-19T15:35:47.472Z",
+  "implementationCommit": "312628756f3e2cb09f31080d5448a1755266b227",
+  "hardware": {
+    "platform": "win32",
+    "arch": "x64",
+    "cpu": "Intel64 Family 6 Model 140 Stepping 1, GenuineIntel",
+    "cores": "4"
+  },
+  "config": {
+    "rows": 50000,
+    "reps": 5,
+    "probes": 500,
+    "batch": 500,
+    "writers": 4,
+    "blobBytes": 64
+  },
+  "generationModes": {
+    "structured": "compiled-direct-v8"
+  },
+  "postgresql": {
+    "engine": "postgresql",
+    "serverVersion": "PostgreSQL 18.6 on x86_64-windows, compiled by msvc-19.44.35229, 64-bit",
+    "serverConfig": {
+      "fsync": "on",
+      "max_connections": "100",
+      "server_version": "18.6",
+      "shared_buffers": "16384",
+      "synchronous_commit": "on"
+    },
+    "rows": 50000,
+    "reps": 5,
+    "arms": {
+      "uuid_v4": {
+        "reps": 5,
+        "insert": {
+          "p50": 54246.57367791335,
+          "p95": 61276.34208669926,
+          "p99": 61276.34208669926,
+          "max": 61276.34208669926,
+          "samples": 15
+        },
+        "pointLookup": {
+          "p50": 97.40660000000025,
+          "p95": 192.14079999999967,
+          "p99": 192.14079999999967,
+          "max": 192.14079999999967,
+          "samples": 15
+        },
+        "rangeScan": {
+          "p50": 17.52560000000085,
+          "p95": 29.892900000006193,
+          "p99": 29.892900000006193,
+          "max": 29.892900000006193,
+          "samples": 15
+        },
+        "update": {
+          "p50": 30.116899999999987,
+          "p95": 35.87619999999879,
+          "p99": 35.87619999999879,
+          "max": 35.87619999999879,
+          "samples": 15
+        },
+        "delete": {
+          "p50": 8.2612999999983,
+          "p95": 16.351200000000063,
+          "p99": 16.351200000000063,
+          "max": 16.351200000000063,
+          "samples": 15
+        },
+        "maintenance": {
+          "p50": 151.45920000000024,
+          "p95": 158.19890000000305,
+          "p99": 158.19890000000305,
+          "max": 158.19890000000305,
+          "samples": 3
+        },
+        "concurrentWriters": 2026.539553548777,
+        "rowsPerSec": 54246.57367791335
+      },
+      "uuid_v7": {
+        "reps": 5,
+        "insert": {
+          "p50": 55104.96227900017,
+          "p95": 59295.49363735627,
+          "p99": 59295.49363735627,
+          "max": 59295.49363735627,
+          "samples": 15
+        },
+        "pointLookup": {
+          "p50": 98.04439999999886,
+          "p95": 141.74029999999948,
+          "p99": 141.74029999999948,
+          "max": 141.74029999999948,
+          "samples": 15
+        },
+        "rangeScan": {
+          "p50": 19.557700000004843,
+          "p95": 24.73120000000017,
+          "p99": 24.73120000000017,
+          "max": 24.73120000000017,
+          "samples": 15
+        },
+        "update": {
+          "p50": 29.924299999998766,
+          "p95": 40.656699999999546,
+          "p99": 40.656699999999546,
+          "max": 40.656699999999546,
+          "samples": 15
+        },
+        "delete": {
+          "p50": 7.534500000001572,
+          "p95": 12.260300000001735,
+          "p99": 12.260300000001735,
+          "max": 12.260300000001735,
+          "samples": 15
+        },
+        "maintenance": {
+          "p50": 136.3518999999942,
+          "p95": 137.13969999999972,
+          "p99": 137.13969999999972,
+          "max": 137.13969999999972,
+          "samples": 3
+        },
+        "concurrentWriters": 2090.09980606388,
+        "rowsPerSec": 55104.96227900017
+      },
+      "pg_uuid_v8": {
+        "reps": 5,
+        "insert": {
+          "p50": 45996.14589094343,
+          "p95": 48820.129750235676,
+          "p99": 48820.129750235676,
+          "max": 48820.129750235676,
+          "samples": 15
+        },
+        "pointLookup": {
+          "p50": 100.2329000000027,
+          "p95": 130.5534000000007,
+          "p99": 130.5534000000007,
+          "max": 130.5534000000007,
+          "samples": 15
+        },
+        "rangeScan": {
+          "p50": 18.566200000001118,
+          "p95": 27.514500000004773,
+          "p99": 27.514500000004773,
+          "max": 27.514500000004773,
+          "samples": 15
+        },
+        "update": {
+          "p50": 26.576499999995576,
+          "p95": 37.82709999999497,
+          "p99": 37.82709999999497,
+          "max": 37.82709999999497,
+          "samples": 15
+        },
+        "delete": {
+          "p50": 8.121400000003632,
+          "p95": 15.450200000006589,
+          "p99": 15.450200000006589,
+          "max": 15.450200000006589,
+          "samples": 15
+        },
+        "maintenance": {
+          "p50": 134.84050000000207,
+          "p95": 139.2320000000036,
+          "p99": 139.2320000000036,
+          "max": 139.2320000000036,
+          "samples": 3
+        },
+        "concurrentWriters": 2077.9764355940133,
+        "rowsPerSec": 45996.14589094343
+      },
+      "ulid_v8": {
+        "reps": 5,
+        "insert": {
+          "p50": 46983.23469046568,
+          "p95": 49853.62477230572,
+          "p99": 49853.62477230572,
+          "max": 49853.62477230572,
+          "samples": 15
+        },
+        "pointLookup": {
+          "p50": 96.4275000000016,
+          "p95": 126.74959999999555,
+          "p99": 126.74959999999555,
+          "max": 126.74959999999555,
+          "samples": 15
+        },
+        "rangeScan": {
+          "p50": 17.111900000003516,
+          "p95": 26.891699999992852,
+          "p99": 26.891699999992852,
+          "max": 26.891699999992852,
+          "samples": 15
+        },
+        "update": {
+          "p50": 31.776699999998527,
+          "p95": 48.249199999991106,
+          "p99": 48.249199999991106,
+          "max": 48.249199999991106,
+          "samples": 15
+        },
+        "delete": {
+          "p50": 9.15899999999965,
+          "p95": 15.034299999999348,
+          "p99": 15.034299999999348,
+          "max": 15.034299999999348,
+          "samples": 15
+        },
+        "maintenance": {
+          "p50": 162.78210000001127,
+          "p95": 224.0283000000054,
+          "p99": 224.0283000000054,
+          "max": 224.0283000000054,
+          "samples": 3
+        },
+        "concurrentWriters": 1886.7248471328394,
+        "rowsPerSec": 46983.23469046568
+      },
+      "genoid_v8": {
+        "reps": 5,
+        "insert": {
+          "p50": 51109.80860603305,
+          "p95": 54384.28720472615,
+          "p99": 54384.28720472615,
+          "max": 54384.28720472615,
+          "samples": 15
+        },
+        "pointLookup": {
+          "p50": 91.81870000000345,
+          "p95": 113.11329999999725,
+          "p99": 113.11329999999725,
+          "max": 113.11329999999725,
+          "samples": 15
+        },
+        "rangeScan": {
+          "p50": 19.16359999999986,
+          "p95": 27.190299999998388,
+          "p99": 27.190299999998388,
+          "max": 27.190299999998388,
+          "samples": 15
+        },
+        "update": {
+          "p50": 29.589399999997113,
+          "p95": 42.494800000000396,
+          "p99": 42.494800000000396,
+          "max": 42.494800000000396,
+          "samples": 15
+        },
+        "delete": {
+          "p50": 7.716800000009243,
+          "p95": 10.441299999998591,
+          "p99": 10.441299999998591,
+          "max": 10.441299999998591,
+          "samples": 15
+        },
+        "maintenance": {
+          "p50": 139.62859999999637,
+          "p95": 142.73659999999654,
+          "p99": 142.73659999999654,
+          "max": 142.73659999999654,
+          "samples": 3
+        },
+        "concurrentWriters": 2082.8033907366676,
+        "rowsPerSec": 51109.80860603305
+      },
+      "genoid_structured": {
+        "reps": 5,
+        "insert": {
+          "p50": 49821.66832041379,
+          "p95": 57543.62382121917,
+          "p99": 57543.62382121917,
+          "max": 57543.62382121917,
+          "samples": 15
+        },
+        "pointLookup": {
+          "p50": 96.84790000000066,
+          "p95": 147.18450000000303,
+          "p99": 147.18450000000303,
+          "max": 147.18450000000303,
+          "samples": 15
+        },
+        "rangeScan": {
+          "p50": 18.895399999979418,
+          "p95": 63.00759999999718,
+          "p99": 63.00759999999718,
+          "max": 63.00759999999718,
+          "samples": 15
+        },
+        "update": {
+          "p50": 32.63210000000254,
+          "p95": 143.39830000000075,
+          "p99": 143.39830000000075,
+          "max": 143.39830000000075,
+          "samples": 15
+        },
+        "delete": {
+          "p50": 9.888500000000931,
+          "p95": 60.55279999999766,
+          "p99": 60.55279999999766,
+          "max": 60.55279999999766,
+          "samples": 15
+        },
+        "maintenance": {
+          "p50": 137.64620000000286,
+          "p95": 138.8189999999886,
+          "p99": 138.8189999999886,
+          "max": 138.8189999999886,
+          "samples": 3
+        },
+        "concurrentWriters": 2162.4723522053337,
+        "rowsPerSec": 49821.66832041379
+      },
+      "genoid_shardfirst": {
+        "reps": 5,
+        "insert": {
+          "p50": 54195.22529226096,
+          "p95": 55179.020053711385,
+          "p99": 55179.020053711385,
+          "max": 55179.020053711385,
+          "samples": 15
+        },
+        "pointLookup": {
+          "p50": 89.82229999999981,
+          "p95": 99.86639999999898,
+          "p99": 99.86639999999898,
+          "max": 99.86639999999898,
+          "samples": 15
+        },
+        "rangeScan": {
+          "p50": 17.69670000000042,
+          "p95": 22.019200000009732,
+          "p99": 22.019200000009732,
+          "max": 22.019200000009732,
+          "samples": 15
+        },
+        "update": {
+          "p50": 27.880199999999604,
+          "p95": 40.79159999999683,
+          "p99": 40.79159999999683,
+          "max": 40.79159999999683,
+          "samples": 15
+        },
+        "delete": {
+          "p50": 7.877799999987474,
+          "p95": 10.625700000004144,
+          "p99": 10.625700000004144,
+          "max": 10.625700000004144,
+          "samples": 15
+        },
+        "maintenance": {
+          "p50": 136.34790000000794,
+          "p95": 143.72419999999693,
+          "p99": 143.72419999999693,
+          "max": 143.72419999999693,
+          "samples": 3
+        },
+        "concurrentWriters": 2053.7922992264967,
+        "rowsPerSec": 54195.22529226096
+      }
+    },
+    "workloads": [
+      "insert",
+      "pointLookup",
+      "rangeScan",
+      "update",
+      "delete",
+      "maintenance",
+      "concurrentWriters"
+    ],
+    "distributions": [
+      "uniform",
+      "hot-tenant",
+      "bursty"
+    ],
+    "queryPlans": {
+      "uuid_v4": "Index Only Scan using t_pkey on t  (cost=0.41..4.43 rows=1 width=4) (actual time=0.009..0.010 rows=0.00 loops=1)\n  Index Cond: (id = '\\x00'::bytea)\n  Heap Fetches: 0\n  Index Searches: 1\n  Buffers: shared hit=3\nPlanning:\n  Buffers: shared hit=8\nPlanning Time: 0.199 ms\nExecution Time: 0.025 ms",
+      "uuid_v7": "Index Only Scan using t_pkey on t  (cost=0.41..4.43 rows=1 width=4) (actual time=0.009..0.009 rows=0.00 loops=1)\n  Index Cond: (id = '\\x00'::bytea)\n  Heap Fetches: 0\n  Index Searches: 1\n  Buffers: shared hit=3\nPlanning:\n  Buffers: shared hit=6\nPlanning Time: 0.104 ms\nExecution Time: 0.021 ms",
+      "pg_uuid_v8": "Index Only Scan using t_pkey on t  (cost=0.41..4.43 rows=1 width=4) (actual time=0.067..0.067 rows=0.00 loops=1)\n  Index Cond: (id = '\\x00'::bytea)\n  Heap Fetches: 0\n  Index Searches: 1\n  Buffers: shared hit=3\nPlanning:\n  Buffers: shared hit=8\nPlanning Time: 0.156 ms\nExecution Time: 0.081 ms",
+      "ulid_v8": "Index Only Scan using t_pkey on t  (cost=0.41..4.43 rows=1 width=4) (actual time=0.009..0.010 rows=0.00 loops=1)\n  Index Cond: (id = '\\x00'::bytea)\n  Heap Fetches: 0\n  Index Searches: 1\n  Buffers: shared hit=3\nPlanning:\n  Buffers: shared hit=6\nPlanning Time: 0.122 ms\nExecution Time: 0.022 ms",
+      "genoid_v8": "Index Only Scan using t_pkey on t  (cost=0.41..4.43 rows=1 width=4) (actual time=0.006..0.006 rows=0.00 loops=1)\n  Index Cond: (id = '\\x00'::bytea)\n  Heap Fetches: 0\n  Index Searches: 1\n  Buffers: shared hit=3\nPlanning:\n  Buffers: shared hit=8\nPlanning Time: 0.123 ms\nExecution Time: 0.018 ms",
+      "genoid_structured": "Index Only Scan using t_pkey on t  (cost=0.41..4.43 rows=1 width=4) (actual time=0.022..0.023 rows=0.00 loops=1)\n  Index Cond: (id = '\\x00'::bytea)\n  Heap Fetches: 0\n  Index Searches: 1\n  Buffers: shared hit=3\nPlanning:\n  Buffers: shared hit=6\nPlanning Time: 0.234 ms\nExecution Time: 0.049 ms",
+      "genoid_shardfirst": "Index Only Scan using t_pkey on t  (cost=0.41..4.43 rows=1 width=4) (actual time=0.006..0.007 rows=0.00 loops=1)\n  Index Cond: (id = '\\x00'::bytea)\n  Heap Fetches: 0\n  Index Searches: 1\n  Buffers: shared hit=3\nPlanning:\n  Buffers: shared hit=8\nPlanning Time: 0.120 ms\nExecution Time: 0.018 ms"
+    },
+    "storage": {
+      "tableBytes": "9641984",
+      "indexBytes": "3375104",
+      "totalBytes": "13017088"
+    },
+    "walBytes": 1679428209,
+    "maintenance": {
+      "cells": 7,
+      "totalSamples": 21
+    }
+  },
+  "engines": [
+    "postgresql"
+  ]
+}

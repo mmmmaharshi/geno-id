@@ -10,6 +10,7 @@ import {
   DISTRIBUTIONS,
   ENGINES,
   WORKLOADS,
+  enginesWithResults,
   percentiles,
   serverTarget,
   SERVER_ENV,
@@ -489,7 +490,6 @@ const out: Record<string, unknown> = {
     cores: process.env.NUMBER_OF_PROCESSORS ?? "unknown",
   },
   config: { rows: ROWS, reps: REPS, probes: PROBES, batch: BATCH, writers: WRITERS, blobBytes: BLOB_BYTES },
-  engines: ENGINES,
   generationModes: { structured: algo.getStructuredGenerationMode() },
 }
 
@@ -538,5 +538,6 @@ for (const name of targets) {
 }
 
 mkdirSync(path.dirname(path.resolve(root, OUT)), { recursive: true })
+out.engines = enginesWithResults(out)
 writeFileSync(path.resolve(root, OUT), `${JSON.stringify(out, null, 2)}\n`)
 console.log(`wrote ${OUT}`)

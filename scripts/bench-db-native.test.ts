@@ -4,6 +4,7 @@ import {
   DISTRIBUTIONS,
   WORKLOADS,
   NativeResultError,
+  enginesWithResults,
   percentiles,
   tenantFor,
   validateNativeResult,
@@ -110,4 +111,13 @@ test("validateNativeResult rejects an arm without range scan evidence", () => {
     () => validateNativeResult({ ...result, arms: { uuid_v7: arm } }),
     (error: unknown) => error instanceof NativeResultError && error.code === "missing-metric",
   )
+})
+
+test("enginesWithResults lists only the engines the artifact actually measured", () => {
+  assert.deepEqual(enginesWithResults({ postgresql: baseResult() }), ["postgresql"])
+  assert.deepEqual(
+    enginesWithResults({ postgresql: baseResult(), "mysql-innodb": baseResult() }),
+    ["postgresql", "mysql-innodb"],
+  )
+  assert.deepEqual(enginesWithResults({}), [])
 })
