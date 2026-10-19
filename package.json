@@ -42,6 +42,7 @@
     "export-dieharder": "bun run scripts/export-dieharder.ts",
     "export-multi-stream": "bun run scripts/export-multi-stream.ts",
     "dieharder": "bun run scripts/run-dieharder.ts",
+    "practrand": "bun run scripts/run-practrand.ts",
     "test:stats": "bun run scripts/stats.ts",
     "stats:evidence": "bun run scripts/stats-evidence.ts",
     "playwright": "bun run scripts/playwright.ts",

@@ -1,6 +1,6 @@
 {
   "command": "bun run stats:evidence",
-  "implementationCommit": "312628756f3e2cb09f31080d5448a1755266b227",
+  "implementationCommit": "16c1a22ae56ce52c337e4c9cc80bf4d83bb216ec",
   "workingTreeDirty": true,
   "generationPlan": "compiled-direct-v8",
   "environment": {
@@ -26,13 +26,13 @@
   "comparisons": {
     "v4": {
       "nBits": 24400000,
-      "monobitP": 0.29358946061025415,
-      "runsP": 0.3115194776444885
+      "monobitP": 0.7855568129401581,
+      "runsP": 0.05918805503762481
     },
     "v7": {
       "nBits": 14800000,
-      "monobitP": 0.1776466486021286,
-      "runsP": 0.41679293291574954
+      "monobitP": 0.7733384344819098,
+      "runsP": 0.14349272577023187
     }
   },
   "suites": [
@@ -47,39 +47,39 @@
       "pValues": [
         {
           "name": "monobit",
-          "p": 0.49417442294721026
+          "p": 0.39990085270599535
         },
         {
           "name": "runs",
-          "p": 0.31865066085054367
+          "p": 0.5443149742761615
         },
         {
           "name": "chi-square-byte-7",
-          "p": 0.9029948991995197
+          "p": 0.4637162323987864
         },
         {
           "name": "chi-square-byte-10",
-          "p": 0.6967022215200513
+          "p": 0.31506170910962633
         },
         {
           "name": "chi-square-byte-11",
-          "p": 0.06607599958113057
+          "p": 0.17727484637856997
         },
         {
           "name": "chi-square-byte-12",
-          "p": 0.5516612365350391
+          "p": 0.04344677144427626
         },
         {
           "name": "chi-square-byte-13",
-          "p": 0.12792364418265176
+          "p": 0.1729213103732415
         },
         {
           "name": "chi-square-byte-14",
-          "p": 0.9592769714822365
+          "p": 0.8585693651266023
         },
         {
           "name": "chi-square-byte-15",
-          "p": 0.8046000172302132
+          "p": 0.03379773022516897
         }
       ],
       "multipleTesting": {
@@ -87,64 +87,64 @@
         "alpha": 0.05,
         "entries": [
           {
-            "name": "chi-square-byte-11",
-            "p": 0.06607599958113057,
-            "adjusted": 0.5946839962301751,
+            "name": "chi-square-byte-15",
+            "p": 0.03379773022516897,
+            "adjusted": 0.30417957202652074,
             "threshold": 0.005555555555555556,
             "reject": false
           },
           {
-            "name": "chi-square-byte-13",
-            "p": 0.12792364418265176,
-            "adjusted": 1,
+            "name": "chi-square-byte-12",
+            "p": 0.04344677144427626,
+            "adjusted": 0.34757417155421005,
             "threshold": 0.00625,
             "reject": false
           },
           {
-            "name": "runs",
-            "p": 0.31865066085054367,
+            "name": "chi-square-byte-13",
+            "p": 0.1729213103732415,
             "adjusted": 1,
             "threshold": 0.0071428571428571435,
             "reject": false
           },
           {
-            "name": "monobit",
-            "p": 0.49417442294721026,
+            "name": "chi-square-byte-11",
+            "p": 0.17727484637856997,
             "adjusted": 1,
             "threshold": 0.008333333333333333,
             "reject": false
           },
           {
-            "name": "chi-square-byte-12",
-            "p": 0.5516612365350391,
+            "name": "chi-square-byte-10",
+            "p": 0.31506170910962633,
             "adjusted": 1,
             "threshold": 0.01,
             "reject": false
           },
           {
-            "name": "chi-square-byte-10",
-            "p": 0.6967022215200513,
+            "name": "monobit",
+            "p": 0.39990085270599535,
             "adjusted": 1,
             "threshold": 0.0125,
             "reject": false
           },
           {
-            "name": "chi-square-byte-15",
-            "p": 0.8046000172302132,
+            "name": "chi-square-byte-7",
+            "p": 0.4637162323987864,
             "adjusted": 1,
             "threshold": 0.016666666666666666,
             "reject": false
           },
           {
-            "name": "chi-square-byte-7",
-            "p": 0.9029948991995197,
+            "name": "runs",
+            "p": 0.5443149742761615,
             "adjusted": 1,
             "threshold": 0.025,
             "reject": false
           },
           {
             "name": "chi-square-byte-14",
-            "p": 0.9592769714822365,
+            "p": 0.8585693651266023,
             "adjusted": 1,
             "threshold": 0.05,
             "reject": false
@@ -227,65 +227,65 @@
         "allowedSize": 128,
         "density": 0.5,
         "basis": "measured",
-        "genoRepairsPerId": 0.501,
-        "genoNsPerId": 1790.9,
-        "measuredTrialsPerId": 1.986,
-        "measuredNsPerId": 83,
+        "genoRepairsPerId": 0.509,
+        "genoNsPerId": 482.1,
+        "measuredTrialsPerId": 2.008,
+        "measuredNsPerId": 26.4,
         "analyticalExpectedTrialsPerId": null,
         "extrapolatedNsPerId": null,
-        "speedupVsGeno": 1.986
+        "speedupVsGeno": 2.008
       },
       {
         "k": 1,
         "allowedSize": 64,
         "density": 0.25,
         "basis": "measured",
-        "genoRepairsPerId": 0.749,
-        "genoNsPerId": 1796.6,
-        "measuredTrialsPerId": 4.106,
-        "measuredNsPerId": 184,
+        "genoRepairsPerId": 0.75,
+        "genoNsPerId": 533.2,
+        "measuredTrialsPerId": 3.836,
+        "measuredNsPerId": 51.4,
         "analyticalExpectedTrialsPerId": null,
         "extrapolatedNsPerId": null,
-        "speedupVsGeno": 4.106
+        "speedupVsGeno": 3.836
       },
       {
         "k": 1,
         "allowedSize": 32,
         "density": 0.125,
         "basis": "measured",
-        "genoRepairsPerId": 0.874,
-        "genoNsPerId": 1599.5,
-        "measuredTrialsPerId": 7.68,
-        "measuredNsPerId": 242.8,
+        "genoRepairsPerId": 0.877,
+        "genoNsPerId": 503.7,
+        "measuredTrialsPerId": 8.17,
+        "measuredNsPerId": 75.8,
         "analyticalExpectedTrialsPerId": null,
         "extrapolatedNsPerId": null,
-        "speedupVsGeno": 7.68
+        "speedupVsGeno": 8.17
       },
       {
         "k": 1,
         "allowedSize": 16,
         "density": 0.0625,
         "basis": "measured",
-        "genoRepairsPerId": 0.939,
-        "genoNsPerId": 1552.8,
-        "measuredTrialsPerId": 16.56,
-        "measuredNsPerId": 573,
+        "genoRepairsPerId": 0.937,
+        "genoNsPerId": 631.3,
+        "measuredTrialsPerId": 15.38,
+        "measuredNsPerId": 159.8,
         "analyticalExpectedTrialsPerId": null,
         "extrapolatedNsPerId": null,
-        "speedupVsGeno": 16.56
+        "speedupVsGeno": 15.38
       },
       {
         "k": 1,
         "allowedSize": 8,
         "density": 0.03125,
         "basis": "measured",
-        "genoRepairsPerId": 0.971,
-        "genoNsPerId": 1325.8,
-        "measuredTrialsPerId": 33.43,
-        "measuredNsPerId": 772.6,
+        "genoRepairsPerId": 0.967,
+        "genoNsPerId": 555.1,
+        "measuredTrialsPerId": 32.8,
+        "measuredNsPerId": 251.4,
         "analyticalExpectedTrialsPerId": null,
         "extrapolatedNsPerId": null,
-        "speedupVsGeno": 33.43
+        "speedupVsGeno": 32.8
       },
       {
         "k": 1,
@@ -293,129 +293,129 @@
         "density": 0.015625,
         "basis": "measured",
         "genoRepairsPerId": 0.985,
-        "genoNsPerId": 1879.9,
-        "measuredTrialsPerId": 63.61,
-        "measuredNsPerId": 1642.8,
+        "genoNsPerId": 521.2,
+        "measuredTrialsPerId": 62.56,
+        "measuredNsPerId": 581.2,
         "analyticalExpectedTrialsPerId": null,
         "extrapolatedNsPerId": null,
-        "speedupVsGeno": 63.61
+        "speedupVsGeno": 62.56
       },
       {
         "k": 1,
         "allowedSize": 2,
         "density": 0.0078125,
         "basis": "measured",
-        "genoRepairsPerId": 0.992,
-        "genoNsPerId": 2152.7,
-        "measuredTrialsPerId": 139.5,
-        "measuredNsPerId": 2056.8,
+        "genoRepairsPerId": 0.993,
+        "genoNsPerId": 534.1,
+        "measuredTrialsPerId": 128.2,
+        "measuredNsPerId": 911,
         "analyticalExpectedTrialsPerId": null,
         "extrapolatedNsPerId": null,
-        "speedupVsGeno": 139.5
+        "speedupVsGeno": 128.2
       },
       {
         "k": 1,
         "allowedSize": 1,
         "density": 0.00390625,
         "basis": "measured",
-        "genoRepairsPerId": 0.996,
-        "genoNsPerId": 1635.5,
-        "measuredTrialsPerId": 276.6,
-        "measuredNsPerId": 4274.8,
+        "genoRepairsPerId": 0.997,
+        "genoNsPerId": 418.8,
+        "measuredTrialsPerId": 240.6,
+        "measuredNsPerId": 1369.4,
         "analyticalExpectedTrialsPerId": null,
         "extrapolatedNsPerId": null,
-        "speedupVsGeno": 276.6
+        "speedupVsGeno": 240.6
       },
       {
         "k": 2,
         "allowedSize": 128,
         "density": 0.5,
         "basis": "measured",
-        "genoRepairsPerId": 0.986,
-        "genoNsPerId": 3881.9,
-        "measuredTrialsPerId": 4.162,
-        "measuredNsPerId": 101.4,
+        "genoRepairsPerId": 1.002,
+        "genoNsPerId": 982.8,
+        "measuredTrialsPerId": 4.096,
+        "measuredNsPerId": 70,
         "analyticalExpectedTrialsPerId": null,
         "extrapolatedNsPerId": null,
-        "speedupVsGeno": 4.162
+        "speedupVsGeno": 4.088
       },
       {
         "k": 2,
         "allowedSize": 64,
         "density": 0.25,
         "basis": "measured",
-        "genoRepairsPerId": 1.499,
-        "genoNsPerId": 4067.8,
-        "measuredTrialsPerId": 14.97,
-        "measuredNsPerId": 557.8,
+        "genoRepairsPerId": 1.492,
+        "genoNsPerId": 989,
+        "measuredTrialsPerId": 15.66,
+        "measuredNsPerId": 275,
         "analyticalExpectedTrialsPerId": null,
         "extrapolatedNsPerId": null,
-        "speedupVsGeno": 9.991
+        "speedupVsGeno": 10.5
       },
       {
         "k": 2,
         "allowedSize": 32,
         "density": 0.125,
         "basis": "measured",
-        "genoRepairsPerId": 1.743,
-        "genoNsPerId": 3603.4,
-        "measuredTrialsPerId": 66.38,
-        "measuredNsPerId": 1856.4,
+        "genoRepairsPerId": 1.76,
+        "genoNsPerId": 894.4,
+        "measuredTrialsPerId": 61.58,
+        "measuredNsPerId": 610.6,
         "analyticalExpectedTrialsPerId": null,
         "extrapolatedNsPerId": null,
-        "speedupVsGeno": 38.09
+        "speedupVsGeno": 34.98
       },
       {
         "k": 2,
         "allowedSize": 16,
         "density": 0.0625,
         "basis": "measured",
-        "genoRepairsPerId": 1.878,
-        "genoNsPerId": 3071.5,
-        "measuredTrialsPerId": 248.8,
-        "measuredNsPerId": 15106.4,
+        "genoRepairsPerId": 1.875,
+        "genoNsPerId": 939.2,
+        "measuredTrialsPerId": 246,
+        "measuredNsPerId": 3040.2,
         "analyticalExpectedTrialsPerId": null,
         "extrapolatedNsPerId": null,
-        "speedupVsGeno": 132.4
+        "speedupVsGeno": 131.2
       },
       {
         "k": 2,
         "allowedSize": 8,
         "density": 0.03125,
         "basis": "measured",
-        "genoRepairsPerId": 1.939,
-        "genoNsPerId": 2674.7,
-        "measuredTrialsPerId": 984.2,
-        "measuredNsPerId": 21862.2,
+        "genoRepairsPerId": 1.94,
+        "genoNsPerId": 950.2,
+        "measuredTrialsPerId": 1074,
+        "measuredNsPerId": 7870.2,
         "analyticalExpectedTrialsPerId": null,
         "extrapolatedNsPerId": null,
-        "speedupVsGeno": 507.6
+        "speedupVsGeno": 553.5
       },
       {
         "k": 2,
         "allowedSize": 4,
         "density": 0.015625,
         "basis": "measured",
-        "genoRepairsPerId": 1.967,
-        "genoNsPerId": 2785,
-        "measuredTrialsPerId": 4379,
-        "measuredNsPerId": 102421.6,
+        "genoRepairsPerId": 1.969,
+        "genoNsPerId": 800.9,
+        "measuredTrialsPerId": 4107,
+        "measuredNsPerId": 39740.2,
         "analyticalExpectedTrialsPerId": null,
         "extrapolatedNsPerId": null,
-        "speedupVsGeno": 2226
+        "speedupVsGeno": 2085
       },
       {
         "k": 2,
         "allowedSize": 2,
         "density": 0.0078125,
         "basis": "measured",
-        "genoRepairsPerId": 1.985,
-        "genoNsPerId": 3166.8,
-        "measuredTrialsPerId": 16290,
-        "measuredNsPerId": 389004.4,
+        "genoRepairsPerId": 1.986,
+        "genoNsPerId": 858.2,
+        "measuredTrialsPerId": 16670,
+        "measuredNsPerId": 125888.8,
         "analyticalExpectedTrialsPerId": null,
         "extrapolatedNsPerId": null,
-        "speedupVsGeno": 8205
+        "speedupVsGeno": 8394
       },
       {
         "k": 2,
@@ -423,77 +423,77 @@
         "density": 0.00390625,
         "basis": "analytical",
         "genoRepairsPerId": 1.993,
-        "genoNsPerId": 2542.8,
+        "genoNsPerId": 1300.7,
         "measuredTrialsPerId": null,
         "measuredNsPerId": null,
         "analyticalExpectedTrialsPerId": 65540,
-        "extrapolatedNsPerId": 166655112,
-        "speedupVsGeno": 32880
+        "extrapolatedNsPerId": 85247878,
+        "speedupVsGeno": 32890
       },
       {
         "k": 3,
         "allowedSize": 128,
         "density": 0.5,
         "basis": "measured",
-        "genoRepairsPerId": 1.509,
-        "genoNsPerId": 6603.1,
-        "measuredTrialsPerId": 8.138,
-        "measuredNsPerId": 4117.6,
+        "genoRepairsPerId": 1.481,
+        "genoNsPerId": 1510,
+        "measuredTrialsPerId": 7.82,
+        "measuredNsPerId": 173.4,
         "analyticalExpectedTrialsPerId": null,
         "extrapolatedNsPerId": null,
-        "speedupVsGeno": 5.394
+        "speedupVsGeno": 5.279
       },
       {
         "k": 3,
         "allowedSize": 64,
         "density": 0.25,
         "basis": "measured",
-        "genoRepairsPerId": 2.258,
-        "genoNsPerId": 4405.9,
-        "measuredTrialsPerId": 62.35,
-        "measuredNsPerId": 3560.8,
+        "genoRepairsPerId": 2.253,
+        "genoNsPerId": 1539.8,
+        "measuredTrialsPerId": 62.8,
+        "measuredNsPerId": 1308.4,
         "analyticalExpectedTrialsPerId": null,
         "extrapolatedNsPerId": null,
-        "speedupVsGeno": 27.61
+        "speedupVsGeno": 27.88
       },
       {
         "k": 3,
         "allowedSize": 32,
         "density": 0.125,
         "basis": "measured",
-        "genoRepairsPerId": 2.636,
-        "genoNsPerId": 4489.7,
-        "measuredTrialsPerId": 487.9,
-        "measuredNsPerId": 16186.4,
+        "genoRepairsPerId": 2.633,
+        "genoNsPerId": 1993.3,
+        "measuredTrialsPerId": 550,
+        "measuredNsPerId": 7294,
         "analyticalExpectedTrialsPerId": null,
         "extrapolatedNsPerId": null,
-        "speedupVsGeno": 185
+        "speedupVsGeno": 208.9
       },
       {
         "k": 3,
         "allowedSize": 16,
         "density": 0.0625,
         "basis": "measured",
-        "genoRepairsPerId": 2.812,
-        "genoNsPerId": 4859.4,
-        "measuredTrialsPerId": 4034,
-        "measuredNsPerId": 134183,
+        "genoRepairsPerId": 2.8,
+        "genoNsPerId": 1609.2,
+        "measuredTrialsPerId": 3844,
+        "measuredNsPerId": 41960.2,
         "analyticalExpectedTrialsPerId": null,
         "extrapolatedNsPerId": null,
-        "speedupVsGeno": 1435
+        "speedupVsGeno": 1373
       },
       {
         "k": 3,
         "allowedSize": 8,
         "density": 0.03125,
         "basis": "analytical",
-        "genoRepairsPerId": 2.901,
-        "genoNsPerId": 4967,
+        "genoRepairsPerId": 2.905,
+        "genoNsPerId": 1234.5,
         "measuredTrialsPerId": null,
         "measuredNsPerId": null,
         "analyticalExpectedTrialsPerId": 32770,
-        "extrapolatedNsPerId": 162768590,
-        "speedupVsGeno": 11290
+        "extrapolatedNsPerId": 40454565,
+        "speedupVsGeno": 11280
       },
       {
         "k": 3,
@@ -501,102 +501,102 @@
         "density": 0.015625,
         "basis": "analytical",
         "genoRepairsPerId": 2.953,
-        "genoNsPerId": 3702.8,
+        "genoNsPerId": 1601.2,
         "measuredTrialsPerId": null,
         "measuredNsPerId": null,
         "analyticalExpectedTrialsPerId": 262100,
-        "extrapolatedNsPerId": 970503880,
-        "speedupVsGeno": 88780
+        "extrapolatedNsPerId": 419674520,
+        "speedupVsGeno": 88770
       },
       {
         "k": 3,
         "allowedSize": 2,
         "density": 0.0078125,
         "basis": "analytical",
-        "genoRepairsPerId": 2.975,
-        "genoNsPerId": 5045.7,
+        "genoRepairsPerId": 2.979,
+        "genoNsPerId": 1381.3,
         "measuredTrialsPerId": null,
         "measuredNsPerId": null,
         "analyticalExpectedTrialsPerId": 2097000,
-        "extrapolatedNsPerId": 10580832900,
-        "speedupVsGeno": 704800
+        "extrapolatedNsPerId": 2896586100,
+        "speedupVsGeno": 703900
       },
       {
         "k": 3,
         "allowedSize": 1,
         "density": 0.00390625,
         "basis": "analytical",
-        "genoRepairsPerId": 2.987,
-        "genoNsPerId": 4304.1,
+        "genoRepairsPerId": 2.99,
+        "genoNsPerId": 1303.6,
         "measuredTrialsPerId": null,
         "measuredNsPerId": null,
         "analyticalExpectedTrialsPerId": 16780000,
-        "extrapolatedNsPerId": 72222798000,
-        "speedupVsGeno": 5616000
+        "extrapolatedNsPerId": 21874408000,
+        "speedupVsGeno": 5610000
       },
       {
         "k": 4,
         "allowedSize": 128,
         "density": 0.5,
         "basis": "measured",
-        "genoRepairsPerId": 2.004,
-        "genoNsPerId": 7091.9,
-        "measuredTrialsPerId": 15.33,
-        "measuredNsPerId": 1005,
+        "genoRepairsPerId": 1.979,
+        "genoNsPerId": 2152.6,
+        "measuredTrialsPerId": 17.28,
+        "measuredNsPerId": 376.6,
         "analyticalExpectedTrialsPerId": null,
         "extrapolatedNsPerId": null,
-        "speedupVsGeno": 7.651
+        "speedupVsGeno": 8.729
       },
       {
         "k": 4,
         "allowedSize": 64,
         "density": 0.25,
         "basis": "measured",
-        "genoRepairsPerId": 2.99,
-        "genoNsPerId": 5912.6,
-        "measuredTrialsPerId": 240.3,
-        "measuredNsPerId": 13806.8,
+        "genoRepairsPerId": 3,
+        "genoNsPerId": 2251.7,
+        "measuredTrialsPerId": 253.8,
+        "measuredNsPerId": 4348.8,
         "analyticalExpectedTrialsPerId": null,
         "extrapolatedNsPerId": null,
-        "speedupVsGeno": 80.37
+        "speedupVsGeno": 84.62
       },
       {
         "k": 4,
         "allowedSize": 32,
         "density": 0.125,
         "basis": "measured",
-        "genoRepairsPerId": 3.501,
-        "genoNsPerId": 8128.4,
-        "measuredTrialsPerId": 4315,
-        "measuredNsPerId": 139748.4,
+        "genoRepairsPerId": 3.488,
+        "genoNsPerId": 1956.2,
+        "measuredTrialsPerId": 4077,
+        "measuredNsPerId": 42365.4,
         "analyticalExpectedTrialsPerId": null,
         "extrapolatedNsPerId": null,
-        "speedupVsGeno": 1232
+        "speedupVsGeno": 1169
       },
       {
         "k": 4,
         "allowedSize": 16,
         "density": 0.0625,
         "basis": "analytical",
-        "genoRepairsPerId": 3.746,
-        "genoNsPerId": 5643.6,
+        "genoRepairsPerId": 3.756,
+        "genoNsPerId": 1893.8,
         "measuredTrialsPerId": null,
         "measuredNsPerId": null,
         "analyticalExpectedTrialsPerId": 65540,
-        "extrapolatedNsPerId": 369881544,
-        "speedupVsGeno": 17490
+        "extrapolatedNsPerId": 124119652,
+        "speedupVsGeno": 17450
       },
       {
         "k": 4,
         "allowedSize": 8,
         "density": 0.03125,
         "basis": "analytical",
-        "genoRepairsPerId": 3.875,
-        "genoNsPerId": 5511.7,
+        "genoRepairsPerId": 3.874,
+        "genoNsPerId": 2092.7,
         "measuredTrialsPerId": null,
         "measuredNsPerId": null,
         "analyticalExpectedTrialsPerId": 1049000,
-        "extrapolatedNsPerId": 5781773300,
+        "extrapolatedNsPerId": 2195242300,
         "speedupVsGeno": 270600
       },
       {
@@ -604,38 +604,38 @@
         "allowedSize": 4,
         "density": 0.015625,
         "basis": "analytical",
-        "genoRepairsPerId": 3.936,
-        "genoNsPerId": 5582.2,
+        "genoRepairsPerId": 3.934,
+        "genoNsPerId": 1663,
         "measuredTrialsPerId": null,
         "measuredNsPerId": null,
         "analyticalExpectedTrialsPerId": 16780000,
-        "extrapolatedNsPerId": 93669316000,
-        "speedupVsGeno": 4262000
+        "extrapolatedNsPerId": 27905140000,
+        "speedupVsGeno": 4265000
       },
       {
         "k": 4,
         "allowedSize": 2,
         "density": 0.0078125,
         "basis": "analytical",
-        "genoRepairsPerId": 3.967,
-        "genoNsPerId": 8032.2,
+        "genoRepairsPerId": 3.97,
+        "genoNsPerId": 1781.1,
         "measuredTrialsPerId": null,
         "measuredNsPerId": null,
         "analyticalExpectedTrialsPerId": 268400000,
-        "extrapolatedNsPerId": 2155842480000,
-        "speedupVsGeno": 67660000
+        "extrapolatedNsPerId": 478047240000,
+        "speedupVsGeno": 67620000
       },
       {
         "k": 4,
         "allowedSize": 1,
         "density": 0.00390625,
         "basis": "analytical",
-        "genoRepairsPerId": 3.984,
-        "genoNsPerId": 6754.6,
+        "genoRepairsPerId": 3.986,
+        "genoNsPerId": 1821.8,
         "measuredTrialsPerId": null,
         "measuredNsPerId": null,
         "analyticalExpectedTrialsPerId": 4295000000,
-        "extrapolatedNsPerId": 29011007000000,
+        "extrapolatedNsPerId": 7824631000000,
         "speedupVsGeno": 1078000000
       },
       {
@@ -643,64 +643,64 @@
         "allowedSize": 128,
         "density": 0.5,
         "basis": "measured",
-        "genoRepairsPerId": 2.991,
-        "genoNsPerId": 11245.4,
-        "measuredTrialsPerId": 62.44,
-        "measuredNsPerId": 3079.8,
+        "genoRepairsPerId": 3.007,
+        "genoNsPerId": 3167.8,
+        "measuredTrialsPerId": 62.19,
+        "measuredNsPerId": 1713.6,
         "analyticalExpectedTrialsPerId": null,
         "extrapolatedNsPerId": null,
-        "speedupVsGeno": 20.87
+        "speedupVsGeno": 20.68
       },
       {
         "k": 6,
         "allowedSize": 64,
         "density": 0.25,
         "basis": "measured",
-        "genoRepairsPerId": 4.499,
-        "genoNsPerId": 9432.4,
-        "measuredTrialsPerId": 3928,
-        "measuredNsPerId": 213933,
+        "genoRepairsPerId": 4.498,
+        "genoNsPerId": 4096.7,
+        "measuredTrialsPerId": 4027,
+        "measuredNsPerId": 81510.2,
         "analyticalExpectedTrialsPerId": null,
         "extrapolatedNsPerId": null,
-        "speedupVsGeno": 873.2
+        "speedupVsGeno": 895.3
       },
       {
         "k": 6,
         "allowedSize": 32,
         "density": 0.125,
         "basis": "analytical",
-        "genoRepairsPerId": 5.254,
-        "genoNsPerId": 14855.4,
+        "genoRepairsPerId": 5.256,
+        "genoNsPerId": 2693.3,
         "measuredTrialsPerId": null,
         "measuredNsPerId": null,
         "analyticalExpectedTrialsPerId": 262100,
-        "extrapolatedNsPerId": 3893600340,
-        "speedupVsGeno": 49890
+        "extrapolatedNsPerId": 705913930,
+        "speedupVsGeno": 49870
       },
       {
         "k": 6,
         "allowedSize": 16,
         "density": 0.0625,
         "basis": "analytical",
-        "genoRepairsPerId": 5.637,
-        "genoNsPerId": 8130.6,
+        "genoRepairsPerId": 5.626,
+        "genoNsPerId": 2629.5,
         "measuredTrialsPerId": null,
         "measuredNsPerId": null,
         "analyticalExpectedTrialsPerId": 16780000,
-        "extrapolatedNsPerId": 136431468000,
-        "speedupVsGeno": 2976000
+        "extrapolatedNsPerId": 44123010000,
+        "speedupVsGeno": 2982000
       },
       {
         "k": 6,
         "allowedSize": 8,
         "density": 0.03125,
         "basis": "analytical",
-        "genoRepairsPerId": 5.809,
-        "genoNsPerId": 10611.1,
+        "genoRepairsPerId": 5.812,
+        "genoNsPerId": 2447.7,
         "measuredTrialsPerId": null,
         "measuredNsPerId": null,
         "analyticalExpectedTrialsPerId": 1074000000,
-        "extrapolatedNsPerId": 11396321400000,
+        "extrapolatedNsPerId": 2628829800000,
         "speedupVsGeno": 184800000
       },
       {
@@ -708,12 +708,12 @@
         "allowedSize": 4,
         "density": 0.015625,
         "basis": "analytical",
-        "genoRepairsPerId": 5.907,
-        "genoNsPerId": 7680.3,
+        "genoRepairsPerId": 5.91,
+        "genoNsPerId": 2732.3,
         "measuredTrialsPerId": null,
         "measuredNsPerId": null,
         "analyticalExpectedTrialsPerId": 68720000000,
-        "extrapolatedNsPerId": 527790216000000,
+        "extrapolatedNsPerId": 187763656000000,
         "speedupVsGeno": 11630000000
       },
       {
@@ -721,26 +721,26 @@
         "allowedSize": 2,
         "density": 0.0078125,
         "basis": "analytical",
-        "genoRepairsPerId": 5.952,
-        "genoNsPerId": 8662.6,
+        "genoRepairsPerId": 5.955,
+        "genoNsPerId": 2673.2,
         "measuredTrialsPerId": null,
         "measuredNsPerId": null,
         "analyticalExpectedTrialsPerId": 4398000000000,
-        "extrapolatedNsPerId": 38098114800000000,
-        "speedupVsGeno": 738900000000
+        "extrapolatedNsPerId": 11756733600000000,
+        "speedupVsGeno": 738500000000
       },
       {
         "k": 6,
         "allowedSize": 1,
         "density": 0.00390625,
         "basis": "analytical",
-        "genoRepairsPerId": 5.974,
-        "genoNsPerId": 8527.1,
+        "genoRepairsPerId": 5.975,
+        "genoNsPerId": 2384.3,
         "measuredTrialsPerId": null,
         "measuredNsPerId": null,
         "analyticalExpectedTrialsPerId": 281500000000000,
-        "extrapolatedNsPerId": 2400378650000000000,
-        "speedupVsGeno": 47120000000000
+        "extrapolatedNsPerId": 671180450000000000,
+        "speedupVsGeno": 47110000000000
       }
     ]
   }
