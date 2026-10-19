@@ -5,6 +5,7 @@ import {
   genHashUUID,
   genGenoID,
   genStructuredGenoID,
+  getStructuredGenerationMode,
   DBKEY_LAYOUT,
 } from "./algo.js"
 import {
@@ -148,6 +149,11 @@ async function runAll(): Promise<void> {
   btn.textContent = "Running..."
   const logEl = document.getElementById("log") as HTMLPreElement
   if (logEl) logEl.textContent = ""
+  // The evidence artifact must name the production path this run used, so
+  // a reader can tell a compiled run from a lower-level or injected one.
+  const plan = getStructuredGenerationMode()
+  const planEl = document.getElementById("planLabel") as HTMLDivElement
+  if (planEl) planEl.textContent = `Generation plan: ${plan}`
   const nSync = parseInt(
     (document.getElementById("nSync") as HTMLInputElement).value,
     10,

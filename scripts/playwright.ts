@@ -93,6 +93,8 @@ interface BenchOutput {
   results: Record<string, string>[]
   timestamp: string
   userAgent: string
+  /** The production generation plan the page reported it ran. */
+  generationPlan: string
 }
 
 const ENGINES = { chromium, firefox, webkit }
@@ -256,6 +258,12 @@ async function runBenchmark(
       results: toObjects(resultsHeaders, resultsRows),
       timestamp: new Date().toISOString(),
       userAgent: await page.evaluate(() => navigator.userAgent),
+      generationPlan: await page.evaluate(() => {
+        const el = document.getElementById("planLabel")
+        const text = el?.textContent ?? ""
+        const match = /Generation plan:\s*(\S+)/.exec(text)
+        return match ? match[1] : "unknown"
+      }),
     }
 
     return output

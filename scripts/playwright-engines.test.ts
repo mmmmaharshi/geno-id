@@ -21,6 +21,7 @@ const mod = (await import(path.join(root, "scripts", "playwright.ts"))) as {
     collisions: Record<string, string>[]
     browserErrors: string[]
     rawLog: string
+    generationPlan: string
   }>
   planPlaywrightWrite: (runCount: number, outPath: string) => { write: boolean; message: string }
   startServer: () => Promise<{ close: () => Promise<void>; origin: string }>
@@ -79,6 +80,11 @@ test(
         assert.deepEqual(output.browserErrors, [], `${engine} must report no browser errors`)
         assert.ok(output.results.length >= 6, `${engine} produced ${output.results.length} result rows`)
         assert.ok(output.collisions.length >= 6, `${engine} produced ${output.collisions.length} collision rows`)
+        assert.equal(
+          output.generationPlan,
+          "compiled-direct-v8",
+          `${engine} must record the production generation plan it ran`,
+        )
 
         agents.push(output.userAgent)
       }

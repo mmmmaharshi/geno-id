@@ -29,8 +29,8 @@ of randomness, matching RFC 9562 §8.1. GenoID seeds every pool refill from it.
 
 Min-entropy is the *worst-case* bits an adversary cannot predict. Fixed bits
 (version/variant) and **deterministic/observable** fields (timestamp, counter,
-small-枚举 shard/tenant) contribute **zero** min-entropy — an adversary can read
-or bound them.
+small-enumeration shard/tenant) contribute **zero** min-entropy — an adversary
+can read or bound them.
 
 | Generator | Bits | Field breakdown | Secret? | Min-entropy |
 |---|---|---|---|---:|
@@ -100,6 +100,35 @@ outputs — no backward *or* forward secrecy.
 | Counter (struct) | Monotonic sequence | Reveals event ordering / rate; not a secret |
 | Random bits | — | Only true entropy |
 
+### 3.5 Integrity and authenticity
+
+GenoID provides **neither**, and the "High" security class in §5 does not
+extend to them. An identifier is an input to a database, not a credential:
+
+- **No authenticity.** Nothing binds a UUID to its issuer. Any party that can
+  write to the store can insert a well-formed v8 UUID, including one with a
+  chosen shard or tenant field. A UUID that claims `tenant=3` carries no
+  evidence that tenant 3 generated it.
+- **No tamper-evidence.** The 122 application-defined bits are CSPRNG output,
+  not a MAC or a signature. There is no key an attacker lacks and no
+  verification procedure a reader could perform, so a modified UUID is
+  indistinguishable from a genuine one.
+- **The structured fields make forgery trivial, by design.** The shard and
+  tenant fields are drawn from a small enumerated domain and are written
+  openly into the identifier. Choosing an arbitrary admissible value costs one
+  attempt, not a search.
+- **What the CSPRNG does buy.** The random bits are unpredictable, so an
+  adversary cannot *predict* an identifier before it is issued, and the
+  collision analysis (50 random bits for `dbkey`) bounds the chance of two
+  independently issued identifiers colliding. That is uniqueness, not
+  integrity.
+
+**Claim boundary.** Any deployment that treats a GenoID UUID as proof of
+origin, as a capability, or as a defence against injection must add a
+mechanism outside this library — a MAC or signature over the identifier, or a
+server-side authorization check on the referenced row. RFC 9562 §8 makes the
+same point for all UUID versions: a UUID is not a security token.
+
 ## 4. RFC 9562 baseline comparison
 
 RFC 9562 §8 ("Security Considerations") is the canonical baseline. Mapping:
@@ -130,6 +159,8 @@ must carry are (1) the **pool forward-secrecy window** (≤ 256 UUIDs) and (2) f
 structured layouts, the **deliberate metadata leakage** (timestamp/shard/counter)
 that makes them distinguishable from random and unsuitable as a confidentiality
 primitive — consistent with RFC 9562's own warnings about v7-style timestamps.
+The label also does not extend to **integrity or authenticity**: no generator
+here emits an unforgeable identifier (§3.5), and none is claimed to.
 
 ## 6. Open caveats / future work
 
