@@ -97,14 +97,18 @@ export interface ExternalSuiteResult {
 export function classifyExternalSuite(input: {
   suite: StatisticalSuite
   archivedArtifact: string
+  /** Repo-relative label for the archived artifact; the archived path itself is machine-specific. */
+  sourceLabel?: string
   runner: string
   tool: string | null
+  /** Name of the tool, used when `tool` is null (the tool is not installed). */
+  toolName?: string
   pinnedLimitations: readonly string[]
 }): ExternalSuiteResult {
   if (existsSync(input.archivedArtifact)) {
     return {
       status: "external",
-      source: input.archivedArtifact,
+      source: input.sourceLabel ?? input.archivedArtifact,
       pValues: [],
       limitations: [...input.pinnedLimitations],
     }
@@ -116,7 +120,7 @@ export function classifyExternalSuite(input: {
       pValues: [],
       limitations: [
         ...input.pinnedLimitations,
-        `${input.tool} is not installed; install it and rerun to convert this to measured`,
+        `${input.toolName ?? input.suite} is not installed; install it and rerun to convert this to measured`,
       ],
     }
   }

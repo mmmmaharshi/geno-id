@@ -68,9 +68,10 @@ const toolOnPath = (tool: string): boolean => {
 const externalSuites = [
   {
     suite: "nist-sp800-22" as const,
-    archivedArtifact: "results/statistics/nist-sp800-22.json",
+    archivedArtifact: "results/nist-sp800-22-results.json",
     runner: "scripts/nist-bridge.py",
     tool: null,
+    toolName: "python3",
     pinnedLimitations: [
       "SP 800-22 is withdrawn and is not sufficient evidence of cryptographic security",
     ],
@@ -80,6 +81,7 @@ const externalSuites = [
     archivedArtifact: "results/dieharder-results.md",
     runner: "scripts/run-dieharder.ts",
     tool: toolOnPath("dieharder") ? "dieharder" : null,
+    toolName: "dieharder",
     pinnedLimitations: ["curated subset, not the full dieharder battery"],
   },
   {
@@ -87,6 +89,7 @@ const externalSuites = [
     archivedArtifact: "results/statistics/practrand.txt",
     runner: "scripts/run-practrand.ts",
     tool: toolOnPath("practrand") ? "practrand" : null,
+    toolName: "practrand",
     pinnedLimitations: ["modern suite, included as required by the evidence policy"],
   },
   {
@@ -94,12 +97,14 @@ const externalSuites = [
     archivedArtifact: "results/statistics/testu01.txt",
     runner: "scripts/run-testu01.sh",
     tool: toolOnPath("TestU01") ? "TestU01" : null,
+    toolName: "TestU01",
     pinnedLimitations: ["modern suite, included as required by the evidence policy"],
   },
 ].map((entry) => {
   const resolved = classifyExternalSuite({
     ...entry,
     archivedArtifact: path.join(root, entry.archivedArtifact),
+    sourceLabel: entry.archivedArtifact,
   })
   return buildSuiteEvidence({
     suite: entry.suite,

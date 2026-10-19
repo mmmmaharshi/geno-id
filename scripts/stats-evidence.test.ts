@@ -1,5 +1,6 @@
 import assert from "node:assert/strict"
 import { test } from "node:test"
+import path from "node:path"
 import {
   SAMPLE_DEFINITIONS,
   buildSuiteEvidence,
@@ -8,6 +9,8 @@ import {
   freeMaskForLayout,
   holmBonferroni,
 } from "./stats-evidence-core.ts"
+
+const root = path.resolve(import.meta.dirname, "..")
 
 test("holmBonferroni adjusts p-values and reports rejections", () => {
   const result = holmBonferroni(
@@ -190,4 +193,39 @@ test("classifyExternalSuite reports a missing archive as unavailable, not extern
   assert.equal(result.status, "unavailable")
   assert.equal(result.source, "scripts/run-practrand.ts")
   assert.ok(result.limitations.some((entry) => entry.includes("results/statistics/practrand.txt")))
+})
+
+test("classifyExternalSuite names the missing tool instead of printing null", () => {
+  const result = classifyExternalSuite({
+    suite: "practrand",
+    archivedArtifact: "results/statistics/practrand.txt",
+    runner: "scripts/run-practrand.ts",
+    tool: null,
+    toolName: "practrand",
+    pinnedLimitations: [],
+  })
+
+  assert.equal(result.status, "unavailable")
+  assert.ok(
+    result.limitations.some((entry) => entry.includes("practrand is not installed")),
+    `expected the tool to be named, got ${JSON.stringify(result.limitations)}`,
+  )
+  assert.ok(
+    !result.limitations.some((entry) => entry.includes("null")),
+    `no limitation may render a null tool name, got ${JSON.stringify(result.limitations)}`,
+  )
+})
+
+test("classifyExternalSuite reports a repo-relative source, not a machine-specific path", () => {
+  const result = classifyExternalSuite({
+    suite: "dieharder",
+    archivedArtifact: path.join(root, "results", "dieharder-results.md"),
+    sourceLabel: "results/dieharder-results.md",
+    runner: "scripts/run-dieharder.ts",
+    tool: "dieharder",
+    pinnedLimitations: [],
+  })
+
+  assert.equal(result.status, "external")
+  assert.equal(result.source, "results/dieharder-results.md")
 })
