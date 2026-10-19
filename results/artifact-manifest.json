@@ -1,7 +1,7 @@
 {
   "manifest_version": "1.0",
   "commit": "3126287",
-  "package_version": "1.25.1",
+  "package_version": "1.25.2",
   "generated_at": "2026-10-09T00:00:00Z",
   "note": "artifact map maintained alongside the manuscript; each entry names the committed file under results/ that backs the claim",
   "artifacts": {
@@ -104,8 +104,8 @@
   "notes": {
     "release_identity": {
       "policy": "the manuscript freezes to one release tag; every cited artifact must exist in that tag's tree",
-      "package_version": "1.25.1",
-      "frozen_commit": "see tag v1.25.1",
+      "package_version": "1.25.2",
+      "frozen_commit": "see tag v1.25.2",
       "stale_dois_not_cited": [
         "10.5281/zenodo.21617109 (v1.21.0)",
         "10.5281/zenodo.21618258 (v1.21.2)"

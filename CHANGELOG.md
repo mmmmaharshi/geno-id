@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.25.2] - 2026-10-19
+
+### Summary
+
+**The test gate is green again, and five defects in the journal evidence package are fixed — including one that made the cross-language conformance check unable to fail.**
+
+### Highlights
+
+- 🐛 **The unit suite had a failing test, and the fix was a real defect, not a retry.** `scripts/fibres.test.ts` drew 200,000 samples per case, which costs 0.4–1.6s alone but 3x that in the full suite, where the Playwright engine tests saturate the cores; bun's 5s default cap killed it under contention. Those tests now carry an explicit timeout, and the suite default is 30s so no other near-cap test flakes on a slow box.
+- 🧪 **A test asserted a wall-clock ratio between two sub-millisecond measurements.** `scripts/bench-core-collision-async.test.ts` failed at 0.5ms vs 0.1ms — noise, not a logic fault. The claim it meant to make, that the async collision path issues its whole batch concurrently, is directly observable as the number of calls in flight, so the test now asserts that. It fails on a regression to sequential awaiting (`1 !== 25`).
+- 🔒 **The cross-language conformance check could not fail.** CI regenerated the golden vectors in the same job it compared against, so a change to the TypeScript implementation was written into the file and the Rust port then agreed with the new file. The vectors are now hashed in `golden/SHA256SUMS`, CI compares against the committed vectors *before* any export, and the checker runs negative controls that deliberately break the index-modulo repair and the monotonic counter and require the comparison to notice. Both are detected.
+- 📋 **The artifact manifest named gitignored build outputs as evidence for a claim, which made the package permanently unverifiable.** `dist/` is not committed, so mapping a claim to `dist/all-results.json` guaranteed failure. Committed evidence and generated outputs are now separate fields, three committed artifacts the manuscript cites (`bit-allocation`, `db-sqlite-composite`, `structured-evidence`) are mapped to their claims, and `bun run evidence:verify` is the single command that checks the matrix — it exits non-zero when a mapped artifact is missing.
+- 🗄️ **The native-database harness wrote its artifact and then hung forever.** The PostgreSQL and MySQL clients were never closed, so the driver's sockets kept the event loop alive; a run only appeared to finish because the output was written before the process wedged. The `Engine` interface now has a `close()` and both implementations release their connections. The same file also declared `engines: [postgresql, mysql-innodb]` on every run regardless of what was measured, so a PostgreSQL-only run claimed an InnoDB measurement that was never taken.
+- 🔬 **The security analysis never said whether a GenoID UUID is authentic.** A new section states the integrity and authenticity boundary: nothing binds a UUID to its issuer, the 122 application bits are CSPRNG output rather than a MAC, the structured fields make forgery trivial by design, and the CSPRNG buys unpredictability and a collision bound, not integrity. The "High" security class is scoped accordingly.
+- 📐 **The cross-language vectors covered only three of the five constraint kinds.** A conformance layout adds the two the shipped layouts omit — a range constraint that clamps rather than remaps, and a fixed field — alongside a 40-bit random field, with a test asserting the exported vectors actually exercise them.
+
+### Known Issues
+
+- **MySQL/InnoDB remains unmeasured.** No MySQL server, client, or Docker is available on this host, so the InnoDB half of the paired native-database evaluation cannot be taken. The harness is implemented for both engines and exits `2` with a diagnostic naming the retargeting env vars. The committed `results/db-native.json` declares `engines: [postgresql]`, so no InnoDB result is implied, and the manuscript continues to present SQLite as its only measured engine.
+
+### Dependencies Updated
+
+None.
+
 ## [1.25.1] - 2026-10-09
 
 ### Summary
