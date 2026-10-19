@@ -2216,3 +2216,17 @@ export const EVENTSOURCING_LAYOUT: V8Layout = completeLayout("eventsourcing", [
   { name: "stream", start: 0, length: 16, type: "node" },
   { name: "seq", start: 66, length: 24, type: "counter", constraint: { monotonic: true } },
 ])
+
+/**
+ * Conformance layout: the constraint kinds the shipped layouts do not
+ * declare. `dbkey`, `multitenant`, and `eventsourcing` cover allowed-set
+ * and monotonic constraints, and the 48-bit timestamp covers a field wider
+ * than 32 bits. This layout adds the two that remain: a range constraint
+ * (clamped, not remapped) and a `fixed` field (a constant written at
+ * composition time, carrying no entropy at all).
+ */
+export const CONFORMANCE_LAYOUT: V8Layout = completeLayout("conformance", [
+  { name: "window", start: 0, length: 12, type: "shard", constraint: { min: 100, max: 4999 } },
+  { name: "kind", start: 12, length: 4, type: "fixed", value: 9 },
+  { name: "wide", start: 66, length: 40, type: "random" },
+])

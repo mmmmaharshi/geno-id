@@ -49,6 +49,8 @@ enum FieldType {
     Counter,
     Shard,
     Node,
+    /// A constant written at composition time; carries no entropy.
+    Fixed(u64),
 }
 
 #[derive(Clone, Debug, Default)]
@@ -239,6 +241,9 @@ fn generate_batch(
                     };
                     write_bits(&mut buf, f.start, f.length, val);
                 }
+                FieldType::Fixed(value) => {
+                    write_bits(&mut buf, f.start, f.length, value);
+                }
                 _ => {}
             }
         }
@@ -364,10 +369,42 @@ fn eventsourcing_layout() -> Vec<Field> {
     ]
 }
 
+// The conformance layout covers the constraint kinds the three shipped
+// layouts do not declare: a range constraint (clamped, not remapped) and a
+// fixed field (a constant written at composition time).
+fn conformance_layout() -> Vec<Field> {
+    vec![
+        Field {
+            name: "window".into(),
+            start: 0,
+            length: 12,
+            ftype: FieldType::Shard,
+            constraint: Some(Constraint {
+                min: Some(100),
+                max: Some(4999),
+                ..Default::default()
+            }),
+        },
+        Field {
+            name: "kind".into(),
+            start: 12,
+            length: 4,
+            ftype: FieldType::Fixed(9),
+            constraint: None,
+        },
+        Field {
+            name: "wide".into(),
+            start: 66,
+            length: 40,
+            ftype: FieldType::Shard,
+            constraint: None,
+        },
+    ]
+}
+
 const SEED0: u32 = 0xdeadbeef;
 const SEED1: u32 = 0x4f15f00d;
 const N: usize = 1000;
-
 /// Compare the Rust output against the committed vectors for one layout.
 /// Returns the number of mismatching lines.
 fn compare(golden_dir: &Path, label: &str, layout: &[Field], mutate: Mutation) -> usize {
@@ -417,6 +454,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ("dbkey-single-parent", dbkey_layout()),
         ("multitenant-single-parent", multitenant_layout()),
         ("eventsourcing-single-parent", eventsourcing_layout()),
+        ("conformance-single-parent", conformance_layout()),
     ];
 
     let mut all_pass = true;

@@ -15,6 +15,7 @@ const {
   DBKEY_LAYOUT,
   MULTITENANT_LAYOUT,
   EVENTSOURCING_LAYOUT,
+  CONFORMANCE_LAYOUT,
 } = algo as {
   configureRandom: (fn: ((buf: Uint8Array) => void) | null) => void
   createSeededRandom: (s0: number, s1: number) => (buf: Uint8Array) => void
@@ -24,6 +25,7 @@ const {
   DBKEY_LAYOUT: unknown
   MULTITENANT_LAYOUT: unknown
   EVENTSOURCING_LAYOUT: unknown
+  CONFORMANCE_LAYOUT: unknown
 }
 
 const N = 1000
@@ -88,6 +90,7 @@ console.log(`seed: (${SEED0}, ${SEED1}), n=${N}, fixed-time=${FIXED_TIME_MS}`)
 emit(DBKEY_LAYOUT, "dbkey-single-parent", genStructuredGenoIDSingleParent, "dbkey (single-parent)")
 emit(MULTITENANT_LAYOUT, "multitenant-single-parent", genStructuredGenoIDSingleParent, "multitenant (single-parent)")
 emit(EVENTSOURCING_LAYOUT, "eventsourcing-single-parent", genStructuredGenoIDSingleParent, "eventsourcing (single-parent)")
+emit(CONFORMANCE_LAYOUT, "conformance-single-parent", genStructuredGenoIDSingleParent, "conformance (single-parent)")
 
 console.log("\n=== Compiled golden vectors (different CSPRNG consumption) ===")
 emitCompiled(DBKEY_LAYOUT, "dbkey", "dbkey compiled")
