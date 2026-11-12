@@ -338,7 +338,7 @@ Concatenated text        & 52.5 & 821 & 3.2 & 5.97 \\
 \end{table}
 
 \subsection{Extension to clustered storage engines}
-The preceding measurements use SQLite because it requires no external daemon, but the underlying B+\!tree locality argument extends conceptually to production clustered-storage engines where the primary key IS the leaf-level index (clustered PK). Random-key distributions cause page reordering proportional to identifier entropy; time-ordered keys reduce this variance. We present no measured PostgreSQL or InnoDB result in this submission: those are left as future work, and SQLite is the only engine measured here. The benchmark harness for both native engines is committed alongside this paper (\texttt{scripts/bench-db-native.ts}, with seven identifier arms, three key distributions, percentiles over $\geq 5$ reps, query plans, storage, and WAL accounting, and a validator that refuses an incomplete result), so the experiment can be run and audited without reimplementation, but it requires a reachable PostgreSQL or MySQL server and its output is not archived here. Any future claim about clustered engines must come from that harness's own output rather than from this SQLite proxy, because neither the page layout, the WAL policy, nor the cost of a secondary index translates unchanged.
+The preceding measurements use SQLite because it requires no external daemon, but the underlying B+\!tree locality argument extends conceptually to production clustered-storage engines where the primary key IS the leaf-level index (clustered PK). Random-key distributions cause page reordering proportional to identifier entropy; time-ordered keys reduce this variance. We present no measured PostgreSQL or InnoDB result in this submission: those are left as future work, and SQLite is the only engine measured here. The benchmark harness for both native engines is committed alongside this paper (\texttt{src/scripts/bench-db-native.ts}, with seven identifier arms, three key distributions, percentiles over $\geq 5$ reps, query plans, storage, and WAL accounting, and a validator that refuses an incomplete result), so the experiment can be run and audited without reimplementation, but it requires a reachable PostgreSQL or MySQL server and its output is not archived here. Any future claim about clustered engines must come from that harness's own output rather than from this SQLite proxy, because neither the page layout, the WAL policy, nor the cost of a secondary index translates unchanged.
 
 
 \subsection{Sharded databases}
@@ -522,7 +522,7 @@ The gap above is now closed end to end. \texttt{inferWorkload} recovers
 field weights, roles, selectivity, and cardinality bounds from a query trace
 instead of taking them as hand input: weights are access counts, roles follow
 usage (range-filtered $\to$ partition, point-filtered $\to$ lookup), and
-cardinality counts distinct observed values. \texttt{scripts/bench-workload.ts}
+cardinality counts distinct observed values. \texttt{src/scripts/bench-workload.ts}
 generates a seeded 10{,}000-query trace, infers the weights, and lets Smith
 order place the hot field first; the hand baseline keeps region first. The
 measured query is always the workload's hot field, run as PK range seeks on
@@ -647,7 +647,7 @@ Per-field uniformity is measured directly rather than inferred from whole-UUID b
 
 \subsection{NIST SP 800-22 and dieharder}
 \label{sec:nist}
-The full 15-test NIST SP~800-22 battery was run on all three structured layouts (Block Frequency implemented per SP~800-22 \S2.2; the \texttt{nist80022} package provides the remaining tests, fanned across layouts by \texttt{scripts/nist-full-battery.py}). On fresh $10^7$-bit exports of the random-field payload per layout (200k/98k/122k UUIDs), all 123 reported p-values (41 per layout, including the 8 Random Excursions states and 18 Random Excursions Variant states) satisfy $p \geq 0.01$ (unconditional pass probability $\approx 0.29$ under the null); machine-readable results are archived in \texttt{results/nist-sp800-22-results.json}. Because the battery reports 123 p-values at $\alpha=0.01$, a single marginal value below threshold is expected by chance ($\approx 1.2$ per full run): one independent draw exhibited exactly that (Random Excursions, $p=0.0057$) and a fresh draw passed cleanly, consistent with the suite's Type-I rate rather than a structural bias. Each layout contributes a single stream, where NIST guidance prefers $\geq 100$; the battery therefore reads as a smoke test on the pooling path, not a certification. The anomalous draw predates draw-count logging and was not retained, so it is disclosed but not archived; all archived draws pass. (SP~800-22 has been withdrawn by NIST and its planned revision explicitly rejects the suite's use for assessing cryptographic generators~\cite{2}; we report the result as a sanity check on the pooling path, not as evidence of security.)
+The full 15-test NIST SP~800-22 battery was run on all three structured layouts (Block Frequency implemented per SP~800-22 \S2.2; the \texttt{nist80022} package provides the remaining tests, fanned across layouts by \texttt{src/scripts/nist-full-battery.py}). On fresh $10^7$-bit exports of the random-field payload per layout (200k/98k/122k UUIDs), all 123 reported p-values (41 per layout, including the 8 Random Excursions states and 18 Random Excursions Variant states) satisfy $p \geq 0.01$ (unconditional pass probability $\approx 0.29$ under the null); machine-readable results are archived in \texttt{results/nist-sp800-22-results.json}. Because the battery reports 123 p-values at $\alpha=0.01$, a single marginal value below threshold is expected by chance ($\approx 1.2$ per full run): one independent draw exhibited exactly that (Random Excursions, $p=0.0057$) and a fresh draw passed cleanly, consistent with the suite's Type-I rate rather than a structural bias. Each layout contributes a single stream, where NIST guidance prefers $\geq 100$; the battery therefore reads as a smoke test on the pooling path, not a certification. The anomalous draw predates draw-count logging and was not retained, so it is disclosed but not archived; all archived draws pass. (SP~800-22 has been withdrawn by NIST and its planned revision explicitly rejects the suite's use for assessing cryptographic generators~\cite{2}; we report the result as a sanity check on the pooling path, not as evidence of security.)
 
 \subsection{Throughput and baseline comparison}
 
@@ -744,20 +744,20 @@ The implementation, benchmark harness, experimental artifacts, golden vectors, a
 \hline\noalign{\smallskip}
 \textbf{Manuscript result} & \textbf{Command} & \textbf{Archived artifact} \\
 \noalign{\smallskip}\hline\noalign{\smallskip}
-E1 composition correctness (\S\ref{sec:composition-correctness}) & \texttt{bun run scripts/e1-production.ts} & \texttt{results/e1-production-1500k.json} \\
+E1 composition correctness (\S\ref{sec:composition-correctness}) & \texttt{bun run src/scripts/e1-production.ts} & \texttt{results/e1-production-1500k.json} \\
 Repair vs rejection sweep (\S\ref{sec:repair-vs-rejection}) & \texttt{bun run bench-rejection} & \texttt{results/rejection-sweep.json}, \texttt{.csv} \\
-Repair-distribution grid (\S\ref{sec:uniformity}) & \texttt{bun run scripts/bench-repair-grid.ts} & \texttt{results/repair-grid.json} \\
+Repair-distribution grid (\S\ref{sec:uniformity}) & \texttt{bun run src/scripts/bench-repair-grid.ts} & \texttt{results/repair-grid.json} \\
 $10^8$ field histogram (\S\ref{sec:evaluation}) & \texttt{bun run histogram-100m} & \texttt{results/shard-histogram-100m.json} \\
 Bit allocation, optimality and frontier (\S\ref{sec:bit-allocation}) & \texttt{bun run bench-bit-allocation} & \texttt{results/bit-allocation.json} \\
-NIST SP 800-22 battery (\S\ref{sec:nist}) & \texttt{bun run scripts/export-structured.ts} \emph{then} \texttt{python scripts/nist-bridge.py} & \texttt{results/nist-sp800-22-results.json} \\
+NIST SP 800-22 battery (\S\ref{sec:nist}) & \texttt{bun run src/scripts/export-structured.ts} \emph{then} \texttt{python src/scripts/nist-bridge.py} & \texttt{results/nist-sp800-22-results.json} \\
 dieharder subset (\S\ref{sec:nist}) & \texttt{bun run dieharder} & \texttt{results/dieharder-results.md} \\
 Nine-environment throughput (\S\ref{sec:throughput}) & \texttt{bun run bench-ci} (CI matrix, committed by the consolidate job) & \texttt{results/all-results.json} \\
 Browser benchmark (\S\ref{sec:deployability}) & \texttt{bun run playwright} & \texttt{results/benchmark\_results.json} \\
 SQLite composite key (\S\ref{sec:composite-bench}) & \texttt{bun run bench-sqlite-artifact} & \texttt{results/db-sqlite-composite.json} \\
-Native PostgreSQL + MySQL (\S\ref{sec:validity}) & \texttt{bun run scripts/bench-db-native.ts} (CI service containers) & \texttt{results/db-native.json} \\
-Workload-driven planning (\S\ref{sec:workload-planning}) & \texttt{bun run scripts/bench-workload.ts} & \texttt{results/workload-planning.json}, \texttt{results/workload-planning-regionhot.json} \\
-Microshard head-to-head (\S\ref{sec:microshard}) & \texttt{bun run scripts/bench-microshard.ts} & \texttt{results/microshard.json} \\
-Rust cross-language check (\S\ref{sec:cross-lang}) & \texttt{bun run scripts/export-golden.ts} \emph{then} \texttt{cd golden-check \&\& cargo run} & \texttt{golden/*.txt} \\
+Native PostgreSQL + MySQL (\S\ref{sec:validity}) & \texttt{bun run src/scripts/bench-db-native.ts} (CI service containers) & \texttt{results/db-native.json} \\
+Workload-driven planning (\S\ref{sec:workload-planning}) & \texttt{bun run src/scripts/bench-workload.ts} & \texttt{results/workload-planning.json}, \texttt{results/workload-planning-regionhot.json} \\
+Microshard head-to-head (\S\ref{sec:microshard}) & \texttt{bun run src/scripts/bench-microshard.ts} & \texttt{results/microshard.json} \\
+Rust cross-language check (\S\ref{sec:cross-lang}) & \texttt{bun run src/scripts/export-golden.ts} \emph{then} \texttt{cd src/golden-check \&\& cargo run} & \texttt{golden/*.txt} \\
 \noalign{\smallskip}\hline
 \end{tabular*}
 \end{table}

@@ -26,14 +26,14 @@ Domain documentation uses a single-context layout. See `docs/agents/domain.md`.
 
 GenoID is a TypeScript RFC 9562 v8 UUID library + CLI + browser benchmark. The proposed algorithm (`geno`) is a pooled CSPRNG with byte-level GA crossover/mutation. The research contribution is the **structured (declarative v8 layout) framework** — GA helps UUIDs through *composition*, not randomness (see Research findings).
 
-**Architecture — 5 algorithms benchmarked in `algo.ts`:**
+**Architecture — 5 algorithms benchmarked in `src/algo.ts`:**
 - `v4` — `crypto.randomUUID()` (native baseline)
 - `v7` — RFC 9562 UUIDv7 (48-bit timestamp + 74 random bits)
 - `hash` — SHA-256 hash-derived (v5-style, async via SubtleCrypto)
 - `mr` — Math.random (Xorshift128+, insecure baseline)
 - `geno` — GenoID (pooled CSPRNG + byte-level GA crossover/mutation, RFC 9562 v8)
 
-`scripts/bench.ts` holds extra GenoID variants (Fast v1–v3) used in development; the browser ships only `genGenoID`. `bench-core.ts` is the shared harness used by both `benchmark.ts` (browser) and `scripts/bench.ts` (Node).
+`src/scripts/bench.ts` holds extra GenoID variants (Fast v1–v3) used in development; the browser ships only `genGenoID`. `src/bench-core.ts` is the shared harness used by both `src/benchmark.ts` (browser) and `src/scripts/bench.ts` (Node).
 
 **Key tech:** Bun (runtime/build/test/lint/typecheck/publish), Node 22+ (CI), Deno 2.9.3 (CI-only research runtime), Playwright (browser benchmark), oxlint, changesets.
 
@@ -52,7 +52,7 @@ GenoID is a TypeScript RFC 9562 v8 UUID library + CLI + browser benchmark. The p
 | `bun run lint` | oxlint over all `.ts` | ~3s | `bun install` |
 | `bun run lint:fix` | Auto-fix lint issues | ~3s | `bun install` |
 | `bun run typecheck` | Typecheck root + scripts tsconfigs | ~10s | `bun install` |
-| `bun run test` | Run all unit tests (`scripts/*.test.ts`) | ~4s | `bun install` |
+| `bun run test` | Run all unit tests (`src/scripts/*.test.ts`) | ~4s | `bun install` |
 | `bun run bench-ci` | Condensed CI-shaped benchmark + collisions → `dist/bench-ci-results.json` | ~30s | `bun install` |
 | `bun run bench-rejection` | O(k) vs (1/d)^k repair sweep → `results/rejection-sweep.json` | ~5s | `bun install` |
 | `bun run bench-db` | SQLite index-locality benchmark → `results/db-sqlite.json` | ~30s | `bun install` |
@@ -61,28 +61,28 @@ GenoID is a TypeScript RFC 9562 v8 UUID library + CLI + browser benchmark. The p
 | `bun run playwright` | Browser benchmark (Chromium/Firefox/WebKit; `--browser=name`/`all`) | ~3min | `bun install` + `bun x playwright install` |
 | `bun run verify-playwright` | Dry-run Playwright with jsdom | ~5s | `bun install` |
 | `open index.html` | Interactive browser benchmark | manual | Any browser |
-| `deno run --allow-read --allow-write --allow-env --allow-sys scripts/deno/bench-ci.ts` | CI-shaped Deno benchmark + collisions | ~30s | `deno` |
-| `deno run --allow-read --allow-env --allow-sys scripts/deno/collision-100m.ts` | Deno 100M collision test (fanned across cores) | ~1min | `deno` |
-| `deno run --allow-read --allow-write --allow-env --allow-sys scripts/deno/stats.ts` | Deno NIST SP 800-22 battery | ~30s | `deno` |
-| `deno check scripts/deno/bench-ci.ts scripts/deno/collision-100m.ts scripts/deno/stats.ts` | Type-check Deno CI entry ports | ~5s | `deno` |
+| `deno run --allow-read --allow-write --allow-env --allow-sys src/scripts/deno/bench-ci.ts` | CI-shaped Deno benchmark + collisions | ~30s | `deno` |
+| `deno run --allow-read --allow-env --allow-sys src/scripts/deno/collision-100m.ts` | Deno 100M collision test (fanned across cores) | ~1min | `deno` |
+| `deno run --allow-read --allow-write --allow-env --allow-sys src/scripts/deno/stats.ts` | Deno NIST SP 800-22 battery | ~30s | `deno` |
+| `deno check src/scripts/deno/bench-ci.ts src/scripts/deno/collision-100m.ts src/scripts/deno/stats.ts` | Type-check Deno CI entry ports | ~5s | `deno` |
 
 **Source files:**
 
 | File | Responsibility |
 |---|---|
-| `algo.ts` | Pure algorithm implementations (authoritative). No DOM or I/O. |
-| `bench-core.ts` | Shared harness: `benchSync`, `benchAsyncBatched`, `birthdayBound50`, `collisionTest`, `collisionTestAsync`. No DOM, no I/O. |
-| `benchmark.ts` | Browser runner. Exports `init(host?)` + `runAll`, `copyToClipboard`, `copyTableToClipboard`. No module-level side effects. |
+| `src/algo.ts` | Pure algorithm implementations (authoritative). No DOM or I/O. |
+| `src/bench-core.ts` | Shared harness: `benchSync`, `benchAsyncBatched`, `birthdayBound50`, `collisionTest`, `collisionTestAsync`. No DOM or I/O. |
+| `src/benchmark.ts` | Browser runner. Exports `init(host?)` + `runAll`, `copyToClipboard`, `copyTableToClipboard`. No module-level side effects. |
 | `index.html` | Loads `dist/benchmark.js` via `<script type="module">` and calls `init()`. |
-| `scripts/bench.ts` | Node.js benchmark + GenoID experimental variants (Fast v1–v3). |
-| `scripts/stats.ts` | NIST SP 800-22 monobit, runs, chi-square, pairwise correlation. |
-| `scripts/playwright.ts` | Playwright automation. Exports `runBenchmark` with injectable `launch` factory. |
-| `scripts/playwright.dryrun.ts` | Dry-run with JSDOM mock. Calls `init()` after import. |
+| `src/scripts/bench.ts` | Node.js benchmark + GenoID experimental variants (Fast v1–v3). |
+| `src/scripts/stats.ts` | NIST SP 800-22 monobit, runs, chi-square, pairwise correlation. |
+| `src/scripts/playwright.ts` | Playwright automation. Exports `runBenchmark` with injectable `launch` factory. |
+| `src/scripts/playwright.dryrun.ts` | Dry-run with JSDOM mock. Calls `init()` after import. |
 
 ## Testing Instructions
 
-- Run all tests: `bun run test` (~4s; Bun runner over `scripts/*.test.ts`)
-- Run a subset: `bun test scripts/algo.test.ts`
+- Run all tests: `bun run test` (~4s; Bun runner over `src/scripts/*.test.ts`)
+- Run a subset: `bun test src/scripts/algo.test.ts`
 - Typecheck (not a test but a gate): `bun run typecheck`
 - e2e (browser): `bun run playwright` — asserts `browserErrors: []`, `GenoID-structured` present, 0 collisions
 - Coverage expectation: **`NN pass, 0 fail`** before continuing.
@@ -93,8 +93,8 @@ GenoID is a TypeScript RFC 9562 v8 UUID library + CLI + browser benchmark. The p
 
 - **Lint/format:** `bun run lint` (oxlint). `bun run lint:fix` auto-fixes.
 - **No comments unless asked** (project convention).
-- **File org:** `algo.ts` (pure, no DOM/I/O) + `bench-core.ts` (harness) + `scripts/*` (Node/Deno entry points, dynamically import `dist/*.js`).
-- **Imports/exports:** `scripts/*.ts` dynamically import the compiled `dist/algo.js` directly — no shim.
+- **File org:** `src/algo.ts` (pure, no DOM/I/O) + `src/bench-core.ts` (harness) + `src/scripts/*` (Node/Deno entry points, dynamically import `dist/*.js`).
+- **Imports/exports:** `src/scripts/*.ts` dynamically import the compiled `dist/algo.js` directly — no shim.
 - **Naming/version:** GenoID version nibble is `0x8` (RFC 9562 custom/experimental), not `0x4`.
 
 **Response style (for this agent):**
@@ -104,7 +104,7 @@ GenoID is a TypeScript RFC 9562 v8 UUID library + CLI + browser benchmark. The p
 
 ## Build and Deployment
 
-- **Build:** `bun run build` → `dist/` (gitignored; rebuild after changing `algo.ts`/`benchmark.ts`/`bench-core.ts`).
+- **Build:** `bun run build` → `dist/` (gitignored; rebuild after changing `src/algo.ts`/`src/benchmark.ts`/`src/bench-core.ts`).
 - **Browser benchmark (deployable):** `open index.html` or serve `dist/`. `index.html` loads `dist/benchmark.js` (ES module) and calls `init()`.
 - **CI/CD:** `.github/workflows/bench.yml` runs a matrix: `bun-matrix` (ubuntu/macos/windows), `node-matrix` (Node 22 × 3 OS), `deno-matrix` (Deno 2.9.3 × 3 OS), then a `consolidate` job merging per-env `bench-ci-results.json` into one table. Deno is CI-only.
 - **Release:** changesets (metadata + git tags only; no npm registry). See Automatic versioning.
@@ -116,7 +116,7 @@ After every change to any `.ts` file, run in order. **Stop and fix on any failur
 1. `/thermo-nuclear-code-quality-review` — kill duplication, spaghetti, oversized files, redundant layers.
 2. `bun run lint` — oxlint over all `.ts`.
 3. `bun run typecheck` — both root + scripts tsconfigs.
-4. `bun run test` — Bun test runner over `scripts/*.test.ts`.
+4. `bun run test` — Bun test runner over `src/scripts/*.test.ts`.
 5. `bun run build` — compiles to `dist/`.
 6. `bun run bench-rejection` — validates O(k) vs O((1/d)^k) repair bound. **Confirm no NaN/null cells + `results/rejection-sweep.json` written.**
 7. `bun run bench-db` — index-locality benchmark. **Confirm output written to `results/db-sqlite.json`.**
@@ -192,9 +192,9 @@ Example: Phase A (new baselines + 10M collision scaling + NIST on baselines) →
 
 ## Debugging and Troubleshooting
 
-- **`dist/` missing/stale:** always `bun run build` after editing `algo.ts`/`benchmark.ts`/`bench-core.ts`; `dist/` is gitignored.
+- **`dist/` missing/stale:** always `bun run build` after editing `src/algo.ts`/`src/benchmark.ts`/`src/bench-core.ts`; `dist/` is gitignored.
 - **Node version:** `crypto.randomUUID()` + `crypto.subtle` need Node 22+.
-- **Deno CI-only:** Deno ports (`scripts/deno/*`) mirror Bun/Node for cross-runtime comparison; excluded from `oxlint` + `tsconfig.scripts.json`, import types from source.
+- **Deno CI-only:** Deno ports (`src/scripts/deno/*`) mirror Bun/Node for cross-runtime comparison; excluded from `oxlint` + `tsconfig.scripts.json`, import types from source.
 - **Version nibble:** GenoID uses `0x8`, not `0x4`.
 - **Playwright:** install browsers once (`bun x playwright install`); `verify-playwright` dry-runs with jsdom if browsers unavailable.
 - **Slow CI on Node/Windows:** per-call `getRandomValues` schemes (v7, pg-uuid-v8, ulid, ulid-v8, ksuid) are slower on Node/Windows — a BCryptGenRandom backend artifact, not a GenoID defect. Pooled GenoID CSPRNG + native v4 are unaffected.
@@ -207,11 +207,11 @@ Example: Phase A (new baselines + 10M collision scaling + NIST on baselines) →
 | GA cannot be assessed on weak entropy at 1.2M bits | Math.random (Xorshift128+) passes all 15 NIST tests at 1.22M bits — no failures to "rescue". 100M+ bits needed to see Xorshift128+ weaknesses. |
 | GA cannot rescue controlled degradations | Across 5 degraded sources (biased, correlation, range-restricted, periodic, LCG), GA failed to fix any core structural failures. In 2 cases, GA worsened quality. |
 | GA is architectural, not statistical | The GA framework's value is in v8 UUID composition (pooling, parallelism, structured data embedding). It does not improve, and occasionally degrades, statistical randomness. |
-| 34B > 16B for CSPRNG samples | **Corrected by scan (`scripts/export-rank-scan.ts`, T=60 trials/size, 1M bits/trial):** `binary_matrix_rank` false-positive rate is ~1.7% and roughly *uniform* across draw sizes 16/20/24/28/32/34B. Matches expected Type II/α noise (~1% at p<0.01), NOT a draw-size effect. |
+| 34B > 16B for CSPRNG samples | **Corrected by scan (`src/scripts/export-rank-scan.ts`, T=60 trials/size, 1M bits/trial):** `binary_matrix_rank` false-positive rate is ~1.7% and roughly *uniform* across draw sizes 16/20/24/28/32/34B. Matches expected Type II/α noise (~1% at p<0.01), NOT a draw-size effect. |
 
 ## Structured (declarative v8 layout) framework — GenoID v2 direction
 
-GA genuinely helps UUIDs only through *composition*, not randomness. Implemented in `algo.ts` (`V8Layout`/`V8Field`, `genStructuredGenoID`, `composeStructured`, `repairConstraints`, `copyField`, `getFieldValue`, `forceVersionVariant`) and validated in `scripts/bench-structured.ts` (E1–E6) + `scripts/export-structured.ts` + `scripts/nist-bridge.py`.
+GA genuinely helps UUIDs only through *composition*, not randomness. Implemented in `src/algo.ts` (`V8Layout`/`V8Field`, `genStructuredGenoID`, `composeStructured`, `repairConstraints`, `copyField`, `getFieldValue`, `forceVersionVariant`) and validated in `src/scripts/bench-structured.ts` (E1–E6) + `src/scripts/export-structured.ts` + `src/scripts/nist-bridge.py`.
 
 | RQ | Experiment | Result |
 |---|---|---|
@@ -231,41 +231,41 @@ GA genuinely helps UUIDs only through *composition*, not randomness. Implemented
 
 | Script | Purpose |
 |---|---|
-| `scripts/export-samples.ts` | Export CSPRNG samples (v4, rawv8, genoid) for NIST |
-| `scripts/export-ablation.ts` | Export ablation variants (rawv8, full, xonly, monly) |
-| `scripts/export-weak-entropy.ts` | Export Math.random variants |
-| `scripts/export-degraded.ts` | Export 5 degraded sources × (raw + GA) for NIST |
-| `scripts/export-structured.ts` | Export structured-layout samples for NIST |
-| `scripts/bench-structured.ts` | E1–E6: composition, repair-vs-rejection, collision/uniformity, throughput |
-| `scripts/baselines.ts` | Phase A baselines: `genPgUuidV8`, `genUlid`/`genUlidV8`, `genKsuid`, `genSnowflake` + `extractRandomBits` |
-| `scripts/baselines.test.ts` | TDD unit tests for baseline generators |
-| `scripts/export-baselines.ts` | Export random-payload bit streams of UUID-shaped baselines |
-| `scripts/nist-bridge.py` | Full 15-test NIST SP 800-22 battery |
-| `scripts/test-crypto-v8.ts` | Node.js crypto test suite adapted for v8 (4 tests) |
-| `scripts/stats.ts` | In-house monobit, runs, chi-square, pairwise correlation, entropy |
+| `src/scripts/export-samples.ts` | Export CSPRNG samples (v4, rawv8, genoid) for NIST |
+| `src/scripts/export-ablation.ts` | Export ablation variants (rawv8, full, xonly, monly) |
+| `src/scripts/export-weak-entropy.ts` | Export Math.random variants |
+| `src/scripts/export-degraded.ts` | Export 5 degraded sources × (raw + GA) for NIST |
+| `src/scripts/export-structured.ts` | Export structured-layout samples for NIST |
+| `src/scripts/bench-structured.ts` | E1–E6: composition, repair-vs-rejection, collision/uniformity, throughput |
+| `src/scripts/baselines.ts` | Phase A baselines: `genPgUuidV8`, `genUlid`/`genUlidV8`, `genKsuid`, `genSnowflake` + `extractRandomBits` |
+| `src/scripts/baselines.test.ts` | TDD unit tests for baseline generators |
+| `src/scripts/export-baselines.ts` | Export random-payload bit streams of UUID-shaped baselines |
+| `src/scripts/nist-bridge.py` | Full 15-test NIST SP 800-22 battery |
+| `src/scripts/test-crypto-v8.ts` | Node.js crypto test suite adapted for v8 (4 tests) |
+| `src/scripts/stats.ts` | In-house monobit, runs, chi-square, pairwise correlation, entropy |
 
-### Deno ports (`scripts/deno/*`, CI-only)
+### Deno ports (`src/scripts/deno/*`, CI-only)
 
 | Script | Purpose |
 |---|---|
-| `scripts/deno/bench-ci.ts` | CI-shaped benchmark + collisions (Deno `deno-matrix`) |
-| `scripts/deno/bench.ts` | Full Deno speed benchmark + Welch significance |
-| `scripts/deno/bench-structured.ts` | E1–E6 structured on Deno |
-| `scripts/deno/stats.ts` | NIST SP 800-22 battery |
-| `scripts/deno/stats-core.ts` / `stats-worker.ts` | Per-position chi-square + correlation core / worker |
-| `scripts/deno/collision-100m.ts` / `collision-100m-worker.ts` | 100M collision test fanned across cores |
-| `scripts/deno/pool.ts` | CSPRNG pool (Deno `crypto.getRandomValues`) |
-| `scripts/deno/deno-io.ts` | Deno `writeBitsFile`/`readBitsFile` helpers |
-| `scripts/deno/export-samples.ts` / `export-ablation.ts` / `export-weak-entropy.ts` / `export-degraded.ts` / `export-structured.ts` / `export-baselines.ts` | Deno export mirrors |
+| `src/scripts/deno/bench-ci.ts` | CI-shaped benchmark + collisions (Deno `deno-matrix`) |
+| `src/scripts/deno/bench.ts` | Full Deno speed benchmark + Welch significance |
+| `src/scripts/deno/bench-structured.ts` | E1–E6 structured on Deno |
+| `src/scripts/deno/stats.ts` | NIST SP 800-22 battery |
+| `src/scripts/deno/stats-core.ts` / `stats-worker.ts` | Per-position chi-square + correlation core / worker |
+| `src/scripts/deno/collision-100m.ts` / `collision-100m-worker.ts` | 100M collision test fanned across cores |
+| `src/scripts/deno/pool.ts` | CSPRNG pool (Deno `crypto.getRandomValues`) |
+| `src/scripts/deno/deno-io.ts` | Deno `writeBitsFile`/`readBitsFile` helpers |
+| `src/scripts/deno/export-samples.ts` / `export-ablation.ts` / `export-weak-entropy.ts` / `export-degraded.ts` / `export-structured.ts` / `export-baselines.ts` | Deno export mirrors |
 
 ## Key Constraints
 
 - **Deno is CI-only.** Runtime is Bun (build/test/lint/typecheck/publish). Deno ports excluded from `oxlint` + `tsconfig.scripts.json`.
 - Node 22+ required (`crypto.randomUUID()` and `crypto.subtle`).
 - GenoID version nibble is `0x8` (not `0x4`).
-- `scripts/*.ts` dynamically import compiled `dist/algo.js` directly — no shim.
+- `src/scripts/*.ts` dynamically import compiled `dist/algo.js` directly — no shim.
 - `dist/` is gitignored; rebuild after changing core modules.
-- `benchmark.ts` has no module-level side effects — call `init(host?)`.
+- `src/benchmark.ts` has no module-level side effects — call `init(host?)`.
 - `tsconfig.json` / `tsconfig.scripts.json` extend `tsconfig.base.json`.
 
 ## Releasing

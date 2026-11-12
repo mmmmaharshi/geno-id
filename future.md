@@ -53,7 +53,7 @@ single-stream caveat until then.
 
 ### 5. Repair-distribution grid — DONE (24/24 cells, max dev 0.3pp)
 Measured output frequencies across an (m, ℓ) grid via
-`scripts/bench-repair-grid.ts`; every cell matches the closed-form fibre
+`src/scripts/bench-repair-grid.ts`; every cell matches the closed-form fibre
 sizes. Paper \S~uniformity + artifact-map row added. (Process note: the
 first run failed every cell because of a hand-copied RNG with a dropped
 xor-fold — the shared `mulberry32` import fixed it. Dogfooding worked.)

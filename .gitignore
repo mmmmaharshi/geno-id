@@ -11,10 +11,10 @@ dist/
 # playwright/bun test artifacts
 test-results/
 playwright-report/
-scripts/__pycache__/
+src/scripts/__pycache__/
 
 # Rust build artifacts (golden-check)
-golden-check/target/
+src/golden-check/target/
 
 # Agent configuration (opencode, claude, cursor)
 .claude/

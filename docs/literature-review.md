@@ -12,8 +12,8 @@
   Embedding structured fields (tenant, shard, timestamp) inside a 128-bit UUID
   via constraint-guided mutation-as-repair is novel relative to prior art.
 
-Internal evidence cited as ground truth: `scripts/export-ablation.ts`,
-`scripts/bench-structured.ts`, `bench-core.ts:33` (`birthdayBound50`), and the
+Internal evidence cited as ground truth: `src/scripts/export-ablation.ts`,
+`src/scripts/bench-structured.ts`, `src/bench-core.ts:33` (`birthdayBound50`), and the
 `AGENTS.md` findings table. External sources are marked `[n]`.
 
 ---
@@ -131,7 +131,7 @@ small-sample power limitation §2.3.1 predicts: Xorshill128+ is a strong
 become detectable at 100M+ bits, consistent with TestU01 guidance that Crush-class
 power needs tens of millions of bits [15][16]. GenoID's own dieharder export uses
 a 100M-bit (12.5 MB) sample precisely to escape this blind spot
-(`scripts/run-dieharder.ts:17`, `scripts/export-dieharder.ts:3`). The repo's
+(`src/scripts/run-dieharder.ts:17`, `src/scripts/export-dieharder.ts:3`). The repo's
 finding that raw-v8 (16B CSPRNG) shows an *occasional* NIST false-positive
 (binary_matrix_rank FAIL at p=0.001) while GenoID (34B) shows none is a
 sample-size/rank-distribution artifact, not a GA quality effect — larger draws
@@ -164,7 +164,7 @@ encrypted microsecond timestamp (48 bits) via XOR/AES with a seed, enabling
 functional-index range queries without exposing creation time [23][24]. Vérité
 (2025) independently describes encrypting a v7 timestamp into a v4/v8 disguise
 using XTEA [25]. Both are *timestamp-embedding* schemes. GenoID's contribution is
-distinct: a *declarative* v8 layout (`V8Layout`/`V8Field` in `algo.ts`) with
+distinct: a *declarative* v8 layout (`V8Layout`/`V8Field` in `src/algo.ts`) with
 constraint-guided mutation-as-repair, supporting arbitrary typed fields
 (tenant, shard, dbkey, event-sourcing) and not limited to a single timestamp. No
 academic "GA-for-UUID" paper exists [AGENTS.md]; pg_uuid_v8 is code-only with no

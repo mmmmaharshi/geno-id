@@ -2,10 +2,10 @@
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
     "outDir": "dist",
-    "rootDir": ".",
+    "rootDir": "src",
     "declaration": true,
     "types": ["node"]
   },
-  "include": ["algo.ts", "benchmark.ts", "bench-core.ts", "evidence-manifest.ts", "index.ts"],
-  "exclude": ["dist", "scripts", "node_modules"]
+  "include": ["src/algo.ts", "src/benchmark.ts", "src/bench-core.ts", "src/evidence-manifest.ts", "src/index.ts"],
+  "exclude": ["dist", "src/scripts", "node_modules"]
 }

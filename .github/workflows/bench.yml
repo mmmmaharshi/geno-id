@@ -49,7 +49,7 @@ jobs:
       - run: bun run bench-ci
       - name: Write job summary
         if: always()
-        run: bun run scripts/ci-summary.ts
+        run: bun run src/scripts/ci-summary.ts
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -76,10 +76,10 @@ jobs:
           node-version: ${{ matrix.node-version }}
       - run: bun install
       - run: bun run build
-      - run: bun x tsx scripts/bench-ci.ts
+      - run: bun x tsx src/scripts/bench-ci.ts
       - name: Write job summary
         if: always()
-        run: bun x tsx scripts/ci-summary.ts
+        run: bun x tsx src/scripts/ci-summary.ts
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -106,12 +106,12 @@ jobs:
         with:
           deno-version: "2.9.3"
       - name: Type-check Deno benchmark ports
-        run: deno check scripts/deno/bench-ci.ts scripts/deno/collision-100m.ts scripts/deno/stats.ts
+        run: deno check src/scripts/deno/bench-ci.ts src/scripts/deno/collision-100m.ts src/scripts/deno/stats.ts
       - name: CI benchmark (Deno)
-        run: deno run --allow-read --allow-write --allow-env --allow-sys scripts/deno/bench-ci.ts
+        run: deno run --allow-read --allow-write --allow-env --allow-sys src/scripts/deno/bench-ci.ts
       - name: 100M collision test (Deno, ubuntu only)
         if: matrix.os == 'ubuntu-latest'
-        run: deno run --allow-read --allow-env --allow-sys scripts/deno/collision-100m.ts
+        run: deno run --allow-read --allow-env --allow-sys src/scripts/deno/collision-100m.ts
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -136,12 +136,12 @@ jobs:
       # into the file, and Rust would then agree with the new file. The hash
       # check makes the input immutable; the export afterwards proves the
       # committed vectors are still reproducible.
-      - run: bun run scripts/verify-golden-hashes.ts
-      - run: cargo run --manifest-path golden-check/Cargo.toml --release
+      - run: bun run src/scripts/verify-golden-hashes.ts
+      - run: cargo run --manifest-path src/golden-check/Cargo.toml --release
       - name: Export golden vectors (reproducibility check)
-        run: bun run scripts/export-golden.ts
+        run: bun run src/scripts/export-golden.ts
       - name: Verify the export reproduces the committed vectors
-        run: bun run scripts/verify-golden-hashes.ts
+        run: bun run src/scripts/verify-golden-hashes.ts
       - name: Upload golden vectors
         uses: actions/upload-artifact@v4
         if: always()
@@ -199,7 +199,7 @@ jobs:
           MYSQL_PASSWORD: password
           MYSQL_DB: genoid
           GENOID_COMMIT: ${{ github.sha }}
-        run: bun run scripts/bench-db-native.ts --rows=5000 --reps=5 --probes=100
+        run: bun run src/scripts/bench-db-native.ts --rows=5000 --reps=5 --probes=100
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -237,7 +237,7 @@ jobs:
         with:
           pattern: bench-*
           path: combined
-      - run: bun x tsx scripts/ci-consolidate.ts combined
+      - run: bun x tsx src/scripts/ci-consolidate.ts combined
       - name: Write job summary
         if: always()
         run: cat dist/all-summary.md >> "$GITHUB_STEP_SUMMARY"

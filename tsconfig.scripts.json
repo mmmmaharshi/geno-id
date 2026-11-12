@@ -6,6 +6,6 @@
     "types": ["node"],
     "lib": ["ES2023"]
   },
-  "include": ["scripts/**/*.ts"],
-  "exclude": ["dist", "node_modules", "scripts/deno"]
+  "include": ["src/scripts/**/*.ts"],
+  "exclude": ["dist", "node_modules", "src/scripts/deno"]
 }

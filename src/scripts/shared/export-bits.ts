@@ -1,0 +1,27 @@
+// Shared NIST bit-stream export helpers: hex decoding plus the raw-v8
+// generator (CSPRNG bytes in v8 format, no GA). Previously copied into every
+// src/scripts/export-*.ts and src/scripts/dieharder-common.ts; this module is the
+// single home. Side-effect free apart from reading dist/algo.js like every
+// other export script.
+import { pathToFileURL } from "node:url"
+import path from "node:path"
+
+const root = path.resolve(import.meta.dirname, "..", "..", "..")
+const algo = (await import(pathToFileURL(path.join(root, "dist", "algo.js")).href)) as {
+  toUuidString: (b: Uint8Array) => string
+}
+const { toUuidString } = algo
+
+export function hexVal(c: number): number {
+  if (c >= 48 && c <= 57) return c - 48
+  if (c >= 97 && c <= 102) return c - 87
+  return 0
+}
+
+export function genRawV8(): string {
+  const bytes = new Uint8Array(16)
+  crypto.getRandomValues(bytes)
+  bytes[6] = (bytes[6] & 0x0f) | 0x80
+  bytes[8] = (bytes[8] & 0x3f) | 0x80
+  return toUuidString(bytes)
+}
