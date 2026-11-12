@@ -792,6 +792,111 @@ function constraintKinds(field: V8Field): ConstraintKind[] {
   return constraints
 }
 
+/** One observed query: which fields it filtered and what it touched. */
+export interface WorkloadTraceEvent {
+  op: "read" | "write"
+  kind: "point" | "range" | "scan"
+  /** Equality-filter field → value. */
+  filters?: Record<string, string | number>
+  /** Rows matched (pairs with scanned for selectivity). */
+  matched?: number
+  /** Rows scanned (pairs with matched for selectivity). */
+  scanned?: number
+}
+
+export interface InferredWorkload {
+  profile: DatabaseWorkloadProfile
+  /** Per-field access counts — the Smith weights for planBitAllocation. */
+  weights: Record<string, number>
+  /** Per-field distinct filter values observed — a cardinality lower bound. */
+  cardinalities: Record<string, number>
+}
+
+/**
+ * Infer a workload profile from a query trace instead of hand-declaring it.
+ * Weights are access counts; roles follow usage (range-filtered → partition,
+ * point-filtered → lookup, otherwise → cluster); selectivity is
+ * matched/scanned over events carrying both; cardinality counts distinct
+ * observed filter values. Unknown filter fields and empty traces throw.
+ */
+export function inferWorkload(
+  trace: readonly WorkloadTraceEvent[],
+  schema: LayoutSchema,
+): InferredWorkload {
+  if (!Array.isArray(trace) || trace.length === 0) {
+    throw new LayoutCompilerError("invalid-workload", "workload trace must be a non-empty array")
+  }
+  const schemaFields = new Set(schema.fields.map((field) => field.name))
+  const weights: Record<string, number> = {}
+  const distinct: Record<string, Set<string | number>> = {}
+  const matched: Record<string, number> = {}
+  const scanned: Record<string, number> = {}
+  const ranged = new Set<string>()
+  const pointed = new Set<string>()
+  let reads = 0
+  let writes = 0
+  for (const [index, event] of trace.entries()) {
+    const path = `trace[${index}]`
+    if (event.op !== "read" && event.op !== "write") {
+      throw new LayoutCompilerError("invalid-workload", `${path}.op must be "read" or "write"`, path)
+    }
+    if (event.kind !== "point" && event.kind !== "range" && event.kind !== "scan") {
+      throw new LayoutCompilerError(
+        "invalid-workload",
+        `${path}.kind must be "point", "range", or "scan"`,
+        path,
+      )
+    }
+    if (event.op === "read") reads++
+    else writes++
+    const filters: Record<string, string | number> = event.filters ?? {}
+    for (const [name, value] of Object.entries(filters)) {
+      if (!schemaFields.has(name)) {
+        throw new LayoutCompilerError(
+          "unknown-workload-field",
+          `workload trace filters unknown field ${name}`,
+          name,
+        )
+      }
+      weights[name] = (weights[name] ?? 0) + 1
+      if (event.kind === "range") ranged.add(name)
+      else if (event.kind === "point") pointed.add(name)
+      if (!distinct[name]) distinct[name] = new Set()
+      distinct[name].add(value)
+      if (event.matched !== undefined && event.scanned !== undefined) {
+        if (event.matched < 0 || event.scanned <= 0 || event.matched > event.scanned) {
+          throw new LayoutCompilerError(
+            "invalid-workload",
+            `${path}: matched/scanned must satisfy 0 <= matched <= scanned, scanned > 0`,
+            path,
+          )
+        }
+        matched[name] = (matched[name] ?? 0) + event.matched
+        scanned[name] = (scanned[name] ?? 0) + event.scanned
+      }
+    }
+  }
+  if (reads + writes === 0) {
+    throw new LayoutCompilerError("invalid-workload", "workload trace must be a non-empty array")
+  }
+  const fields: WorkloadFieldProfile[] = schema.fields.map((field) => {
+    let role: WorkloadFieldProfile["role"] = "cluster"
+    if (ranged.has(field.name)) role = "partition"
+    else if (pointed.has(field.name)) role = "lookup"
+    const profile: WorkloadFieldProfile = { name: field.name, role }
+    if (scanned[field.name] !== undefined && scanned[field.name] > 0) {
+      profile.selectivity = matched[field.name] / scanned[field.name]
+    }
+    return profile
+  })
+  const cardinalities: Record<string, number> = {}
+  for (const field of schema.fields) {
+    cardinalities[field.name] = distinct[field.name]?.size ?? 1
+    weights[field.name] ??= 0
+  }
+  return { profile: { readWeight: reads, writeWeight: writes, fields }, weights, cardinalities }
+}
+
 function placeSchemaFields(
   fields: readonly LayoutSchemaField[],
   profiles: readonly WorkloadFieldProfile[],
