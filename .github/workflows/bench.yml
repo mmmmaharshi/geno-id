@@ -211,8 +211,14 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@noreply.github.com"
           git add results/db-native.json
-          git diff --cached --quiet || git commit -m "ci(evidence): refresh native PostgreSQL/MySQL benchmark artifact"
-          git push
+          git diff --cached --quiet && echo "no changes to commit" && exit 0
+          git commit -m "ci(evidence): refresh native PostgreSQL/MySQL benchmark artifact"
+          # Another auto-commit job may land first; rebase and retry.
+          for i in 1 2 3; do
+            git pull --rebase origin main && git push && exit 0
+            sleep 10
+          done
+          exit 1
 
   consolidate:
     name: consolidate CI results
@@ -249,6 +255,12 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add results/all-results.json
-          git diff --cached --quiet || git commit -m "ci(evidence): refresh consolidated nine-environment benchmark artifact"
-          git push
+          git diff --cached --quiet && echo "no changes to commit" && exit 0
+          git commit -m "ci(evidence): refresh consolidated nine-environment benchmark artifact"
+          # Another auto-commit job (e.g. native-db) may land first; rebase and retry.
+          for i in 1 2 3; do
+            git pull --rebase origin main && git push && exit 0
+            sleep 10
+          done
+          exit 1
 
