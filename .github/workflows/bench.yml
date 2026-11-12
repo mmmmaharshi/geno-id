@@ -106,7 +106,7 @@ jobs:
         with:
           deno-version: "2.9.3"
       - name: Type-check Deno benchmark ports
-        run: deno check src/scripts/deno/bench-ci.ts src/scripts/deno/collision-100m.ts src/scripts/deno/stats.ts
+        run: deno check src/scripts/deno/bench-ci.ts src/scripts/deno/bench-structured.ts src/scripts/deno/bench.ts src/scripts/deno/collision-100m.ts src/scripts/deno/collision-100m-worker.ts src/scripts/deno/deno-io.ts src/scripts/deno/export-ablation.ts src/scripts/deno/export-baselines.ts src/scripts/deno/export-bits.ts src/scripts/deno/export-degraded.ts src/scripts/deno/export-samples.ts src/scripts/deno/export-structured.ts src/scripts/deno/export-weak-entropy.ts src/scripts/deno/pool.ts src/scripts/deno/stats-core.ts src/scripts/deno/stats-worker.ts src/scripts/deno/stats.ts
       - name: CI benchmark (Deno)
         run: deno run --allow-read --allow-write --allow-env --allow-sys src/scripts/deno/bench-ci.ts
       - name: 100M collision test (Deno, ubuntu only)
@@ -118,6 +118,16 @@ jobs:
           name: bench-deno-${{ matrix.os }}
           path: |
             dist/bench-ci-results.json
+
+  docs-links:
+    name: docs code-reference check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun run src/scripts/verify-doc-paths.ts
 
   golden-check:
     name: golden-vector check (Rust)

@@ -97,10 +97,7 @@ GenoID is a TypeScript RFC 9562 v8 UUID library + CLI + browser benchmark. The p
 - **Imports/exports:** `src/scripts/*.ts` dynamically import the compiled `dist/algo.js` directly — no shim.
 - **Naming/version:** GenoID version nibble is `0x8` (RFC 9562 custom/experimental), not `0x4`.
 
-**Response style (for this agent):**
-- Follow the `/i-have-adhd` skill when responding: lead with the next concrete action, number multi-step work, externalize state across turns, suppress tangents, give specific time estimates, make wins visible, matter-of-fact tone.
-- Always apply the `caveman` skill (full level) on every response: terse fragments, drop filler, no tool-call narration, no decorative tables/emoji, keep technical substance (API names, CLI commands, exact error strings) verbatim. Code/commits/PRs written normally.
-- `README.md` must follow `research-paper-spj` + `i-have-adhd`: one-idea hook, 4-sentence TL;DR, concrete example in first 2 paragraphs, problem before solution, related work after technical content, refutable claims with evidence. Keep professional tone (no caveman style) in docs.
+**Response style (for this agent):** follow the installed `i-have-adhd` + `caveman` (full) skills; `README.md` additionally follows `research-paper-spj` (professional tone, no caveman in docs).
 
 ## Build and Deployment
 
@@ -139,7 +136,7 @@ After every change to any `.ts` file, run in order. **Stop and fix on any failur
 
 ## Verification before completion (Iron Law)
 
-No completion, "passing", "fixed", or "done" claim without **fresh verification evidence produced in the same turn**. Before asserting any status — or committing, tagging, releasing, or delegating — run the exact command that proves the claim, read its full output and exit code, and state the claim *with* that evidence. A prior run, "should pass", linter-only output, or an agent's self-reported success are never sufficient.
+No completion, "passing", "fixed", or "done" claim without **fresh verification evidence produced in the same turn**. Before asserting any status — or committing, tagging, releasing, or delegating — run the exact command that proves the claim, read its full output and exit code, and state the claim *with* that evidence. A prior run, "should pass", linter-only output, or an agent's self-reported success are never sufficient. A background task's completion notice is never sufficient either: verify its artifact on disk.
 
 ## Utilize multiple CPU cores
 

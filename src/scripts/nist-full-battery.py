@@ -8,6 +8,7 @@ by the package, so it is implemented here per SP 800-22 sec 2.2.
 import json
 import math
 import os
+from datetime import datetime, timezone
 from pathlib import Path
 from concurrent.futures import ProcessPoolExecutor
 
@@ -151,7 +152,6 @@ def main():
             print(f"    {r['test']:<28} p={r['p_value']:.6f}  {r['status']}{flag}")
         print()
 
-    outpath = dist / "nist-sp800-22-full-results.json"
     payload = {
         "alpha": ALPHA,
         # Draw provenance: one battery run = one fresh CSPRNG export per layout
@@ -166,14 +166,34 @@ def main():
         "failed": failed,
         "results": all_results,
     }
-    with open(outpath, "w") as f:
-        json.dump(payload, f, indent=2)
-    print(f"Results saved: {outpath}")
+    archive_draw(payload, dist, root)
 
     # Exit non-zero if any test failed
     raise SystemExit(0 if failed == 0 else 1)
 
 
+def archive_draw(payload: dict, dist: Path, root: Path) -> Path:
+    """Write the battery result plus a timestamped copy under results/nist-draws/.
+
+    The dist copy keeps the fixed name CI artifacts expect; the archived copy
+    makes every draw permanent so a failed draw can never be lost or faked
+    by re-running. Naming is by UTC time, never by hand.
+    """
+    outpath = dist / "nist-sp800-22-full-results.json"
+    with open(outpath, "w") as f:
+        json.dump(payload, f, indent=2)
+    print(f"Results saved: {outpath}")
+    archive_dir = root / "results" / "nist-draws"
+    archive_dir.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    archived = (
+        archive_dir / f"draw-{stamp}-{payload['passed']}of{payload['total_tests']}.json"
+    )
+    with open(archived, "w") as f:
+        json.dump(payload, f, indent=2)
+    print(f"Draw archived: {archived}")
+    return archived
+
+
 if __name__ == "__main__":
     main()
-
