@@ -514,13 +514,19 @@ measured query is always the workload's hot field, run as PK range seeks on
 Under a tenant-heavy mix the inference recovers weights of 7987 (tenant) and
 1530 (region), the planner puts tenant first, and the tenant point query is one
 PK range seek against the hand layout's four:
-$2942\,\mu$s versus $14643\,\mu$s per lookup (means over 5 reps of 500
-lookups, non-overlapping 95\% CIs), a $5.0\times$ win with insert throughput
-at parity. Under an inverted region-heavy mix the planner emits region-first,
-coinciding with the hand layout, and the region probes show parity
-($5507\,\mu$s versus $5752\,\mu$s, overlapping 95\% CIs):
-convergence, not a win, which is the correct outcome when the hand order is
-already optimal. The trace is synthetic but seeded and archived with its parameters
+$3099\,\mu$s versus $14694\,\mu$s per lookup (means over 5 reps of 500
+lookups, non-overlapping 95\% CIs), a $4.7\times$ win, with insert throughput
+at parity on both engines (alternating timed reps; SQLite reps vary with host
+load, PostgreSQL reps agree within 5\%). Under an inverted region-heavy mix the planner emits region-first,
+coinciding with the hand layout, and the region probes show parity on both
+engines (SQLite $5636\,\mu$s versus $5762\,\mu$s; PostgreSQL $1.03\times$ with
+overlapping CIs): convergence, not a win, which is the correct outcome when
+the hand order is already optimal. The same loop runs on PostgreSQL (embedded PGlite, BYTEA PK):
+there both layouts tie on lookups ($1.02\times$, overlapping CIs), because
+counting 25{,}000 matching rows in WASM execution dominates the 1-vs-4 seek
+difference that the native SQLite executor exposes. The planning win
+materializes where index access dominates row visits; on row-visit-dominated
+engines the layout choice is free either way. The trace is synthetic but seeded and archived with its parameters
 in \texttt{results/workload-planning.json}, so the loop --- not the trace ---
 is the claim under test. A skewed trace is the favourable case by
 construction; the Section~\ref{sec:composite-bench} result stands for the
@@ -688,7 +694,7 @@ The vectors were regenerated after the repair and counter algorithms changed dur
 In production, each port draws from its own OS CSPRNG; the seeded byte stream exists only for cross-language verification. Different buffering in a Rust port would be no less correct for producing different byte sequences.
 
 \subsection*{Availability}
-The implementation, benchmark harness, experimental artifacts, golden vectors, and Rust cross-check are available at \url{https://github.com/mmmmaharshi/geno-id}. Each evaluation number traces to a committed artifact under \texttt{results/} carrying its own environment metadata. No single command regenerates the full evaluation; Table~\ref{tab:artifact-map} maps every manuscript table and figure to the exact command, output path, and archived file, so a reader can reproduce each result independently of the others. Full reproducibility instructions appear in \texttt{sources/reproducibility.md}. Available as \texttt{@manohar\_maharshi/genoid} on npm under the MIT license. The manuscript is frozen to the release tag recorded in \texttt{results/artifact-manifest.json}, together with the frozen commit SHA; that manifest also records which earlier release DOIs are deliberately not cited, because each predates behaviour reported here (the RFC~9562 \S6.2 monotonicity fix, the production-path E1 rewrite, and the $10^8$ field histogram). No native-database (PostgreSQL, MySQL/InnoDB) result is archived or claimed; the harness is committed but requires a reachable server.
+The implementation, benchmark harness, experimental artifacts, golden vectors, and Rust cross-check are available at \url{https://github.com/mmmmaharshi/geno-id}. Each evaluation number traces to a committed artifact under \texttt{results/} carrying its own environment metadata. No single command regenerates the full evaluation; Table~\ref{tab:artifact-map} maps every manuscript table and figure to the exact command, output path, and archived file, so a reader can reproduce each result independently of the others. Full reproducibility instructions appear in \texttt{sources/reproducibility.md}. Available as \texttt{@manohar\_maharshi/genoid} on npm under the MIT license. The manuscript is frozen to the release tag recorded in \texttt{results/artifact-manifest.json}, together with the frozen commit SHA; that manifest also records which earlier release DOIs are deliberately not cited, because each predates behaviour reported here (the RFC~9562 \S6.2 monotonicity fix, the production-path E1 rewrite, and the $10^8$ field histogram). No hosted native-database (remote PostgreSQL, MySQL/InnoDB) result is archived or claimed; the harness is committed but requires a reachable server. The workload-planning experiment in Section~\ref{sec:workload-planning} does run against PostgreSQL via embedded PGlite, so the layout effect is confirmed on two engines with the stated execution caveat.
 
 \begin{table}[!ht]
 \caption{Artifact map: manuscript result $\to$ exact command and archived output.}

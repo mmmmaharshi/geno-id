@@ -1,6 +1,6 @@
 {
   "experiment": "workload-planning",
-  "description": "Trace (seeded, archived params) -> inferWorkload weights/roles -> planBitAllocation Smith order -> SQLite hot-field lookup latency, planned vs hand order",
+  "description": "Trace (seeded, archived params) -> inferWorkload weights/roles -> planBitAllocation Smith order -> hot-field lookup latency, planned vs hand order, per engine",
   "trace": {
     "seed": 2654435769,
     "events": 10000,
@@ -38,26 +38,95 @@
     "tenant"
   ],
   "hotQuery": "region",
+  "engines": {
+    "sqlite": {
+      "planned": {
+        "insertRowsPerSec": 386109,
+        "insertReps": [
+          386007,
+          386212
+        ],
+        "lookupUs": {
+          "mean": 5636.3247200000005,
+          "ci95": [
+            5387.1767007072085,
+            5885.4727392927925
+          ]
+        },
+        "integrityOk": true
+      },
+      "hand": {
+        "insertRowsPerSec": 273114,
+        "insertReps": [
+          373601,
+          172627
+        ],
+        "lookupUs": {
+          "mean": 5762.49184,
+          "ci95": [
+            5641.849839241512,
+            5883.133840758487
+          ]
+        },
+        "integrityOk": true
+      },
+      "ratio": 1.0223846435873907
+    },
+    "pg": {
+      "planned": {
+        "insertRowsPerSec": 32624,
+        "insertReps": [
+          31414,
+          33833
+        ],
+        "lookupUs": {
+          "mean": 32862.88127999999,
+          "ci95": [
+            32657.49378767612,
+            33068.26877232385
+          ]
+        },
+        "integrityOk": true
+      },
+      "hand": {
+        "insertRowsPerSec": 34380,
+        "insertReps": [
+          34096,
+          34665
+        ],
+        "lookupUs": {
+          "mean": 33782.72528000003,
+          "ci95": [
+            33334.936800431904,
+            34230.51375956815
+          ]
+        },
+        "integrityOk": true
+      },
+      "ratio": 1.0279903637226067
+    }
+  },
   "lookupUs": {
     "planned": {
-      "mean": 5507.260319999999,
+      "mean": 5636.3247200000005,
       "ci95": [
-        5064.026764846723,
-        5950.493875153275
+        5387.1767007072085,
+        5885.4727392927925
       ]
     },
     "hand": {
-      "mean": 5751.52948,
+      "mean": 5762.49184,
       "ci95": [
-        5539.816387436633,
-        5963.2425725633675
+        5641.849839241512,
+        5883.133840758487
       ]
     },
-    "ratio": 1.0443540246523157
+    "ratio": 1.0223846435873907
   },
   "environment": {
     "os": "win32 10.0.26300 x64",
     "runtime": "Bun 1.4.4",
-    "generatedAt": "2026-11-12T11:39:45.588Z"
+    "postgres": "PGlite (embedded PostgreSQL)",
+    "generatedAt": "2026-11-12T12:04:05.183Z"
   }
 }

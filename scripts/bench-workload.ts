@@ -17,6 +17,7 @@ import os from "node:os"
 import path from "node:path"
 import { performance } from "node:perf_hooks"
 import { Database } from "bun:sqlite"
+import { PGlite } from "@electric-sql/pglite"
 import { pathToFileURL } from "node:url"
 import { aggregateReps } from "./bench-db.ts"
 
@@ -145,30 +146,101 @@ function layoutFor(order: string[], tag: string) {
 const planned = layoutFor(smithOrder, "planned")
 const hand = layoutFor(["region", "tenant"], "hand")
 
-function buildTable(layout: unknown, label: string): { db: Database; ids: Uint8Array[] } {
-  const db = new Database(":memory:")
-  db.run("CREATE TABLE ids (id BLOB(16) PRIMARY KEY) WITHOUT ROWID")
-  const ids: Uint8Array[] = []
-  const insert = db.prepare("INSERT INTO ids (id) VALUES (?)")
-  const insertStart = performance.now()
-  for (let i = 0; i < N; i++) {
-    const bytes = uuidToBytes(genStructuredGenoID(layout))
-    ids.push(bytes)
-    insert.run(bytes)
-  }
-  const insertMs = performance.now() - insertStart
-  console.log(`  ${label}: ${(N / (insertMs / 1000)).toFixed(0)} rows/s`)
-  return { db, ids }
+const ENGINES = (process.env.WORKLOAD_ENGINES ?? "sqlite,pg").split(",").map((s) => s.trim())
+for (const e of ENGINES) {
+  if (e !== "sqlite" && e !== "pg") throw new Error(`WORKLOAD_ENGINES must list sqlite and/or pg, got ${process.env.WORKLOAD_ENGINES}`)
 }
 
-// Tenant point lookup as PK range terms. The tenant field is 3 bits at
-// `start`; every byte-0 value consistent with tenant=t forms runs that the
-// PK index can seek. A leading tenant (start 0) is one run; a buried tenant
-// is several — the mechanism the experiment measures.
-function tenantRanges(tenant: number, start: number): [number, number][] {
+// Minimal dialect adapter: SQLite (bun:sqlite, in-memory) and PostgreSQL
+// (PGlite, embedded real Postgres). Both store 16-byte keys and answer the
+// same PK range queries; only the DDL, placeholders, and count type differ.
+interface BenchDb {
+  readonly engine: string
+  createIdsTable(): Promise<void>
+  insertIds(ids: Uint8Array[]): Promise<number>
+  countRanges(ranges: [number, number][]): Promise<number>
+  close(): Promise<void>
+}
+
+function rangeBounds(range: [number, number]): [Uint8Array, Uint8Array] {
+  const loB = new Uint8Array(16)
+  const hiB = new Uint8Array(16).fill(0xff)
+  loB[0] = range[0]
+  hiB[0] = range[1]
+  return [loB, hiB]
+}
+
+function makeSqliteDb(): BenchDb {
+  const db = new Database(":memory:")
+  return {
+    engine: "sqlite",
+    async createIdsTable(): Promise<void> {
+      db.run("CREATE TABLE ids (id BLOB(16) PRIMARY KEY) WITHOUT ROWID")
+    },
+    async insertIds(ids: Uint8Array[]): Promise<number> {
+      const insert = db.prepare("INSERT INTO ids (id) VALUES (?)")
+      const start = performance.now()
+      for (const bytes of ids) insert.run(bytes)
+      return ids.length / ((performance.now() - start) / 1000)
+    },
+    async countRanges(ranges: [number, number][]): Promise<number> {
+      const terms = ranges.map(() => "(id >= ? AND id <= ?)").join(" OR ")
+      const params: Uint8Array[] = []
+      for (const r of ranges) params.push(...rangeBounds(r))
+      const row = db.prepare(`SELECT COUNT(*) AS n FROM ids WHERE ${terms}`).get(...params) as { n: number }
+      return row.n
+    },
+    async close(): Promise<void> {
+      db.close()
+    },
+  }
+}
+
+function makePgDb(): BenchDb {
+  const db = new PGlite()
+  return {
+    engine: "postgres",
+    async createIdsTable(): Promise<void> {
+      await db.query("CREATE TABLE ids (id BYTEA PRIMARY KEY)")
+    },
+    async insertIds(ids: Uint8Array[]): Promise<number> {
+      const start = performance.now()
+      await db.query("BEGIN")
+      for (let i = 0; i < ids.length; i += 500) {
+        const chunk = ids.slice(i, i + 500)
+        const values = chunk.map((_, j) => `($${j + 1})`).join(",")
+        await db.query(`INSERT INTO ids (id) VALUES ${values}`, chunk as unknown as string[])
+      }
+      await db.query("COMMIT")
+      return ids.length / ((performance.now() - start) / 1000)
+    },
+    async countRanges(ranges: [number, number][]): Promise<number> {
+      let i = 0
+      const terms = ranges.map(() => `(id >= $${++i} AND id <= $${++i})`).join(" OR ")
+      const params: Uint8Array[] = []
+      for (const r of ranges) params.push(...rangeBounds(r))
+      const result = await db.query(`SELECT COUNT(*) AS n FROM ids WHERE ${terms}`, params)
+      return Number((result.rows[0] as { n: string }).n)
+    },
+    async close(): Promise<void> {
+      await db.close()
+    },
+  }
+}
+
+async function openDb(engine: string): Promise<BenchDb> {
+  return engine === "pg" ? makePgDb() : makeSqliteDb()
+}
+
+// Field-equality lookup as PK range terms. A length-L field at bit `start`
+// matches 2^(8-L) byte-0 values (when fully inside byte 0) forming runs the
+// PK index can seek: 1 run when leading, several when buried.
+function fieldRanges(value: number, start: number, length: number): [number, number][] {
+  const shift = 7 - (start + length - 1)
+  const mask = (1 << length) - 1
   const values: number[] = []
   for (let b = 0; b < 256; b++) {
-    if (((b >> (7 - (start + 2))) & 7) === tenant) values.push(b)
+    if (((b >> shift) & mask) === value) values.push(b)
   }
   const runs: [number, number][] = []
   let runStart = values[0]
@@ -184,110 +256,143 @@ function tenantRanges(tenant: number, start: number): [number, number][] {
   return runs
 }
 
-function benchLookups(db: Database, tenants: number[], start: number): number[] {
+async function benchLookups(
+  db: BenchDb,
+  values: number[],
+  start: number,
+  length: number,
+): Promise<number[]> {
   const times: number[] = []
   for (let r = 0; r < REPS; r++) {
     const startMs = performance.now()
     for (let i = 0; i < LOOKUPS; i++) {
-      const t = tenants[(r * LOOKUPS + i) % tenants.length]
-      const terms = tenantRanges(t, start)
-        .map(() => "(id >= ? AND id <= ?)")
-        .join(" OR ")
-      const stmt = db.prepare(`SELECT COUNT(*) AS n FROM ids WHERE ${terms}`)
-      const params: Uint8Array[] = []
-      for (const [lo, hi] of tenantRanges(t, start)) {
-        const loB = new Uint8Array(16)
-        const hiB = new Uint8Array(16).fill(0xff)
-        loB[0] = lo
-        hiB[0] = hi
-        params.push(loB, hiB)
-      }
-      stmt.get(...params)
+      const t = values[(r * LOOKUPS + i) % values.length]
+      await db.countRanges(fieldRanges(t, start, length))
     }
     times.push(((performance.now() - startMs) / LOOKUPS) * 1000)
   }
   return times
 }
 
-const plannedTables = buildTable(planned, "planned")
-const handTables = buildTable(hand, "hand")
-
-const probeTenants = Array.from({ length: LOOKUPS }, (_, i) => i % 8)
 function fieldStart(layout: { fields: { name: string; start: number }[] }, name: string): number {
   const field = layout.fields.find((f) => f.name === name)
   if (!field) throw new Error(`layout is missing field ${name}`)
   return field.start
 }
-const plannedStart = fieldStart(planned, "tenant")
-const handStart = fieldStart(hand, "tenant")
 
-function countTenant(db: Database, tenant: number, start: number): number {
-  const terms = tenantRanges(tenant, start)
-    .map(() => "(id >= ? AND id <= ?)")
-    .join(" OR ")
-  const params: Uint8Array[] = []
-  for (const [lo, hi] of tenantRanges(tenant, start)) {
-    const loB = new Uint8Array(16)
-    const hiB = new Uint8Array(16).fill(0xff)
-    loB[0] = lo
-    hiB[0] = hi
-    params.push(loB, hiB)
-  }
-  const row = db.prepare(`SELECT COUNT(*) AS n FROM ids WHERE ${terms}`).get(...params) as { n: number }
-  return row.n
+// The measured query is the workload's hot field: tenant point lookups when
+// tenant dominates, region range probes when region does.
+const hotField =
+  inferred.weights.tenant >= inferred.weights.region
+    ? { name: "tenant", values: [0, 1, 2, 3, 4, 5, 6, 7], length: 3 }
+    : { name: "region", values: [0, 1, 2, 3], length: 2 }
+const probeValues = Array.from({ length: LOOKUPS }, (_, i) => hotField.values[i % hotField.values.length])
+const plannedStart = fieldStart(planned, hotField.name)
+const handStart = fieldStart(hand, hotField.name)
+
+// IDs are generated once per layout so every engine measures the same multiset.
+function genIds(layout: unknown): Uint8Array[] {
+  const ids: Uint8Array[] = []
+  for (let i = 0; i < N; i++) ids.push(uuidToBytes(genStructuredGenoID(layout)))
+  return ids
+}
+const plannedIds = genIds(planned)
+const handIds = genIds(hand)
+
+interface EngineArm {
+  insertRowsPerSec: number
+  insertReps: number[]
+  lookupUs: { mean: number; ci95: [number, number] }
+  integrityOk: boolean
 }
 
-// The two tables hold independent random draws, so cross-table counts differ
+const INSERT_REPS = 2
+
+const engines: Record<string, { planned: EngineArm; hand: EngineArm; ratio: number }> = {}
+for (const engine of ENGINES) {
+  console.log(`=== engine: ${engine} ===`)
+  // Warmup (discarded): settle JIT/WASM paths so the first timed arm is not
+  // systematically favoured — earlier runs showed a first-table advantage.
+  const warm = await openDb(engine)
+  await warm.createIdsTable()
+  await warm.insertIds(plannedIds.slice(0, 5000))
+  await warm.close()
+  // Alternating timed reps: P,H,P,H. Any residual drift hits both arms equally.
+  const insertReps: Record<"planned" | "hand", number[]> = { planned: [], hand: [] }
+  const layouts = { planned: plannedIds, hand: handIds } as const
+  for (let rep = 0; rep < INSERT_REPS; rep++) {
+    for (const label of ["planned", "hand"] as const) {
+      const db = await openDb(engine)
+      await db.createIdsTable()
+      insertReps[label].push(await db.insertIds(layouts[label]))
+      await db.close()
+    }
+  }
+  const arms: Record<string, EngineArm> = {}
+  for (const [label, ids, start] of [
+    ["planned", plannedIds, plannedStart],
+    ["hand", handIds, handStart],
+  ] as const) {
+    const db = await openDb(engine)
+    await db.createIdsTable()
+    await db.insertIds(ids)
+    const expected = new Array<number>(hotField.values.length).fill(0)
+    for (const bytes of ids) expected[decodeField(bytes, start, hotField.length)]++
+    for (const v of hotField.values) {
+      const got = await db.countRanges(fieldRanges(v, start, hotField.length))
+      if (got !== expected[v]) throw new Error(`${engine} ${label} ${hotField.name} ${v}: SQL count ${got} != decoded ${expected[v]}`)
+    }
+    const us = await benchLookups(db, probeValues, start, hotField.length)
+    await db.close()
+    const mean = insertReps[label].reduce((a, b) => a + b, 0) / insertReps[label].length
+    arms[label] = { insertRowsPerSec: Math.round(mean), insertReps: insertReps[label].map(Math.round), lookupUs: aggregateReps(us), integrityOk: true }
+  }
+  const ratio = arms.hand.lookupUs.mean / arms.planned.lookupUs.mean
+  engines[engine] = { ...arms, ratio } as (typeof engines)[string]
+  console.log(`  integrity: SQL range counts match JS bit-decodes on both layouts`)
+  console.log(`  insert planned: ${arms.planned.insertRowsPerSec} rows/s [${arms.planned.insertReps.join(",")}] hand: ${arms.hand.insertRowsPerSec} rows/s [${arms.hand.insertReps.join(",")}]`)
+  console.log(`  ${hotField.name} lookup planned: ${arms.planned.lookupUs.mean.toFixed(2)} us (CI ${arms.planned.lookupUs.ci95[0].toFixed(2)}-${arms.planned.lookupUs.ci95[1].toFixed(2)})`)
+  console.log(`  ${hotField.name} lookup hand:    ${arms.hand.lookupUs.mean.toFixed(2)} us (CI ${arms.hand.lookupUs.ci95[0].toFixed(2)}-${arms.hand.lookupUs.ci95[1].toFixed(2)})`)
+}
+
+const report = {
+  experiment: "workload-planning",
+  description:
+    "Trace (seeded, archived params) -> inferWorkload weights/roles -> planBitAllocation Smith order -> hot-field lookup latency, planned vs hand order, per engine",
+  trace: { seed: SEED, events: trace.length, mix: `tenant-point ${mixParts[0]} / region-range ${mixParts[1]} / write ${mixParts[2]}` },
+  inferred: { weights: inferred.weights, cardinalities: inferred.cardinalities, roles: inferred.profile.fields },
+  plan: { smithOrder, randomBits: plan.randomBits },
+  handOrder: ["region", "tenant"],
+  hotQuery: hotField.name,
+  engines,
+  // Legacy top-level shape (SQLite) preserved for existing citations.
+  lookupUs: (engines.sqlite as { planned: EngineArm; hand: EngineArm; ratio: number } | undefined)
+    ? {
+        planned: engines.sqlite.planned.lookupUs,
+        hand: engines.sqlite.hand.lookupUs,
+        ratio: engines.sqlite.ratio,
+      }
+    : undefined,
+  environment: {
+    os: `${os.platform()} ${os.release()} ${os.arch()}`,
+    runtime: process.versions.bun ? `Bun ${process.versions.bun}` : `Node ${process.version}`,
+    postgres: "PGlite (embedded PostgreSQL)",
+    generatedAt: new Date().toISOString(),
+  },
+}
+
+// The two layouts hold independent random draws, so cross-layout counts differ
 // by chance. Integrity instead checks each layout's range query against a
 // JS bit-decode of the same table's stored IDs.
-function decodeTenant(bytes: Uint8Array, start: number): number {
+function decodeField(bytes: Uint8Array, start: number, length: number): number {
   let v = 0
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < length; i++) {
     const bit = start + i
     v = (v << 1) | ((bytes[bit >> 3] >> (7 - (bit & 7))) & 1)
   }
   return v
 }
 
-for (const [label, tables, start] of [
-  ["planned", plannedTables, plannedStart],
-  ["hand", handTables, handStart],
-] as const) {
-  const expected = new Array<number>(8).fill(0)
-  for (const bytes of tables.ids) expected[decodeTenant(bytes, start)]++
-  for (let t = 0; t < 8; t++) {
-    const got = countTenant(tables.db, t, start)
-    if (got !== expected[t]) throw new Error(`${label} tenant ${t}: SQL count ${got} != decoded ${expected[t]}`)
-  }
-}
-console.log("  integrity: SQL range counts match JS bit-decodes on both layouts")
-
-const plannedUs = benchLookups(plannedTables.db, probeTenants, plannedStart)
-const handUs = benchLookups(handTables.db, probeTenants, handStart)
-const plannedStats = aggregateReps(plannedUs)
-const handStats = aggregateReps(handUs)
-console.log(`  tenant lookup planned: ${plannedStats.mean.toFixed(2)} us (CI ${plannedStats.ci95[0].toFixed(2)}-${plannedStats.ci95[1].toFixed(2)})`)
-console.log(`  tenant lookup hand:    ${handStats.mean.toFixed(2)} us (CI ${handStats.ci95[0].toFixed(2)}-${handStats.ci95[1].toFixed(2)})`)
-
-plannedTables.db.close()
-handTables.db.close()
-
-const report = {
-  experiment: "workload-planning",
-  description:
-    "Trace (seeded, archived params) -> inferWorkload weights/roles -> planBitAllocation Smith order -> SQLite tenant-lookup latency, planned vs hand order",
-  trace: { seed: SEED, events: trace.length, mix: `tenant-point ${mixParts[0]} / region-range ${mixParts[1]} / write ${mixParts[2]}` },
-  inferred: { weights: inferred.weights, cardinalities: inferred.cardinalities, roles: inferred.profile.fields },
-  plan: { smithOrder, randomBits: plan.randomBits },
-  handOrder: ["region", "tenant"],
-  lookupUs: { planned: plannedStats, hand: handStats, ratio: handStats.mean / plannedStats.mean },
-  environment: {
-    os: `${os.platform()} ${os.release()} ${os.arch()}`,
-    runtime: process.versions.bun ? `Bun ${process.versions.bun}` : `Node ${process.version}`,
-    generatedAt: new Date().toISOString(),
-  },
-}
-
 mkdirSync(path.dirname(path.resolve(root, OUT)), { recursive: true })
 writeFileSync(path.resolve(root, OUT), `${JSON.stringify(report, null, 2)}\n`)
-console.log(`\nwrote ${OUT} (planned/hand lookup ratio ${report.lookupUs.ratio.toFixed(2)}x)`)
+console.log(`\nwrote ${OUT}`)
