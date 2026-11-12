@@ -150,9 +150,9 @@ function makeConstraintLayout(k: number): V8Layout {
 }
 
 function e2(): E2Row[] {
-  console.log("\n=== E2: GA repair vs CSPRNG rejection (RQ2) ===")
+  console.log("\n=== E2: repair vs CSPRNG rejection (RQ2) ===")
   console.log("  each constrained field: 8 bits, allowed set size 4 -> per-field reject ratio 64x")
-  console.log("  analytic rejection trials/UUID = 64^k  (GA repairs/UUID ~= k, O(k*8) ops)")
+  console.log("  analytic rejection trials/UUID = 64^k  (repairs/UUID ~= k, O(k*8) ops)")
   console.log("  k | GA repairs/UUID | rejection trials/UUID | GA ms/M | reject ms/M")
   const rows: E2Row[] = []
   const N_GA = 200_000
@@ -220,11 +220,12 @@ function e3e4e5(): E345Result {
   const nColl = 2_000_000
   const c = collisionTest(() => genStructuredGenoID(layout), nColl)
   console.log(`  dbkey layout, n=${nColl}: ${c} collisions`)
-  console.log(`  theoretical 50% collision n: ${birthdayBound50(122).toExponential(2)}`)
-
-  // Uniformity on random-field bits (reuse the canonical bit extractor)
+  // Collision bound uses the layout's actual random-payload bits, not 122.
   const randomFields = layout.fields.filter((f) => f.type === "random")
   const totalBits = randomFields.reduce((s, f) => s + f.length, 0)
+  console.log(`  theoretical 50% collision n (${totalBits} random bits): ${birthdayBound50(totalBits).toExponential(2)}`)
+
+  // Uniformity on random-field bits (reuse the canonical bit extractor)
   const ones = new Array<number>(totalBits).fill(0)
   const M = 50_000
   for (let i = 0; i < M; i++) {
@@ -241,7 +242,7 @@ function e3e4e5(): E345Result {
     layout: layout.name,
     n: nColl,
     collisions: c,
-    birthdayBound50: birthdayBound50(122).toExponential(2),
+    birthdayBound50: birthdayBound50(totalBits).toExponential(2),
     uniformityMaxDev: maxDev,
     pass: maxDev < 0.05,
   }

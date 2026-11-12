@@ -473,9 +473,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     for (name, mutate) in [("repair", Mutation::Repair), ("counter", Mutation::Counter)] {
         let mut detected = false;
         for (label, layout) in &entries {
-            if compare(&golden_dir, label, layout, mutate) > 0 {
+            let d = compare(&golden_dir, label, layout, mutate);
+            if d > 0 {
                 detected = true;
             }
+            eprintln!("  negative control ({}, {}): {} mismatches", name, label, d);
         }
         if detected {
             eprintln!("  negative control ({}): DETECTED", name);

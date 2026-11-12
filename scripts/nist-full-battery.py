@@ -13,6 +13,7 @@ from concurrent.futures import ProcessPoolExecutor
 
 import numpy as np
 import scipy
+
 scipy.zeros = np.zeros
 from scipy.special import gammaincc
 
@@ -36,7 +37,9 @@ def load_bits(path):
         return f.read().strip()
 
 
-def block_frequency_test(binary_data: str, block_size: int = 128, verbose: bool = False):
+def block_frequency_test(
+    binary_data: str, block_size: int = 128, verbose: bool = False
+):
     """NIST SP 800-22 sec 2.2 — Frequency within a Block (Chi-square)."""
     n = len(binary_data)
     n_blocks = n // block_size
@@ -44,7 +47,7 @@ def block_frequency_test(binary_data: str, block_size: int = 128, verbose: bool 
         return [("BlockFrequency", 0.0, False)]
     chi = 0.0
     for i in range(n_blocks):
-        block = binary_data[i * block_size:(i + 1) * block_size]
+        block = binary_data[i * block_size : (i + 1) * block_size]
         ones = block.count("1")
         pi = ones / block_size
         chi += (pi - 0.5) ** 2
@@ -59,9 +62,14 @@ def run_one(job):
 
     def add(name, res):
         for entry in res:
-            results.append({"layout": label, "test": name,
-                            "p_value": round(float(entry[1]), 6),
-                            "status": "PASS" if entry[2] else "FAIL"})
+            results.append(
+                {
+                    "layout": label,
+                    "test": name,
+                    "p_value": round(float(entry[1]), 6),
+                    "status": "PASS" if entry[2] else "FAIL",
+                }
+            )
 
     # 1. Frequency (Monobit)
     add("Frequency", FrequencyTest.monobit_test(bits))
@@ -119,7 +127,9 @@ def main():
     all_results = []
     layout_summary = {}
 
-    with ProcessPoolExecutor(max_workers=min(len(samples), os.cpu_count() or 4)) as pool:
+    with ProcessPoolExecutor(
+        max_workers=min(len(samples), os.cpu_count() or 4)
+    ) as pool:
         for label, results in pool.map(run_one, samples):
             layout_summary[label] = results
             all_results.extend(results)
@@ -144,6 +154,13 @@ def main():
     outpath = dist / "nist-sp800-22-full-results.json"
     payload = {
         "alpha": ALPHA,
+        # Draw provenance: one battery run = one fresh CSPRNG export per layout
+        # (no seed — OS entropy by design). A rerun is a new independent draw;
+        # report the draw count alongside the pass rate so a marginal p-value
+        # can be read against the expected Type-I count, not in isolation.
+        "draws": 1,
+        "draw_model": "one fresh CSPRNG export per layout per run; reruns are independent draws",
+        "bit_files": {label: str(path) for label, path in layout_files.items()},
         "total_tests": total,
         "passed": passed,
         "failed": failed,

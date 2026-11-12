@@ -140,11 +140,12 @@ function e3e4e5(): void {
   const nColl = 2_000_000
   const c = collisionTest(() => genStructuredGenoID(layout), nColl)
   console.log(`  dbkey layout, n=${nColl}: ${c} collisions`)
-  console.log(`  theoretical 50% collision n: ${birthdayBound50(122).toExponential(2)}`)
-
-  // Uniformity on random-field bits (reuse the canonical bit extractor)
+  // Collision bound uses the layout's actual random-payload bits, not 122.
   const randomFields = layout.fields.filter((f) => f.type === "random")
   const totalBits = randomFields.reduce((s, f) => s + f.length, 0)
+  console.log(`  theoretical 50% collision n (${totalBits} random bits): ${birthdayBound50(totalBits).toExponential(2)}`)
+
+  // Uniformity on random-field bits (reuse the canonical bit extractor)
   const ones = new Array<number>(totalBits).fill(0)
   const M = 50_000
   for (let i = 0; i < M; i++) {

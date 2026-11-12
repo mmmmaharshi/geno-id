@@ -7,6 +7,10 @@ export interface EnvInfo {
   cpuModel: string
   cpuCount: number
   totalMemoryMB: number
+  /** Commit SHA the benchmark ran at, when available (CI sets GITHUB_SHA). */
+  commitSha?: string
+  /** CI run identifier, when available (CI sets GITHUB_RUN_ID). */
+  runId?: string
 }
 
 export interface BenchEntry {
@@ -25,6 +29,10 @@ export interface BenchEntry {
   samples: number[]
   /** Two-tailed Welch t-test p-value vs the baseline generator (CIBenchmarkResult.baselineName). */
   welchP?: number
+  /** Welch t-statistic vs the baseline generator. */
+  welchT?: number
+  /** Welch–Satterthwaite degrees of freedom vs the baseline generator. */
+  welchDf?: number
   /** Cohen's d effect size vs the baseline generator (positive = faster than baseline). */
   cohensD?: number
 }
@@ -36,6 +44,10 @@ export interface ComparisonEntry {
   /** Ratio mean_a / mean_b. >1 means a is faster. */
   ratio: number
   welchP: number
+  /** Welch t-statistic for the a-vs-b difference. */
+  welchT?: number
+  /** Welch–Satterthwaite degrees of freedom for the a-vs-b difference. */
+  welchDf?: number
   cohensD: number
   /** Name of the faster generator. */
   faster: string

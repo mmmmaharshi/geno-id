@@ -46,6 +46,8 @@ function collectEnv(): EnvInfo {
     cpuModel: os.cpus()[0]?.model ?? "unknown",
     cpuCount: os.cpus().length,
     totalMemoryMB: Math.round(os.totalmem() / (1024 * 1024)),
+    commitSha: process.env.GITHUB_SHA ?? undefined,
+    runId: process.env.GITHUB_RUN_ID ?? undefined,
   }
 }
 
@@ -99,6 +101,8 @@ const benchmarks: BenchEntry[] = specs.map(([name]) => {
     trials: r.trials,
     samples: r.samples.map(Math.round),
     welchP: Number(cmp.p.toPrecision(3)),
+    welchT: Number(cmp.t.toPrecision(4)),
+    welchDf: Number(cmp.df.toPrecision(4)),
     cohensD: Number(cmp.d.toFixed(3)),
   }
 })
@@ -119,6 +123,8 @@ const comparisons: ComparisonEntry[] = comparisonPairs.map(([name, a, b]) => {
     b,
     ratio: Number((sa.mean / sb.mean).toFixed(4)),
     welchP: Number(cmp.p.toPrecision(3)),
+    welchT: Number(cmp.t.toPrecision(4)),
+    welchDf: Number(cmp.df.toPrecision(4)),
     cohensD: Number(cmp.d.toFixed(3)),
     faster: sa.mean >= sb.mean ? a : b,
   }

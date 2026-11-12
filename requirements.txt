@@ -1,0 +1,7 @@
+# Pinned Python dependencies for the NIST SP 800-22 battery
+# (scripts/nist-bridge.py, scripts/nist-full-battery.py).
+# Pinned per the Round-1 review (REV-6): the battery result is only
+# reproducible against these exact versions.
+nist80022==0.2.0
+numpy==2.5.2
+scipy==1.18.1

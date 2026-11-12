@@ -77,6 +77,8 @@ const report = {
         insertRowsPerSec: s.insert,
         pointLookupUs: s.lookupUs,
         shardRangeScanMs: s.rangeScanMs,
+        keyEncoding: s.keyEncoding,
+        ddl: s.ddl,
         bytesPerRow: s.bytesPerRow,
         integrityOk: s.results.every((r) => r.integrityOk),
         freelistCountMax: Math.max(...s.results.map((r) => r.freelistCount)),

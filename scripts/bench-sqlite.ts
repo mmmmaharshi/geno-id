@@ -94,8 +94,7 @@ export function benchSqlite(label: string, gen: () => string, n: number): Sqlite
   }
 }
 
-export type CompositeKeyArm = "composite" | "composite-indexed" | "embedded" | "embedded56" | "concatenated"
-
+// CompositeKeyArm is defined with ARM_DDL below (arm names = DDL map keys).
 export interface CompositeKeyResult {
   arm: CompositeKeyArm
   n: number
@@ -116,7 +115,36 @@ export interface CompositeKeySummary {
   lookupUs: { mean: number; ci95: [number, number] }
   rangeScanMs: { mean: number; ci95: [number, number] }
   bytesPerRow: number
+  /** Key encoding of the arm's table (TEXT vs BLOB(16) vs composite key). */
+  keyEncoding: "TEXT" | "BLOB(16)" | "INTEGER+BLOB(16)"
+  /** Exact DDL of the arm's table, so the artifact states its own schema. */
+  ddl: string
   results: CompositeKeyResult[]
+}
+
+export type CompositeKeyArm = "composite" | "composite-indexed" | "embedded" | "embedded56" | "concatenated"
+
+// Exact table DDL per composite-key arm — recorded into the artifact so a
+// reader never has to map arm names back to code to learn the key encoding.
+export const ARM_DDL: Record<CompositeKeyArm, string[]> = {
+  composite: [
+    "CREATE TABLE ids (shard INTEGER, id BLOB(16), val INTEGER, PRIMARY KEY (shard, id)) WITHOUT ROWID",
+  ],
+  "composite-indexed": [
+    "CREATE TABLE ids (shard INTEGER, id BLOB(16), val INTEGER, PRIMARY KEY (shard, id)) WITHOUT ROWID",
+    "CREATE INDEX idx_id ON ids(id)",
+  ],
+  embedded: ["CREATE TABLE ids (id BLOB(16) PRIMARY KEY, val INTEGER) WITHOUT ROWID"],
+  embedded56: ["CREATE TABLE ids (id BLOB(16) PRIMARY KEY, val INTEGER) WITHOUT ROWID"],
+  concatenated: ["CREATE TABLE ids (id TEXT PRIMARY KEY, val INTEGER) WITHOUT ROWID"],
+}
+
+export const ARM_KEY_ENCODING: Record<CompositeKeyArm, "TEXT" | "BLOB(16)" | "INTEGER+BLOB(16)"> = {
+  composite: "INTEGER+BLOB(16)",
+  "composite-indexed": "INTEGER+BLOB(16)",
+  embedded: "BLOB(16)",
+  embedded56: "BLOB(16)",
+  concatenated: "TEXT",
 }
 
 const HEX = new Uint8Array(256)
@@ -157,16 +185,7 @@ export function benchCompositeKeyArm(arm: CompositeKeyArm, n: number, ids: unkno
   const db = new Database(dbPath)
   db.run("PRAGMA synchronous = OFF; PRAGMA journal_mode = WAL; PRAGMA cache_size = -64000")
 
-  if (arm === "composite") {
-    db.run("CREATE TABLE ids (shard INTEGER, id BLOB(16), val INTEGER, PRIMARY KEY (shard, id)) WITHOUT ROWID")
-  } else if (arm === "composite-indexed") {
-    db.run("CREATE TABLE ids (shard INTEGER, id BLOB(16), val INTEGER, PRIMARY KEY (shard, id)) WITHOUT ROWID")
-    db.run("CREATE INDEX idx_id ON ids(id)")
-  } else if (arm === "embedded" || arm === "embedded56") {
-    db.run("CREATE TABLE ids (id BLOB(16) PRIMARY KEY, val INTEGER) WITHOUT ROWID")
-  } else {
-    db.run("CREATE TABLE ids (id TEXT PRIMARY KEY, val INTEGER) WITHOUT ROWID")
-  }
+  for (const ddl of ARM_DDL[arm]) db.run(ddl)
 
   const batch = 10_000
   const insertStart = performance.now()
@@ -279,6 +298,8 @@ export async function benchCompositeKeyRepeated(
     lookupUs: summarize(results.map((r) => r.pointLookupUs)),
     rangeScanMs: summarize(results.map((r) => r.rangeScanMs)),
     bytesPerRow: results.reduce((a, r) => a + r.bytesPerRow, 0) / results.length,
+    keyEncoding: ARM_KEY_ENCODING[arm],
+    ddl: ARM_DDL[arm].join("; "),
     results,
   }
 }
