@@ -1,6 +1,6 @@
 // Worker (Deno Web Worker): dedup a partition of N UUIDs in isolation.
 // Driven by `collision-100m.ts`, which fans the work across all cores.
-import { type V8Layout } from "../../../algo.ts"
+import { type V8Layout } from "../../algo.ts"
 import { genUlidV8 } from "../baselines.ts"
 
 const algo = (await import("../../../dist/algo.js")) as {
