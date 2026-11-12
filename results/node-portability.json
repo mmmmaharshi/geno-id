@@ -1,0 +1,42 @@
+{
+  "experiment": "node-portability",
+  "description": "structured-vs-base throughput ratio on the executing runtime (repeated trials, mean +- 95% CI); tests the V8 v13 boxed-BigInt prediction",
+  "n": 200000,
+  "trials": 5,
+  "versions": {
+    "runtime": "Node v26.13.0",
+    "v8": "14.6.202.34-node.40"
+  },
+  "opsPerSec": {
+    "v4": {
+      "mean": 12445401.874594115,
+      "ci95": [
+        2558366.995638866,
+        22332436.753549363
+      ]
+    },
+    "base": {
+      "mean": 6564977.527194379,
+      "ci95": [
+        5265081.278748736,
+        7864873.775640022
+      ]
+    },
+    "structured": {
+      "mean": 4703104.672013737,
+      "ci95": [
+        4020602.07270514,
+        5385607.271322335
+      ]
+    }
+  },
+  "structuredOverBase": 0.7163931106438478,
+  "structuredOverBaseCI95": [
+    0.5112099936248442,
+    1.022891573024727
+  ],
+  "environment": {
+    "os": "win32 10.0.26300 x64",
+    "generatedAt": "2026-11-12T19:16:52.204Z"
+  }
+}
