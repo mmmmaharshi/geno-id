@@ -423,7 +423,7 @@ Both conditions are satisfied by every layout this paper evaluates, which is why
 
 For \texttt{dbkey} ($m=5$, $\ell=8$), $256 \bmod 5 = 1$, so one residue class holds 52 raw values and the other four hold 51; with the contiguous set $A = \{1,2,3,4,5\}$ the class of index~0 (value~1) is the heavy one, giving $(52,51,51,51,51)$ preimages out of 256, a maximum per-value deviation of $(52 - 51.2)/256 \approx 0.31\%$ from uniform $51.2/256$, and a worst-case spread between classes of $(52-51)/256 = 0.39\%$. For \texttt{multitenant}, the region field ($m=4$, $\ell=8$) and the tenant field ($m=8$, $\ell=12$) both satisfy $m \mid 2^\ell$ with $G_i = 1$ throughout, so both are exactly uniform on either path; no multitenant field is declared at $\ell=12$ with $m=4$. The map is a surjection with near-equal fibres and involves no redraw, preserving the $O(1)$ per-field cost of Algorithm~\ref{alg:repair}.
 
-The \textsc{range} branch clamps rather than folds, and is therefore not uniformity-preserving: draws outside $[\textit{min},\textit{max}]$ accumulate at the endpoints. Neither layout evaluated here declares a range constraint; a layout that does should size the field so that out-of-range draws are rare, or declare an admissible set instead. The validator reports the residual bound for any declared field.
+The \textsc{range} branch clamps rather than folds, and is therefore not uniformity-preserving: draws outside $[\textit{min},\textit{max}]$ accumulate at the endpoints. Neither layout evaluated here declares a range constraint; a layout that does should size the field so that out-of-range draws are rare, or declare an admissible set instead. The validator reports the residual bound for any declared field. The fibre prediction is also checked directly: over a grid of $(m,\ell)$ pairs ($m \in \{2,3,4,5,8\}$, $\ell \in \{3,4,8,12,16\}$, $2\times10^5$ seeded draws per cell), every measured frequency matches its closed-form fibre to within $0.3$ percentage points ($24/24$ cells; \texttt{results/repair-grid.json}).
 
 \subsection{Bit allocation}
 \label{sec:bit-allocation}
@@ -746,6 +746,7 @@ The implementation, benchmark harness, experimental artifacts, golden vectors, a
 \noalign{\smallskip}\hline\noalign{\smallskip}
 E1 composition correctness (\S\ref{sec:composition-correctness}) & \texttt{bun run scripts/e1-production.ts} & \texttt{results/e1-production-1500k.json} \\
 Repair vs rejection sweep (\S\ref{sec:repair-vs-rejection}) & \texttt{bun run bench-rejection} & \texttt{results/rejection-sweep.json}, \texttt{.csv} \\
+Repair-distribution grid (\S\ref{sec:uniformity}) & \texttt{bun run scripts/bench-repair-grid.ts} & \texttt{results/repair-grid.json} \\
 $10^8$ field histogram (\S\ref{sec:evaluation}) & \texttt{bun run histogram-100m} & \texttt{results/shard-histogram-100m.json} \\
 Bit allocation, optimality and frontier (\S\ref{sec:bit-allocation}) & \texttt{bun run bench-bit-allocation} & \texttt{results/bit-allocation.json} \\
 NIST SP 800-22 battery (\S\ref{sec:nist}) & \texttt{bun run scripts/export-structured.ts} \emph{then} \texttt{python scripts/nist-bridge.py} & \texttt{results/nist-sp800-22-results.json} \\

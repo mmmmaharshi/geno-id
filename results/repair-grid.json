@@ -1,0 +1,505 @@
+{
+  "experiment": "repair-distribution-grid",
+  "description": "Measured index-modulo repair frequencies vs closed-form fibre sizes across (m, ell); validates the uniformity theorem beyond the shard case.",
+  "seed": 2654435769,
+  "tolerancePp": 0.5,
+  "cells": [
+    {
+      "m": 2,
+      "ell": 3,
+      "draws": 200000,
+      "predicted": [
+        0.5,
+        0.5
+      ],
+      "measured": [
+        0.50213,
+        0.49787
+      ],
+      "maxAbsDevPp": 0.21300000000000208,
+      "chiSquareVsPredicted": 3.62952,
+      "pass": true
+    },
+    {
+      "m": 3,
+      "ell": 3,
+      "draws": 200000,
+      "predicted": [
+        0.375,
+        0.375,
+        0.25
+      ],
+      "measured": [
+        0.37539,
+        0.375215,
+        0.249395
+      ],
+      "maxAbsDevPp": 0.06049999999999944,
+      "chiSquareVsPredicted": 0.39859333333333336,
+      "pass": true
+    },
+    {
+      "m": 4,
+      "ell": 3,
+      "draws": 200000,
+      "predicted": [
+        0.25,
+        0.25,
+        0.25,
+        0.25
+      ],
+      "measured": [
+        0.249375,
+        0.251075,
+        0.250755,
+        0.248795
+      ],
+      "maxAbsDevPp": 0.12050000000000116,
+      "chiSquareVsPredicted": 2.8546400000000003,
+      "pass": true
+    },
+    {
+      "m": 5,
+      "ell": 3,
+      "draws": 200000,
+      "predicted": [
+        0.25,
+        0.25,
+        0.25,
+        0.125,
+        0.125
+      ],
+      "measured": [
+        0.251425,
+        0.250755,
+        0.247575,
+        0.125635,
+        0.12461
+      ],
+      "maxAbsDevPp": 0.24250000000000105,
+      "chiSquareVsPredicted": 7.67354,
+      "pass": true
+    },
+    {
+      "m": 2,
+      "ell": 4,
+      "draws": 200000,
+      "predicted": [
+        0.5,
+        0.5
+      ],
+      "measured": [
+        0.50186,
+        0.49814
+      ],
+      "maxAbsDevPp": 0.18599999999999728,
+      "chiSquareVsPredicted": 2.76768,
+      "pass": true
+    },
+    {
+      "m": 3,
+      "ell": 4,
+      "draws": 200000,
+      "predicted": [
+        0.375,
+        0.3125,
+        0.3125
+      ],
+      "measured": [
+        0.374345,
+        0.312435,
+        0.31322
+      ],
+      "maxAbsDevPp": 0.07199999999999984,
+      "chiSquareVsPredicted": 0.5632933333333334,
+      "pass": true
+    },
+    {
+      "m": 4,
+      "ell": 4,
+      "draws": 200000,
+      "predicted": [
+        0.25,
+        0.25,
+        0.25,
+        0.25
+      ],
+      "measured": [
+        0.2517,
+        0.250845,
+        0.24851,
+        0.248945
+      ],
+      "maxAbsDevPp": 0.16999999999999793,
+      "chiSquareVsPredicted": 5.54972,
+      "pass": true
+    },
+    {
+      "m": 5,
+      "ell": 4,
+      "draws": 200000,
+      "predicted": [
+        0.25,
+        0.1875,
+        0.1875,
+        0.1875,
+        0.1875
+      ],
+      "measured": [
+        0.251155,
+        0.18625,
+        0.188065,
+        0.186815,
+        0.187715
+      ],
+      "maxAbsDevPp": 0.1250000000000001,
+      "chiSquareVsPredicted": 3.6242066666666672,
+      "pass": true
+    },
+    {
+      "m": 8,
+      "ell": 4,
+      "draws": 200000,
+      "predicted": [
+        0.125,
+        0.125,
+        0.125,
+        0.125,
+        0.125,
+        0.125,
+        0.125,
+        0.125
+      ],
+      "measured": [
+        0.125625,
+        0.124945,
+        0.12461,
+        0.12487,
+        0.125265,
+        0.124005,
+        0.125055,
+        0.125625
+      ],
+      "maxAbsDevPp": 0.09949999999999959,
+      "chiSquareVsPredicted": 3.22648,
+      "pass": true
+    },
+    {
+      "m": 2,
+      "ell": 8,
+      "draws": 200000,
+      "predicted": [
+        0.5,
+        0.5
+      ],
+      "measured": [
+        0.50162,
+        0.49838
+      ],
+      "maxAbsDevPp": 0.16200000000000103,
+      "chiSquareVsPredicted": 2.09952,
+      "pass": true
+    },
+    {
+      "m": 3,
+      "ell": 8,
+      "draws": 200000,
+      "predicted": [
+        0.3359375,
+        0.33203125,
+        0.33203125
+      ],
+      "measured": [
+        0.335155,
+        0.33223,
+        0.332615
+      ],
+      "maxAbsDevPp": 0.07825000000000193,
+      "chiSquareVsPredicted": 0.5935899316005472,
+      "pass": true
+    },
+    {
+      "m": 4,
+      "ell": 8,
+      "draws": 200000,
+      "predicted": [
+        0.25,
+        0.25,
+        0.25,
+        0.25
+      ],
+      "measured": [
+        0.249475,
+        0.2503,
+        0.25096,
+        0.249265
+      ],
+      "maxAbsDevPp": 0.09600000000000164,
+      "chiSquareVsPredicted": 1.4619600000000001,
+      "pass": true
+    },
+    {
+      "m": 5,
+      "ell": 8,
+      "draws": 200000,
+      "predicted": [
+        0.203125,
+        0.19921875,
+        0.19921875,
+        0.19921875,
+        0.19921875
+      ],
+      "measured": [
+        0.204305,
+        0.198905,
+        0.198335,
+        0.19986,
+        0.198595
+      ],
+      "maxAbsDevPp": 0.11799999999999866,
+      "chiSquareVsPredicted": 3.057284343891403,
+      "pass": true
+    },
+    {
+      "m": 8,
+      "ell": 8,
+      "draws": 200000,
+      "predicted": [
+        0.125,
+        0.125,
+        0.125,
+        0.125,
+        0.125,
+        0.125,
+        0.125,
+        0.125
+      ],
+      "measured": [
+        0.124185,
+        0.125385,
+        0.12654,
+        0.12547,
+        0.1241,
+        0.12563,
+        0.123875,
+        0.124815
+      ],
+      "maxAbsDevPp": 0.15400000000000136,
+      "chiSquareVsPredicted": 9.45872,
+      "pass": true
+    },
+    {
+      "m": 2,
+      "ell": 12,
+      "draws": 200000,
+      "predicted": [
+        0.5,
+        0.5
+      ],
+      "measured": [
+        0.500115,
+        0.499885
+      ],
+      "maxAbsDevPp": 0.011499999999997623,
+      "chiSquareVsPredicted": 0.01058,
+      "pass": true
+    },
+    {
+      "m": 3,
+      "ell": 12,
+      "draws": 200000,
+      "predicted": [
+        0.33349609375,
+        0.333251953125,
+        0.333251953125
+      ],
+      "measured": [
+        0.33336,
+        0.33205,
+        0.33459
+      ],
+      "maxAbsDevPp": 0.13380468749999985,
+      "chiSquareVsPredicted": 1.9526179359108435,
+      "pass": true
+    },
+    {
+      "m": 4,
+      "ell": 12,
+      "draws": 200000,
+      "predicted": [
+        0.25,
+        0.25,
+        0.25,
+        0.25
+      ],
+      "measured": [
+        0.24981,
+        0.252355,
+        0.247105,
+        0.25073
+      ],
+      "maxAbsDevPp": 0.28950000000000087,
+      "chiSquareVsPredicted": 11.59684,
+      "pass": true
+    },
+    {
+      "m": 5,
+      "ell": 12,
+      "draws": 200000,
+      "predicted": [
+        0.2001953125,
+        0.199951171875,
+        0.199951171875,
+        0.199951171875,
+        0.199951171875
+      ],
+      "measured": [
+        0.20088,
+        0.200985,
+        0.19929,
+        0.19906,
+        0.199785
+      ],
+      "maxAbsDevPp": 0.1033828124999997,
+      "chiSquareVsPredicted": 2.7966572898537776,
+      "pass": true
+    },
+    {
+      "m": 8,
+      "ell": 12,
+      "draws": 200000,
+      "predicted": [
+        0.125,
+        0.125,
+        0.125,
+        0.125,
+        0.125,
+        0.125,
+        0.125,
+        0.125
+      ],
+      "measured": [
+        0.12451,
+        0.12587,
+        0.124395,
+        0.125955,
+        0.124445,
+        0.1265,
+        0.123955,
+        0.12437
+      ],
+      "maxAbsDevPp": 0.15000000000000013,
+      "chiSquareVsPredicted": 10.1152,
+      "pass": true
+    },
+    {
+      "m": 2,
+      "ell": 16,
+      "draws": 200000,
+      "predicted": [
+        0.5,
+        0.5
+      ],
+      "measured": [
+        0.49928,
+        0.50072
+      ],
+      "maxAbsDevPp": 0.07200000000000539,
+      "chiSquareVsPredicted": 0.41472,
+      "pass": true
+    },
+    {
+      "m": 3,
+      "ell": 16,
+      "draws": 200000,
+      "predicted": [
+        0.333343505859375,
+        0.3333282470703125,
+        0.3333282470703125
+      ],
+      "measured": [
+        0.3307,
+        0.334715,
+        0.334585
+      ],
+      "maxAbsDevPp": 0.2643505859375006,
+      "chiSquareVsPredicted": 6.294285020182665,
+      "pass": true
+    },
+    {
+      "m": 4,
+      "ell": 16,
+      "draws": 200000,
+      "predicted": [
+        0.25,
+        0.25,
+        0.25,
+        0.25
+      ],
+      "measured": [
+        0.248055,
+        0.249395,
+        0.251055,
+        0.251495
+      ],
+      "maxAbsDevPp": 0.19450000000000023,
+      "chiSquareVsPredicted": 5.997679999999999,
+      "pass": true
+    },
+    {
+      "m": 5,
+      "ell": 16,
+      "draws": 200000,
+      "predicted": [
+        0.20001220703125,
+        0.1999969482421875,
+        0.1999969482421875,
+        0.1999969482421875,
+        0.1999969482421875
+      ],
+      "measured": [
+        0.19995,
+        0.200785,
+        0.201395,
+        0.199285,
+        0.198585
+      ],
+      "maxAbsDevPp": 0.14119482421874885,
+      "chiSquareVsPredicted": 5.079989362689512,
+      "pass": true
+    },
+    {
+      "m": 8,
+      "ell": 16,
+      "draws": 200000,
+      "predicted": [
+        0.125,
+        0.125,
+        0.125,
+        0.125,
+        0.125,
+        0.125,
+        0.125,
+        0.125
+      ],
+      "measured": [
+        0.125095,
+        0.123465,
+        0.124665,
+        0.12572,
+        0.126435,
+        0.124955,
+        0.1243,
+        0.125365
+      ],
+      "maxAbsDevPp": 0.15349999999999947,
+      "chiSquareVsPredicted": 9.088560000000001,
+      "pass": true
+    }
+  ],
+  "environment": {
+    "os": "win32 10.0.26300 x64",
+    "runtime": "Bun 1.4.4",
+    "generatedAt": "2026-11-12T16:14:58.556Z"
+  }
+}

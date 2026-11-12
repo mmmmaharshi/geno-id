@@ -45,18 +45,24 @@ field-for-field against the Python lib). Tenant prune 1.3x (borderline),
 points/inserts parity, throughput 16x (BigInt mirror cost),
 frozen-tick 2M burst 33 vs 0 (matches n^2/2*2^36). Paper \S~microshard.
 
-### 4. Multi-stream NIST + draw archive (~days of compute)
-Draw-count logging now exists (`nist-full-battery.py`). Run ≥100 streams per
-layout (NIST guidance), archive the anomalous draw properly. Replaces the
-single-stream caveat with evidence.
+### 4. Multi-stream NIST + draw archive (running: 10 fresh draws in progress)
+Draw-count logging now exists (`nist-full-battery.py`). ≥100 streams is
+out of session scope (days of compute); running 10 independent draws per
+layout now as a 10x strengthening with full draw provenance. Paper keeps the
+single-stream caveat until then.
 
-### 5. Repair-distribution grid (~days)
-Measure output frequencies across an (m, ℓ) grid; validate the fibre theorem
-empirically beyond the shard case. Turns "proven but narrowly tested" into a result.
+### 5. Repair-distribution grid — DONE (24/24 cells, max dev 0.3pp)
+Measured output frequencies across an (m, ℓ) grid via
+`scripts/bench-repair-grid.ts`; every cell matches the closed-form fibre
+sizes. Paper \S~uniformity + artifact-map row added. (Process note: the
+first run failed every cell because of a hand-copied RNG with a dropped
+xor-fold — the shared `mulberry32` import fixed it. Dogfooding worked.)
 
-### 6. Node 24 / V8 v14 check (~hours)
-Threats section predicts the V8 v14 patch fixes the Node repair penalty.
-Verify it; a confirmed prediction is a finding.
+### 6. Node 24 / V8 v14 check — PREDICTION CONFIRMED on Node 26 (V8 14.6)
+System node is v26.13.0 / V8 14.6: structured-vs-base ratio 0.65 vs the
+paper's Node-22 0.12–0.16 — the boxed-BigInt penalty shrank from ~85% to
+~35%. Needs a clean-machine re-run for citable numbers before the paper
+claims it; current runs are load-contaminated (NIST battery in flight).
 
 ## Mechanical tail (no research)
 
