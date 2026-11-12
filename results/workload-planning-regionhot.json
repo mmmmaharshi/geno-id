@@ -1,0 +1,63 @@
+{
+  "experiment": "workload-planning",
+  "description": "Trace (seeded, archived params) -> inferWorkload weights/roles -> planBitAllocation Smith order -> SQLite hot-field lookup latency, planned vs hand order",
+  "trace": {
+    "seed": 2654435769,
+    "events": 10000,
+    "mix": "tenant-point 0.1 / region-range 0.8 / write 0.1"
+  },
+  "inferred": {
+    "weights": {
+      "region": 8090,
+      "tenant": 949
+    },
+    "cardinalities": {
+      "tenant": 8,
+      "region": 4
+    },
+    "roles": [
+      {
+        "name": "tenant",
+        "role": "lookup"
+      },
+      {
+        "name": "region",
+        "role": "partition"
+      }
+    ]
+  },
+  "plan": {
+    "smithOrder": [
+      "region",
+      "tenant"
+    ],
+    "randomBits": 117
+  },
+  "handOrder": [
+    "region",
+    "tenant"
+  ],
+  "hotQuery": "region",
+  "lookupUs": {
+    "planned": {
+      "mean": 3095.08856,
+      "ci95": [
+        1509.9819249003533,
+        4680.195195099647
+      ]
+    },
+    "hand": {
+      "mean": 2140.10636,
+      "ci95": [
+        1885.201114779613,
+        2395.0116052203875
+      ]
+    },
+    "ratio": 0.6914523828681659
+  },
+  "environment": {
+    "os": "win32 10.0.26300 x64",
+    "runtime": "Bun 1.4.4",
+    "generatedAt": "2026-11-12T11:35:46.996Z"
+  }
+}

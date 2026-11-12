@@ -507,17 +507,20 @@ field weights, roles, selectivity, and cardinality bounds from a query trace
 instead of taking them as hand input: weights are access counts, roles follow
 usage (range-filtered $\to$ partition, point-filtered $\to$ lookup), and
 cardinality counts distinct observed values. \texttt{scripts/bench-workload.ts}
-generates a seeded 10{,}000-query trace (80\% tenant point reads, 15\% region
-range reads, 5\% blind writes), infers weights of 7987 (tenant) and 1530
-(region), and lets Smith order place tenant first; the hand baseline keeps
-region first. On 200{,}000-row SQLite tables, the tenant point query is one
-PK range seek on the planned layout and four on the hand layout:
+generates a seeded 10{,}000-query trace, infers the weights, and lets Smith
+order place the hot field first; the hand baseline keeps region first. The
+measured query is always the workload's hot field, run as PK range seeks on
+200{,}000-row SQLite tables with SQL counts verified against a JS bit-decode.
+Under a tenant-heavy mix the inference recovers weights of 7987 (tenant) and
+1530 (region), the planner puts tenant first, and the tenant point query is one
+PK range seek against the hand layout's four:
 $2311\,\mu$s versus $13810\,\mu$s per lookup (means over 5 reps of 500
-lookups, non-overlapping 95\% CIs), a $6.0\times$ win, with insert throughput
-at parity and SQL range counts verified against a JS bit-decode on both
-layouts. The planner tracks the workload rather than favouring a field: with
-an inverted 10/80/10 mix it emits region-first (coinciding with the hand
-layout, $0.99\times$ parity on the same probes). The trace is synthetic but seeded and archived with its parameters
+lookups, non-overlapping 95\% CIs), a $6.0\times$ win with insert throughput
+at parity. Under an inverted region-heavy mix the planner emits region-first,
+coinciding with the hand layout, and the region probes show parity rather
+than advantage ($3095\,\mu$s versus $2140\,\mu$s, overlapping 95\% CIs):
+convergence, not a win, which is the correct outcome when the hand order is
+already optimal. The trace is synthetic but seeded and archived with its parameters
 in \texttt{results/workload-planning.json}, so the loop --- not the trace ---
 is the claim under test. A skewed trace is the favourable case by
 construction; the Section~\ref{sec:composite-bench} result stands for the
@@ -704,7 +707,7 @@ dieharder subset (\S\ref{sec:nist}) & \texttt{bun run dieharder} & \texttt{resul
 Nine-environment throughput (\S\ref{sec:throughput}) & \texttt{bun run bench-ci} (CI matrix, committed by the consolidate job) & \texttt{results/all-results.json} \\
 Browser benchmark (\S\ref{sec:deployability}) & \texttt{bun run playwright} & \texttt{results/benchmark\_results.json} \\
 SQLite composite key (\S\ref{sec:composite-bench}) & \texttt{bun run bench-sqlite-artifact} & \texttt{results/db-sqlite-composite.json} \\
-Workload-driven planning (\S\ref{sec:workload-planning}) & \texttt{bun run scripts/bench-workload.ts} & \texttt{results/workload-planning.json} \\
+Workload-driven planning (\S\ref{sec:workload-planning}) & \texttt{bun run scripts/bench-workload.ts} & \texttt{results/workload-planning.json}, \texttt{results/workload-planning-regionhot.json} \\
 Rust cross-language check (\S\ref{sec:cross-lang}) & \texttt{bun run scripts/export-golden.ts} \emph{then} \texttt{cd golden-check \&\& cargo run} & \texttt{golden/*.txt} \\
 \noalign{\smallskip}\hline
 \end{tabular*}
