@@ -4,6 +4,7 @@ dist/
 *results.json
 !benchmark_results.json
 !results/
+!results/all-results.json
 *_failure.png
 /tmp/
 
