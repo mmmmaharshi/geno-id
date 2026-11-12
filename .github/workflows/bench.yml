@@ -149,6 +149,71 @@ jobs:
           name: golden-vectors
           path: golden/
 
+  native-db:
+    name: native PostgreSQL + MySQL
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: genoid
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: genoid
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U genoid -d genoid"
+          --health-interval 10s --health-timeout 5s --health-retries 10
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: genoid
+          MYSQL_USER: genoid
+          MYSQL_PASSWORD: password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd "mysqladmin ping -h localhost -uroot -proot"
+          --health-interval 10s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install
+      - run: bun run build
+      - name: Run native-DB benchmark (PostgreSQL + MySQL service containers)
+        env:
+          PG_HOST: localhost
+          PG_PORT: 5432
+          PG_USER: genoid
+          PG_PASSWORD: password
+          PG_DB: genoid
+          MYSQL_HOST: localhost
+          MYSQL_PORT: 3306
+          MYSQL_USER: genoid
+          MYSQL_PASSWORD: password
+          MYSQL_DB: genoid
+          GENOID_COMMIT: ${{ github.sha }}
+        run: bun run scripts/bench-db-native.ts --rows=20000 --reps=3 --probes=200
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: db-native
+          path: results/db-native.json
+      - name: Commit native-DB artifact
+        if: github.ref == 'refs/heads/main'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@noreply.github.com"
+          git add results/db-native.json
+          git diff --cached --quiet || git commit -m "ci(evidence): refresh native PostgreSQL/MySQL benchmark artifact"
+          git push
+
   consolidate:
     name: consolidate CI results
     runs-on: ubuntu-latest

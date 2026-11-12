@@ -26,17 +26,17 @@ predominantly *new research*, not fixes.
 
 ## Research to fill (ranked)
 
-### 1. Workload-driven layout planning end-to-end (flagship, ~2–4 weeks)
-`paper.tex` admits it: nothing infers the field weights from a workload.
-Close the loop — take a real workload trace, infer weights, plan the layout
-with `planBitAllocation`, measure the query win. This turns "compiler" from
-an overclaim into the journal's headline new method. Scope the claim as "when
-planning helps vs. hand layouts" so a negative result is still publishable.
+### 1. Workload-driven layout planning end-to-end — DONE (flagship)
+Was: `paper.tex` admitted nothing infers the field weights from a workload.
+Closed: `inferWorkload` + `bench-workload.ts` + 4.7x SQLite win + PG parity +
+convergence proof. Remaining polish: region-range measurement on the flipped
+mix is parity-by-construction; no further work unless reviewers ask for more mixes.
 
-### 2. Native DB experiments (~1 week + a server)
-Harness committed (`scripts/bench-db-native.ts`), results zero. One
-PostgreSQL + one MySQL/InnoDB run kills the "SQLite-only proxy" threat —
-the most repeated reviewer objection.
+### 2. Native DB experiments (CI service containers — no hosted box needed)
+Harness committed (`scripts/bench-db-native.ts`); CI `native-db` job runs it
+against PostgreSQL~18 + MySQL~8 service containers and archives
+`results/db-native.json`. Kills the "SQLite-only proxy" threat — the most
+repeated reviewer objection. Materializes on the first green main run.
 
 ### 3. Microshard head-to-head (~1 week)
 Harness `microshard-uuid` on the same workload with the same metrics
