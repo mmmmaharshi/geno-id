@@ -514,11 +514,11 @@ measured query is always the workload's hot field, run as PK range seeks on
 Under a tenant-heavy mix the inference recovers weights of 7987 (tenant) and
 1530 (region), the planner puts tenant first, and the tenant point query is one
 PK range seek against the hand layout's four:
-$2311\,\mu$s versus $13810\,\mu$s per lookup (means over 5 reps of 500
-lookups, non-overlapping 95\% CIs), a $6.0\times$ win with insert throughput
+$2942\,\mu$s versus $14643\,\mu$s per lookup (means over 5 reps of 500
+lookups, non-overlapping 95\% CIs), a $5.0\times$ win with insert throughput
 at parity. Under an inverted region-heavy mix the planner emits region-first,
-coinciding with the hand layout, and the region probes show parity rather
-than advantage ($3095\,\mu$s versus $2140\,\mu$s, overlapping 95\% CIs):
+coinciding with the hand layout, and the region probes show parity
+($5507\,\mu$s versus $5752\,\mu$s, overlapping 95\% CIs):
 convergence, not a win, which is the correct outcome when the hand order is
 already optimal. The trace is synthetic but seeded and archived with its parameters
 in \texttt{results/workload-planning.json}, so the loop --- not the trace ---
