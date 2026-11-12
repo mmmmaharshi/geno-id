@@ -39,10 +39,11 @@ shardfirst +20% vs v7 inserts, MySQL shardfirst +24%, lookups at parity.
 Reversal withdrawn — old tracked run agrees (shardfirst +22%).
 CI `native-db` job re-runs this on every main push via service containers.
 
-### 3. Microshard head-to-head (~1 week)
-Harness `microshard-uuid` on the same workload with the same metrics
-(routing, locality, random-bit budget). Converts the weakest prose paragraph
-into a table. Reviewers will have read microshard.
+### 3. Microshard head-to-head — DONE (bit-exact mirror + SQLite bench)
+Harnessed microshard-uuid v1.0.0 via a bit-exact TS mirror (cross-checked
+field-for-field against the Python lib). Tenant prune 1.3x (borderline),
+points/inserts parity, throughput 16x (BigInt mirror cost),
+frozen-tick 2M burst 33 vs 0 (matches n^2/2*2^36). Paper \S~microshard.
 
 ### 4. Multi-stream NIST + draw archive (~days of compute)
 Draw-count logging now exists (`nist-full-battery.py`). Run ≥100 streams per

@@ -1,0 +1,64 @@
+{
+  "experiment": "microshard-head-to-head",
+  "description": "Fixed v8 layout (54-bit micros + 32-bit shard + 36 random) vs GenoID tenant-first structured layout: throughput, tenant-prune latency on SQLite, frozen-tick burst collisions, insert throughput.",
+  "competitor": {
+    "name": "microshard-uuid",
+    "version": "1.0.0 (pip)",
+    "layout": "54-bit microsecond time + 32-bit shard + 36 random bits, RFC 9562 v8",
+    "randomBits": 36
+  },
+  "genoid": {
+    "layout": "tenant-first (3-bit tenant + 2-bit region)",
+    "randomBits": 117
+  },
+  "throughputOpsPerSec": {
+    "genoid": 2207311,
+    "microshard": 136705
+  },
+  "insertRowsPerSec": {
+    "genoid": 130009,
+    "microshard": 159293
+  },
+  "tenantPruneUs": {
+    "genoid": {
+      "mean": 3445.590239999999,
+      "ci95": [
+        2861.7445393845555,
+        4029.4359406154426
+      ]
+    },
+    "microshard": {
+      "mean": 4383.034079999998,
+      "ci95": [
+        4003.3316167980033,
+        4762.736543201992
+      ]
+    }
+  },
+  "pointLookupUs": {
+    "genoid": {
+      "mean": 4.705000000000291,
+      "ci95": [
+        -0.020853663027049052,
+        9.430853663027632
+      ]
+    },
+    "microshard": {
+      "mean": 6.387159999999858,
+      "ci95": [
+        -0.6874254379512221,
+        13.461745437950938
+      ]
+    }
+  },
+  "frozenTickBurst": {
+    "n": 2000000,
+    "microshardDuplicates": 33,
+    "genoidDuplicates": 0
+  },
+  "environment": {
+    "os": "win32 10.0.26300 x64",
+    "runtime": "Bun 1.4.4",
+    "generatedAt": "2026-11-12T15:57:36.020Z"
+  }
+}

@@ -548,6 +548,30 @@ is the claim under test. A skewed trace is the favourable case by
 construction; the Section~\ref{sec:composite-bench} result stands for the
 neutral one.
 
+\subsection{Microshard head-to-head}
+\label{sec:microshard}
+
+The closest public overlap is \texttt{microshard-uuid} (pip, v1.0.0): a fixed
+RFC~9562 v8 layout with 54-bit microsecond timestamp, 32-bit shard, and 36
+random bits, measured here through a bit-exact TypeScript mirror
+cross-checked field-for-field against the Python implementation (version,
+variant, shard, and timestamp all agree on fixed vectors). On the same
+200{,}000-row SQLite setup, a tenant prune is one PK range seek for the
+tenant-first GenoID layout against a full scan with in-app shard filtering
+for microshard, whose shard straddles time bits and offers no SQL prefix:
+$3446\,\mu$s versus $4383\,\mu$s (means over 5 reps of 500 lookups; CIs
+nearly touch), a modest $1.3\times$ edge to the prunable layout, with full-ID
+point lookups and inserts at parity on both sides. Throughput favours
+GenoID ($2.2$M vs $0.14$M UUIDs/s), most of it BigInt construction cost in
+the mirror rather than an architectural gap. The structural difference
+appears under burst load: with the clock frozen and the shard fixed,
+200{,}000 draws collide never for either layout, but at $2\times10^6$ draws
+microshard shows 33 duplicates against an expected
+$n^2/2\cdot2^{36}\approx29$ while the tick-keyed monotonic counter holds
+GenoID at zero. The comparison isolates what each structure buys: GenoID
+buys SQL prunability and counter-ordered bursts; microshard buys a fixed
+layout with zero-lookup routing, at the price of birthday-bound bursts.
+
 \section{Security Analysis}
 \label{sec:security}
 
@@ -731,6 +755,7 @@ Browser benchmark (\S\ref{sec:deployability}) & \texttt{bun run playwright} & \t
 SQLite composite key (\S\ref{sec:composite-bench}) & \texttt{bun run bench-sqlite-artifact} & \texttt{results/db-sqlite-composite.json} \\
 Native PostgreSQL + MySQL (\S\ref{sec:validity}) & \texttt{bun run scripts/bench-db-native.ts} (CI service containers) & \texttt{results/db-native.json} \\
 Workload-driven planning (\S\ref{sec:workload-planning}) & \texttt{bun run scripts/bench-workload.ts} & \texttt{results/workload-planning.json}, \texttt{results/workload-planning-regionhot.json} \\
+Microshard head-to-head (\S\ref{sec:microshard}) & \texttt{bun run scripts/bench-microshard.ts} & \texttt{results/microshard.json} \\
 Rust cross-language check (\S\ref{sec:cross-lang}) & \texttt{bun run scripts/export-golden.ts} \emph{then} \texttt{cd golden-check \&\& cargo run} & \texttt{golden/*.txt} \\
 \noalign{\smallskip}\hline
 \end{tabular*}
