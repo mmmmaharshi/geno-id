@@ -46,16 +46,16 @@ exponential in `k`.
 `repairConstraints` (`algo.ts:446-489`) iterates the layout's fields exactly
 once (`for (const f of layout.fields)`), and for each constrained field:
 
-- **`allowed`**: computes a Hamming distance (`hamming`, `algo.ts:433-439`) to
-  every element of `c.allowed` and keeps the closest — cost `O(|allowed| · ℓ)`,
-  and `|allowed|` and `ℓ` are both bounded by small constants in every shipped
-  layout (`|allowed| ≤ 8`, `ℓ ≤ 16`).
+- **`allowed`**: O(1) index-modulo projection (`pickFromAllowed`, `algo.ts:1703-1707`):
+  an out-of-set value `v` maps to `c.allowed[v % c.allowed.length]`.
+  Every shipped layout uses small bounded sets (`|allowed| ≤ 8`), so the
+  projection is a single modulo, not a scan.
 - **`min`/`max`**: O(1) comparison and clamp.
 - **`monotonic`**: O(1) map lookup (`_lastValues`) and compare.
 - Any repaired field is written back with `setFieldBytes`, itself O(`ℓ`)
   (`algo.ts:215-231`, one loop over the field's bits).
 
-Total cost is `Σ_{i=1}^{k} O(|allowed_i| · ℓ_i)`. Since `|allowed_i|` and
+Total cost is `Σ_{i=1}^{k} O(ℓ_i)` for the field writes. Since
 `ℓ_i` are layout constants independent of `k` (adding a 7th constrained field
 does not make the other six more expensive to repair), the sum is `O(k)` —
 linear, with a small constant factor bounded by `8` in the empirical
@@ -70,7 +70,7 @@ runtime, unlike rejection sampling.
 by construction:
 
 - `allowed`: the returned value is drawn from `c.allowed` itself (the
-  Hamming-nearest element), so membership is guaranteed, not merely likely.
+  index-modulo element), so membership is guaranteed, not merely likely.
 - `min`/`max`: clamping to the bound is definitionally a valid value.
 - `monotonic`: clamping to `max(v, last)` preserves the non-decreasing
   invariant by construction, and the invariant is stored (`_lastValues.set`)

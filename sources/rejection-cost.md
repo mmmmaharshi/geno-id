@@ -20,7 +20,7 @@ k independent 8-bit fields (field-space 256) are packed into the leading bytes o
 a 16-byte buffer. For each (k, density):
 
 - **GenoID:** fill the buffer with CSPRNG bytes, then one `repairConstraints`
-  pass maps every out-of-set field to its Hamming-nearest allowed value. Always
+  pass maps every out-of-set field to `allowed[v % len]` (index-modulo). Always
   yields one valid identifier. We report ns per valid ID and repairs per ID.
 - **Rejection:** redraw all k fields until every one is in its allowed set; report
   trials per valid ID. Where a single valid ID would require more than 2×10⁴

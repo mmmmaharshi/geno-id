@@ -66,12 +66,12 @@ const ALGOS: AlgoEntry[] = [
   },
   {
     key: "geno",
-    name: "GenoID (proposed, GA-inspired, v8)",
+    name: "GenoID (proposed, v8)",
     fn: genGenoID,
     async: false,
     entropy: 122,
     source:
-      "Pooled OS CSPRNG (refills every 256 UUIDs) + byte-level GA crossover/mutation",
+      "Pooled OS CSPRNG (refills every 256 UUIDs) + byte-level crossover/mutation",
     secLabel: "High (near-native speed)",
   },
   {
