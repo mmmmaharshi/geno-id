@@ -1,8 +1,8 @@
 import { writeFileSync, mkdirSync } from "node:fs"
-import { execFileSync } from "node:child_process"
 import os from "node:os"
 import path from "node:path"
 import { pathToFileURL } from "node:url"
+import { gitSha, mulberry32 } from "./shared/cli-utils.ts"
 
 // Bit-allocation experiment (RQ-A).
 //
@@ -42,15 +42,6 @@ const algo = (await import(pathToFileURL(path.resolve(root, "dist", "algo.js")).
 
 const { minBitsForCardinality, collisionProbabilityUpperBound, minRandomBitsForCollisionBudget, planBitAllocation } = algo
 
-function mulberry32(seed: number): () => number {
-  let a = seed >>> 0
-  return () => {
-    a = (a + 0x6d2b79f5) >>> 0
-    let t = Math.imul(a ^ (a >>> 15), a | 1)
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
-  }
-}
 
 interface Spec {
   name: string
@@ -235,13 +226,6 @@ function shippedDbkey(): Record<string, unknown> {
   }
 }
 
-function gitSha(): string {
-  try {
-    return execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf-8" }).trim()
-  } catch {
-    return "unknown"
-  }
-}
 
 const TRIALS = 500
 const started = performance.now()
@@ -261,7 +245,7 @@ const report = {
     os: `${os.platform()} ${os.release()} ${os.arch()}`,
     cpuModel: os.cpus()[0]?.model ?? "unknown",
     runtime: `Bun ${(globalThis as { Bun?: { version: string } }).Bun?.version ?? process.version}`,
-    commitSha: gitSha(),
+    commitSha: gitSha(root),
     generatedAt: new Date().toISOString(),
   },
   e_a1_optimality: {

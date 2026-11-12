@@ -1,6 +1,6 @@
 import { Worker } from "node:worker_threads"
 import os from "node:os"
-import { mapPool } from "./pool.ts"
+import { mapPool } from "./shared/pool.ts"
 import { STANDARD_FREE_MASK, V7_FREE_MASK, type BatteryResult, type RunDef } from "./stats-core.ts"
 
 console.log("=== Statistical randomness test suite ===")

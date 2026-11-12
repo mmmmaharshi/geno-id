@@ -1,10 +1,10 @@
 import { mkdirSync, writeFileSync } from "node:fs"
-import { execFileSync } from "node:child_process"
 import os from "node:os"
 import path from "node:path"
 import { Database } from "bun:sqlite"
 import { benchCompositeKeyRepeated } from "./bench-sqlite.ts"
 import type { CompositeKeyArm, CompositeKeySummary } from "./bench-sqlite.ts"
+import { gitSha, runtimeVersion } from "./shared/cli-utils.ts"
 
 // Archives the SQLite composite-key experiment that backs Table tab:composite.
 // The benchmark itself lives in bench-sqlite.ts; this wrapper adds the
@@ -35,18 +35,7 @@ function queryPlans(): Record<string, unknown> {
   }
 }
 
-function runtimeVersion(): string {
-  const bun = (globalThis as { Bun?: { version: string } }).Bun
-  return bun ? `Bun ${bun.version}` : `Node ${process.version}`
-}
 
-function gitSha(): string {
-  try {
-    return execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf-8" }).trim()
-  } catch {
-    return "unknown"
-  }
-}
 
 const summaries: Record<string, CompositeKeySummary> = {}
 const started = performance.now()
@@ -109,7 +98,7 @@ const report = {
     cpuModel: os.cpus()[0]?.model ?? "unknown",
     logicalCores: os.cpus().length,
     runtime: runtimeVersion(),
-    commitSha: gitSha(),
+    commitSha: gitSha(root),
     generatedAt: new Date().toISOString(),
   },
   elapsedMsTotal: Math.round(elapsedMs * 100) / 100,

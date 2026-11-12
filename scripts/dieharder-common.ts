@@ -2,6 +2,7 @@ import path from "node:path"
 import fs from "node:fs"
 import { pathToFileURL } from "node:url"
 import type { V8Layout } from "../dist/algo.js"
+import { hexVal, genRawV8 } from "./shared/export-bits.ts"
 
 // Shared exporter for the dieharder randomness battery. Driven by
 // `export-dieharder.ts` with a `targetBits` (full 12.5MB samples, or
@@ -19,34 +20,20 @@ const algo = await import(pathToFileURL(path.resolve(root, "dist/algo.js")).href
 const {
   genV4Native,
   genGenoID,
-  toUuidString,
   genStructuredGenoID,
   uuidToRandomBits,
   DBKEY_LAYOUT,
 } = algo as {
   genV4Native: () => string
   genGenoID: () => string
-  toUuidString: (b: Uint8Array) => string
   genStructuredGenoID: (l: V8Layout) => string
   uuidToRandomBits: (uuid: string, layout: V8Layout) => string
   DBKEY_LAYOUT: V8Layout
 }
 
-function genRawV8(): string {
-  const bytes = new Uint8Array(16)
-  crypto.getRandomValues(bytes)
-  bytes[6] = (bytes[6] & 0x0f) | 0x80
-  bytes[8] = (bytes[8] & 0x3f) | 0x80
-  return toUuidString(bytes)
-}
 
 const HEX_STARTS = [0, 2, 4, 6, 9, 11, 14, 16, 19, 21, 24, 26, 28, 30, 32, 34]
 
-function hexVal(c: number): number {
-  if (c >= 48 && c <= 57) return c - 48
-  if (c >= 97 && c <= 102) return c - 87
-  return 0
-}
 
 const STANDARD_FREE_MASK = [
   0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x0f, 0xff, 0x3f, 0xff, 0xff, 0xff,

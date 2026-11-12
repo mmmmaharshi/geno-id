@@ -3,7 +3,7 @@ import { test } from "node:test"
 import path from "node:path"
 import fs from "node:fs"
 import { pathToFileURL } from "node:url"
-import { readLines } from "./read-lines.ts"
+import { readLines } from "./shared/read-lines.ts"
 
 // The golden vectors must cover every constraint kind the library supports,
 // not just the ones the shipped layouts happen to use. The conformance

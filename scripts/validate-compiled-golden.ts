@@ -1,7 +1,7 @@
 import path from "node:path"
 import fs from "node:fs"
 import { pathToFileURL } from "node:url"
-import { readLines } from "./read-lines.ts"
+import { readLines } from "./shared/read-lines.ts"
 
 const root = path.resolve(import.meta.dirname, "..")
 const algo = await import(pathToFileURL(path.resolve(root, "dist/algo.js")).href)

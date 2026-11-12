@@ -6,6 +6,7 @@ import { mkdirSync, writeFileSync } from "node:fs"
 import net from "node:net"
 import path from "node:path"
 import { pathToFileURL } from "node:url"
+import { mulberry32 } from "./shared/cli-utils.ts"
 import {
   DISTRIBUTIONS,
   ENGINES,
@@ -59,15 +60,6 @@ const ARMS: Record<string, () => string> = {
   genoid_shardfirst: () => algo.genStructuredGenoID(SHARDFIRST),
 }
 
-function mulberry32(seed: number): () => number {
-  let a = seed >>> 0
-  return () => {
-    a = (a + 0x6d2b79f5) >>> 0
-    let t = Math.imul(a ^ (a >>> 15), a | 1)
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
-  }
-}
 
 const hex = (uuid: string): string => uuid.replace(/-/g, "")
 const now = () => performance.now()

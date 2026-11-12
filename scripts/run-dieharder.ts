@@ -3,7 +3,7 @@ import os from "node:os"
 import fs from "node:fs"
 import path from "node:path"
 import { runExport } from "./dieharder-common.ts"
-import { mapPool } from "./pool.ts"
+import { mapPool } from "./shared/pool.ts"
 
 // dieharder is single-threaded per invocation; we fan its invocations out
 // across all CPU cores with a bounded concurrency pool so a multi-trial run

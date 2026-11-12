@@ -29,6 +29,7 @@ import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { pathToFileURL } from "node:url"
+import { mulberry32 } from "./shared/cli-utils.ts"
 
 // --- generators (built artifact + baselines) -------------------------------
 
@@ -99,16 +100,6 @@ const OUT = arg("out", "results/db-sqlite.json")
 
 // --- seeded payload (identical across arms; only the PK differs) ------------
 
-function mulberry32(seed: number): () => number {
-  let a = seed >>> 0
-  return () => {
-    a |= 0
-    a = (a + 0x6d2b79f5) | 0
-    let t = Math.imul(a ^ (a >>> 15), 1 | a)
-    t ^= t + Math.imul(t ^ (t >>> 7), 61 | t)
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
-  }
-}
 
 // --- stats (mean + 95% CI, small-df Student t) -----------------------------
 

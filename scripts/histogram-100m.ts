@@ -1,8 +1,8 @@
 import { writeFileSync, mkdirSync } from "node:fs"
-import { execSync } from "node:child_process"
 import os from "node:os"
 import { performance } from "node:perf_hooks"
 import path from "node:path"
+import { gitSha, runtimeVersion } from "./shared/cli-utils.ts"
 
 interface V8FieldConstraint {
   allowed?: number[]
@@ -217,19 +217,7 @@ function runLayout(layout: V8Layout): { fields: FieldReport[]; elapsedMs: number
   return { fields, elapsedMs }
 }
 
-function gitSha(): string {
-  try {
-    return execSync("git rev-parse HEAD", { cwd: root, encoding: "utf-8" }).trim()
-  } catch {
-    return "unknown"
-  }
-}
 
-function runtimeVersion(): string {
-  const globalBun = (globalThis as { Bun?: { version: string } }).Bun
-  if (globalBun) return `Bun ${globalBun.version}`
-  return `Node ${process.version}`
-}
 
 function envInfo(): Record<string, string> {
   const cpu = os.cpus()[0]?.model ?? "unknown"
@@ -265,7 +253,7 @@ const report = {
     "binomial; sampling SD = 100 * sqrt(p(1-p)/n) in percentage points, reported per cell",
   exact_uniformity_condition:
     "the admissible set is a complete residue system mod |A| and |A| divides 2^ell; then every admissible value has exactly 2^ell/|A| preimages and the repaired distribution is uniform",
-  environment: { ...envInfo(), commit_sha: gitSha(), generated_at: new Date().toISOString() },
+  environment: { ...envInfo(), commit_sha: gitSha(root), generated_at: new Date().toISOString() },
   elapsed_ms_total: Math.round(totalMs * 100) / 100,
   per_layout: generationsPerLayout,
 }

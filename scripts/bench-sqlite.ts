@@ -15,7 +15,7 @@ import fs from "node:fs"
 import os from "node:os"
 import { Database } from "bun:sqlite"
 import type { V8Layout, V8Field } from "../dist/algo.js"
-import { genUlidV8 } from "./baselines.ts"
+import { genUlidV8, uuidToBytes } from "./baselines.ts"
 
 const root = path.resolve(import.meta.dirname, "..")
 const algo = (await import(
@@ -147,20 +147,6 @@ export const ARM_KEY_ENCODING: Record<CompositeKeyArm, "TEXT" | "BLOB(16)" | "IN
   concatenated: "TEXT",
 }
 
-const HEX = new Uint8Array(256)
-for (let i = 0; i < 16; i++) HEX["0123456789abcdef".codePointAt(i)!] = i
-
-function uuidToBytes(uuid: string): Uint8Array {
-  const b = new Uint8Array(16)
-  let p = 0
-  for (let i = 0; i < 36; i++) {
-    const c = uuid.codePointAt(i)!
-    if (c === 45) continue
-    b[p >> 1] = (p & 1) ? b[p >> 1] | HEX[c] : HEX[c] << 4
-    p++
-  }
-  return b
-}
 
 function pregenIds(arm: CompositeKeyArm, n: number): unknown[] {
   const ids: unknown[] = []
