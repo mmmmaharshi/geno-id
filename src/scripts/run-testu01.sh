@@ -14,7 +14,7 @@
 
 set -e
 
-root="$(cd "$(dirname "$0")/.." && pwd)"
+root="$(cd "$(dirname "$0")/../.." && pwd)"
 out="$root/results/statistics/testu01.txt"
 
 if [ -z "$TESTU01_BIN" ]; then

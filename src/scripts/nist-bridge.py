@@ -172,7 +172,7 @@ def _run_sample(job: tuple[str, str]) -> tuple[str, list, int]:
 
 
 def main():
-    root = Path(__file__).resolve().parent.parent
+    root = Path(__file__).resolve().parent.parent.parent
     dist = root / "dist"
 
     samples = [
@@ -240,3 +240,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

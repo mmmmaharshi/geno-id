@@ -106,7 +106,7 @@ def run_one(job):
 
 
 def main():
-    root = Path(__file__).resolve().parent.parent
+    root = Path(__file__).resolve().parent.parent.parent
     dist = root / "dist"
 
     layout_files = {
@@ -176,3 +176,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

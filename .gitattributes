@@ -1,6 +1,8 @@
-# Line-ending policy: golden vectors and their hash manifest are hashed
-# byte-for-byte, so every checkout on every OS must materialize identical
-# bytes. Without this, Windows checkouts (autocrlf=true) produce CRLF and
-# the hash gate fails on a clean tree.
+# Line-ending policy: golden vectors, their hash manifest, and shell
+# scripts are hashed or parsed byte-sensitively, so every checkout on every
+# OS must materialize identical bytes. Without this, Windows checkouts
+# (autocrlf=true) produce CRLF and break the golden gate on a clean tree
+# or confuse bash.
 golden/*.txt text eol=lf
 golden/SHA256SUMS text eol=lf
+*.sh text eol=lf

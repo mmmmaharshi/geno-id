@@ -25,7 +25,7 @@ def run_single(args):
         return label, [("error", str(e))]
 
 def main():
-    root = Path(__file__).resolve().parent.parent
+    root = Path(__file__).resolve().parent.parent.parent
     dist = root / "dist"
 
     # Structured layout samples
@@ -76,3 +76,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
