@@ -4,7 +4,7 @@ This file explains how engineering skills consume domain documentation.
 
 ## Before exploring, read these
 
-- Read `CONTEXT.md` at the repository root.
+- Read `GLOSSARY.md` at the repository root.
 - Read relevant ADRs from `docs/adr/`.
 - If these files do not exist, proceed silently.
 
@@ -14,14 +14,14 @@ This repository uses a single-context layout:
 
 ```
 /
-├── CONTEXT.md
+├── GLOSSARY.md
 ├── docs/adr/
 └── src/
 ```
 
 ## Use the glossary's vocabulary
 
-Use domain terms defined in `CONTEXT.md` in issues, proposals, hypotheses, and test names.
+Use domain terms defined in `GLOSSARY.md` in issues, proposals, hypotheses, and test names.
 
 If a required concept is missing, reconsider the term or note the gap for `/domain-modeling`.
 

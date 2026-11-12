@@ -5,7 +5,7 @@ to a journal submission (realistic venues per the Round-1 panel: JSS / IST / SQJ
 
 ## Goal
 
-A **substantial conference extension** (see `CONTEXT.md`): the same artifact,
+A **substantial conference extension** (see `GLOSSARY.md`): the same artifact,
 plus new methods, new evidence, and new analysis the conference version did
 not have — with a dedicated "what's new since the conference version" section.
 
