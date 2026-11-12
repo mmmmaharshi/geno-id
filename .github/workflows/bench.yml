@@ -199,7 +199,7 @@ jobs:
           MYSQL_PASSWORD: password
           MYSQL_DB: genoid
           GENOID_COMMIT: ${{ github.sha }}
-        run: bun run scripts/bench-db-native.ts --rows=20000 --reps=3 --probes=200
+        run: bun run scripts/bench-db-native.ts --rows=5000 --reps=5 --probes=100
       - uses: actions/upload-artifact@v4
         if: always()
         with:

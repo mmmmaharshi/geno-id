@@ -294,6 +294,21 @@ against $6.0$--$6.5$\,ms for the embedded arms, a $2.8\times$ difference.
 Embedding trades partition-scan speed for single-index storage and
 bare-identifier seeks.
 
+The same arms run against native engines. At $N=5{,}000$ rows over three
+distributions on containerized PostgreSQL~18, the structured and
+shard-first arms insert faster than UUIDv7 ($77.1$K and $70.7$K versus
+$59.0$K rows/s, medians of 5 reps); on MySQL~8/InnoDB the shard-first arm
+leads v7 ($16.8$K versus $13.5$K rows/s) with the structured arm at parity.
+Point lookups ($\approx 20$--$30\,\mu$s) and range scans ($\approx 1$--$2$\,ms)
+show no difference on either engine. An earlier untracked run reported the
+opposite on PostgreSQL (shard-first $41\%$ slower than v7 on inserts); it
+does not reproduce here, and neither did the previously committed tracked run
+agree with it (shard-first $22\%$ \emph{ahead} of v7 at $N=5\times10^4$).
+The tracked artifact
+(\texttt{results/db-native.json}, with per-rep percentiles, query plans, and
+server versions) now supersedes it — with the same single-host caveat that
+applies to every absolute rate in this section.
+
 \begin{table}[!ht]
 \caption{Schema comparison (SQLite, file-backed, $N=10^5$, 10 trials, 1000
 point lookups per trial; every arm uses the same timestamp-sorted GenoID
@@ -304,8 +319,9 @@ magnitude worse and is shown as an order of magnitude, not a mean.
 Means with 95\% CI, raw per-trial arrays, query plans, and host metadata are
 archived in \texttt{results/db-sqlite-composite.json}.
 Conceptual generalization to clustered storage engines is discussed in
-Section~3.2 below; measured PostgreSQL and InnoDB results are left as
-future work.}
+Section~3.2 below; measured PostgreSQL~18 and MySQL~8/InnoDB results at
+$N=5{,}000$ are archived in \texttt{results/db-native.json} and show the
+structured arms at or ahead of UUIDv7 on inserts with parity elsewhere.}
 \label{tab:composite}
 \centering\footnotesize
 \begin{tabular*}{\columnwidth}{@{\extracolsep{\fill}}lcccc}

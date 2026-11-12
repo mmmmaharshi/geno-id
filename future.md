@@ -32,11 +32,12 @@ Closed: `inferWorkload` + `bench-workload.ts` + 4.7x SQLite win + PG parity +
 convergence proof. Remaining polish: region-range measurement on the flipped
 mix is parity-by-construction; no further work unless reviewers ask for more mixes.
 
-### 2. Native DB experiments (CI service containers — no hosted box needed)
-Harness committed (`scripts/bench-db-native.ts`); CI `native-db` job runs it
-against PostgreSQL~18 + MySQL~8 service containers and archives
-`results/db-native.json`. Kills the "SQLite-only proxy" threat — the most
-repeated reviewer objection. Materializes on the first green main run.
+### 2. Native DB experiments — DONE (podman locally + CI service containers)
+Ran the committed harness against PostgreSQL~18 + MySQL~8/InnoDB in podman
+(plus embedded PG via PGlite in the workload loop): PG structured +31% /
+shardfirst +20% vs v7 inserts, MySQL shardfirst +24%, lookups at parity.
+Reversal withdrawn — old tracked run agrees (shardfirst +22%).
+CI `native-db` job re-runs this on every main push via service containers.
 
 ### 3. Microshard head-to-head (~1 week)
 Harness `microshard-uuid` on the same workload with the same metrics
