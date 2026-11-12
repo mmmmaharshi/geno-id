@@ -2,6 +2,7 @@ import { writeFileSync, mkdirSync } from "node:fs"
 import path from "node:path"
 import { performance } from "node:perf_hooks"
 import { collisionTest } from "../dist/bench-core.js"
+import type { V8Field, V8Layout } from "../dist/algo.js"
 
 const __dirname = import.meta.dirname!
 const root = path.resolve(__dirname, "..")
@@ -16,9 +17,6 @@ const algo = await import(algoPath) as {
 }
 
 const { genStructuredGenoID, uuidToBytes, getFieldValue, DBKEY_LAYOUT } = algo
-
-interface V8Field { name: string; start: number; length: number; type: string; constraint?: { allowed?: number[]; monotonic?: boolean } }
-interface V8Layout { name: string; fields: V8Field[] }
 
 // Manual bit-extraction of a field, mirroring the loop below
 // but for the timestamp field (independent code path).

@@ -4,14 +4,9 @@
 
 const distDir = new URL("../../dist/", import.meta.url)
 
-// Resolve a dist/<name> output path as a file: URL.
-export function distFile(name: string): URL {
-  return new URL(name, distDir)
-}
-
 // Write a NIST bit-stream text file into dist/. Requires `--allow-write`.
 export async function writeBitsFile(name: string, content: string): Promise<URL> {
-  const file = distFile(name)
+  const file = new URL(name, distDir)
   await Deno.writeTextFile(file, content)
   return file
 }

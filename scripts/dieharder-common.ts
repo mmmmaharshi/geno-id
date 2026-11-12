@@ -3,9 +3,9 @@ import fs from "node:fs"
 import { pathToFileURL } from "node:url"
 import type { V8Layout } from "../dist/algo.js"
 
-// Shared exporter for the dieharder randomness battery. Both
-// `export-dieharder.ts` (full 12.5MB samples) and `export-dieharder-smoke.ts`
-// (fast local ~25KB samples) drive this with a different `targetBits`.
+// Shared exporter for the dieharder randomness battery. Driven by
+// `export-dieharder.ts` with a `targetBits` (full 12.5MB samples, or
+// DIEHARDER_BITS=200000 for a fast local smoke).
 //
 // dieharder wants much larger samples than NIST SP 800-22 (~1.22M bits): a
 // short file gets rewound, re-using bits and invalidating p-values. So we

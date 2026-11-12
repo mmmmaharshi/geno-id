@@ -9,12 +9,12 @@ import assert from "node:assert/strict"
 import { test } from "node:test"
 import { aggregateReps, shardRangeKeys } from "./bench-db.ts"
 
-test("aggregateReps: mean and 95% CI bracket the sample mean", () => {
-  const xs = [10, 12, 11, 13, 9]
-  const r = aggregateReps(xs)
+test("aggregateReps: exact 95% CI on a known sample (t(df=4)=2.776)", () => {
+  // sd = sqrt(10/4) ≈ 1.5811; margin = 2.776 × 1.5811 / sqrt(5) ≈ 1.963.
+  const r = aggregateReps([10, 12, 11, 13, 9])
   assert.equal(r.mean, 11)
-  assert.ok(r.ci95[0] <= 11 && r.ci95[1] >= 11, `CI [${r.ci95}] must bracket mean 11`)
-  assert.ok(r.ci95[1] > r.ci95[0], "multi-sample CI must have positive width")
+  assert.ok(Math.abs(r.ci95[0] - 9.037) < 0.01, `lo ${r.ci95[0]} must match t-based margin`)
+  assert.ok(Math.abs(r.ci95[1] - 12.963) < 0.01, `hi ${r.ci95[1]} must match t-based margin`)
 })
 
 test("aggregateReps: single sample has zero-width CI", () => {

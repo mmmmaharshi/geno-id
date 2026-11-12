@@ -3,6 +3,7 @@ import { test } from "node:test"
 import path from "node:path"
 import fs from "node:fs"
 import { pathToFileURL } from "node:url"
+import { readLines } from "./read-lines.ts"
 
 // The golden vectors must cover every constraint kind the library supports,
 // not just the ones the shipped layouts happen to use. The conformance
@@ -48,7 +49,7 @@ test("the conformance layout declares a range constraint, a fixed field, and a w
 })
 
 test("every conformance vector satisfies the range constraint", () => {
-  const lines = fs.readFileSync(VECTORS, "utf-8").trim().split("\n")
+  const lines = readLines(fs.readFileSync(VECTORS, "utf-8"))
   assert.ok(lines.length > 0)
   const window = field("window")
   for (const line of lines) {
@@ -61,7 +62,7 @@ test("every conformance vector satisfies the range constraint", () => {
 })
 
 test("every conformance vector carries the fixed field's constant", () => {
-  const lines = fs.readFileSync(VECTORS, "utf-8").trim().split("\n")
+  const lines = readLines(fs.readFileSync(VECTORS, "utf-8"))
   const kind = field("kind")
   for (const line of lines) {
     const value = Number(algo.getFieldValue(algo.uuidToBytes(line), kind))
@@ -70,7 +71,7 @@ test("every conformance vector carries the fixed field's constant", () => {
 })
 
 test("the wide field takes distinct values across the vectors", () => {
-  const lines = fs.readFileSync(VECTORS, "utf-8").trim().split("\n")
+  const lines = readLines(fs.readFileSync(VECTORS, "utf-8"))
   const wide = field("wide")
   const values = new Set(
     lines.map((line) => algo.getFieldValue(algo.uuidToBytes(line), wide).toString()),

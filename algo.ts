@@ -47,32 +47,44 @@ export function configureFootprint(mode: "fast" | "lean"): void {
 
 export function toUuidString(b: Uint8Array): string {
   if (b.length < 16) throw new Error(`toUuidString: expected 16 bytes, got ${b.length}`)
-  const w = wordTable()
+  return formatUuidBytes(b, wordTable(), HEX8)
+}
+
+function formatUuidBytes(b: Uint8Array, w: string[] | null, t: string[], o = 0): string {
   if (w) {
     return (
-      w[(b[0] << 8) | b[1]] + w[(b[2] << 8) | b[3]] +
+      w[(b[o] << 8) | b[o + 1]] + w[(b[o + 2] << 8) | b[o + 3]] +
       "-" +
-      w[(b[4] << 8) | b[5]] +
+      w[(b[o + 4] << 8) | b[o + 5]] +
       "-" +
-      w[(b[6] << 8) | b[7]] +
+      w[(b[o + 6] << 8) | b[o + 7]] +
       "-" +
-      w[(b[8] << 8) | b[9]] +
+      w[(b[o + 8] << 8) | b[o + 9]] +
       "-" +
-      w[(b[10] << 8) | b[11]] + w[(b[12] << 8) | b[13]] + w[(b[14] << 8) | b[15]]
+      w[(b[o + 10] << 8) | b[o + 11]] + w[(b[o + 12] << 8) | b[o + 13]] + w[(b[o + 14] << 8) | b[o + 15]]
     )
   }
-  const t = HEX8
   return (
-    t[b[0]] + t[b[1]] + t[b[2]] + t[b[3]] +
+    t[b[o]] + t[b[o + 1]] + t[b[o + 2]] + t[b[o + 3]] +
     "-" +
-    t[b[4]] + t[b[5]] +
+    t[b[o + 4]] + t[b[o + 5]] +
     "-" +
-    t[b[6]] + t[b[7]] +
+    t[b[o + 6]] + t[b[o + 7]] +
     "-" +
-    t[b[8]] + t[b[9]] +
+    t[b[o + 8]] + t[b[o + 9]] +
     "-" +
-    t[b[10]] + t[b[11]] + t[b[12]] + t[b[13]] + t[b[14]] + t[b[15]]
+    t[b[o + 10]] + t[b[o + 11]] + t[b[o + 12]] + t[b[o + 13]] + t[b[o + 14]] + t[b[o + 15]]
   )
+}
+
+function waitForNextTick(lastTick: number): number {
+  // §6.2 freeze-and-wait: stall until the clock advances past the last tick.
+  // Twin: genLayoutSource emits the same loop into compiled output (a `new
+  // Function` body cannot call this helper) — keep the two in sync.
+  while (Date.now() <= lastTick) {
+    // intentional busy-wait
+  }
+  return Date.now()
 }
 
 export function genV4Native(): string {
@@ -241,17 +253,7 @@ function refillGenoPool(): void {
     _child[6] = (_child[6] & 0x0f) | 0x80
     _child[8] = (_child[8] & 0x3f) | 0x80
     const c = _child
-    _genoStrs[i] = w
-      ? w[(c[0] << 8) | c[1]] + w[(c[2] << 8) | c[3]] + "-" +
-        w[(c[4] << 8) | c[5]] + "-" +
-        w[(c[6] << 8) | c[7]] + "-" +
-        w[(c[8] << 8) | c[9]] + "-" +
-        w[(c[10] << 8) | c[11]] + w[(c[12] << 8) | c[13]] + w[(c[14] << 8) | c[15]]
-      : t[c[0]] + t[c[1]] + t[c[2]] + t[c[3]] + "-" +
-        t[c[4]] + t[c[5]] + "-" +
-        t[c[6]] + t[c[7]] + "-" +
-        t[c[8]] + t[c[9]] + "-" +
-        t[c[10]] + t[c[11]] + t[c[12]] + t[c[13]] + t[c[14]] + t[c[15]]
+    _genoStrs[i] = formatUuidBytes(c, w, t)
   }
   _genoIdx = 0
 }
@@ -1489,7 +1491,7 @@ export function repairConstraints(layout: V8Layout, bytes: Uint8Array): number {
     let v = Number(getFieldValue(bytes, f))
     let changed = false
     if (c.allowed && c.allowed.length > 0 && !c.allowed.includes(v)) {
-      v = c.allowed[v % c.allowed.length]
+      v = pickFromAllowed(c.allowed, v)
       changed = true
     }
     if (c.min !== undefined && v < c.min) { v = c.min; changed = true }
@@ -1549,12 +1551,7 @@ function refillSingleParentPool(layout: V8Layout): void {
         // strictly larger timestamp — freeze generation until the
         // clock advances past the last tick (RFC 9562 §6.2).
         if (lastTick !== undefined && now <= lastTick) {
-          // §6.2 freeze-and-wait: stall until the clock
-          // advances past the last tick (bounded stall).
-          while (Date.now() <= lastTick) {
-            // intentional busy-wait
-          }
-          now = Date.now()
+          now = waitForNextTick(lastTick)
           _layoutTick.set(layout.name, now)
         }
         ctr = Number(getFieldValue(buf, f)) % reseedRange
@@ -1568,17 +1565,7 @@ function refillSingleParentPool(layout: V8Layout): void {
     forceVersionVariant(buf)
     repairConstraints(layout, buf)
     const c = buf
-    strs[n] = w
-      ? w[(c[0] << 8) | c[1]] + w[(c[2] << 8) | c[3]] + "-" +
-        w[(c[4] << 8) | c[5]] + "-" +
-        w[(c[6] << 8) | c[7]] + "-" +
-        w[(c[8] << 8) | c[9]] + "-" +
-        w[(c[10] << 8) | c[11]] + w[(c[12] << 8) | c[13]] + w[(c[14] << 8) | c[15]]
-      : t[c[0]] + t[c[1]] + t[c[2]] + t[c[3]] + "-" +
-        t[c[4]] + t[c[5]] + "-" +
-        t[c[6]] + t[c[7]] + "-" +
-        t[c[8]] + t[c[9]] + "-" +
-        t[c[10]] + t[c[11]] + t[c[12]] + t[c[13]] + t[c[14]] + t[c[15]]
+    strs[n] = formatUuidBytes(c, w, t)
   }
   entry = _spPool.get(layout.name)!
   entry.idx = 0
@@ -1704,12 +1691,7 @@ function hcTickAndCounter(reseed: number): number {
   let now = Date.now()
   if (_hcCtr < 0 || _hcCtr >= 0xffff) {
     if (_hcCtr >= 0xffff && now <= _hcTick) {
-      // §6.2 freeze-and-wait: stall until the clock
-      // advances past the last tick (bounded stall).
-      while (Date.now() <= _hcTick) {
-        // intentional busy-wait
-      }
-      now = Date.now()
+      now = waitForNextTick(_hcTick)
     }
     _hcCtr = reseed
   } else {
@@ -1724,27 +1706,6 @@ function pickFromAllowed(allowed: number[], byte: number): number {
   const n = allowed.length
   if (n === 1) return allowed[0]
   return allowed[byte % n]
-}
-
-function formatHex(b: Uint8Array): string {
-  const w = wordTable()
-  const t = HEX8
-  if (w) {
-    return (
-      w[(b[0] << 8) | b[1]] + w[(b[2] << 8) | b[3]] + "-" +
-      w[(b[4] << 8) | b[5]] + "-" +
-      w[(b[6] << 8) | b[7]] + "-" +
-      w[(b[8] << 8) | b[9]] + "-" +
-      w[(b[10] << 8) | b[11]] + w[(b[12] << 8) | b[13]] + w[(b[14] << 8) | b[15]]
-    )
-  }
-  return (
-    t[b[0]] + t[b[1]] + t[b[2]] + t[b[3]] + "-" +
-    t[b[4]] + t[b[5]] + "-" +
-    t[b[6]] + t[b[7]] + "-" +
-    t[b[8]] + t[b[9]] + "-" +
-    t[b[10]] + t[b[11]] + t[b[12]] + t[b[13]] + t[b[14]] + t[b[15]]
-  )
 }
 
 export function genHandCodedDbkey(): string {
@@ -1769,7 +1730,7 @@ export function genHandCodedDbkey(): string {
   b[13] = _hcRnd[5]
   b[14] = _hcRnd[6]
   b[15] = _hcRnd[7]
-  return formatHex(b)
+  return toUuidString(b)
 }
 
 // Pooled version: pre-generates N strings with hardcoded assembly, returns in
@@ -1802,20 +1763,7 @@ function refillHcPool(): void {
     buf[off + 8] = 0x80 | ((ctr >> 10) & 0x3f)
     buf[off + 9] = (ctr >> 2) & 0xff
     buf[off + 10] = ((ctr & 0x3) << 6) | (buf[off + 10] & 0x3f)
-    _hcPool[n] = w
-      ? w[(buf[off] << 8) | buf[off + 1]] +
-        w[(buf[off + 2] << 8) | buf[off + 3]] + "-" +
-        w[(buf[off + 4] << 8) | buf[off + 5]] + "-" +
-        w[(buf[off + 6] << 8) | buf[off + 7]] + "-" +
-        w[(buf[off + 8] << 8) | buf[off + 9]] + "-" +
-        w[(buf[off + 10] << 8) | buf[off + 11]] +
-        w[(buf[off + 12] << 8) | buf[off + 13]] +
-        w[(buf[off + 14] << 8) | buf[off + 15]]
-      : t[buf[off]] + t[buf[off + 1]] + t[buf[off + 2]] + t[buf[off + 3]] + "-" +
-        t[buf[off + 4]] + t[buf[off + 5]] + "-" +
-        t[buf[off + 6]] + t[buf[off + 7]] + "-" +
-        t[buf[off + 8]] + t[buf[off + 9]] + "-" +
-        t[buf[off + 10]] + t[buf[off + 11]] + t[buf[off + 12]] + t[buf[off + 13]] + t[buf[off + 14]] + t[buf[off + 15]]
+    _hcPool[n] = formatUuidBytes(buf, w, t, off)
   }
   _hcPoolIdx = 0
 }
@@ -1906,6 +1854,11 @@ function emitFieldWrite(wp: WritePlanEntry[], lines: string[], varName = "v", mo
     }),
   )
 }
+
+// Single format expression shared by the raw and pooled compiled emitters.
+// The generated function receives byte table `h` and optional word table `w`.
+const COMPILED_FMT_EXPR =
+  'w?w[(b[0]<<8)|b[1]]+w[(b[2]<<8)|b[3]]+"-"+w[(b[4]<<8)|b[5]]+"-"+w[(b[6]<<8)|b[7]]+"-"+w[(b[8]<<8)|b[9]]+"-"+w[(b[10]<<8)|b[11]]+w[(b[12]<<8)|b[13]]+w[(b[14]<<8)|b[15]]:h[b[0]]+h[b[1]]+h[b[2]]+h[b[3]]+"-"+h[b[4]]+h[b[5]]+"-"+h[b[6]]+h[b[7]]+"-"+h[b[8]]+h[b[9]]+"-"+h[b[10]]+h[b[11]]+h[b[12]]+h[b[13]]+h[b[14]]+h[b[15]]'
 
 function genLayoutSource(layout: V8Layout, raw: boolean, poolSize = 0): string {
   const fieldMeta = layout.fields.map((f) => {
@@ -2039,25 +1992,20 @@ function genLayoutSource(layout: V8Layout, raw: boolean, poolSize = 0): string {
         target.push("}")
       }
     }
-    // Version/variant
     target.push("b[6]=(b[6]&0x0f)|0x80;b[8]=(b[8]&0x3f)|0x80;")
   }
 
   // oxlint-disable-next-line branches-sharing-code
   if (raw || poolSize === 0) {
     emitFieldBlock(lines)
-    // Format
-    lines.push(
-      'return w?w[(b[0]<<8)|b[1]]+w[(b[2]<<8)|b[3]]+"-"+w[(b[4]<<8)|b[5]]+"-"+w[(b[6]<<8)|b[7]]+"-"+w[(b[8]<<8)|b[9]]+"-"+w[(b[10]<<8)|b[11]]+w[(b[12]<<8)|b[13]]+w[(b[14]<<8)|b[15]]:h[b[0]]+h[b[1]]+h[b[2]]+h[b[3]]+"-"+h[b[4]]+h[b[5]]+"-"+h[b[6]]+h[b[7]]+"-"+h[b[8]]+h[b[9]]+"-"+h[b[10]]+h[b[11]]+h[b[12]]+h[b[13]]+h[b[14]]+h[b[15]];',
-    )
+    lines.push(`return ${COMPILED_FMT_EXPR};`)
     lines.push("};")
   } else {
     // Pooled: emit field + format into fieldLines, then substitute b[ → b[_o+
     emitFieldBlock(fieldLines)
-    const fmtExpr = 'w?w[(b[0]<<8)|b[1]]+w[(b[2]<<8)|b[3]]+"-"+w[(b[4]<<8)|b[5]]+"-"+w[(b[6]<<8)|b[7]]+"-"+w[(b[8]<<8)|b[9]]+"-"+w[(b[10]<<8)|b[11]]+w[(b[12]<<8)|b[13]]+w[(b[14]<<8)|b[15]]:h[b[0]]+h[b[1]]+h[b[2]]+h[b[3]]+"-"+h[b[4]]+h[b[5]]+"-"+h[b[6]]+h[b[7]]+"-"+h[b[8]]+h[b[9]]+"-"+h[b[10]]+h[b[11]]+h[b[12]]+h[b[13]]+h[b[14]]+h[b[15]]'
     const poolfy = (s: string) => s.replaceAll("b[", "_bp[_o+")
     lines.push(...fieldLines.map((l) => "  " + poolfy(l)))
-    lines.push(`  _p[_pi]=${poolfy(fmtExpr)};`)
+    lines.push(`  _p[_pi]=${poolfy(COMPILED_FMT_EXPR)};`)
     lines.push("}_pi=0;}")
     lines.push("return _p[_pi++];")
     lines.push("};")
@@ -2156,7 +2104,7 @@ export function interpretRawLayout(
       default: {
         rv = Number(getFieldValue(b, f))
         if (c && c.allowed && c.allowed.length > 0) {
-          rv = c.allowed[rv % c.allowed.length]
+          rv = pickFromAllowed(c.allowed, rv)
         }
         break
       }
@@ -2178,14 +2126,7 @@ export function interpretRawLayout(
 
   forceVersionVariant(b)
 
-  const h = HEX8
-  return (
-    h[b[0]] + h[b[1]] + h[b[2]] + h[b[3]] +
-    "-" + h[b[4]] + h[b[5]] +
-    "-" + h[b[6]] + h[b[7]] +
-    "-" + h[b[8]] + h[b[9]] +
-    "-" + h[b[10]] + h[b[11]] + h[b[12]] + h[b[13]] + h[b[14]] + h[b[15]]
-  )
+  return toUuidString(b)
 }
 
 // ---------------------------------------------------------------------------

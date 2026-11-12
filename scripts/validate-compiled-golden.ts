@@ -1,6 +1,7 @@
 import path from "node:path"
 import fs from "node:fs"
 import { pathToFileURL } from "node:url"
+import { readLines } from "./read-lines.ts"
 
 const root = path.resolve(import.meta.dirname, "..")
 const algo = await import(pathToFileURL(path.resolve(root, "dist/algo.js")).href)
@@ -15,8 +16,7 @@ const { uuidToBytes, getFieldValue, DBKEY_LAYOUT, MULTITENANT_LAYOUT, EVENTSOURC
   }
 
 function readFile(filepath: string): string[] {
-  const text = fs.readFileSync(filepath, "utf-8").trim()
-  return text ? text.split("\n") : []
+  return readLines(fs.readFileSync(filepath, "utf-8"))
 }
 
 function validateUUID(uuid: string, context: string): number {

@@ -204,18 +204,14 @@ test("compileLayout source exports valid JS", () => {
 test("compileLayout fn throws usably when no crypto", () => {
   const compiled = compileLayout(DBKEY_LAYOUT)
   const badCrypto = { getRandomValues: null as unknown as (buf: Uint8Array) => void }
-  try {
-    const factory = new Function("h", "w", "cr", compiled.source) as (
-      h: string[],
-      w: string[] | null,
-      cr: { getRandomValues(buf: Uint8Array): void },
-    ) => () => string
-    const cfn = factory(HEX8, algoWordTable(), badCrypto)
-    cfn()
-    assert.fail("should have thrown")
-  } catch {
-    // expected
-  }
+  const factory = new Function("h", "w", "cr", compiled.source) as (
+    h: string[],
+    w: string[] | null,
+    cr: { getRandomValues(buf: Uint8Array): void },
+  ) => () => string
+  const cfn = factory(HEX8, algoWordTable(), badCrypto)
+  // Must fail closed (TypeError on the missing crypto), never silently emit IDs.
+  assert.throws(() => cfn(), TypeError)
 })
 
 test("compileLayout deterministic: same seed produces same output", () => {
