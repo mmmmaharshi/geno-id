@@ -79,13 +79,14 @@ interface TraceEvent {
 }
 
 // 80% tenant point reads, 15% region range reads, 5% blind writes.
-function generateTrace(n: number, rand: () => number): TraceEvent[] {
+// Overridable as shares "tenant,region,write", e.g. "0.1,0.8,0.1".
+function generateTrace(n: number, rand: () => number, mix: [number, number, number]): TraceEvent[] {
   const trace: TraceEvent[] = []
   for (let i = 0; i < n; i++) {
     const r = rand()
-    if (r < 0.8) {
+    if (r < mix[0]) {
       trace.push({ op: "read", kind: "point", filters: { tenant: TENANT_VALUES[Math.floor(rand() * 8)] } })
-    } else if (r < 0.95) {
+    } else if (r < mix[0] + mix[1]) {
       trace.push({ op: "read", kind: "range", filters: { region: REGION_VALUES[Math.floor(rand() * 4)] } })
     } else {
       trace.push({ op: "write", kind: "scan", filters: {} })
@@ -105,7 +106,11 @@ function regionField(start: number) {
 }
 
 const rand = rng32(SEED)
-const trace = generateTrace(10_000, rand)
+const mixParts = (process.env.WORKLOAD_MIX ?? "0.8,0.15,0.05").split(",").map(Number)
+if (mixParts.length !== 3 || mixParts.some((x) => !(x >= 0))) {
+  throw new Error(`WORKLOAD_MIX must be "tenant,region,write" shares, got ${process.env.WORKLOAD_MIX}`)
+}
+const trace = generateTrace(10_000, rand, [mixParts[0], mixParts[1], mixParts[2]])
 const inferred = inferWorkload(trace, schema)
 console.log("inferred weights:", JSON.stringify(inferred.weights))
 console.log("inferred roles:", JSON.stringify(inferred.profile.fields.map((f) => `${f.name}:${f.role}`)))
@@ -271,7 +276,7 @@ const report = {
   experiment: "workload-planning",
   description:
     "Trace (seeded, archived params) -> inferWorkload weights/roles -> planBitAllocation Smith order -> SQLite tenant-lookup latency, planned vs hand order",
-  trace: { seed: SEED, events: trace.length, mix: "0.80 tenant-point / 0.15 region-range / 0.05 write" },
+  trace: { seed: SEED, events: trace.length, mix: `tenant-point ${mixParts[0]} / region-range ${mixParts[1]} / write ${mixParts[2]}` },
   inferred: { weights: inferred.weights, cardinalities: inferred.cardinalities, roles: inferred.profile.fields },
   plan: { smithOrder, randomBits: plan.randomBits },
   handOrder: ["region", "tenant"],
