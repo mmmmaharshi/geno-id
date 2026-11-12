@@ -441,7 +441,12 @@ fn compare(golden_dir: &Path, label: &str, layout: &[Field], mutate: Mutation) -
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let manifest_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
-    let golden_dir = manifest_dir.parent().unwrap().join("golden");
+    let golden_dir = manifest_dir
+        .parent()
+        .unwrap()
+        .parent()
+        .unwrap()
+        .join("golden");
 
     eprintln!("=== Rust golden-vector check ===");
     eprintln!(

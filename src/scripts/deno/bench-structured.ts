@@ -3,7 +3,7 @@ import {
   collisionTest,
   birthdayBound50,
 } from "../../../dist/bench-core.js"
-import { type V8Field, type V8Layout } from "../../../algo.ts"
+import { type V8Field, type V8Layout } from "../../algo.ts"
 
 const algo = (await import("../../../dist/algo.js")) as {
   genStructuredParent: (l: V8Layout, mask: number[]) => Uint8Array
