@@ -45,11 +45,7 @@ field-for-field against the Python lib). Tenant prune 1.3x (borderline),
 points/inserts parity, throughput 16x (BigInt mirror cost),
 frozen-tick 2M burst 33 vs 0 (matches n^2/2*2^36). Paper \S~microshard.
 
-### 4. Multi-stream NIST + draw archive (running: 10 fresh draws in progress)
-Draw-count logging now exists (`nist-full-battery.py`). ≥100 streams is
-out of session scope (days of compute); running 10 independent draws per
-layout now as a 10x strengthening with full draw provenance. Paper keeps the
-single-stream caveat until then.
+### 4. Multi-stream NIST — DONE at 5 draws (draws 1-5: 123, 120, 123, 120, 122/123; 7 fails / 615 p-values = 1.1% vs 1% expected; no test fails twice on one layout except Spectral/multitenant 2/5, consistent with chance). Failed draws archived with provenance in results/nist-draws/. Full ≥100-stream guidance remains out of scope; the caveat now reads 5 streams, not 1.
 
 ### 5. Repair-distribution grid — DONE (24/24 cells, max dev 0.3pp)
 Measured output frequencies across an (m, ℓ) grid via

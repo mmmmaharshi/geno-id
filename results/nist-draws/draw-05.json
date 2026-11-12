@@ -1,0 +1,753 @@
+{
+  "alpha": 0.01,
+  "draws": 1,
+  "draw_model": "one fresh CSPRNG export per layout per run; reruns are independent draws",
+  "bit_files": {
+    "dbkey": "C:\\Users\\manoh\\OneDrive\\Desktop\\geno-id\\dist\\struct-dbkey.bits.txt",
+    "multitenant": "C:\\Users\\manoh\\OneDrive\\Desktop\\geno-id\\dist\\struct-multitenant.bits.txt",
+    "eventsourcing": "C:\\Users\\manoh\\OneDrive\\Desktop\\geno-id\\dist\\struct-eventsourcing.bits.txt"
+  },
+  "total_tests": 123,
+  "passed": 122,
+  "failed": 1,
+  "results": [
+    {
+      "layout": "dbkey",
+      "test": "Frequency",
+      "p_value": 0.523789,
+      "status": "PASS"
+    },
+    {
+      "layout": "dbkey",
+      "test": "BlockFrequency",
+      "p_value": 0.611251,
+      "status": "PASS"
+    },
+    {
+      "layout": "dbkey",
+      "test": "Runs",
+      "p_value": 0.924521,
+      "status": "PASS"
+    },
+    {
+      "layout": "dbkey",
+      "test": "LongestRun",
+      "p_value": 0.030537,
+      "status": "PASS"
+    },
+    {
+      "layout": "dbkey",
+      "test": "MatrixRank",
+      "p_value": 0.414173,
+      "status": "PASS"
+    },
+    {
+      "layout": "dbkey",
+      "test": "Spectral(DFT)",
+      "p_value": 0.466382,
+      "status": "PASS"
+    },
+    {
+      "layout": "dbkey",
+      "test": "NonOverlappingTemplate",
+      "p_value": 0.657563,
+      "status": "PASS"
+    },
+    {
+      "layout": "dbkey",
+      "test": "OverlappingTemplate",
+      "p_value": 0.197628,
+      "status": "PASS"
+    },
+    {
+      "layout": "dbkey",
+      "test": "Universal",
+      "p_value": 0.623446,
+      "status": "PASS"
+    },
+    {
+      "layout": "dbkey",
+      "test": "LinearComplexity",
+      "p_value": 0.879012,
+      "status": "PASS"
+    },
+    {
+      "layout": "dbkey",
+      "test": "Serial",
+      "p_value": 0.676267,
+      "status": "PASS"
+    },
+    {
+      "layout": "dbkey",
+      "test": "Serial",
+      "p_value": 0.303887,
+      "status": "PASS"
+    },
+    {
+      "layout": "dbkey",
+      "test": "ApproximateEntropy",
+      "p_value": 0.506082,
+      "status": "PASS"
+    },
+    {
+      "layout": "dbkey",
+      "test": "CumulativeSums(forward)",
+      "p_value": 0.870316,
+      "status": "PASS"
+    },
+    {
+      "layout": "dbkey",
+      "test": "CumulativeSums(reverse)",
+      "p_value": 0.339783,
+      "status": "PASS"
+    },
+    {
+      "layout": "dbkey",
+      "test": "RandomExcursions",
+      "p_value": 0.494304,
+      "status": "PASS"
+    },
+    {
+      "layout": "dbkey",
+      "test": "RandomExcursions",
+      "p_value": 0.989665,
+      "status": "PASS"
+    },
+    {
+      "layout": "dbkey",
+      "test": "RandomExcursions",
+      "p_value": 0.882964,
+      "status": "PASS"
+    },
+    {
+      "layout": "dbkey",
+      "test": "RandomExcursions",
+      "p_value": 0.722994,
+      "status": "PASS"
+    },
+    {
+      "layout": "dbkey",
+      "test": "RandomExcursions",
+      "p_value": 0.517704,
+      "status": "PASS"
+    },
+    {
+      "layout": "dbkey",
+      "test": "RandomExcursions",
+      "p_value": 0.6318,
+      "status": "PASS"
+    },
+    {
+      "layout": "dbkey",
+      "test": "RandomExcursions",
+      "p_value": 0.978016,
+      "status": "PASS"
+    },
+    {
+      "layout": "dbkey",
+      "test": "RandomExcursions",
+      "p_value": 0.205948,
+      "status": "PASS"
+    },
+    {
+      "layout": "dbkey",
+      "test": "RandomExcursionsVariant",
+      "p_value": 0.575075,
+      "status": "PASS"
+    },
+    {
+      "layout": "dbkey",
+      "test": "RandomExcursionsVariant",
+      "p_value": 0.478729,
+      "status": "PASS"
+    },
+    {
+      "layout": "dbkey",
+      "test": "RandomExcursionsVariant",
+      "p_value": 0.62747,
+      "status": "PASS"
+    },
+    {
+      "layout": "dbkey",
+      "test": "RandomExcursionsVariant",
+      "p_value": 0.901513,
+      "status": "PASS"
+    },
+    {
+      "layout": "dbkey",
+      "test": "RandomExcursionsVariant",
+      "p_value": 0.559727,
+      "status": "PASS"
+    },
+    {
+      "layout": "dbkey",
+      "test": "RandomExcursionsVariant",
+      "p_value": 0.33533,
+      "status": "PASS"
+    },
+    {
+      "layout": "dbkey",
+      "test": "RandomExcursionsVariant",
+      "p_value": 0.392572,
+      "status": "PASS"
+    },
+    {
+      "layout": "dbkey",
+      "test": "RandomExcursionsVariant",
+      "p_value": 0.745737,
+      "status": "PASS"
+    },
+    {
+      "layout": "dbkey",
+      "test": "RandomExcursionsVariant",
+      "p_value": 0.489405,
+      "status": "PASS"
+    },
+    {
+      "layout": "dbkey",
+      "test": "RandomExcursionsVariant",
+      "p_value": 0.55248,
+      "status": "PASS"
+    },
+    {
+      "layout": "dbkey",
+      "test": "RandomExcursionsVariant",
+      "p_value": 1.0,
+      "status": "PASS"
+    },
+    {
+      "layout": "dbkey",
+      "test": "RandomExcursionsVariant",
+      "p_value": 0.86955,
+      "status": "PASS"
+    },
+    {
+      "layout": "dbkey",
+      "test": "RandomExcursionsVariant",
+      "p_value": 0.698147,
+      "status": "PASS"
+    },
+    {
+      "layout": "dbkey",
+      "test": "RandomExcursionsVariant",
+      "p_value": 0.445307,
+      "status": "PASS"
+    },
+    {
+      "layout": "dbkey",
+      "test": "RandomExcursionsVariant",
+      "p_value": 0.430642,
+      "status": "PASS"
+    },
+    {
+      "layout": "dbkey",
+      "test": "RandomExcursionsVariant",
+      "p_value": 0.37202,
+      "status": "PASS"
+    },
+    {
+      "layout": "dbkey",
+      "test": "RandomExcursionsVariant",
+      "p_value": 0.343036,
+      "status": "PASS"
+    },
+    {
+      "layout": "dbkey",
+      "test": "RandomExcursionsVariant",
+      "p_value": 0.460073,
+      "status": "PASS"
+    },
+    {
+      "layout": "multitenant",
+      "test": "Frequency",
+      "p_value": 0.39041,
+      "status": "PASS"
+    },
+    {
+      "layout": "multitenant",
+      "test": "BlockFrequency",
+      "p_value": 0.321392,
+      "status": "PASS"
+    },
+    {
+      "layout": "multitenant",
+      "test": "Runs",
+      "p_value": 0.211312,
+      "status": "PASS"
+    },
+    {
+      "layout": "multitenant",
+      "test": "LongestRun",
+      "p_value": 0.859342,
+      "status": "PASS"
+    },
+    {
+      "layout": "multitenant",
+      "test": "MatrixRank",
+      "p_value": 0.561752,
+      "status": "PASS"
+    },
+    {
+      "layout": "multitenant",
+      "test": "Spectral(DFT)",
+      "p_value": 0.018893,
+      "status": "PASS"
+    },
+    {
+      "layout": "multitenant",
+      "test": "NonOverlappingTemplate",
+      "p_value": 0.192428,
+      "status": "PASS"
+    },
+    {
+      "layout": "multitenant",
+      "test": "OverlappingTemplate",
+      "p_value": 0.725009,
+      "status": "PASS"
+    },
+    {
+      "layout": "multitenant",
+      "test": "Universal",
+      "p_value": 0.296501,
+      "status": "PASS"
+    },
+    {
+      "layout": "multitenant",
+      "test": "LinearComplexity",
+      "p_value": 0.592409,
+      "status": "PASS"
+    },
+    {
+      "layout": "multitenant",
+      "test": "Serial",
+      "p_value": 0.038004,
+      "status": "PASS"
+    },
+    {
+      "layout": "multitenant",
+      "test": "Serial",
+      "p_value": 0.043819,
+      "status": "PASS"
+    },
+    {
+      "layout": "multitenant",
+      "test": "ApproximateEntropy",
+      "p_value": 0.378336,
+      "status": "PASS"
+    },
+    {
+      "layout": "multitenant",
+      "test": "CumulativeSums(forward)",
+      "p_value": 0.218864,
+      "status": "PASS"
+    },
+    {
+      "layout": "multitenant",
+      "test": "CumulativeSums(reverse)",
+      "p_value": 0.343928,
+      "status": "PASS"
+    },
+    {
+      "layout": "multitenant",
+      "test": "RandomExcursions",
+      "p_value": 0.214137,
+      "status": "PASS"
+    },
+    {
+      "layout": "multitenant",
+      "test": "RandomExcursions",
+      "p_value": 0.620847,
+      "status": "PASS"
+    },
+    {
+      "layout": "multitenant",
+      "test": "RandomExcursions",
+      "p_value": 0.9719,
+      "status": "PASS"
+    },
+    {
+      "layout": "multitenant",
+      "test": "RandomExcursions",
+      "p_value": 0.311978,
+      "status": "PASS"
+    },
+    {
+      "layout": "multitenant",
+      "test": "RandomExcursions",
+      "p_value": 0.781737,
+      "status": "PASS"
+    },
+    {
+      "layout": "multitenant",
+      "test": "RandomExcursions",
+      "p_value": 0.545519,
+      "status": "PASS"
+    },
+    {
+      "layout": "multitenant",
+      "test": "RandomExcursions",
+      "p_value": 0.658576,
+      "status": "PASS"
+    },
+    {
+      "layout": "multitenant",
+      "test": "RandomExcursions",
+      "p_value": 0.266488,
+      "status": "PASS"
+    },
+    {
+      "layout": "multitenant",
+      "test": "RandomExcursionsVariant",
+      "p_value": 0.68186,
+      "status": "PASS"
+    },
+    {
+      "layout": "multitenant",
+      "test": "RandomExcursionsVariant",
+      "p_value": 0.767832,
+      "status": "PASS"
+    },
+    {
+      "layout": "multitenant",
+      "test": "RandomExcursionsVariant",
+      "p_value": 0.843344,
+      "status": "PASS"
+    },
+    {
+      "layout": "multitenant",
+      "test": "RandomExcursionsVariant",
+      "p_value": 0.91644,
+      "status": "PASS"
+    },
+    {
+      "layout": "multitenant",
+      "test": "RandomExcursionsVariant",
+      "p_value": 0.868391,
+      "status": "PASS"
+    },
+    {
+      "layout": "multitenant",
+      "test": "RandomExcursionsVariant",
+      "p_value": 0.456094,
+      "status": "PASS"
+    },
+    {
+      "layout": "multitenant",
+      "test": "RandomExcursionsVariant",
+      "p_value": 0.377861,
+      "status": "PASS"
+    },
+    {
+      "layout": "multitenant",
+      "test": "RandomExcursionsVariant",
+      "p_value": 0.534043,
+      "status": "PASS"
+    },
+    {
+      "layout": "multitenant",
+      "test": "RandomExcursionsVariant",
+      "p_value": 0.595939,
+      "status": "PASS"
+    },
+    {
+      "layout": "multitenant",
+      "test": "RandomExcursionsVariant",
+      "p_value": 0.973562,
+      "status": "PASS"
+    },
+    {
+      "layout": "multitenant",
+      "test": "RandomExcursionsVariant",
+      "p_value": 0.709068,
+      "status": "PASS"
+    },
+    {
+      "layout": "multitenant",
+      "test": "RandomExcursionsVariant",
+      "p_value": 0.806809,
+      "status": "PASS"
+    },
+    {
+      "layout": "multitenant",
+      "test": "RandomExcursionsVariant",
+      "p_value": 0.870646,
+      "status": "PASS"
+    },
+    {
+      "layout": "multitenant",
+      "test": "RandomExcursionsVariant",
+      "p_value": 0.855368,
+      "status": "PASS"
+    },
+    {
+      "layout": "multitenant",
+      "test": "RandomExcursionsVariant",
+      "p_value": 0.936287,
+      "status": "PASS"
+    },
+    {
+      "layout": "multitenant",
+      "test": "RandomExcursionsVariant",
+      "p_value": 0.603536,
+      "status": "PASS"
+    },
+    {
+      "layout": "multitenant",
+      "test": "RandomExcursionsVariant",
+      "p_value": 0.431147,
+      "status": "PASS"
+    },
+    {
+      "layout": "multitenant",
+      "test": "RandomExcursionsVariant",
+      "p_value": 0.232631,
+      "status": "PASS"
+    },
+    {
+      "layout": "eventsourcing",
+      "test": "Frequency",
+      "p_value": 0.706216,
+      "status": "PASS"
+    },
+    {
+      "layout": "eventsourcing",
+      "test": "BlockFrequency",
+      "p_value": 0.143547,
+      "status": "PASS"
+    },
+    {
+      "layout": "eventsourcing",
+      "test": "Runs",
+      "p_value": 0.096884,
+      "status": "PASS"
+    },
+    {
+      "layout": "eventsourcing",
+      "test": "LongestRun",
+      "p_value": 0.304197,
+      "status": "PASS"
+    },
+    {
+      "layout": "eventsourcing",
+      "test": "MatrixRank",
+      "p_value": 0.48915,
+      "status": "PASS"
+    },
+    {
+      "layout": "eventsourcing",
+      "test": "Spectral(DFT)",
+      "p_value": 0.673918,
+      "status": "PASS"
+    },
+    {
+      "layout": "eventsourcing",
+      "test": "NonOverlappingTemplate",
+      "p_value": 0.180583,
+      "status": "PASS"
+    },
+    {
+      "layout": "eventsourcing",
+      "test": "OverlappingTemplate",
+      "p_value": 0.482391,
+      "status": "PASS"
+    },
+    {
+      "layout": "eventsourcing",
+      "test": "Universal",
+      "p_value": 0.818856,
+      "status": "PASS"
+    },
+    {
+      "layout": "eventsourcing",
+      "test": "LinearComplexity",
+      "p_value": 0.373894,
+      "status": "PASS"
+    },
+    {
+      "layout": "eventsourcing",
+      "test": "Serial",
+      "p_value": 0.256189,
+      "status": "PASS"
+    },
+    {
+      "layout": "eventsourcing",
+      "test": "Serial",
+      "p_value": 0.132949,
+      "status": "PASS"
+    },
+    {
+      "layout": "eventsourcing",
+      "test": "ApproximateEntropy",
+      "p_value": 0.455967,
+      "status": "PASS"
+    },
+    {
+      "layout": "eventsourcing",
+      "test": "CumulativeSums(forward)",
+      "p_value": 0.745248,
+      "status": "PASS"
+    },
+    {
+      "layout": "eventsourcing",
+      "test": "CumulativeSums(reverse)",
+      "p_value": 0.655814,
+      "status": "PASS"
+    },
+    {
+      "layout": "eventsourcing",
+      "test": "RandomExcursions",
+      "p_value": 0.000986,
+      "status": "FAIL"
+    },
+    {
+      "layout": "eventsourcing",
+      "test": "RandomExcursions",
+      "p_value": 0.028145,
+      "status": "PASS"
+    },
+    {
+      "layout": "eventsourcing",
+      "test": "RandomExcursions",
+      "p_value": 0.217887,
+      "status": "PASS"
+    },
+    {
+      "layout": "eventsourcing",
+      "test": "RandomExcursions",
+      "p_value": 0.752262,
+      "status": "PASS"
+    },
+    {
+      "layout": "eventsourcing",
+      "test": "RandomExcursions",
+      "p_value": 0.579604,
+      "status": "PASS"
+    },
+    {
+      "layout": "eventsourcing",
+      "test": "RandomExcursions",
+      "p_value": 0.352332,
+      "status": "PASS"
+    },
+    {
+      "layout": "eventsourcing",
+      "test": "RandomExcursions",
+      "p_value": 0.483679,
+      "status": "PASS"
+    },
+    {
+      "layout": "eventsourcing",
+      "test": "RandomExcursions",
+      "p_value": 0.981249,
+      "status": "PASS"
+    },
+    {
+      "layout": "eventsourcing",
+      "test": "RandomExcursionsVariant",
+      "p_value": 0.114382,
+      "status": "PASS"
+    },
+    {
+      "layout": "eventsourcing",
+      "test": "RandomExcursionsVariant",
+      "p_value": 0.143255,
+      "status": "PASS"
+    },
+    {
+      "layout": "eventsourcing",
+      "test": "RandomExcursionsVariant",
+      "p_value": 0.305457,
+      "status": "PASS"
+    },
+    {
+      "layout": "eventsourcing",
+      "test": "RandomExcursionsVariant",
+      "p_value": 0.717371,
+      "status": "PASS"
+    },
+    {
+      "layout": "eventsourcing",
+      "test": "RandomExcursionsVariant",
+      "p_value": 0.519101,
+      "status": "PASS"
+    },
+    {
+      "layout": "eventsourcing",
+      "test": "RandomExcursionsVariant",
+      "p_value": 0.152183,
+      "status": "PASS"
+    },
+    {
+      "layout": "eventsourcing",
+      "test": "RandomExcursionsVariant",
+      "p_value": 0.086879,
+      "status": "PASS"
+    },
+    {
+      "layout": "eventsourcing",
+      "test": "RandomExcursionsVariant",
+      "p_value": 0.139227,
+      "status": "PASS"
+    },
+    {
+      "layout": "eventsourcing",
+      "test": "RandomExcursionsVariant",
+      "p_value": 0.487907,
+      "status": "PASS"
+    },
+    {
+      "layout": "eventsourcing",
+      "test": "RandomExcursionsVariant",
+      "p_value": 0.679228,
+      "status": "PASS"
+    },
+    {
+      "layout": "eventsourcing",
+      "test": "RandomExcursionsVariant",
+      "p_value": 0.522681,
+      "status": "PASS"
+    },
+    {
+      "layout": "eventsourcing",
+      "test": "RandomExcursionsVariant",
+      "p_value": 0.463097,
+      "status": "PASS"
+    },
+    {
+      "layout": "eventsourcing",
+      "test": "RandomExcursionsVariant",
+      "p_value": 0.483424,
+      "status": "PASS"
+    },
+    {
+      "layout": "eventsourcing",
+      "test": "RandomExcursionsVariant",
+      "p_value": 0.449714,
+      "status": "PASS"
+    },
+    {
+      "layout": "eventsourcing",
+      "test": "RandomExcursionsVariant",
+      "p_value": 0.652381,
+      "status": "PASS"
+    },
+    {
+      "layout": "eventsourcing",
+      "test": "RandomExcursionsVariant",
+      "p_value": 0.946905,
+      "status": "PASS"
+    },
+    {
+      "layout": "eventsourcing",
+      "test": "RandomExcursionsVariant",
+      "p_value": 0.972525,
+      "status": "PASS"
+    },
+    {
+      "layout": "eventsourcing",
+      "test": "RandomExcursionsVariant",
+      "p_value": 0.863856,
+      "status": "PASS"
+    }
+  ]
+}
