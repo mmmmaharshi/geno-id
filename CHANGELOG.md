@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.26.0] - 2026-11-13
+
+### Summary
+
+**Workload-driven planning closes the loop the paper admitted was open, native engines are measured on real servers, and the whole codebase moves under `src/` without changing a single emitted byte.**
+
+### Highlights
+
+- 🧭 **Workload-to-layout planning end to end.** `inferWorkload` recovers field weights, roles, selectivity, and cardinality bounds from a query trace; the Smith-rule planner orders the hot field first. Measured on SQLite: tenant point lookups drop from 14.7ms (hand order, 4-way PK scan) to 3.1ms (planned, single PK range seek) — a 4.7x win with non-overlapping 95% CIs — while an inverted workload makes the planner converge on the hand order (0.99x parity). Artifacts: `results/workload-planning.json`, `results/workload-planning-regionhot.json`.
+- 🗄️ **Native PostgreSQL 18 + MySQL 8 measured, reversal withdrawn.** A local podman run plus a CI `native-db` job with service containers: PG structured +31% / shard-first +20% vs UUIDv7 inserts, MySQL shard-first +24%, lookups at parity. The untracked "shard-first 41% slower" claim does not reproduce — and neither did the previously committed tracked run (shard-first +22% at 50k rows). Artifact auto-commits on every main push.
+- 🔬 **Microshard head-to-head.** A bit-exact TypeScript mirror of microshard-uuid v8 (validated field-for-field against the Python package): prune 1.3x (borderline), point lookups and inserts at parity, and the structural differentiator — a frozen tick with 2M same-shard draws yields 33 duplicates (birthday expectation ≈29) against GenoID's counter-held zero.
+- 📐 **Repair-distribution grid.** 24 (m, ℓ) cells validate the closed-form fibre sizes to within 0.3pp; the pooled-vs-compiled distinction from the uniformity theorem holds everywhere measured.
+- 🖥️ **Node portability confirmed on V8 14.** Node v26.13 (V8 14.6) brings structured-vs-base throughput to 0.72x (95% CI [0.51, 1.02]), up from 0.12-0.16x on Node 22 — the boxed-BigInt penalty the paper predicted shrinks to an ordinary constant-factor gap.
+- 📦 **All code lives under `src/`.** Root sources, `scripts/`, `golden-check/`, and `tests/` moved in one commit with byte-identical `dist/` output (verified: flat `dist/` layout preserved, 244/244 tests green, bench-ci 0 collisions, all three browsers pass). Nine-environment CI plus the golden, native-db, and consolidate jobs all green on the new tree.
+- 🧪 **Five archived NIST draws.** Draws 2–5 join the committed battery (608/615 pass, 1.1% vs 1% expected under the null); no test fails twice on one layout except Spectral on multitenant (2/5, consistent with chance). Single-stream caveat upgraded to five streams.
+- 🧹 **Shared helpers consolidated.** `scripts/shared/` (plus Deno twin) now holds the deduplicated `gitSha`, `runtimeVersion`, `mulberry32`, `hexVal`, and `genRawV8`; `bench-sqlite` reuses `baselines`' `uuidToBytes`. A guard test pins the exact streams the consolidation must preserve.
+
+### Known Issues
+
+- **MySQL numbers above come from a container on a 2-CPU laptop, not a tuned server.** Absolute rates are host-bound; the paper cites same-rig ratios only.
+- **The failed NIST draws predate per-layout stream counts above one each.** Five independent draws are archived; the ≥100-stream guidance remains future work.
+
+### Dependencies Updated
+
+- Added `@electric-sql/pglite` (dev, for the embedded-PostgreSQL workload arm).
+
 ## [1.25.2] - 2026-10-19
 
 ### Summary
