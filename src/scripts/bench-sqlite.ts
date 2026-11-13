@@ -122,7 +122,17 @@ export interface CompositeKeySummary {
   results: CompositeKeyResult[]
 }
 
-export type CompositeKeyArm = "composite" | "composite-indexed" | "embedded" | "embedded56" | "concatenated"
+export type CompositeKeyArm = "composite" | "composite-indexed" | "embedded" | "embedded56" | "concatenated" | "expression-index"
+
+// Shard-extraction expression for the expression-index arm: the shard lives
+// in bits 52-59 (low nibble of byte 6, high nibble of byte 7), which is hex
+// characters 14-15 of the 32-char hex rendering (1-based). Bitwise ops cannot
+// be used: SQLite coerces BLOB operands to 0. hex() keeps the comparison in
+// TEXT, where the expression index seeks correctly.
+export function expressionIndexShardPredicate(shard: number): string {
+  const hex = shard.toString(16).toUpperCase().padStart(2, "0")
+  return `substr(hex(id),14,2) = '${hex}'`
+}
 
 // Exact table DDL per composite-key arm — recorded into the artifact so a
 // reader never has to map arm names back to code to learn the key encoding.
@@ -137,6 +147,10 @@ export const ARM_DDL: Record<CompositeKeyArm, string[]> = {
   embedded: ["CREATE TABLE ids (id BLOB(16) PRIMARY KEY, val INTEGER) WITHOUT ROWID"],
   embedded56: ["CREATE TABLE ids (id BLOB(16) PRIMARY KEY, val INTEGER) WITHOUT ROWID"],
   concatenated: ["CREATE TABLE ids (id TEXT PRIMARY KEY, val INTEGER) WITHOUT ROWID"],
+  "expression-index": [
+    "CREATE TABLE ids (id BLOB(16) PRIMARY KEY, val INTEGER) WITHOUT ROWID",
+    "CREATE INDEX idx_shard_expr ON ids((substr(hex(id),14,2)))",
+  ],
 }
 
 export const ARM_KEY_ENCODING: Record<CompositeKeyArm, "TEXT" | "BLOB(16)" | "INTEGER+BLOB(16)"> = {
@@ -145,6 +159,7 @@ export const ARM_KEY_ENCODING: Record<CompositeKeyArm, "TEXT" | "BLOB(16)" | "IN
   embedded: "BLOB(16)",
   embedded56: "BLOB(16)",
   concatenated: "TEXT",
+  "expression-index": "BLOB(16)",
 }
 
 
@@ -158,7 +173,7 @@ function pregenIds(arm: CompositeKeyArm, n: number): unknown[] {
     const off56Shard = bytes[7]
     const shard = arm === "embedded56" ? off56Shard : embeddedShard
     if (arm === "composite" || arm === "composite-indexed") ids.push({ shard, id: bytes, val: i })
-    else if (arm === "embedded")     ids.push({ id: bytes, val: i })
+    else if (arm === "embedded" || arm === "expression-index") ids.push({ id: bytes, val: i })
     else if (arm === "embedded56")   ids.push({ id: bytes, val: i })
     else                             ids.push({ id: `${shard}:${uuid}`, val: i })
   }
@@ -215,6 +230,8 @@ export function benchCompositeKeyArm(arm: CompositeKeyArm, n: number, ids: unkno
   let scanQuery: string
   if (arm === "composite" || arm === "composite-indexed") {
     scanQuery = "SELECT val FROM ids WHERE shard = 3"
+  } else if (arm === "expression-index") {
+    scanQuery = `SELECT val FROM ids WHERE ${expressionIndexShardPredicate(3)}`
   } else if (arm === "embedded56") {
     scanQuery = "SELECT val FROM ids WHERE substr(id,8,1) = x'03'"
   } else if (arm === "embedded") {
@@ -344,6 +361,7 @@ if (import.meta.main) {
     ["embedded",            n, 10, 100],
     ["embedded56",          n, 10, 100],
     ["concatenated",        n, 10, 100],
+    ["expression-index",    n, 10, 100],
   ]
 
   // Diagnostic: confirm composite arm performs a SCAN (not SEARCH) on bare-id lookup
@@ -355,6 +373,15 @@ if (import.meta.main) {
     tmp.run("CREATE INDEX idx_id ON t(id)")
     const plan2 = tmp.query("EXPLAIN QUERY PLAN SELECT val FROM t WHERE id = ?").all()
     console.log("  [diagnostic] composite-indexed lookup plan:", JSON.stringify(plan2))
+    tmp.close()
+  }
+
+  // Diagnostic: confirm the expression-index arm seeks (not scans) on the shard predicate
+  {
+    const tmp = new Database(":memory:")
+    for (const ddl of ARM_DDL["expression-index"]) tmp.run(ddl)
+    const plan3 = tmp.query(`EXPLAIN QUERY PLAN SELECT val FROM ids WHERE ${expressionIndexShardPredicate(3)}`).all()
+    console.log("  [diagnostic] expression-index shard-scan plan:", JSON.stringify(plan3))
     tmp.close()
   }
 
