@@ -54,11 +54,12 @@ sizes. Paper \S~uniformity + artifact-map row added. (Process note: the
 first run failed every cell because of a hand-copied RNG with a dropped
 xor-fold — the shared `mulberry32` import fixed it. Dogfooding worked.)
 
-### 6. Node 24 / V8 v14 check — PREDICTION CONFIRMED on Node 26 (V8 14.6)
-System node is v26.13.0 / V8 14.6: structured-vs-base ratio 0.65 vs the
-paper's Node-22 0.12–0.16 — the boxed-BigInt penalty shrank from ~85% to
-~35%. Needs a clean-machine re-run for citable numbers before the paper
-claims it; current runs are load-contaminated (NIST battery in flight).
+### 6. Node 24 / V8 v14 check — DONE (prediction confirmed, committed artifact)
+System node v26.13.0 / V8 14.6: `src/scripts/bench-node-portability.ts`
+(5 reps of 200k UUIDs, mean ± 95% CI) gives structured/base 0.72 [0.51, 1.02]
+vs the paper's Node-22 0.12–0.16 — the boxed-BigInt penalty shrank to an
+ordinary constant-factor gap. Artifact: `results/node-portability.json`;
+Bun on the same host 0.89. Paper \S~validity cites the numbers.
 
 ## Mechanical tail (no research)
 
