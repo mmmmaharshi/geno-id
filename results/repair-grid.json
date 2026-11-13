@@ -1,6 +1,6 @@
 {
   "experiment": "repair-distribution-grid",
-  "description": "Measured index-modulo repair frequencies vs closed-form fibre sizes across (m, ell); validates the uniformity theorem beyond the shard case.",
+  "description": "Measured index-modulo repair frequencies vs closed-form fibre sizes across (m, ell), plus measured range-clamp endpoint masses vs the closed-form endpoint-accumulation bound across (ell, min, max); validates the uniformity theorem beyond the shard case and the clamp bound on the shipped branch.",
   "seed": 2654435769,
   "tolerancePp": 0.5,
   "cells": [
@@ -497,9 +497,63 @@
       "pass": true
     }
   ],
+  "rangeCells": [
+    {
+      "ell": 4,
+      "min": 1,
+      "max": 14,
+      "draws": 200000,
+      "predictedMin": 0.125,
+      "predictedMax": 0.125,
+      "predictedPinned": 0.125,
+      "measuredMin": 0.125015,
+      "measuredMax": 0.125025,
+      "maxAbsDevPp": 0.0024999999999997247,
+      "pass": true
+    },
+    {
+      "ell": 8,
+      "min": 10,
+      "max": 245,
+      "draws": 200000,
+      "predictedMin": 0.04296875,
+      "predictedMax": 0.04296875,
+      "predictedPinned": 0.078125,
+      "measuredMin": 0.04242,
+      "measuredMax": 0.04331,
+      "maxAbsDevPp": 0.05487500000000006,
+      "pass": true
+    },
+    {
+      "ell": 8,
+      "min": 0,
+      "max": 255,
+      "draws": 200000,
+      "predictedMin": 0.00390625,
+      "predictedMax": 0.00390625,
+      "predictedPinned": 0,
+      "measuredMin": 0.004155,
+      "measuredMax": 0.004065,
+      "maxAbsDevPp": 0.024874999999999984,
+      "pass": true
+    },
+    {
+      "ell": 12,
+      "min": 100,
+      "max": 4999,
+      "draws": 200000,
+      "predictedMin": 0.024658203125,
+      "predictedMax": 0.000244140625,
+      "predictedPinned": 0.0244140625,
+      "measuredMin": 0.025055,
+      "measuredMax": 0.0002,
+      "maxAbsDevPp": 0.03967968750000009,
+      "pass": true
+    }
+  ],
   "environment": {
     "os": "win32 10.0.26300 x64",
     "runtime": "Bun 1.4.4",
-    "generatedAt": "2026-11-12T16:14:58.556Z"
+    "generatedAt": "2026-11-13T15:23:16.876Z"
   }
 }

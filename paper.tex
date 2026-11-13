@@ -141,9 +141,9 @@ outside its admissible set.
 \label{alg:repair}
 \begin{algorithmic}[1]
 \Require Layout $L$ with fields $f_1..f_n$; candidate 128-bit value $u$
-\Ensure  $u'$ satisfying every constraint declared in $L$
+\Ensure  $u'$ satisfying every \textsc{allowed}-set and \textsc{range} constraint declared in $L$ (shipped layouts declare at most one per field; monotonic fields: Lemma~\ref{lem:counter})
 \Statex
-\For{each $f \in L.\textit{fields}$ with $f.\textit{constraint} \neq \textsc{null}$}
+\For{each $f \in L.\textit{fields}$ with $f.\textit{constraint} \in \{\textsc{allowed},\, \textsc{range}\}$}
   \State $v \gets \textsc{ExtractBits}(u,\, f.\textit{offset},\, f.\textit{length})$
   \State $c \gets f.\textit{constraint}$
   \If{$c.\textit{kind} = \textsc{allowed}$}
@@ -165,7 +165,7 @@ outside its admissible set.
 \end{algorithmic}
 \end{algorithm}
 
-Every branch assigns $v'$ unconditionally, so the loop body cannot fail and the procedure contains no backward jump: it executes exactly $k$ iterations for $k$ constrained fields, independent of the drawn value. Correctness is by construction: each branch's codomain is the constraint's satisfying set: 0 violations, not ``near 0.'' Monotonic fields are handled by the pool refill path's tick-keyed counter logic before \texttt{repairConstraints} is called.
+Every branch assigns $v'$ unconditionally, so the loop body cannot fail and the procedure contains no backward jump: it executes exactly $k$ iterations for $k$ \textsc{allowed}- or \textsc{range}-constrained fields, independent of the drawn value. Correctness is by construction: each branch's codomain is the constraint's satisfying set: 0 violations, not ``near 0.'' \textbf{Lemma (tick-keyed counter).}\label{lem:counter} Monotonic fields never enter the loop: they are resolved by the pool refill path's tick-keyed counter logic before \texttt{repairConstraints} is called, which clamps the timestamp to $\max(\textit{clock}, \textit{last tick})$, increments the counter within a tick, and freezes generation until the clock advances on exhaustion, so no emitted pair moves backwards. Both generator paths implement this (pooled refill loop and compiled prologue).
 
 Figure~\ref{fig:pipeline} shows a single repair: a drawn candidate whose \texttt{shard} field reads 7 is mapped to the admissible value 3.
 
@@ -423,7 +423,7 @@ Both conditions are satisfied by every layout this paper evaluates, which is why
 
 For \texttt{dbkey} ($m=5$, $\ell=8$), $256 \bmod 5 = 1$, so one residue class holds 52 raw values and the other four hold 51; with the contiguous set $A = \{1,2,3,4,5\}$ the class of index~0 (value~1) is the heavy one, giving $(52,51,51,51,51)$ preimages out of 256, a maximum per-value deviation of $(52 - 51.2)/256 \approx 0.31\%$ from uniform $51.2/256$, and a worst-case spread between classes of $(52-51)/256 = 0.39\%$. For \texttt{multitenant}, the region field ($m=4$, $\ell=8$) and the tenant field ($m=8$, $\ell=12$) both satisfy $m \mid 2^\ell$ with $G_i = 1$ throughout, so both are exactly uniform on either path; no multitenant field is declared at $\ell=12$ with $m=4$. The map is a surjection with near-equal fibres and involves no redraw, preserving the $O(1)$ per-field cost of Algorithm~\ref{alg:repair}.
 
-The \textsc{range} branch clamps rather than folds, and is therefore not uniformity-preserving: draws outside $[\textit{min},\textit{max}]$ accumulate at the endpoints. Neither layout evaluated here declares a range constraint; a layout that does should size the field so that out-of-range draws are rare, or declare an admissible set instead. The validator reports the residual bound for any declared field. The fibre prediction is also checked directly: over a grid of $(m,\ell)$ pairs ($m \in \{2,3,4,5,8\}$, $\ell \in \{3,4,8,12,16\}$, $2\times10^5$ seeded draws per cell), every measured frequency matches its closed-form fibre to within $0.3$ percentage points ($24/24$ cells; \texttt{results/repair-grid.json}).
+The \textsc{range} branch clamps rather than folds, and is therefore not uniformity-preserving: draws outside $[\textit{min},\textit{max}]$ accumulate at the endpoints, with closed-form masses $P(\textit{out} = \textit{min}) = (\textit{lo}+1)/2^\ell$ and $P(\textit{out} = \textit{max}) = (2^\ell-\textit{hi})/2^\ell$ where $[\textit{lo},\textit{hi}]$ is the declared interval clipped to the $\ell$-bit field domain (\texttt{rangeClampMass} in \texttt{src/algo.ts}), so the total pinned mass is $(\textit{lo} + 2^\ell - 1 - \textit{hi})/2^\ell$. Neither layout evaluated here declares a range constraint; a layout that does should size the field so that out-of-range draws are rare, or declare an admissible set instead. The bound is measured directly: over four $(\ell,\textit{min},\textit{max})$ cells including the shipped conformance window ($2\times10^5$ seeded draws per cell), every measured endpoint mass matches its closed form to within $0.06$ percentage points ($4/4$ cells; \texttt{results/repair-grid.json}). The fibre prediction is also checked directly: over a grid of $(m,\ell)$ pairs ($m \in \{2,3,4,5,8\}$, $\ell \in \{3,4,8,12,16\}$, $2\times10^5$ seeded draws per cell), every measured frequency matches its closed-form fibre to within $0.3$ percentage points ($24/24$ cells; \texttt{results/repair-grid.json}).
 
 \subsection{Bit allocation}
 \label{sec:bit-allocation}
