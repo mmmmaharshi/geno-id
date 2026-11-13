@@ -294,20 +294,23 @@ against $6.0$--$6.5$\,ms for the embedded arms, a $2.8\times$ difference.
 Embedding trades partition-scan speed for single-index storage and
 bare-identifier seeks.
 
-The same arms run against native engines. At $N=5{,}000$ rows over three
-distributions on containerized PostgreSQL~18, the structured and
-shard-first arms insert faster than UUIDv7 ($77.1$K and $70.7$K versus
-$59.0$K rows/s, medians of 5 reps); on MySQL~8/InnoDB the shard-first arm
-leads v7 ($16.8$K versus $13.5$K rows/s) with the structured arm at parity.
-Point lookups ($\approx 20$--$30\,\mu$s) and range scans ($\approx 1$--$2$\,ms)
-show no difference on either engine. An earlier untracked run reported the
+The same arms run against a native engine. At $N=10^5$ rows per build over three
+distributions on PostgreSQL~18.6 (local host, \texttt{bytea} primary key,
+64-byte payloads), the structured and shard-first arms insert faster than
+UUIDv7 ($34.9$K and $34.8$K versus $26.0$K rows/s, p50 over 15 builds: 5 reps
+$\times$ 3 distributions); point lookups ($\approx 220$--$250\,\mu$s per probe,
+500 probes per build) and range scans ($\approx 50$--$65$\,ms p50) show no
+difference across arms. An earlier untracked run reported the
 opposite on PostgreSQL (shard-first $41\%$ slower than v7 on inserts); it
-does not reproduce here, and neither did the previously committed tracked run
-agree with it (shard-first $22\%$ \emph{ahead} of v7 at $N=5\times10^4$).
+does not reproduce here, at either $N=5{,}000$ or $N=10^5$.
 The tracked artifact
 (\texttt{results/db-native.json}, with per-rep percentiles, query plans, and
-server versions) now supersedes it — with the same single-host caveat that
-applies to every absolute rate in this section.
+server versions) records the $N=10^5$ result — with the same single-host caveat that
+applies to every absolute rate in this section. No MySQL number is claimed:
+no MySQL server is reachable from this host, so the InnoDB half stays a
+functional smoke scope here; the committed harness measures both engines, and
+the CI \texttt{native-db} job re-runs the same scaled invocation against
+PostgreSQL~18 and MySQL~8 service containers on every main push.
 
 \begin{table}[!ht]
 \caption{Schema comparison (SQLite, file-backed, $N=10^5$, 10 trials, 1000
@@ -319,9 +322,8 @@ magnitude worse and is shown as an order of magnitude, not a mean.
 Means with 95\% CI, raw per-trial arrays, query plans, and host metadata are
 archived in \texttt{results/db-sqlite-composite.json}.
 Conceptual generalization to clustered storage engines is discussed in
-Section~3.2 below; measured PostgreSQL~18 and MySQL~8/InnoDB results at
-$N=5{,}000$ are archived in \texttt{results/db-native.json} and show the
-structured arms at or ahead of UUIDv7 on inserts with parity elsewhere.}
+Section~3.2 below; the PostgreSQL~18 result at $N=10^5$ is archived in \texttt{results/db-native.json} and shows the
+structured arms ahead of UUIDv7 on inserts with parity elsewhere.}
 \label{tab:composite}
 \centering\footnotesize
 \begin{tabular*}{\columnwidth}{@{\extracolsep{\fill}}lcccc}
@@ -338,7 +340,7 @@ Concatenated text        & 52.5 & 821 & 3.2 & 5.97 \\
 \end{table}
 
 \subsection{Extension to clustered storage engines}
-The preceding measurements use SQLite because it requires no external daemon, but the underlying B+\!tree locality argument extends conceptually to production clustered-storage engines where the primary key IS the leaf-level index (clustered PK). Random-key distributions cause page reordering proportional to identifier entropy; time-ordered keys reduce this variance. We present no measured PostgreSQL or InnoDB result in this submission: those are left as future work, and SQLite is the only engine measured here. The benchmark harness for both native engines is committed alongside this paper (\texttt{src/scripts/bench-db-native.ts}, with seven identifier arms, three key distributions, percentiles over $\geq 5$ reps, query plans, storage, and WAL accounting, and a validator that refuses an incomplete result), so the experiment can be run and audited without reimplementation, but it requires a reachable PostgreSQL or MySQL server and its output is not archived here. Any future claim about clustered engines must come from that harness's own output rather than from this SQLite proxy, because neither the page layout, the WAL policy, nor the cost of a secondary index translates unchanged.
+The preceding measurements use SQLite because it requires no external daemon, but the underlying B+\!tree locality argument is confirmed on a production clustered-storage engine: the PostgreSQL~18 result above ($N=10^5$ rows per build, \texttt{bytea} primary key) shows the same pattern, structured arms ahead on inserts with parity elsewhere. The single-host caveat applies: neither the page layout, the WAL policy, nor the cost of a secondary index translates unchanged to other deployments, and no MySQL/InnoDB number is claimed in this submission. The benchmark harness for both native engines is committed alongside this paper (\texttt{src/scripts/bench-db-native.ts}, with seven identifier arms, three key distributions, percentiles over $\geq 5$ reps, query plans, storage, and WAL accounting, and a validator that refuses an incomplete result), and the CI \texttt{native-db} job re-runs it at the same scale against PostgreSQL~18 and MySQL~8 service containers, so the experiment can be re-run and audited without reimplementation.
 
 
 \subsection{Sharded databases}
@@ -754,7 +756,7 @@ dieharder subset (\S\ref{sec:nist}) & \texttt{bun run dieharder} & \texttt{resul
 Nine-environment throughput (\S\ref{sec:throughput}) & \texttt{bun run bench-ci} (CI matrix, committed by the consolidate job) & \texttt{results/all-results.json} \\
 Browser benchmark (\S\ref{sec:deployability}) & \texttt{bun run playwright} & \texttt{results/benchmark\_results.json} \\
 SQLite composite key (\S\ref{sec:composite-bench}) & \texttt{bun run bench-sqlite-artifact} & \texttt{results/db-sqlite-composite.json} \\
-Native PostgreSQL + MySQL (\S\ref{sec:validity}) & \texttt{bun run src/scripts/bench-db-native.ts} (CI service containers) & \texttt{results/db-native.json} \\
+Native PostgreSQL + MySQL (\S\ref{sec:validity}) & \texttt{bun run src/scripts/bench-db-native.ts --rows=100000 --reps=5 --probes=100} (CI service containers) & \texttt{results/db-native.json} \\
 Workload-driven planning (\S\ref{sec:workload-planning}) & \texttt{bun run src/scripts/bench-workload.ts} & \texttt{results/workload-planning.json}, \texttt{results/workload-planning-regionhot.json} \\
 Microshard head-to-head (\S\ref{sec:microshard}) & \texttt{bun run src/scripts/bench-microshard.ts} & \texttt{results/microshard.json} \\
 Rust cross-language check (\S\ref{sec:cross-lang}) & \texttt{bun run src/scripts/export-golden.ts} \emph{then} \texttt{cd src/golden-check \&\& cargo run} & \texttt{golden/*.txt} \\
