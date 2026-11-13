@@ -244,7 +244,7 @@ a boundary the application fully controls.
 \label{sec:composite-bench}
 
 Section~\ref{sec:why-embed} claims a composite key does not help a lookup
-arriving without its shard. We test this against four alternatives over
+arriving without its shard. We test this against five alternatives over
 one workload, all arms using the same timestamp-sorted 128-bit identifier
 under \texttt{WITHOUT ROWID} clustered storage, so the only variable is
 where the shard resides.
@@ -257,9 +257,9 @@ requires a secondary index on \textit{id}, and that is the comparison
 that matters, since any deployment facing this access pattern would add
 one.
 
-The secondary index is what embedding avoids. It carries $1.98\times$ the
-storage per row ($54.6$ against $27.6$ bytes) and sustains $1.79\times$
-lower insert throughput, while still resolving lookups $1.39\times$
+The secondary index is what embedding avoids. It carries $1.99\times$ the
+storage per row ($56.4$ against $28.4$ bytes) and sustains $1.88\times$
+lower insert throughput, while still resolving lookups $1.29\times$
 slower, since resolution descends the secondary index and then the primary
 key, where the embedded form descends once. Embedding serves both access
 paths with a single index. Its advantage is the \emph{combination}: the
@@ -267,13 +267,24 @@ embedded arm is the only arm that is simultaneously near-best on insert,
 near-best on bare-identifier lookup, and free of the second index.
 
 Two comparisons show no difference and we report them as such: insert
-throughput is indistinguishable between the embedded key and an
-unindexed composite key ($992$K vs $918$K rows/s, 95\% CIs overlap), and
-point-lookup latency is indistinguishable between the embedded key and a
-concatenated text key ($3.3$ vs $3.2\,\mu$s). Concatenation nonetheless
-costs $1.90\times$ the storage and $1.21\times$ lower insert throughput, and
-is no longer a UUID, forfeiting the native 16-byte column type and RFC~9562
-tooling.
+throughput is within 15\% between the embedded key and an
+unindexed composite key ($291$K vs $250$K rows/s), and point-lookup latency is indistinguishable between the
+embedded key and a concatenated text key ($11.7$ vs $12.8\,\mu$s, CIs
+overlap). Concatenation nonetheless costs $1.85\times$ the storage and
+$1.24\times$ lower insert throughput, and is no longer a UUID, forfeiting
+the native 16-byte column type and RFC~9562 tooling.
+
+The conceded alternative --- a plain key plus an expression index
+extracting the shard --- is measured in the same table. It costs
+$1.93\times$ the storage ($54.9$ against $28.4$ bytes/row) and
+$2.07\times$ lower insert throughput ($141$K vs $291$K rows/s) for lookup
+parity with embedding ($12.2$ vs $11.7\,\mu$s, CIs overlap), while its
+shard scan matches the embedded predicate scan ($30.6$ vs $22.7$\,ms)
+rather than the composite's leading-column seek ($7.4$\,ms). The
+expression index is the same price as the composite's secondary index
+with none of its scan advantage: where the key must carry routing,
+embedding still wins; where it need not, the expression index trades
+insert throughput for tooling, not for savings.
 
 We also withdraw a claim an earlier revision of this paper made, that
 declaring the shard at a byte-aligned offset (56 rather than 52) yields a
@@ -289,8 +300,8 @@ here and we make no claim for it.
 
 We claim no advantage on shard-major scans, where the composite key's
 leading column is the better structure: the composite and
-composite-indexed arms resolve the shard range scan in $2.2$--$2.3$\,ms
-against $6.0$--$6.5$\,ms for the embedded arms, a $2.8\times$ difference.
+composite-indexed arms resolve the shard range scan in $5.7$--$7.4$\,ms
+against $22.7$--$30.0$\,ms for the embedded arms, a $3.1\times$ difference.
 Embedding trades partition-scan speed for single-index storage and
 bare-identifier seeks.
 
@@ -330,11 +341,12 @@ structured arms ahead of UUIDv7 on inserts with parity elsewhere.}
 \hline\noalign{\smallskip}
 \textbf{Schema} & \textbf{B/row} & \textbf{Insert (K/s)} & \textbf{Lookup ($\mu$s)} & \textbf{Shard scan (ms)} \\
 \noalign{\smallskip}\hline\noalign{\smallskip}
-Embedded, offset 56      & 27.6 & 1040 [1015--1065] & 3.2 [2.87--3.47] & 6.52 [6.06--6.98] \\
-Embedded, offset 52      & \textbf{27.6} & 992 [942--1042] & 3.3 [3.05--3.57] & \textbf{6.36} [5.77--6.94] \\
-Composite, PK only       & 29.0 & 918 [884--952] & $\sim$3\,090 [2983--3192] (scan) & \textbf{2.27} [2.12--2.42] \\
-Composite $+$ index      & 54.6 & 555 [547--564] & 4.6 [3.87--5.36] & 2.19 [2.01--2.36] \\
-Concatenated text        & 52.5 & 821 [756--887] & 3.2 [3.06--3.30] & 5.97 [5.78--6.16] \\
+Embedded, offset 56      & 28.4 & 234 [199--268] & 14.2 [12.70--15.68] & 29.95 [26.13--33.76] \\
+Embedded, offset 52      & \textbf{28.4} & 291 [274--307] & 11.7 [10.99--12.43] & \textbf{22.72} [21.21--24.23] \\
+Composite, PK only       & 30.2 & 250 [231--270] & $\sim$6\,750 [6152--7351] (scan) & \textbf{7.38} [5.62--9.14] \\
+Composite $+$ index      & 56.4 & 155 [150--160] & 15.1 [13.71--16.49] & 5.73 [5.37--6.09] \\
+Concatenated text        & 52.4 & 234 [215--252] & 12.8 [11.17--14.37] & 21.24 [20.03--22.44] \\
+PK $+$ expression index  & 54.9 & 141 [136--145] & 12.2 [11.67--12.79] & 30.62 [28.19--33.05] \\
 \noalign{\smallskip}\hline
 \end{tabular*}
 \end{table}
@@ -780,7 +792,7 @@ RFC~9562 surveyed sixteen prior implementations~\cite{4}. Representative members
 The generic lineage is older and stronger than the UUID literature. Property-based testing compiles executable properties into generators~\cite{15}; Claessen, Dureg{\aa}rd, and Pa{\l}ka derive random data satisfying a Boolean predicate while targeting uniformity~\cite{16}; LaFontaine et al.\ repair incomplete generators from type and coverage information~\cite{17}; Goldstein et al.\ synthesise generators with guarantees~\cite{18}. The formal distinction is scope: those systems solve arbitrary predicates or synthesise generators from proof obligations. GenoID does neither. It projects one fixed-width random field into one declared admissible set, with no predicate solving and no distribution-preservation claim beyond the fibre bound of Section~\ref{sec:uniformity}. ``Constraint-guided repair'' names that projection, not a general constrained-generation result.
 
 \subsection{Database-locality alternatives}
-Embedding is not the only route to locality. CockroachDB hash-shards indexes to spread sequential writes while keeping a logical partition key~\cite{19}; TiDB \texttt{AUTO\_RANDOM} randomises integer primary keys with shard bits~\cite{20}; SQL Server's \texttt{NEWSEQUENTIALID} issues process-ordered GUIDs for sequential index behaviour~\cite{21}; and expression or covering indexes extract queryable structure from plain values without touching the key format. GenoID's bet is narrower: when the key itself must carry routing so a partition prunes with no secondary index, embedding wins (Section~\ref{sec:composite-bench}); where it need not, an expression index over a plain v7 is the cheaper, better-supported answer.
+Embedding is not the only route to locality. CockroachDB hash-shards indexes to spread sequential writes while keeping a logical partition key~\cite{19}; TiDB \texttt{AUTO\_RANDOM} randomises integer primary keys with shard bits~\cite{20}; SQL Server's \texttt{NEWSEQUENTIALID} issues process-ordered GUIDs for sequential index behaviour~\cite{21}; and expression or covering indexes extract queryable structure from plain values without touching the key format. GenoID's bet is narrower: when the key itself must carry routing so a partition prunes with no secondary index, embedding wins (Section~\ref{sec:composite-bench}); where it need not, an expression index over the plain key is the better-supported answer, but measured on the same rig it is not the cheaper one: it carries $1.93\times$ the storage and $2.07\times$ lower insert throughput of embedding for lookup parity ($1.04\times$), so the index trades throughput for tooling, not for savings.
 
 On throughput, prior work amortizes CSPRNG draws via pooling~\cite{12}, and PostgreSQL~18 ships a native \texttt{uuidv7()}~\cite{13}; GenoID adopts the same principle with a 256-UUID pool.
 
@@ -792,7 +804,7 @@ We disclose these openly, ranked by expected reviewer pressure.
 
 \textbf{Construct validity.} NIST PASS/FAIL is necessary but not sufficient for security; Section~\ref{sec:security} provides a threat model and entropy accounting.
 
-\textbf{Run-to-run stability.} The SQLite composite-key lookup measurement is the least stable quantity in this paper: the offset-56 versus offset-52 lookup difference reversed direction three times across four repeated runs of the same experiment ($+14\%$, $-2\%$, $+4.7\%$, $+4\%$), so we make no claim for it and report only the direction every arm agrees on. Insert throughput carried a similar instability in an earlier experiment, where one of three runs was uniformly $1.3$--$2.5\times$ slower under background load; the composite-key table above reports ten trials on one uncontended host, and the per-trial arrays in \texttt{results/db-sqlite-composite.json} let a reader re-check that no trial is an outlier.
+\textbf{Run-to-run stability.} The SQLite composite-key lookup measurement is the least stable quantity in this paper: the offset-56 versus offset-52 lookup difference reversed direction three times across four repeated runs of the same experiment ($+14\%$, $-2\%$, $+4.7\%$, $+4\%$), so we make no claim for it and report only the direction every arm agrees on. Insert throughput carried a similar instability in an earlier experiment, where one of three runs was uniformly $1.3$--$2.5\times$ slower under background load; the composite-key table above reports ten trials on one host, and the per-trial arrays in \texttt{results/db-sqlite-composite.json} let a reader re-check that no trial is an outlier.
 
 \textbf{Internal validity.} Benchmark confounds are mitigated by mean $\pm$ SD over 10 trials with 95\% CI and Welch $t$-tests. Two implementation bugs (a byte-consumption mismatch in \texttt{eventsourcing}'s \texttt{node}-typed field and a missing seed-state reset) were caught by the test suite before publication. A dead-code-elimination (DCE) hazard in the timing loop was identified and corrected after early throughput runs: an unconsumed loop elides the pure-JavaScript generators' work, inflating measured rates by roughly $2\times$ while leaving native \texttt{crypto.randomUUID()} unchanged; every number in Table~\ref{tab:throughput} post-dates the correction, confirmed by consuming each generated value at a sink (\texttt{.codePointAt(0)}) that the JIT cannot prove is a no-op. NIST runs unconditionally; dieharder is a CI-budget curation. The SQLite composite-key benchmark (Section~\ref{sec:composite-bench}) revealed a between-run variance component not captured by within-run CIs; one of three runs was contaminated by system-level background load (all arms uniformly $1.3$--$2.5\times$ slower), and we report the two uncontended runs with a note that ratios were preserved under perturbation. Absolute per-identifier times in the density sweep (Section~\ref{sec:repair-vs-rejection}) carry a warm-up ordering effect; the repair-count and trial-count results, on which the analysis rests, are order-independent.
 

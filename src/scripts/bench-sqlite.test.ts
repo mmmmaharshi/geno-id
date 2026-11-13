@@ -12,9 +12,10 @@ import { test } from "node:test"
 // oxlint false-positive: does not track `import type` usage inside `as` casts.
 // oxlint-disable-next-line no-unused-vars
 import type { V8Layout } from "../../dist/algo.js"
-import { genUlidV8 as ulidV8 } from "./baselines.ts"
+import { genUlidV8 as ulidV8, uuidToBytes } from "./baselines.ts"
 
-import { benchSqlite, DBKEY_LAYOUT } from "./bench-sqlite.ts"
+import { benchSqlite, benchCompositeKeyArm, expressionIndexShardPredicate, ARM_DDL, DBKEY_LAYOUT } from "./bench-sqlite.ts"
+import { Database } from "bun:sqlite"
 
 const root = path.resolve(import.meta.dirname, "..", "..")
 const algo = (await import(
@@ -70,4 +71,46 @@ test("Task C: all ID types keep a compact, unfragmented B-tree", () => {
     assert.equal(r.integrityOk, true, `${r.name} integrity_check failed`)
     assert.ok(r.freelistCount <= r.pageCount * 0.05, `${r.name} is significantly fragmented`)
   }
+})
+
+test("expression-index arm shares the embedded table and seeks via its index", () => {
+  const arm = ARM_DDL["expression-index"]
+  assert.equal(arm[0], ARM_DDL.embedded[0], "expression-index must use the same table as embedded")
+  assert.ok(arm.some((s) => s.startsWith("CREATE INDEX")), "expression-index must add a secondary index")
+  const db = new Database(":memory:")
+  for (const ddl of arm) db.run(ddl)
+  const plan = db.query(
+    `EXPLAIN QUERY PLAN SELECT val FROM ids WHERE ${expressionIndexShardPredicate(3)}`,
+  ).all() as { detail: string }[]
+  assert.ok(
+    plan.some((p) => p.detail.includes("USING INDEX")),
+    `shard scan should seek the expression index, got ${JSON.stringify(plan)}`,
+  )
+  db.close()
+})
+
+test("expression-index arm extracts the shard correctly and fills a clean B-tree", () => {
+  const ids: { id: Uint8Array; val: number }[] = []
+  for (let i = 0; i < 2000; i++) {
+    const uuid = algo.genStructuredGenoID(DBKEY_LAYOUT)
+    ids.push({ id: uuidToBytes(uuid), val: i })
+  }
+  const r = benchCompositeKeyArm("expression-index", ids.length, ids, 100)
+  assert.equal(r.integrityOk, true, "integrity_check failed")
+  assert.ok(r.pointLookupUs > 0 && r.pointLookupUs < 1000, `lookup out of range: ${r.pointLookupUs}`)
+  const db = new Database(":memory:")
+  for (const ddl of ARM_DDL["expression-index"]) db.run(ddl)
+  const stmt = db.prepare("INSERT INTO ids (id, val) VALUES (?, ?)")
+  db.run("BEGIN")
+  for (const row of ids) stmt.run(row.id, row.val)
+  db.run("COMMIT")
+  for (const shard of [1, 3, 5]) {
+    const pred = expressionIndexShardPredicate(shard)
+    const got = (db.query(`SELECT COUNT(*) AS n FROM ids WHERE ${pred}`).get() as { n: number }).n
+    const want = ids.filter(
+      ({ id }) => (((id[6] & 0x0f) << 4) | (id[7] >> 4)) === shard,
+    ).length
+    assert.equal(got, want, `shard ${shard}: index predicate found ${got}, want ${want}`)
+  }
+  db.close()
 })
