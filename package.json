@@ -40,6 +40,7 @@
     "bench-sqlite-artifact": "bun run src/scripts/bench-sqlite-artifact.ts",
     "collision-100m": "bun run src/scripts/collision-100m.ts",
     "histogram-100m": "bun run src/scripts/histogram-100m.ts",
+    "histogram:maxz": "bun run src/scripts/histogram-maxz.ts",
     "export-dieharder": "bun run src/scripts/export-dieharder.ts",
     "export-multi-stream": "bun run src/scripts/export-multi-stream.ts",
     "export-golden": "bun run src/scripts/export-golden.ts",

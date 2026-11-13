@@ -1,0 +1,36 @@
+{
+  "experiment": "shard-histogram-100m-maxz",
+  "description": "Family-wise max-|z| assessment of the archived 10^8 histogram cells (Bonferroni + Sidak); no new draws",
+  "sourceArtifact": "results/shard-histogram-100m.json",
+  "drawsPerLayout": 100000000,
+  "alphaFamilyWise": 0.05,
+  "cells": 17,
+  "maxAbsZ": 2.898,
+  "bonferroniCritical": 2.9738199011102866,
+  "sidakCritical": 2.966438581408879,
+  "significantBonferroni": false,
+  "significantSidak": false,
+  "bonferroniP": 0.0638458697833082,
+  "verdict": "consistent with sampling noise",
+  "perField": [
+    {
+      "layout": "dbkey",
+      "field": "shard",
+      "cells": 5,
+      "maxAbsZ": 2.898
+    },
+    {
+      "layout": "multitenant",
+      "field": "tenant",
+      "cells": 8,
+      "maxAbsZ": 2.492
+    },
+    {
+      "layout": "multitenant",
+      "field": "region",
+      "cells": 4,
+      "maxAbsZ": 1.066
+    }
+  ],
+  "generatedAt": "2026-11-13T15:40:46.987Z"
+}
