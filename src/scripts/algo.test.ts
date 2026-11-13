@@ -1,5 +1,6 @@
 import { test } from "node:test"
 import assert from "node:assert/strict"
+import { fromAny } from "@total-typescript/shoehorn"
 import { pathToFileURL } from "node:url"
 import path from "node:path"
 
@@ -108,33 +109,33 @@ test("forceVersionVariant sets v8 + RFC variant and rejects short buffers", () =
 
 test("validateLayout rejects fields overlapping the reserved v8 nibble", () => {
   assert.throws(() =>
-    validateLayout({
+    validateLayout(fromAny({
       name: "bad",
       fields: [
         { name: "x", start: 48, length: 4, type: "random" },
       ],
-    } as never),
+    })),
   )
 })
 
 test("validateLayout rejects layouts with uncovered bits", () => {
   assert.throws(() =>
-    validateLayout({
+    validateLayout(fromAny({
       name: "sparse",
       fields: [{ name: "x", start: 0, length: 8, type: "random" }],
-    } as never),
+    })),
   )
 })
 
 test("validateLayout rejects structured fields wider than 48 bits", () => {
   assert.throws(() =>
-    validateLayout({
+    validateLayout(fromAny({
       name: "wide",
       fields: [
         { name: "x", start: 0, length: 64, type: "counter" },
         { name: "g", start: 64, length: 64, type: "random" },
       ],
-    } as never),
+    })),
   )
 })
 

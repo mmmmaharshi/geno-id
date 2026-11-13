@@ -1,5 +1,6 @@
 import { test } from "node:test"
 import assert from "node:assert/strict"
+import { fromAny } from "@total-typescript/shoehorn"
 import { pathToFileURL } from "node:url"
 import path from "node:path"
 
@@ -203,7 +204,7 @@ test("compileLayout source exports valid JS", () => {
 
 test("compileLayout fn throws usably when no crypto", () => {
   const compiled = compileLayout(DBKEY_LAYOUT)
-  const badCrypto = { getRandomValues: null as unknown as (buf: Uint8Array) => void }
+  const badCrypto = { getRandomValues: fromAny<(buf: Uint8Array) => void, unknown>(null) }
   const factory = new Function("h", "w", "cr", compiled.source) as (
     h: string[],
     w: string[] | null,

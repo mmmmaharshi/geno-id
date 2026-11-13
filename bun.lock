@@ -8,6 +8,7 @@
         "@changesets/cli": "^2.31.1",
         "@electric-sql/pglite": "^0.5.16",
         "@playwright/test": "^1.61.1",
+        "@total-typescript/shoehorn": "^0.1.2",
         "@types/jsdom": "^28.0.3",
         "@types/node": "^26.1.1",
         "@types/pg": "^8.23.1",
@@ -235,6 +236,8 @@
     "@oxlint/binding-win32-x64-msvc": ["@oxlint/binding-win32-x64-msvc@1.74.0", "", { "os": "win32", "cpu": "x64" }, "sha512-VTC9IYTIMrVUk/i6Ms1ohzzDKZFkWn0KU2OBbPBzgmVZ2V30165T/zK4LztTr0Xgp9fZ1qQZ1rsZAu/rEmySlA=="],
 
     "@playwright/test": ["@playwright/test@1.61.1", "", { "dependencies": { "playwright": "1.61.1" }, "bin": { "playwright": "cli.js" } }, "sha512-8nKv6+0RJSL9FE4jYOEGXnPeM/Hg12qZpmqzZjRh3qM0Y7c3z1mrOTfFLids72RDQYVh9WpLEfR5WdpNX4fkig=="],
+
+    "@total-typescript/shoehorn": ["@total-typescript/shoehorn@0.1.2", "", {}, "sha512-p7nNZbOZIofpDNyP0u1BctFbjxD44Qc+oO5jufgQdFdGIXJLc33QRloJpq7k5T59CTgLWfQSUxsuqLcmeurYRw=="],
 
     "@types/esrecurse": ["@types/esrecurse@4.3.1", "", {}, "sha512-xJBAbDifo5hpffDBuHl0Y8ywswbiAp/Wi7Y/GtAgSlZyIABppyurxVueOPE8LUQOxdlgi6Zqce7uoEpqNTeiUw=="],
 

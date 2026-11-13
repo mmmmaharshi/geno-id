@@ -1,5 +1,6 @@
 import { test } from "node:test"
 import assert from "node:assert/strict"
+import { fromAny } from "@total-typescript/shoehorn"
 import { pathToFileURL } from "node:url"
 import path from "node:path"
 
@@ -214,10 +215,10 @@ test("compileDatabaseLayout preserves wide fields and RFC 9562 markers", () => {
 })
 
 test("compileDatabaseLayout rejects an empty workload field list", () => {
-  const input = {
+  const input = fromAny<LayoutCompilerInput, unknown>({
     schema: { name: "key", fields: [{ name: "shard", start: 0, length: 8, type: "shard" }] },
     workload: { readWeight: 1, writeWeight: 1, fields: [] },
-  } as unknown as LayoutCompilerInput
+  })
 
   assert.throws(
     () => compileDatabaseLayout(input),
@@ -377,13 +378,13 @@ test("compileDatabaseLayout rejects overlapping schema fields with stable errors
 })
 
 test("compileDatabaseLayout requires workload weights", () => {
-  const input = {
+  const input = fromAny<LayoutCompilerInput, unknown>({
     schema: { name: "key", fields: [{ name: "shard", start: 0, length: 8, type: "shard" }] },
     workload: {
       writeWeight: 1,
       fields: [{ name: "shard", role: "partition" }],
     },
-  } as unknown as LayoutCompilerInput
+  })
 
   assert.throws(
     () => compileDatabaseLayout(input),

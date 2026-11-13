@@ -1,5 +1,6 @@
 import assert from "node:assert/strict"
 import { test } from "node:test"
+import { fromPartial } from "@total-typescript/shoehorn"
 import { envLabel, renderConsolidated } from "./ci-consolidate.ts"
 import type { CIBenchmarkResult, EnvInfo } from "./ci-result.ts"
 
@@ -23,45 +24,45 @@ function makeResult(env: Partial<EnvInfo>, ops: number): CIBenchmarkResult {
 }
 
 test("envLabel labels bun environments by OS", () => {
-  assert.equal(envLabel({ runtime: "bun", platform: "linux", bun: "1" } as EnvInfo), "Ubuntu (Bun)")
-  assert.equal(envLabel({ runtime: "bun", platform: "darwin", bun: "1" } as EnvInfo), "macOS (Bun)")
-  assert.equal(envLabel({ runtime: "bun", platform: "win32", bun: "1" } as EnvInfo), "Windows (Bun)")
+  assert.equal(envLabel(fromPartial({ runtime: "bun", platform: "linux", bun: "1" })), "Ubuntu (Bun)")
+  assert.equal(envLabel(fromPartial({ runtime: "bun", platform: "darwin", bun: "1" })), "macOS (Bun)")
+  assert.equal(envLabel(fromPartial({ runtime: "bun", platform: "win32", bun: "1" })), "Windows (Bun)")
 })
 
 test("envLabel labels node environments with version", () => {
   assert.equal(
-    envLabel({ runtime: "node", node: "22", platform: "linux" } as EnvInfo),
+    envLabel(fromPartial({ runtime: "node", node: "22", platform: "linux" })),
     "Node 22 (Linux)",
   )
 })
 
 test("envLabel labels deno environments distinctly", () => {
   assert.equal(
-    envLabel({ runtime: "deno", node: "deno-2.9.3", platform: "linux" } as EnvInfo),
+    envLabel(fromPartial({ runtime: "deno", node: "deno-2.9.3", platform: "linux" })),
     "Deno 2.9.3 (Linux)",
   )
   assert.equal(
-    envLabel({ runtime: "deno", node: "deno-2.9.3", platform: "darwin" } as EnvInfo),
+    envLabel(fromPartial({ runtime: "deno", node: "deno-2.9.3", platform: "darwin" })),
     "Deno 2.9.3 (macOS)",
   )
   // Deno reports `windows` (not `win32` like Node/Bun) on Windows.
   assert.equal(
-    envLabel({ runtime: "deno", node: "deno-2.9.3", platform: "windows" } as EnvInfo),
+    envLabel(fromPartial({ runtime: "deno", node: "deno-2.9.3", platform: "windows" })),
     "Deno 2.9.3 (Windows)",
   )
 })
 
 test("envLabel labels node environments by real OS, not hardcoded Linux", () => {
   assert.equal(
-    envLabel({ runtime: "node", node: "22", platform: "linux" } as EnvInfo),
+    envLabel(fromPartial({ runtime: "node", node: "22", platform: "linux" })),
     "Node 22 (Linux)",
   )
   assert.equal(
-    envLabel({ runtime: "node", node: "22", platform: "darwin" } as EnvInfo),
+    envLabel(fromPartial({ runtime: "node", node: "22", platform: "darwin" })),
     "Node 22 (macOS)",
   )
   assert.equal(
-    envLabel({ runtime: "node", node: "22", platform: "win32" } as EnvInfo),
+    envLabel(fromPartial({ runtime: "node", node: "22", platform: "win32" })),
     "Node 22 (Windows)",
   )
 })
