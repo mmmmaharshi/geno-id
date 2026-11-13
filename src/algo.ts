@@ -1581,6 +1581,31 @@ const _layoutTick = new Map<string, number>()
 const _poolMonoTick = new Map<string, number>()
 
 /**
+ * Endpoint-accumulation bound for the range-clamp branch of
+ * repairConstraints. A raw l-bit value is uniform on [0, 2^l), so
+ * P(out = min) = (lo+1)/2^l and P(out = max) = (2^l-hi)/2^l where
+ * [lo, hi] is the declared [min, max] clipped to the field domain;
+ * every interior value keeps 1/2^l. `pinned` is the total
+ * out-of-range mass resting on the two endpoints.
+ */
+export function rangeClampMass(ell: number, min: number, max: number): {
+  pMin: number
+  pMax: number
+  pInterior: number
+  pinned: number
+} {
+  const space = 2 ** ell
+  const lo = Math.max(0, min)
+  const hi = Math.min(space - 1, max)
+  return {
+    pMin: (lo + 1) / space,
+    pMax: (space - hi) / space,
+    pInterior: 1 / space,
+    pinned: (lo + (space - 1 - hi)) / space,
+  }
+}
+
+/**
  * Repair per-field constraint violations in place. Returns the number of
  * fields repaired. Cost is O(k) for k constrained fields — independent
  * of the drawn value, unlike rejection sampling.
