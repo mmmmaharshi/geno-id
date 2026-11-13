@@ -162,7 +162,7 @@ jobs:
   native-db:
     name: native PostgreSQL + MySQL
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     permissions:
       contents: write
     services:
@@ -209,7 +209,7 @@ jobs:
           MYSQL_PASSWORD: password
           MYSQL_DB: genoid
           GENOID_COMMIT: ${{ github.sha }}
-        run: bun run src/scripts/bench-db-native.ts --rows=5000 --reps=5 --probes=100
+        run: bun run src/scripts/bench-db-native.ts --rows=100000 --reps=5 --probes=100
       - uses: actions/upload-artifact@v4
         if: always()
         with:
