@@ -1,0 +1,650 @@
+{
+ "meta": {
+  "title": "GENOID · LIVE",
+  "lang": "en"
+ },
+ "canvas": {
+  "preset": "4:5",
+  "duration": 30,
+  "fps": 30,
+  "preroll": 12
+ },
+ "theme": {
+  "preset": "terminal-dark",
+  "fontSize": 21,
+  "lineHeight": 30,
+  "colors": {
+   "mute": "#aab1c0",
+   "rd": "#f07178"
+  }
+ },
+ "machines": {
+  "uuids": {
+   "type": "counter",
+   "start": 4100000,
+   "rate": 520000,
+   "format": "comma"
+  },
+  "repairguided_l": {
+   "type": "lane",
+   "period": 8.5,
+   "run": 5.8,
+   "off": 1.0,
+   "busy": "repairing",
+   "done": [
+    "ok"
+   ],
+   "phase": 1,
+   "log": {
+    "who": "repair · g…",
+    "c": "pu",
+    "msgs": [
+     [
+      "repaired 3 fields",
+      ""
+     ]
+    ]
+   }
+  },
+  "rail": {
+   "type": "triggers",
+   "color": "pu",
+   "period": 4.5,
+   "on": 3.0,
+   "t0": -1.6,
+   "callsStart": 1,
+   "tokens": {
+    "start": 129,
+    "step": 93,
+    "unit": "k"
+   },
+   "items": [
+    {
+     "name": "same-name layout",
+     "adv": [
+      ">> key by struct hash",
+      ">> fail on mismatch"
+     ]
+    },
+    {
+     "name": "constraint hit",
+     "adv": [
+      ">> single pass O(k)",
+      ">> bounded tail"
+     ]
+    },
+    {
+     "name": "pool low",
+     "adv": [
+      ">> pool refill",
+      ">> fork-safe"
+     ]
+    }
+   ],
+   "onText": "advising",
+   "offText": "on call",
+   "log": {
+    "who": "on call",
+    "c": "pu",
+    "start": {
+     "m": "{name} · woken"
+    },
+    "end": {
+     "m": "{name} · done, back on call"
+    }
+   }
+  }
+ },
+ "elements": [
+  {
+   "type": "box",
+   "x": 40,
+   "y": 146,
+   "w": 324,
+   "h": 1063,
+   "color": "pu",
+   "pad": [
+    13,
+    7,
+    7
+   ],
+   "lines": [
+    {
+     "t": "ON CALL",
+     "c": "pu",
+     "b": 1
+    },
+    {
+     "t": "repair path",
+     "c": "pu"
+    },
+    {
+     "trigger": [
+      "rail",
+      0
+     ]
+    },
+    "",
+    {
+     "t": "last advice:",
+     "c": "dim",
+     "align": "left",
+     "indent": 8
+    },
+    {
+     "runs": [
+      {
+       "v": "rail.adv0",
+       "c": "pu",
+       "b": 1
+      }
+     ],
+     "align": "left",
+     "indent": 8
+    },
+    {
+     "runs": [
+      {
+       "v": "rail.adv1",
+       "c": "pu",
+       "b": 1
+      }
+     ],
+     "align": "left",
+     "indent": 8
+    },
+    {
+     "items": [
+      {
+       "w": 182,
+       "runs": [
+        {
+         "t": "calls",
+         "c": "dim"
+        }
+       ]
+      },
+      {
+       "w": 91,
+       "align": "right",
+       "runs": [
+        {
+         "v": "rail.calls",
+         "c": "pu",
+         "b": 1
+        }
+       ]
+      }
+     ],
+     "indent": 8
+    },
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    {
+     "trigger": [
+      "rail",
+      1
+     ]
+    },
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    {
+     "trigger": [
+      "rail",
+      2
+     ]
+    }
+   ]
+  },
+  {
+   "type": "text",
+   "x": 0,
+   "w": 1200,
+   "y": 84,
+   "align": "center",
+   "size": 24,
+   "c": "wh",
+   "b": 1,
+   "t": "GENOID · LIVE"
+  },
+  {
+   "type": "rule",
+   "x": 34,
+   "y": 112,
+   "w": 1132
+  },
+  {
+   "type": "text",
+   "x": 0,
+   "w": 1200,
+   "y": 1456,
+   "align": "center",
+   "size": 13,
+   "c": "dim",
+   "t": "all rates illustrative — real ratios in results/all-results.json"
+  },
+  {
+   "type": "text",
+   "x": 34,
+   "w": 1132,
+   "y": 1424,
+   "runs": [
+    {
+     "t": "uuids/s ",
+     "c": "dim"
+    },
+    {
+     "t": "[",
+     "c": "gr",
+     "b": 1
+    },
+    {
+     "v": "uuids",
+     "c": "gr",
+     "b": 1
+    },
+    {
+     "t": "]",
+     "c": "gr",
+     "b": 1
+    }
+   ]
+  },
+  {
+   "type": "path",
+   "points": [
+    [
+     784,
+     261
+    ],
+    [
+     784,
+     356
+    ],
+    [
+     590,
+     356
+    ],
+    [
+     590,
+     450
+    ]
+   ],
+   "color": "line",
+   "r": 0,
+   "width": 2,
+   "flow": {
+    "period": 1.8,
+    "offsets": [
+     0,
+     0.9
+    ],
+    "color": "bl"
+   }
+  },
+  {
+   "type": "path",
+   "points": [
+    [
+     784,
+     261
+    ],
+    [
+     784,
+     356
+    ],
+    [
+     978,
+     356
+    ],
+    [
+     978,
+     450
+    ]
+   ],
+   "color": "line",
+   "r": 0,
+   "width": 2,
+   "flow": {
+    "period": 2.1,
+    "offsets": [
+     0,
+     0.9
+    ],
+    "color": "bl"
+   }
+  },
+  {
+   "type": "path",
+   "points": [
+    [
+     590,
+     597
+    ],
+    [
+     590,
+     692
+    ],
+    [
+     784,
+     692
+    ],
+    [
+     784,
+     786
+    ]
+   ],
+   "color": "line",
+   "r": 0,
+   "width": 2,
+   "flow": {
+    "period": 2.4,
+    "offsets": [
+     0,
+     0.9
+    ],
+    "color": "bl"
+   }
+  },
+  {
+   "type": "path",
+   "points": [
+    [
+     978,
+     597
+    ],
+    [
+     978,
+     692
+    ],
+    [
+     784,
+     692
+    ],
+    [
+     784,
+     786
+    ]
+   ],
+   "color": "line",
+   "r": 0,
+   "width": 2,
+   "flow": {
+    "period": 2.7,
+    "offsets": [
+     0,
+     0.9
+    ],
+    "color": "bl"
+   }
+  },
+  {
+   "type": "path",
+   "points": [
+    [
+     784,
+     903
+    ],
+    [
+     784,
+     1092
+    ]
+   ],
+   "color": "line",
+   "r": 0,
+   "width": 2,
+   "flow": {
+    "period": 1.8,
+    "offsets": [
+     0,
+     0.9
+    ],
+    "color": "bl"
+   }
+  },
+  {
+   "type": "box",
+   "x": 596,
+   "y": 146,
+   "w": 376,
+   "h": 115,
+   "color": "cy",
+   "pad": [
+    13,
+    14
+   ],
+   "lines": [
+    {
+     "t": "Pool · random",
+     "c": "cy",
+     "b": 1
+    },
+    {
+     "t": "pooled CSPRNG",
+     "c": "mute"
+    },
+    {
+     "t": "getRandomValues",
+     "c": "mute"
+    }
+   ]
+  },
+  {
+   "type": "box",
+   "x": 408,
+   "y": 452,
+   "w": 365,
+   "h": 145,
+   "color": "gr",
+   "pad": [
+    13,
+    14
+   ],
+   "lines": [
+    {
+     "t": "Layout · v8",
+     "c": "fg",
+     "b": 1
+    },
+    {
+     "t": "shard tenant counter",
+     "c": "mute"
+    },
+    {
+     "t": "ts + mask",
+     "c": "mute"
+    }
+   ]
+  },
+  {
+   "type": "box",
+   "x": 795,
+   "y": 452,
+   "w": 365,
+   "h": 145,
+   "color": "pu",
+   "pad": [
+    13,
+    14
+   ],
+   "lines": [
+    {
+     "t": "Repair · guided",
+     "c": "fg",
+     "b": 1
+    },
+    {
+     "t": "projection O(k)",
+     "c": "mute"
+    },
+    {
+     "t": "no rejection",
+     "c": "mute"
+    },
+    {
+     "runs": [
+      {
+       "v": "repairguided_l"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "type": "box",
+   "x": 596,
+   "y": 788,
+   "w": 376,
+   "h": 115,
+   "color": "ye",
+   "pad": [
+    13,
+    14
+   ],
+   "lines": [
+    {
+     "t": "UUIDv8 · out",
+     "c": "ye",
+     "b": 1
+    },
+    {
+     "t": "122-bit entropy",
+     "c": "mute"
+    },
+    {
+     "t": "RFC 9562 v8",
+     "c": "mute"
+    }
+   ]
+  },
+  {
+   "type": "box",
+   "x": 596,
+   "y": 1094,
+   "w": 376,
+   "h": 115,
+   "color": "cy",
+   "pad": [
+    13,
+    14
+   ],
+   "lines": [
+    {
+     "t": "Bench · DB + NIST",
+     "c": "cy",
+     "b": 1
+    },
+    {
+     "t": "sqlite pg mysql",
+     "c": "mute"
+    },
+    {
+     "t": "locality +16%",
+     "c": "mute"
+    }
+   ]
+  },
+  {
+   "type": "tarrow",
+   "machine": "rail",
+   "i": 0,
+   "from": [
+    368,
+    234
+   ],
+   "to": [
+    592,
+    234
+   ]
+  },
+  {
+   "type": "tarrow",
+   "machine": "rail",
+   "i": 1,
+   "from": [
+    368,
+    834
+   ],
+   "to": [
+    592,
+    834
+   ]
+  },
+  {
+   "type": "tarrow",
+   "machine": "rail",
+   "i": 2,
+   "from": [
+    368,
+    1164
+   ],
+   "to": [
+    592,
+    1164
+   ]
+  },
+  {
+   "type": "log",
+   "x": 40,
+   "y": 1243,
+   "w": 1120,
+   "rows": 4,
+   "padTop": 16,
+   "padBottom": 29,
+   "padLeft": 20,
+   "title": "genoid log",
+   "titleX": 38,
+   "titleW": 166,
+   "cols": [
+    {
+     "key": "time",
+     "x": 0
+    },
+    {
+     "key": "who",
+     "x": 123
+    },
+    {
+     "key": "m",
+     "x": 285
+    },
+    {
+     "key": "g",
+     "x": 784
+    }
+   ]
+  }
+ ],
+ "clock": {
+  "start": "23:48:04",
+  "rate": 3
+ },
+ "titlebar": {
+  "text": "~/geno-id — bun"
+ },
+ "credit": {
+  "text": "GenoID v8 structured UUIDs · numbers illustrative (see results/)",
+  "y": 1484,
+  "size": 12
+ }
+}
