@@ -101,6 +101,8 @@ GenoID is a TypeScript RFC 9562 v8 UUID library + CLI + browser benchmark. The p
 
 **Live panel (only when one exists for the task):** if `livepanel/spec.json` exists in TEMP, after every merged work unit update its rows to the new state, rebuild via `scaffold.py --spec` + `build_page`, and re-show the page link. Match the view to the action: repeating loop → `ring`, staged drop-off → `funnel`, decide/retry workflow → `loop`, otherwise free-form. The page animates but never auto-refreshes: a rebuild + re-show per work unit is the whole mechanism.
 
+**Docs stay with code:** the change that adds a feature or fixes behavior updates its docs in the same commit — README numbers from the frozen artifact (never memory), CITATION.cff version/date on release, paper tables from archived results. A docs-only follow-up commit is a miss, not a workflow.
+
 ## Build and Deployment
 
 - **Build:** `bun run build` → `dist/` (gitignored; rebuild after changing `src/algo.ts`/`src/benchmark.ts`/`src/bench-core.ts`).
