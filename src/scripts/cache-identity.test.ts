@@ -18,10 +18,11 @@ import path from "node:path"
 const __dirname = import.meta.dirname
 const root = path.resolve(__dirname, "..", "..")
 const algo = await import(pathToFileURL(path.resolve(root, "dist/algo.js")).href)
-const { completeLayout, genStructuredGenoID, readStructured } = algo as {
+const { completeLayout, genStructuredGenoID, readStructured, resetSeededState } = algo as {
   completeLayout: (name: string, core: unknown[]) => unknown
   genStructuredGenoID: (l: unknown) => string
   readStructured: (uuid: string, l: unknown) => Record<string, number>
+  resetSeededState: () => void
 }
 
 function tagLayout(value: number) {
@@ -52,4 +53,15 @@ test("same-named differing layouts do not share validation", () => {
   // silently reuse the cached validation of the good layout.
   const bad = { name: "vld", fields: [{ name: "bad", start: 0, length: 0, type: "random" }] }
   assert.throws(() => genStructuredGenoID(bad), /vld/)
+})
+
+test("resetSeededState clears the name registry: re-declaration after reset registers fresh", () => {
+  const first = tagLayout(1)
+  genStructuredGenoID(first)
+  resetSeededState()
+  // Registry wiped: a differing structure under the same name registers
+  // anew instead of throwing on the stale binding.
+  const second = tagLayout(2)
+  const id = genStructuredGenoID(second)
+  assert.equal(readStructured(id, second).tag, 2)
 })
