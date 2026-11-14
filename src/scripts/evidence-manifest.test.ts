@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto"
 import assert from "node:assert/strict"
+import { fromAny } from "@total-typescript/shoehorn"
 import test from "node:test"
 import {
   createEvidenceManifest,
@@ -71,7 +72,7 @@ test("createEvidenceManifest fails with stable codes for missing required data",
   ]
   for (const [code, build] of cases) {
     assert.throws(
-      () => createEvidenceManifest(build() as never),
+      () => createEvidenceManifest(fromAny(build())),
       (error: unknown) => {
         assert.ok(error instanceof Error)
         assert.equal((error as Error & { code?: string }).code, code)

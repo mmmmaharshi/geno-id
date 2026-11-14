@@ -1,5 +1,6 @@
 import { test } from "node:test"
 import assert from "node:assert/strict"
+import { fromAny } from "@total-typescript/shoehorn"
 import {
   genUlid,
   genUlidV8,
@@ -20,9 +21,7 @@ const CROCKFORD = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
 // output is fully determined by (timestamp, pattern) — enabling known-answer
 // comparison against external reference implementations.
 function withRandom(pattern: number[], fn: () => void): void {
-  const c = globalThis.crypto as unknown as {
-    getRandomValues: (a: Uint8Array) => Uint8Array
-  }
+  const c = fromAny<{ getRandomValues: (a: Uint8Array) => Uint8Array }, unknown>(globalThis.crypto)
   const orig = c.getRandomValues
   c.getRandomValues = (arr: Uint8Array) => {
     for (let i = 0; i < arr.length; i++) arr[i] = pattern[i % pattern.length]!

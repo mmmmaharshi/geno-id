@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.27.0] - 2026-11-14
+
+### Summary
+
+**Final prose sweep against frozen numbers: the abstract, the offsets, the references, and the operator guidance all match the archived artifacts.**
+
+### Highlights
+
+- 📝 **Front matter matches the body.** The abstract states rejection cost as an expectation (expected $64^k$ draws, geometric tail) instead of big-O, names the throughput comparators (`pg_uuid_v8` at 2.0–6.7x, `ulid-v8` at 1.9–6.1x), and frames the NIST battery as a sanity check on the pooling path rather than security evidence.
+- 📍 **One shipped shard offset.** The composite-key table carries only the shipped offset-52 embedded arm; the byte-aligned variant stays measured and archived with no performance claim, and alignment remains validator-enforceable style guidance.
+- 📚 **Every named system has a bibliography entry.** New entries for SQLite, MySQL, PGlite, DuckDB, and ClickHouse; COMBGUID cites its source.
+- 🎲 **Dieharder published with parameters.** The curated diehard+STS subset (12.5MB per generator, 5 trials, no rewind) reports a modal PASS on all 152 rows across v4/rawv8/pooled-genoid/struct-dbkey, scoped to the unstructured and `dbkey` payload paths.
+- 🛠️ **Operator guidance.** A pool-size-to-exposure-window sizing rule ($W$ UUIDs, tunable via `configurePools()`, byte-identical output at any size) plus explicit when-not-to-embed guidance and a masking-compatibility statement (masking composes but forfeits prefix routing).
+- 🔢 **Stale numbers reconciled to disk.** Native point lookups read ≈110–130µs (not 220–250µs), the region-hot PostgreSQL arm reads 1.03x with narrowly separated CIs, and the rejection-sweep per-field cost reads ≈0.7–1.0µs with measured crossover intervals.
+
+### Known Issues
+
+- **Throughput tables predate the latest CI consolidation.** `results/all-results.json` was refreshed after the throughput prose froze and now shows higher same-rig ratios on Node (up to ~15x) with no Node-22 collapse; the paper's 2.0–6.7x range and Node-22 portability narrative are under-claims against the new file, not over-claims. A measurement ticket should re-freeze the throughput story before resubmission.
+
+### Dependencies Updated
+
+- None.
+
 ## [1.26.0] - 2026-11-13
 
 ### Summary

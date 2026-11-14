@@ -27,6 +27,7 @@
 - **Security by Default** : Validate untrusted input, enforce access controls, and keep secrets and sensitive data out of logs and client code.
 - **Observability** : Log, measure, or trace where it diagnoses a real operational problem, and keep the signal free of redundant noise.
 - **Deterministic Testing** : Make tests repeatable: no dependence on execution order, live external services, or arbitrary delays.
+- **Seeded RNG Discipline** : `createSeededRandom` is determinism-only (degenerate stream, pinned for golden vectors + the Rust port) — never use it in a distribution assertion. Uniformity-asserting tests use `mulberry32`.
 - **Regression Testing** : Fix a bug with a focused test that fails before the fix and guards the same failure afterwards.
 - **Documentation Accuracy** : Update documentation in the same change that makes it wrong.
 - **Principle Precedence** : Correctness, security, and explicit requirements outrank simplicity. When principles conflict, choose the solution that meets the requirement with the least unnecessary complexity.

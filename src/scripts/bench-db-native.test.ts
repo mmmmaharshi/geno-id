@@ -1,4 +1,5 @@
 import assert from "node:assert/strict"
+import { fromAny } from "@total-typescript/shoehorn"
 import { test } from "node:test"
 import {
   DISTRIBUTIONS,
@@ -105,7 +106,7 @@ test("validateNativeResult rejects a missing server version", () => {
 
 test("validateNativeResult rejects an arm without range scan evidence", () => {
   const result = baseResult()
-  const arm = { ...(result.arms.uuid_v7 as Record<string, unknown>) }
+  const arm = { ...(fromAny<Record<string, unknown>, unknown>(result.arms.uuid_v7)) }
   delete arm.rangeScan
   assert.throws(
     () => validateNativeResult({ ...result, arms: { uuid_v7: arm } }),

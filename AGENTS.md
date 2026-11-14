@@ -99,6 +99,8 @@ GenoID is a TypeScript RFC 9562 v8 UUID library + CLI + browser benchmark. The p
 
 **Response style (for this agent):** follow the installed `i-have-adhd` + `caveman` (full) skills; `README.md` additionally follows `research-paper-spj` (professional tone, no caveman in docs).
 
+**Live panel (only when one exists for the task):** if `livepanel/spec.json` exists in TEMP, after every merged work unit update its rows to the new state, rebuild via `scaffold.py --spec` + `build_page`, and re-show the page link. Match the view to the action: repeating loop → `ring`, staged drop-off → `funnel`, decide/retry workflow → `loop`, otherwise free-form. The page animates but never auto-refreshes: a rebuild + re-show per work unit is the whole mechanism.
+
 ## Build and Deployment
 
 - **Build:** `bun run build` → `dist/` (gitignored; rebuild after changing `src/algo.ts`/`src/benchmark.ts`/`src/bench-core.ts`).
@@ -109,6 +111,9 @@ GenoID is a TypeScript RFC 9562 v8 UUID library + CLI + browser benchmark. The p
 ## Quality Gates (Agent workflow)
 
 After every change to any `.ts` file, run in order. **Stop and fix on any failure — do not continue.**
+
+- **Shell:** on Windows use the dedicated `grep`/`read` tools — never `head`, `tail`, `grep`, or `wc` pipes (they do not exist in this shell).
+- **Background shells are unreliable here:** prefer foreground waits with generous timeouts for gate runs; use background only for truly long jobs, and on spawn failure run foreground instead of retrying background.
 
 1. `/thermo-nuclear-code-quality-review` — kill duplication, spaghetti, oversized files, redundant layers.
 2. `bun run lint` — oxlint over all `.ts`.

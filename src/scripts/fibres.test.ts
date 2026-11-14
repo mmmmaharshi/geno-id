@@ -1,5 +1,6 @@
 import { test } from "node:test"
 import assert from "node:assert/strict"
+import { fromAny } from "@total-typescript/shoehorn"
 import { pathToFileURL } from "node:url"
 import path from "node:path"
 
@@ -113,7 +114,7 @@ function assertProfile(label: string, observed: number[], predicted: number[], d
 }
 
 function assertFibreProfile(label: string, gen: () => string, layout: unknown, fieldName: string, allowed: number[], ell: number, draws: number): void {
-  const observed = observedFibreMultiplicities(gen, layout as never, fieldName, allowed, draws)
+  const observed = observedFibreMultiplicities(gen, fromAny(layout), fieldName, allowed, draws)
   assertProfile(label, observed, predictedFibreMultiplicities(allowed, ell), draws, ell)
 }
 
