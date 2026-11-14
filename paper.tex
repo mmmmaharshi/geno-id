@@ -784,19 +784,19 @@ The implementation, benchmark harness, experimental artifacts, golden vectors, a
 \noalign{\smallskip}\hline\noalign{\smallskip}
 E1 composition correctness (\S\ref{sec:composition-correctness}) & \texttt{bun run src/scripts/e1-production.ts} & \texttt{results/e1-production-1500k.json} \\
 Repair vs rejection sweep (\S\ref{sec:repair-vs-rejection}) & \texttt{bun run bench-rejection} & \texttt{results/rejection-sweep.json}, \texttt{.csv} \\
-Repair-distribution grid (\S\ref{sec:uniformity}) & \texttt{bun run src/scripts/bench-repair-grid.ts} & \texttt{results/repair-grid.json} \\
-$10^8$ field histogram (\S\ref{sec:evaluation}) & \texttt{bun run histogram-100m} \emph{then} \texttt{bun run histogram:maxz} & \texttt{results/shard-histogram-100m.json}, \texttt{results/shard-histogram-100m.maxz.json} \\
+Repair-distribution grid (\S\ref{sec:uniformity}) & \texttt{bun run bench-repair-grid} & \texttt{results/repair-grid.json} \\
+$10^8$ field histogram (\S\ref{sec:evaluation}) & \texttt{bun run histogram-100m \&\& bun run histogram:maxz} & \texttt{results/shard-histogram-100m.json}, \texttt{results/shard-histogram-100m.maxz.json} \\
 Bit allocation, optimality and frontier (\S\ref{sec:bit-allocation}) & \texttt{bun run bench-bit-allocation} & \texttt{results/bit-allocation.json} \\
-NIST SP 800-22 battery (\S\ref{sec:nist}) & \texttt{bun run src/scripts/export-structured.ts} \emph{then} \texttt{python src/scripts/nist-full-battery.py} & \texttt{results/nist-sp800-22-results.json}, \texttt{results/nist-draws/} (5 draws) \\
+NIST SP 800-22 battery (\S\ref{sec:nist}) & \texttt{bun run src/scripts/export-structured.ts \&\& python src/scripts/nist-full-battery.py} & \texttt{results/nist-sp800-22-results.json}, \texttt{results/nist-draws/} (draws 2--5; head draw with \texttt{nist-sp800-22-results.json}) \\
 dieharder subset (\S\ref{sec:nist}) & \texttt{bun run dieharder} & \texttt{results/dieharder-results.md} \\
 Nine-environment throughput (\S\ref{sec:throughput}) & \texttt{bun run bench-ci} (CI matrix, committed by the consolidate job) & \texttt{results/all-results.json} \\
 Browser benchmark (\S\ref{sec:deployability}) & \texttt{bun run playwright} & \texttt{results/benchmark\_results.json} \\
 SQLite B-tree locality (\S\ref{sec:deployability}) & \texttt{bun run bench-db} & \texttt{results/db-sqlite.json} \\
 SQLite composite key (\S\ref{sec:composite-bench}) & \texttt{bun run bench-sqlite-artifact} & \texttt{results/db-sqlite-composite.json} \\
-Native PostgreSQL + MySQL (\S\ref{sec:validity}) & \texttt{bun run src/scripts/bench-db-native.ts --rows=100000 --reps=5 --probes=100} (CI service containers) & \texttt{results/db-native.json} \\
-Workload-driven planning (\S\ref{sec:workload-planning}) & \texttt{bun run src/scripts/bench-workload.ts} & \texttt{results/workload-planning.json}, \texttt{results/workload-planning-regionhot.json} \\
-Microshard head-to-head (\S\ref{sec:microshard}) & \texttt{bun run src/scripts/bench-microshard.ts} & \texttt{results/microshard.json} \\
-Rust cross-language check (\S\ref{sec:cross-lang}) & \texttt{bun run src/scripts/export-golden.ts} \emph{then} \texttt{cd src/golden-check \&\& cargo run} & \texttt{golden/*.txt} \\
+Native PostgreSQL + MySQL (\S\ref{sec:validity}) & \texttt{bun run bench-db-native --rows=100000 --reps=5 --probes=100} (CI service containers) & \texttt{results/db-native.json} \\
+Workload-driven planning (\S\ref{sec:workload-planning}) & \texttt{bun run bench-workload} & \texttt{results/workload-planning.json}, \texttt{results/workload-planning-regionhot.json} \\
+Microshard head-to-head (\S\ref{sec:microshard}) & \texttt{bun run bench-microshard} & \texttt{results/microshard.json} \\
+Rust cross-language check (\S\ref{sec:cross-lang}) & \texttt{bun run src/scripts/export-golden.ts \&\& cd src/golden-check \&\& cargo run} & \texttt{golden/*.txt} \\
 \noalign{\smallskip}\hline
 \end{tabular*}
 \end{table}
