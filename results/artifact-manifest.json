@@ -23,14 +23,21 @@
       "section": "Collision and uniformity (Section 5.3)",
       "claim": "Zero collisions at 2M draws; 10^8 shard histogram matches the index-modulo fibre prediction (max dev 0.012 pp, 2.9 sigma)",
       "artifact": "results/benchmark_results.json + results/shard-histogram-100m.json",
-      "command": "bun run playwright + bun run histogram-100m",
+      "command": "bun run histogram-100m && bun run histogram:maxz",
       "verified": true
     },
-    "sec_nist_dieharder": {
-      "section": "NIST SP 800-22 and dieharder (Section 5.4)",
-      "claim": "43 reported p-values per layout (41 test categories plus decomposition states), all p >= 0.01; dieharder curated subset 152/152 PASS",
-      "artifact": "results/nist-sp800-22-results.json, results/dieharder-results.md",
-      "command": "bun run src/scripts/export-structured.ts && python src/scripts/nist-full-battery.py + bun run src/scripts/run-dieharder.ts",
+    "sec_nist": {
+      "section": "NIST SP 800-22 (Section 5.4)",
+      "claim": "43 reported p-values per layout (41 test categories plus decomposition states), all p >= 0.01",
+      "artifact": "results/nist-sp800-22-results.json, results/nist-draws/",
+      "command": "bun run src/scripts/export-structured.ts && python src/scripts/nist-full-battery.py",
+      "verified": true
+    },
+    "sec_dieharder": {
+      "section": "dieharder (Section 5.4)",
+      "claim": "dieharder curated subset 152/152 PASS",
+      "artifact": "results/dieharder-results.md",
+      "command": "bun run dieharder",
       "verified": true
     },
     "sec_throughput": {
@@ -55,7 +62,7 @@
       "section": "Cross-language reproducibility (Section 5.8)",
       "claim": "Rust reimplementation byte-identical: 3000 UUIDs, zero mismatches",
       "artifact": "golden/*.txt + golden-check/",
-      "command": "bun run src/scripts/export-golden.ts && cd golden-check && cargo run",
+      "command": "bun run src/scripts/export-golden.ts && cd src/golden-check && cargo run",
       "verified": true
     },
     "sec_db_localities": {
@@ -98,6 +105,34 @@
       "claim": "Suite-by-suite evidence status: which statistical suites were measured, which are archived external results, and which could not be run here, with sample sizes, p-values, and multiple-testing treatment",
       "artifact": "results/statistics-evidence.json",
       "command": "bun run stats:evidence",
+      "verified": true
+    },
+    "sec_repair_grid": {
+      "section": "Repair-distribution grid (Section 2.4)",
+      "claim": "Every measured endpoint mass and fibre frequency matches its closed form across the (ell, min, max) and (m, ell) grids",
+      "artifact": "results/repair-grid.json",
+      "command": "bun run bench-repair-grid",
+      "verified": true
+    },
+    "sec_workload": {
+      "section": "Workload-driven planning (Section 4.3)",
+      "claim": "Layout effect on the workload hot-field query, confirmed on SQLite and via embedded PGlite",
+      "artifact": "results/workload-planning.json, results/workload-planning-regionhot.json",
+      "command": "bun run bench-workload",
+      "verified": true
+    },
+    "sec_microshard": {
+      "section": "Microshard head-to-head (Section 4.4)",
+      "claim": "SQL-prunable shard prefix and counter-ordered bursts versus the fixed microshard layout",
+      "artifact": "results/microshard.json",
+      "command": "bun run bench-microshard",
+      "verified": true
+    },
+    "sec_native": {
+      "section": "Native engines (Section 3.2)",
+      "claim": "PostgreSQL 18.7 and MySQL 8.0.46 B-tree locality at N=10^5 rows per build, 7 identifier arms, with query plans, storage, and WAL accounting",
+      "artifact": "results/db-native.json",
+      "command": "bun run bench-db-native --rows=100000 --reps=5 --probes=100",
       "verified": true
     }
   },
