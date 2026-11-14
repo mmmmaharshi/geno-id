@@ -343,6 +343,7 @@ claimed; per-refresh values in \texttt{results/db-native.json}). The shard-first
 arm sits in the same broad parity band on both engines. Point lookups and range scans show no
 arm separation on either engine (100-probe lookup sets within $\approx 10\%$ on
 PostgreSQL and $\approx 6\%$ on MySQL; range scans within $\approx 7\%$).
+Tail latency matches or beats the median story: at p99 the structured arm is within $5\%$ of UUIDv7 on PostgreSQL point lookups ($14.16$ against $13.53\,\mu$s) and strictly lower on MySQL ($17.76$ against $25.30\,\mu$s), with range-scan p99s within $9\%$ on both engines (frozen snapshot; per-refresh values in \texttt{results/db-native.json}).
 The tracked artifact
 (\texttt{results/db-native.json}, with per-rep percentiles, query plans, and
 server versions) records the $N=10^5$ result, with the same single-host caveat that
@@ -649,6 +650,8 @@ Base generation pools hold 256 entries and structured generation pools hold up t
 \label{sec:evaluation}
 Each result below names its own artifact; Table~\ref{tab:artifact-map} in the Availability section maps every table and figure to the exact command and archived output path. Throughput figures come from a nine-job CI matrix spanning three OSes and three runtimes (Bun, Node~22, Deno~2.9.3) and are stated as same-rig relative ratios rather than cross-host absolute rates.
 
+Four questions organize the evaluation. RQ1 (composition): does every emitted UUID satisfy its declared layout (\S\ref{sec:composition-correctness})? RQ2 (repair cost): what does constraint satisfaction cost next to rejection sampling (\S\ref{sec:repair-vs-rejection})? RQ3 (randomness quality): do structured fields stay uniform, collision-free, and battery-clean (\S\ref{sec:evaluation} collision and uniformity, \S\ref{sec:nist})? RQ4 (performance): what does structure cost in throughput and database behaviour (\S\ref{sec:throughput}--\S\ref{sec:deployability}, \S\ref{sec:composite-bench}, \S\ref{sec:microshard} and the workload loop of \S\ref{sec:workload-planning})?
+
 \subsection{Composition correctness}
 \label{sec:composition-correctness}
 Over 1.5M structured-field checks on the shipped compiled-direct-v8 production path: 0 field-copy mismatches, 0 constraint violations, and 0 monotonicity violations (Table~\ref{tab:artifact-map}). This is the empirical counterpart to the by-construction correctness proof, measured end-to-end through \texttt{genStructuredGenoID(DBKEY\_Layout)} rather than lower-level primitives.
@@ -819,6 +822,9 @@ RFC~9562 surveyed sixteen prior implementations~\cite{4}. Representative members
 \subsection{Constrained generation and repair lineage}
 The generic lineage is older and stronger than the UUID literature. Property-based testing compiles executable properties into generators~\cite{15}; Claessen, Dureg{\aa}rd, and Pa{\l}ka derive random data satisfying a Boolean predicate while targeting uniformity~\cite{16}; LaFontaine et al.\ repair incomplete generators from type and coverage information~\cite{17}; Goldstein et al.\ synthesise generators with guarantees~\cite{18}. The formal distinction is scope: those systems solve arbitrary predicates or synthesise generators from proof obligations. GenoID does neither. It projects one fixed-width random field into one declared admissible set, with no predicate solving and no distribution-preservation claim beyond the fibre bound of Section~\ref{sec:uniformity}. ``Constraint-guided repair'' names that projection, not a general constrained-generation result.
 
+\subsection{Declarative schema languages}
+Declaring a data layout once and generating the accessors is an old idea: schema languages such as Protocol Buffers let authors declare typed fields in a \texttt{.proto} file and generate readers, writers, and validators in many languages~\cite{28}. \texttt{V8Layout} belongs to that lineage but answers a narrower question: not how to serialize an arbitrary message, but how to fill a fixed 122-bit standards-defined payload so that every emitted value satisfies per-field constraints by construction. Schema languages validate after the fact or generate unconstrained codecs; GenoID's repair pass is the generator, and the RFC~9562 version and variant bits are the conformance boundary no schema language has to respect. The layout is therefore smaller than a schema (offsets, lengths, admissibility sets) and total where a codec is partial: \texttt{repairConstraints} cannot fail, so there is no invalid value to detect downstream.
+
 \subsection{Database-locality alternatives}
 Embedding is not the only route to locality. CockroachDB hash-shards indexes to spread sequential writes while keeping a logical partition key~\cite{19}; TiDB \texttt{AUTO\_RANDOM} randomises integer primary keys with shard bits~\cite{20}; SQL Server's \texttt{NEWSEQUENTIALID} issues process-ordered GUIDs for sequential index behaviour~\cite{21}; and expression or covering indexes extract queryable structure from plain values without touching the key format. GenoID's bet is narrower: when the key itself must carry routing so a partition prunes with no secondary index, embedding wins (Section~\ref{sec:composite-bench}); where it need not, an expression index over the plain key is the better-supported answer, but measured on the same rig it is not the cheaper one: it carries $1.93\times$ the storage and $2.07\times$ lower insert throughput of embedding for lookup parity ($1.04\times$), so the index trades throughput for tooling, not for savings.
 
@@ -929,6 +935,9 @@ Electric, ``PGlite: embeddable Postgres.'' \url{https://pglite.dev/}
 
 \bibitem{27}
 W. E. Smith, ``Various optimizers for single-stage production,'' Naval Research Logistics Quarterly, vol.\ 3, nos.\ 1--2, pp.\ 59--66, 1956.
+
+\bibitem{28}
+Google, ``Protocol Buffers documentation: overview.'' \url{https://protobuf.dev/overview/}
 
 \end{thebibliography}
 
