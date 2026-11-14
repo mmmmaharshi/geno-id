@@ -52,7 +52,7 @@ Bharath Institute of Engineering and Technology, Ranga Reddy, Telangana, India \
 \maketitle              % typeset the title of the contribution
 
 \begin{abstract}
-Standard UUID generators cannot embed application-defined structure (a shard, a tenant, or a monotonic counter) inside a standards-compliant identifier without paying rejection sampling's exponential cost. RFC 9562 makes this gap explicit: version 8 reserves 122 bits for exactly this purpose but defines no algorithm to fill them. We close this gap with GenoID, a declarative composition framework that produces valid v8 UUIDs from fields constrained over allowed-set, range, and monotonic vocabularies at $O(k)$ repair cost --- against an expected $64^k$ draws per identifier under joint whole-UUID rejection, whose geometric tail has no upper bound on any single run (the 8-bit, 4-value special case), with a proven total-variation bound $m/2^\ell$ on every allowed-set repaired field, measured throughput $2.8$--$12.9\times$ over the closest prior art (\texttt{pg\_uuid\_v8}, and $2.2$--$14.5\times$ over \texttt{ulid-v8}) across nine CI environments, and byte-identity across an independent Rust reimplementation. It remains slower than \texttt{crypto.randomUUID()} and Snowflake (different guarantee classes); the ratio claim is against the closest structured prior art only. The design is backed by formal complexity and entropy accounting, a NIST SP~800-22 battery reported as a sanity check on the pooling path rather than security evidence, and an explicit adversarial security analysis that separates GenoID's architectural contribution from the CSPRNG-inherited randomness quality beneath it. By making shard, tenant, and sequence identity a declarative property of the key itself, GenoID targets the data-systems layer directly.
+Standard UUID generators cannot embed application-defined structure (a shard, a tenant, or a monotonic counter) inside a standards-compliant identifier without paying rejection sampling's exponential cost. RFC 9562 makes this gap explicit. Version 8 reserves 122 bits for exactly this purpose but defines no algorithm to fill them. We close this gap with GenoID, a declarative composition framework that produces valid v8 UUIDs from fields constrained over allowed-set, range, and monotonic vocabularies at $O(k)$ repair cost, against an expected $64^k$ draws per identifier under joint whole-UUID rejection, whose geometric tail has no upper bound on any single run (the 8-bit, 4-value special case), with a proven total-variation bound $m/2^\ell$ on every allowed-set repaired field, measured throughput $2.8$--$12.9\times$ over the closest prior art (\texttt{pg\_uuid\_v8}, and $2.2$--$14.5\times$ over \texttt{ulid-v8}) across nine CI environments, and byte-identity across an independent Rust reimplementation. It remains slower than \texttt{crypto.randomUUID()} and Snowflake (different guarantee classes); the ratio claim is against the closest structured prior art only. The design is backed by formal complexity and entropy accounting, a NIST SP~800-22 battery reported as a sanity check on the pooling path rather than security evidence, and an explicit adversarial security analysis that separates GenoID's architectural contribution from the CSPRNG-inherited randomness quality beneath it. By making shard, tenant, and sequence identity a declarative property of the key itself, GenoID targets the data-systems layer directly.
 \keywords{distributed data systems, sharding, UUID, RFC 9562, constraints, evaluation}
 \end{abstract}
 
@@ -248,7 +248,7 @@ key is simpler and keeps all 122 random bits), when the shard set churns
 tenant concealment matters: structured bits leak by design
 (Section~\ref{sec:security}), and XOR-masking after repair (as in
 \texttt{pg\_uuid\_v8}) composes mechanically but destroys exactly what
-embedding buys --- prefix prunability and range locality --- so choose
+embedding buys, prefix prunability and range locality, so choose
 masking for concealment or plaintext for routing, not both.
 
 A resharding migration has a fixed shape. Version layout names as
@@ -300,8 +300,8 @@ overlap). Concatenation nonetheless costs $1.85\times$ the storage and
 $1.24\times$ lower insert throughput, and is no longer a UUID, forfeiting
 the native 16-byte column type and RFC~9562 tooling.
 
-The conceded alternative --- a plain key plus an expression index
-extracting the shard --- is measured in the same table. It costs
+The conceded alternative, a plain key plus an expression index
+extracting the shard, is measured in the same table. It costs
 $1.93\times$ the storage ($54.9$ against $28.4$ bytes/row) and
 $2.07\times$ lower insert throughput ($141$K vs $291$K rows/s) for lookup
 parity with embedding ($12.2$ vs $11.7\,\mu$s, CIs overlap), while its
@@ -429,7 +429,7 @@ Rejection bets that a lucky whole-UUID draw arrives before an unlucky run; repai
 
 \noindent\emph{In plain terms: rejection sampling needs $\sim$69 billion tries for six constrained fields; GenoID succeeds on the first try. The exponential gap is against the general alternative, not against a per-layout hand-coded one.}
 
-\textbf{Setup.} For $k$ constrained fields of bit-lengths $\ell_i$, each with $a_i$ valid values, rejection sampling succeeds with probability $\prod_i a_i / 2^{\ell_i}$, so the expected number of draws is $\prod_i 2^{\ell_i}/a_i$. Taking a representative tight constraint ($a_i=4$ admissible values in an $\ell_i=8$ bit field, a density of $2^{-6}$) gives $64^k$ expected draws ($6.9\times10^{10}$ for $k=6$), with a geometric tail and therefore no upper bound on any single run. The \texttt{shard} field of Listing~\ref{lst:dbkey} sits in this regime at $5/256$. The degenerate case $a_i=1$ is excluded: a field with a single admissible value is a constant and requires no sampling. \texttt{repairConstraints} (Algorithm~\ref{alg:repair}) is linear in $k$: it iterates the layout once, each branch is $O(1)$: an index-modulo lookup, an affine modulo, or a counter increment, so the pass has worst-case $O(k)$ cost. Both $|\text{allowed}_i|$ and $\ell_i$ are fixed by the layout declaration; treating them as constants yields $O(k)$. The function never redraws and never loops, eliminating rejection sampling's unbounded tail risk. The honest baseline for a fixed layout is per-field direct construction: draw a uniform index into the allowed set, draw uniform in-range values, increment the counter, and compose --- equally $O(k)$, single-pass, bounded-tail, and exactly uniform with zero total-variation debt. Repair is not a faster sampler than this; it is the mechanism that lets one shared pass serve every declared layout without per-layout code, at the stated fibre debt ($m/2^\ell$ on allowed-set fields) and endpoint pile-up on range clamps. Where a single fixed layout is all that is ever needed, direct construction dominates and should be used; GenoID's claim starts at declared multi-field layouts whose admissible sets, bounds, and counters are repaired deterministically.
+\textbf{Setup.} For $k$ constrained fields of bit-lengths $\ell_i$, each with $a_i$ valid values, rejection sampling succeeds with probability $\prod_i a_i / 2^{\ell_i}$, so the expected number of draws is $\prod_i 2^{\ell_i}/a_i$. Taking a representative tight constraint ($a_i=4$ admissible values in an $\ell_i=8$ bit field, a density of $2^{-6}$) gives $64^k$ expected draws ($6.9\times10^{10}$ for $k=6$), with a geometric tail and therefore no upper bound on any single run. The \texttt{shard} field of Listing~\ref{lst:dbkey} sits in this regime at $5/256$. The degenerate case $a_i=1$ is excluded: a field with a single admissible value is a constant and requires no sampling. \texttt{repairConstraints} (Algorithm~\ref{alg:repair}) is linear in $k$: it iterates the layout once, each branch is $O(1)$: an index-modulo lookup, an affine modulo, or a counter increment, so the pass has worst-case $O(k)$ cost. Both $|\text{allowed}_i|$ and $\ell_i$ are fixed by the layout declaration; treating them as constants yields $O(k)$. The function never redraws and never loops, eliminating rejection sampling's unbounded tail risk. The honest baseline for a fixed layout is per-field direct construction: draw a uniform index into the allowed set, draw uniform in-range values, increment the counter, and compose, equally $O(k)$, single-pass, bounded-tail, and exactly uniform with zero total-variation debt. Repair is not a faster sampler than this; it is the mechanism that lets one shared pass serve every declared layout without per-layout code, at the stated fibre debt ($m/2^\ell$ on allowed-set fields) and endpoint pile-up on range clamps. Where a single fixed layout is all that is ever needed, direct construction dominates and should be used; GenoID's claim starts at declared multi-field layouts whose admissible sets, bounds, and counters are repaired deterministically.
 
 \subsection{Entropy preservation}
 \label{sec:entropy}
@@ -466,9 +466,9 @@ The \textsc{range} branch clamps rather than folds, and is therefore not uniform
 \label{sec:bit-allocation}
 
 Declaring a field answers two questions at once: how wide it must be, and where
-it sits. Width is an entropy question --- a field holding one of five values
+it sits. Width is an entropy question, a field holding one of five values
 needs three bits, not eight, and every surplus bit comes out of the residual
-entropy the collision guarantee depends on. Position is a locality question ---
+entropy the collision guarantee depends on. Position is a locality question,
 a field a query filters on costs more the deeper it sits, because every
 comparison walks past it. The planner that shipped with earlier revisions
 answered neither: widths were caller-declared and never checked against the
@@ -488,8 +488,8 @@ A declaration whose floors and required residual exceed the 122-bit payload is
 refused with a reason naming the shortfall, rather than being silently
 truncated.
 
-\noindent\emph{Position next.} Weighted depth $D = \sum_i w_i (o_i + \ell_i)$
---- weight times end-offset, summed over fields --- is the comparison work a
+\noindent\emph{Position next.} Weighted depth $D = \sum_i w_i (o_i + \ell_i)$,
+weight times end-offset, summed over fields, is the comparison work a
 range of queries performs. Treating each field as a job of length $\ell_i$
 completing at $o_i+\ell_i$, this is exactly the single-machine
 weighted-completion-time objective. By Smith's exchange argument~\cite{27}, $D$ is
@@ -537,7 +537,7 @@ The trade this makes explicit is linear in depth and logarithmic in risk
 costs about 95 units of $D$ and exactly doubles the collision probability. E-A3
 plays the allocator back over the shipped \texttt{dbkey} declaration and finds
 it already optimal, with the timestamp pinned at offset~0 and only two free
-fields --- a validation of the hand-written layout rather than a
+fields, a validation of the hand-written layout rather than a
 disagreement. The one thing it gets wrong is width: the shard field is declared
 at 8 bits for five admissible values, and $\lceil \log_2 5 \rceil = 3$ recovers
 the five surplus bits as residual entropy.
@@ -548,7 +548,7 @@ Section~\ref{sec:composite-bench} is the closest empirical check and it measures
 latency, not $D$. And nothing here infers the weight $w_i$ from a workload: the
 caller supplies it, and mapping \texttt{DatabaseWorkloadProfile}'s read weight
 and skew onto $w_i$ is left to the caller. The reduction to scheduling is not
-new --- Smith's rule is from 1956 --- so the contribution is the reduction
+new. Smith's rule is from 1956, so the contribution is the reduction
 itself, the collision-safety constraint the compiler lacked, and the measurement
 of what the role-rank order was costing.
 
@@ -580,7 +580,7 @@ counting 25{,}000 matching rows in WASM execution dominates the 1-vs-4 seek
 difference that the native SQLite executor exposes. The planning win
 materializes where index access dominates row visits; on row-visit-dominated
 engines the layout choice is free either way. The trace is synthetic but seeded and archived with its parameters
-in \texttt{results/workload-planning.json}, so the loop --- not the trace ---
+in \texttt{results/workload-planning.json}, so the loop, not the trace,
 is the claim under test. A skewed trace is the favourable case by
 construction; the Section~\ref{sec:composite-bench} result stands for the
 neutral one.
@@ -678,7 +678,7 @@ the boundary moves toward higher density as $k$ grows, because repair cost
 is flat in $d$ while rejection is exponential in $k$. A layout with a single loosely constrained field is
 better served by rejection. GenoID's guarantee is that cost never depends
 on the draw, which matters when constraints are tight, when fields are
-numerous, or when unbounded tail latency is unacceptable.
+many, or when unbounded tail latency is unacceptable.
 
 \subsection{Collision and uniformity}
 Per-field uniformity is measured directly rather than inferred from whole-UUID batteries, since an 8-bit field's deviation is invisible inside 122 bits under NIST monobit. Over $10^8$ \texttt{dbkey} draws on the shipped compiled path, one shard value ($1$) appears at $52/256$ and the other four at $51/256$, matching the closed-form index-modulo prediction of Section~\ref{sec:uniformity}; the maximum absolute deviation from the predicted fibre frequency is $0.012$ percentage points, which is $2.9$ of that cell's own binomial sampling standard deviation ($0.004$ pp at $n=10^8$). Across all 17 tested cells the family-wise assessment gives max-$|z|=2.90$ against a Bonferroni critical value of $2.97$ at family-wise $\alpha=0.05$ (\v{S}id\'ak $2.97$, Bonferroni $p=0.064$), i.e.\ consistent with sampling noise once the 17-fold multiple comparison is accounted for. \texttt{results/shard-histogram-100m.maxz.json} records that assessment, computed from the archived per-cell counts with no new draws. The \texttt{multitenant} tenant ($m=8$ at $\ell=12$) and region ($m=4$ at $\ell=8$) fields are uniform to within $0.008$ pp, consistent with $m \mid 2^{\ell}$ making the partition exact. No admissible value ever falls outside its declared set across $2\times10^8$ draws. Collision expectations for \texttt{dbkey} use the 50 random-payload bits (50\%-collision bound $3.95\times10^7$; $\approx\!10^{10}$ within-tick with the 16-bit same-tick counter). We report agreement with the predicted distribution rather than a goodness-of-fit test against strict uniformity: at $n=10^8$ even the analytically expected $\leq 0.39\%$ per-value deviation would cause chi-square against uniform to reject by design, so rejection is inevitable when testing against perfect uniformity. As a negative control, \texttt{Math.random} (insecure, runtime-native PRNG) passes the collision test in all nine CI environments under the same protocol, confirming that the 1M-draw collision gate has no discriminating power against a low-entropy source; only the analytical uniformity bound and NIST battery separate quality from speed. \texttt{results/shard-histogram-100m.json} records the raw counts, per-cell binomial standard deviations, commit SHA, host, and elapsed time.
@@ -748,7 +748,7 @@ Deno / Windows    & 8.04$\times$ & 7.47$\times$ & 0.92 \\
 \end{tabular*}
 \end{table}
 
-\texttt{genoid-structured} outperforms the closest prior art in all nine environments: $2.8$--$12.9\times$ over \texttt{pg\_uuid\_v8} and $2.2$--$14.5\times$ over \texttt{ulid-v8}, every comparison significant at $p<10^{-6}$ (Table~\ref{tab:paired}; per-comparison $t$, $df$, $p$, and Cohen's $d$ are recorded in the consolidated artifact, \texttt{results/all-results.json}). It is at parity with or ahead of a hand-coded \texttt{v7} implementation in all nine environments (ahead in eight, at parity on the ninth), while additionally satisfying three declared field constraints that \texttt{v7} does not express.
+\texttt{genoid-structured} outperforms the closest prior art in all nine environments: $2.8$--$12.9\times$ over \texttt{pg\_uuid\_v8} and $2.2$--$14.5\times$ over \texttt{ulid-v8}, every comparison significant at $p<10^{-6}$ (Table~\ref{tab:paired}; per-comparison $t$, $df$, $p$, and Cohen's $d$ are recorded in the consolidated artifact, \texttt{results/all-results.json}). It is at parity with or ahead of a hand-coded \texttt{v7} implementation in all nine environments (ahead in eight, at parity on the ninth), while also satisfying three declared field constraints that \texttt{v7} does not express.
 
 Two results run against us. \texttt{snowflake} is faster in all nine environments, by up to $\approx 2\times$; it is a 64-bit time-and-sequence integer rather than a 122-bit UUID, and it collides once its sequence wraps, so the comparison is across guarantee classes rather than within one. Second, the compiled layout path regresses on Node~22 to $0.14$--$0.22\times$ of the interpreted path (Table~\ref{tab:paired}), reversing the earlier finding that compilation was a small win; Section~\ref{sec:validity} treats this as a portability limitation rather than tuning it away. The interpreted structured path itself shows no Node-specific penalty in the refreshed data ($0.70$--$1.58\times$ of unstructured base on Node~22 against $0.72$--$0.91\times$ on Bun and Deno).
 
