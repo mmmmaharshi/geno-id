@@ -128,6 +128,9 @@ jobs:
         with:
           bun-version: latest
       - run: bun run src/scripts/verify-doc-paths.ts
+      - run: bun run docs:benchmarks
+      - name: Fail if the generated benchmarks doc drifted from artifacts
+        run: git diff --exit-code docs/benchmarks.md
 
   golden-check:
     name: golden-vector check (Rust)

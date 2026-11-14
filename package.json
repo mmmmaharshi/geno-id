@@ -46,6 +46,7 @@
     "export-golden": "bun run src/scripts/export-golden.ts",
     "golden:hash": "bun run src/scripts/hash-golden.ts",
     "golden:verify": "bun run src/scripts/verify-golden-hashes.ts",
+    "docs:benchmarks": "bun run src/scripts/generate-docs.ts",
     "dieharder": "bun run src/scripts/run-dieharder.ts",
     "practrand": "bun run src/scripts/run-practrand.ts",
     "test:stats": "bun run src/scripts/stats.ts",
