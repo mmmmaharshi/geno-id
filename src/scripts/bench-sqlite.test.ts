@@ -14,7 +14,7 @@ import { test } from "node:test"
 import type { V8Layout } from "../../dist/algo.js"
 import { genUlidV8 as ulidV8, uuidToBytes } from "./baselines.ts"
 
-import { benchSqlite, benchCompositeKeyArm, expressionIndexShardPredicate, ARM_DDL, DBKEY_LAYOUT } from "./bench-sqlite.ts"
+import { benchSqlite, benchCompositeKeyArm, expressionIndexShardPredicate, extractDbkeyShard, ARM_DDL, DBKEY_LAYOUT } from "./bench-sqlite.ts"
 import { Database } from "bun:sqlite"
 
 const root = path.resolve(import.meta.dirname, "..", "..")
@@ -107,9 +107,7 @@ test("expression-index arm extracts the shard correctly and fills a clean B-tree
   for (const shard of [1, 3, 5]) {
     const pred = expressionIndexShardPredicate(shard)
     const got = (db.query(`SELECT COUNT(*) AS n FROM ids WHERE ${pred}`).get() as { n: number }).n
-    const want = ids.filter(
-      ({ id }) => (((id[6] & 0x0f) << 4) | (id[7] >> 4)) === shard,
-    ).length
+    const want = ids.filter(({ id }) => extractDbkeyShard(id, "embedded") === shard).length
     assert.equal(got, want, `shard ${shard}: index predicate found ${got}, want ${want}`)
   }
   db.close()

@@ -2,16 +2,9 @@ import { test } from "node:test"
 import assert from "node:assert/strict"
 import { pathToFileURL } from "node:url"
 import path from "node:path"
+import { mulberry32 } from "./shared/cli-utils.ts"
 
-// Range-clamp endpoint-accumulation bound (§4.3 of the manuscript). Clamp
-// repair sends a raw ℓ-bit value v to min when v < min and to max when
-// v > max, so out-of-range draws accumulate at the endpoints instead of
-// folding evenly: P(out = min) = (min+1)/2^ℓ, P(out = max) = (2^ℓ−max)/2^ℓ,
-// every interior value keeps 1/2^ℓ. This suite pins the closed form and
-// its empirical match on the production generator path, so a change to
-// the clamp branch that alters endpoint accumulation fails here rather
-// than in the paper.
-
+// Range-clamp endpoint-accumulation bound (§4.3): pins the closed form and its empirical match on the production path.
 const __dirname = import.meta.dirname
 const root = path.resolve(__dirname, "..", "..")
 const algo = await import(pathToFileURL(path.resolve(root, "dist/algo.js")).href)
@@ -22,12 +15,27 @@ const {
   uuidToBytes,
   getFieldValue,
   rangeClampMass,
+  configureRandom,
+  resetSeededState,
 } = algo as {
   genStructuredGenoID: (l: unknown) => string
   completeLayout: (name: string, core: unknown[]) => { name: string; fields: { name: string; start: number; length: number; type: string; constraint?: { min?: number; max?: number } }[] }
   uuidToBytes: (u: string) => Uint8Array
   getFieldValue: (b: Uint8Array, f: unknown) => bigint
   rangeClampMass: (ell: number, min: number, max: number) => { pMin: number; pMax: number; pInterior: number; pinned: number }
+  configureRandom: (fn: ((buf: Uint8Array) => void) | null) => void
+  resetSeededState: () => void
+}
+
+// Deterministic uniform fill for the distribution assertion below.
+// createSeededRandom is determinism-only (its stream is degenerate, which
+// is fine for golden vectors but not for a uniformity measurement);
+// mulberry32 is the repo's proven uniform seeded stream.
+function seededUniformFill(seed: number): (buf: Uint8Array) => void {
+  const rand = mulberry32(seed)
+  return (buf: Uint8Array): void => {
+    for (let i = 0; i < buf.length; i++) buf[i] = (rand() * 256) | 0
+  }
 }
 
 test("range clamp: worked endpoint masses for ell=2, [1,2]", () => {
@@ -48,9 +56,7 @@ test("range clamp: masses partition the raw space", () => {
 })
 
 test("range clamp: over-wide max never accumulates", () => {
-  // The shipped conformance window declares max=4999 on a 12-bit field
-  // (domain max 4095), so no raw value exceeds max: only raw 4095 itself
-  // lands on the upper endpoint.
+  // Declared max=4999 lies outside the 12-bit domain, so only raw 4095 lands on the upper endpoint.
   const m = rangeClampMass(12, 100, 4999)
   assert.equal(m.pMin, 101 / 4096)
   assert.equal(m.pMax, 1 / 4096)
@@ -78,11 +84,17 @@ test("range clamp: production path matches the stated endpoint bound", { timeout
   const N = 200_000
   let atMin = 0
   let atMax = 0
-  for (let i = 0; i < N; i++) {
-    const v = Number(getFieldValue(uuidToBytes(genStructuredGenoID(layout)), field))
-    assert.ok(v >= 10 && v <= 245, `value ${v} outside the declared range [10, 245]`)
-    if (v === 10) atMin++
-    else if (v === 245) atMax++
+  configureRandom(seededUniformFill(0x9e3779b9))
+  try {
+    for (let i = 0; i < N; i++) {
+      const v = Number(getFieldValue(uuidToBytes(genStructuredGenoID(layout)), field))
+      assert.ok(v >= 10 && v <= 245, `value ${v} outside the declared range [10, 245]`)
+      if (v === 10) atMin++
+      else if (v === 245) atMax++
+    }
+  } finally {
+    configureRandom(null)
+    resetSeededState()
   }
   // ±0.5pp: a 200k-draw cell has binomial SD ≈0.05pp on the endpoints,
   // so this is ~10σ and still tight enough that a changed clamp fails.

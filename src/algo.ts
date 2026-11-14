@@ -131,6 +131,7 @@ export function resetSeededState(): void {
   _layoutTick.clear()
   _spPool.clear()
   _compiledGenCache.clear()
+  _layoutIdentities.clear()
   _hcTick = 0
   _hcCtr = -1
   _hcPoolIdx = HC_POOL_SIZE
@@ -1484,11 +1485,7 @@ function structuredValue(layout: V8Layout, f: V8Field, _rng: Rng, now?: number):
   }
 }
 
-// Layout caches (_validated, _layoutTick, _poolMonoTick, _spPool,
-// _interpretLast, _compiledGenCache) are keyed by a canonical hash of the
-// field structure, not the layout name: same-named layouts with differing
-// structure must never share counters, pools, or validation. Name reuse
-// with a differing structure fails closed via assertLayoutIdentity.
+// Layout caches are keyed by structure hash, not layout name.
 const _structureHashCache = new WeakMap<V8Layout, string>()
 const _layoutIdentities = new Map<string, string>()
 
@@ -1504,7 +1501,7 @@ function cyrb53(str: string): string {
   return ("0000000" + (h2 >>> 0).toString(16)).slice(-8) + ("0000000" + (h1 >>> 0).toString(16)).slice(-8)
 }
 
-/** Canonical hash of a layout's field structure (names, geometry, types, constraints, fixed values). */
+// Canonical hash of a layout's field structure.
 export function layoutStructureHash(layout: V8Layout): string {
   let h = _structureHashCache.get(layout)
   if (h === undefined) {
@@ -1544,20 +1541,20 @@ function assertLayoutIdentity(layout: V8Layout): string {
 // timestamp — and an advancing clock advances the stored tick.
 function currentTick(layout: V8Layout): number {
   const now = Date.now()
-  const id = assertLayoutIdentity(layout)
-  const last = _layoutTick.get(id)
+  const structureHash = assertLayoutIdentity(layout)
+  const last = _layoutTick.get(structureHash)
   if (last !== undefined && now < last) return last
-  _layoutTick.set(id, now)
+  _layoutTick.set(structureHash, now)
   return now
 }
 
 const _validated = new Set<string>()
 
 function ensureValidated(layout: V8Layout): void {
-  const id = assertLayoutIdentity(layout)
-  if (!_validated.has(id)) {
+  const structureHash = assertLayoutIdentity(layout)
+  if (!_validated.has(structureHash)) {
     validateLayout(layout)
-    _validated.add(id)
+    _validated.add(structureHash)
   }
 }
 
@@ -1636,14 +1633,7 @@ export function composeStructured(
 const _layoutTick = new Map<string, number>()
 const _poolMonoTick = new Map<string, number>()
 
-/**
- * Endpoint-accumulation bound for the range-clamp branch of
- * repairConstraints. A raw l-bit value is uniform on [0, 2^l), so
- * P(out = min) = (lo+1)/2^l and P(out = max) = (2^l-hi)/2^l where
- * [lo, hi] is the declared [min, max] clipped to the field domain;
- * every interior value keeps 1/2^l. `pinned` is the total
- * out-of-range mass resting on the two endpoints.
- */
+// Clipped [min,max] endpoint masses: P(min)=(lo+1)/2^ell, P(max)=(2^ell-hi)/2^ell.
 export function rangeClampMass(ell: number, min: number, max: number): {
   pMin: number
   pMax: number
@@ -1697,8 +1687,8 @@ const _spPool = new Map<string, { pool: Uint8Array<ArrayBuffer>; strs: string[];
 
 function refillSingleParentPool(layout: V8Layout): void {
   const w = wordTable(), t = HEX8, size = _structPoolN
-  const id = layoutStructureHash(layout)
-  let entry = _spPool.get(id)
+  const structureHash = layoutStructureHash(layout)
+  let entry = _spPool.get(structureHash)
   let pool: Uint8Array<ArrayBuffer>
   let strs: string[]
   if (entry && entry.pool.length >= STRUCT_ENTRY * size) {
@@ -1708,7 +1698,7 @@ function refillSingleParentPool(layout: V8Layout): void {
   } else {
     pool = new Uint8Array(STRUCT_ENTRY * size)
     strs = new Array<string>(size)
-    _spPool.set(id, { pool, strs, idx: 0, size })
+    _spPool.set(structureHash, { pool, strs, idx: 0, size })
   }
   fillRandom(pool)
   for (let n = 0; n < size; n++) {
@@ -1719,15 +1709,15 @@ function refillSingleParentPool(layout: V8Layout): void {
     // counter, so a counter reseed only ever accompanies a
     // strictly larger timestamp.
     let now = Date.now()
-    const lastTick = _layoutTick.get(id)
+    const lastTick = _layoutTick.get(structureHash)
     if (lastTick !== undefined && now < lastTick) {
       now = lastTick
     } else {
-      _layoutTick.set(id, now)
+      _layoutTick.set(structureHash, now)
     }
     for (const f of layout.fields) {
       if (!f.constraint?.monotonic) continue
-      const key = id + ":" + f.name
+      const key = structureHash + ":" + f.name
       const reseedRange = 2 ** (f.length - 1)
       const maxCtr = 2 ** f.length - 1
       let ctr = _poolMonoTick.get(key)
@@ -1739,7 +1729,7 @@ function refillSingleParentPool(layout: V8Layout): void {
         // clock advances past the last tick (RFC 9562 §6.2).
         if (lastTick !== undefined && now <= lastTick) {
           now = waitForNextTick(lastTick)
-          _layoutTick.set(id, now)
+          _layoutTick.set(structureHash, now)
         }
         ctr = Number(getFieldValue(buf, f)) % reseedRange
       } else {
@@ -1754,17 +1744,17 @@ function refillSingleParentPool(layout: V8Layout): void {
     const c = buf
     strs[n] = formatUuidBytes(c, w, t)
   }
-  entry = _spPool.get(id)!
+  entry = _spPool.get(structureHash)!
   entry.idx = 0
 }
 
 export function genStructuredGenoIDSingleParent(layout: V8Layout): string {
   ensureValidated(layout)
-  const id = layoutStructureHash(layout)
-  let p = _spPool.get(id)
+  const structureHash = layoutStructureHash(layout)
+  let p = _spPool.get(structureHash)
   if (!p || p.idx >= p.size) {
     refillSingleParentPool(layout)
-    p = _spPool.get(id)!
+    p = _spPool.get(structureHash)!
   }
   return p.strs[p.idx++]
 }
@@ -1785,12 +1775,12 @@ export function genStructuredGenoID(input: V8Layout | DatabaseLayoutCompilation)
   const layout = "layout" in input ? input.layout : input
   ensureValidated(layout)
   if (getStructuredGenerationMode() === "compiled-direct-v8") {
-    const id = layoutStructureHash(layout)
-    const fn = _compiledGenCache.get(id)
+    const structureHash = layoutStructureHash(layout)
+    const fn = _compiledGenCache.get(structureHash)
     if (fn) return fn()
     try {
       const compiled = compileLayout(layout, 256)
-      _compiledGenCache.set(id, compiled.fn)
+      _compiledGenCache.set(structureHash, compiled.fn)
       return compiled.fn()
     } catch {
       // Compiled path unavailable (CSP). Fall through to pooled path below.
@@ -2259,7 +2249,7 @@ export function interpretRawLayout(
   now: number,
   ctr: number,
 ): string {
-  const id = assertLayoutIdentity(layout)
+  const structureHash = assertLayoutIdentity(layout)
   const b = new Uint8Array(16)
   if (raw) {
     let i = 0
@@ -2304,7 +2294,7 @@ export function interpretRawLayout(
       if (c.min !== undefined && rv < c.min) rv = c.min
       if (c.max !== undefined && rv > c.max) rv = c.max
       if (c.monotonic) {
-        const key = id + ":" + f.name
+        const key = structureHash + ":" + f.name
         const lv = _interpretLast.get(key)
         if (lv !== undefined && rv < lv) rv = lv
         _interpretLast.set(key, rv)
