@@ -166,6 +166,11 @@ jobs:
     name: native PostgreSQL + MySQL
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    # Serialize with the consolidate job: both push whole-file JSON
+    # rewrites of results/, which conflict deterministically under rebase.
+    concurrency:
+      group: evidence-commit
+      cancel-in-progress: false
     permissions:
       contents: write
     services:
@@ -236,6 +241,11 @@ jobs:
   consolidate:
     name: consolidate CI results
     runs-on: ubuntu-latest
+    # Serialize with the native-db job: both push whole-file JSON
+    # rewrites of results/, which conflict deterministically under rebase.
+    concurrency:
+      group: evidence-commit
+      cancel-in-progress: false
     needs: [bun-matrix, node-matrix, deno-matrix]
     if: always()
     permissions:
