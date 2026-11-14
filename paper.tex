@@ -811,7 +811,7 @@ RFC~9562 surveyed sixteen prior implementations~\cite{4}. Representative members
 \texttt{pg\_uuid\_v8}~\cite{11}, a PostgreSQL C extension (PGXN, May~2026), is the closest prior art. It generates v4-compatible UUIDs with an embedded microsecond timestamp (XOR), recoverable by extraction function. GenoID differs: \texttt{pg\_uuid\_v8} offers one fixed stego layout with no multi-field abstraction or repair, while GenoID provides a declarative, multi-field DSL and constraint-guided repair as a portable library, published for the Node/Bun/Deno ecosystem.
 
 \subsection{Closest contemporary overlap}
-\texttt{microshard-uuid}~\cite{14} is the nearest deployable overlap: a public RFC~9562 v8 with a fixed 54-bit microsecond timestamp, 32-bit shard, and 36 random bits, advertising zero-lookup routing with extensions for SQLite~\cite{22}, PostgreSQL, MySQL~\cite{23}, DuckDB~\cite{25}, and ClickHouse~\cite{26}. It is a fixed layout, not a layout language: there is no per-field admissibility vocabulary, no repair policy, and no random-bit budget that varies by workload. GenoID concedes the fixed-layout case entirely; its claim starts where \texttt{microshard-uuid} stops, at declared multi-field layouts whose admissible sets, bounds, and counters are repaired deterministically with a stated total-variation bound.
+\texttt{microshard-uuid}~\cite{14} is the nearest deployable overlap: a public RFC~9562 v8 with a fixed 54-bit microsecond timestamp, 32-bit shard, and 36 random bits, advertising zero-lookup routing with extensions for SQLite, PostgreSQL, MySQL, DuckDB, and ClickHouse~\cite{14}. It is a fixed layout, not a layout language: there is no per-field admissibility vocabulary, no repair policy, and no random-bit budget that varies by workload. GenoID concedes the fixed-layout case entirely; its claim starts where \texttt{microshard-uuid} stops, at declared multi-field layouts whose admissible sets, bounds, and counters are repaired deterministically with a stated total-variation bound.
 
 \subsection{Constrained generation and repair lineage}
 The generic lineage is older and stronger than the UUID literature. Property-based testing compiles executable properties into generators~\cite{15}; Claessen, Dureg{\aa}rd, and Pa{\l}ka derive random data satisfying a Boolean predicate while targeting uniformity~\cite{16}; LaFontaine et al.\ repair incomplete generators from type and coverage information~\cite{17}; Goldstein et al.\ synthesise generators with guarantees~\cite{18}. The formal distinction is scope: those systems solve arbitrary predicates or synthesise generators from proof obligations. GenoID does neither. It projects one fixed-width random field into one declared admissible set, with no predicate solving and no distribution-preservation claim beyond the fibre bound of Section~\ref{sec:uniformity}. ``Constraint-guided repair'' names that projection, not a general constrained-generation result.
@@ -917,17 +917,8 @@ Microsoft, ``NEWSEQUENTIALID.'' \url{https://learn.microsoft.com/en-us/sql-serve
 \bibitem{22}
 SQLite Consortium, ``SQLite.'' \url{https://sqlite.org/}
 
-\bibitem{23}
-Oracle, ``MySQL Reference Manual (8.x).'' \url{https://dev.mysql.com/doc/}
-
 \bibitem{24}
 Electric, ``PGlite: embeddable Postgres.'' \url{https://pglite.dev/}
-
-\bibitem{25}
-DuckDB Foundation, ``DuckDB.'' \url{https://duckdb.org/}
-
-\bibitem{26}
-ClickHouse, ``ClickHouse.'' \url{https://clickhouse.com/}
 
 \bibitem{27}
 W. E. Smith, ``Various optimizers for single-stage production,'' Naval Research Logistics Quarterly, vol.\ 3, nos.\ 1--2, pp.\ 59--66, 1956.
