@@ -62,7 +62,7 @@
       "section": "Cross-language reproducibility (Section 5.8)",
       "claim": "Rust reimplementation byte-identical: 3000 UUIDs, zero mismatches",
       "artifact": "golden/*.txt + golden-check/",
-      "command": "bun run src/scripts/export-golden.ts && cd src/golden-check && cargo run",
+      "command": "bun run export-golden && cd src/golden-check && cargo run",
       "verified": true
     },
     "sec_db_localities": {
