@@ -2,7 +2,7 @@ import { mkdirSync, writeFileSync } from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { Database } from "bun:sqlite"
-import { benchCompositeKeyRepeated } from "./bench-sqlite.ts"
+import { benchCompositeKeyRepeated, expressionIndexShardPredicate } from "./bench-sqlite.ts"
 import type { CompositeKeyArm, CompositeKeySummary } from "./bench-sqlite.ts"
 import { gitSha, runtimeVersion } from "./shared/cli-utils.ts"
 
@@ -17,7 +17,7 @@ const TRIALS = Math.max(5, Number(process.env.SQLITE_TRIALS ?? 10))
 const LOOKUPS = Number(process.env.SQLITE_LOOKUPS ?? 100)
 const OUT = process.env.SQLITE_OUT ?? "results/db-sqlite-composite.json"
 
-const ARMS: CompositeKeyArm[] = ["composite", "composite-indexed", "embedded", "embedded56", "concatenated"]
+const ARMS: CompositeKeyArm[] = ["composite", "composite-indexed", "embedded", "embedded56", "concatenated", "expression-index"]
 
 // Query-plan evidence for the boundary-crossing lookup: an unindexed
 // composite key cannot seek by identifier alone, which is why the
@@ -29,9 +29,17 @@ function queryPlans(): Record<string, unknown> {
   db.run("CREATE INDEX idx_id ON ids(id)")
   const indexed = db.query("EXPLAIN QUERY PLAN SELECT val FROM ids WHERE id = ?").all({})
   db.close()
+  const expr = new Database(":memory:")
+  expr.run("CREATE TABLE ids (id BLOB(16) PRIMARY KEY, val INTEGER) WITHOUT ROWID")
+  expr.run("CREATE INDEX idx_shard_expr ON ids((substr(hex(id),14,2)))")
+  const exprScan = expr.query(
+    `EXPLAIN QUERY PLAN SELECT val FROM ids WHERE ${expressionIndexShardPredicate(3)}`,
+  ).all({})
+  expr.close()
   return {
     composite_bare_id_lookup: bare,
     composite_indexed_bare_id_lookup: indexed,
+    expression_index_shard_scan: exprScan,
   }
 }
 
@@ -50,11 +58,12 @@ const embedded56 = summaries.embedded56
 const composite = summaries.composite
 const compositeIndexed = summaries["composite-indexed"]
 const concatenated = summaries.concatenated
+const expressionIndex = summaries["expression-index"]
 
 const report = {
   experiment: "db-sqlite-composite",
   description:
-    "Five-arm SQLite composite-key comparison under WITHOUT ROWID clustered storage; the only variable is where the shard field resides",
+    "Six-arm SQLite composite-key comparison under WITHOUT ROWID clustered storage; the only variable is where the shard field resides",
   engine: "sqlite",
   rows: N,
   trials: TRIALS,
@@ -92,6 +101,10 @@ const report = {
     embedded_off56_lookup_ratio: embedded56.lookupUs.mean / embedded.lookupUs.mean,
     composite_insert_ratio_vs_embedded: composite.insert.mean / embedded.insert.mean,
     composite_shard_scan_ratio_vs_embedded: composite.rangeScanMs.mean / embedded.rangeScanMs.mean,
+    expression_index_storage_ratio: expressionIndex.bytesPerRow / embedded.bytesPerRow,
+    expression_index_insert_ratio: expressionIndex.insert.mean / embedded.insert.mean,
+    expression_index_lookup_ratio: expressionIndex.lookupUs.mean / embedded.lookupUs.mean,
+    expression_index_shard_scan_ratio_vs_embedded: expressionIndex.rangeScanMs.mean / embedded.rangeScanMs.mean,
   },
   environment: {
     os: `${os.platform()} ${os.release()} ${os.arch()}`,

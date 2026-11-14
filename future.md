@@ -32,12 +32,16 @@ Closed: `inferWorkload` + `bench-workload.ts` + 4.7x SQLite win + PG parity +
 convergence proof. Remaining polish: region-range measurement on the flipped
 mix is parity-by-construction; no further work unless reviewers ask for more mixes.
 
-### 2. Native DB experiments — DONE (podman locally + CI service containers)
-Ran the committed harness against PostgreSQL~18 + MySQL~8/InnoDB in podman
-(plus embedded PG via PGlite in the workload loop): PG structured +31% /
-shardfirst +20% vs v7 inserts, MySQL shardfirst +24%, lookups at parity.
-Reversal withdrawn — old tracked run agrees (shardfirst +22%).
-CI `native-db` job re-runs this on every main push via service containers.
+### 2. Native DB experiments — DONE (local PG at scale + CI service containers)
+Ran the committed harness against PostgreSQL~18.6 at $N=10^5$ rows per build
+(5 reps $\times$ 3 distributions, \texttt{bytea} PK, archived in
+\texttt{results/db-native.json}): structured $+34\%$ / shardfirst $+34\%$ vs
+v7 inserts, lookups and range scans at parity. The earlier podman numbers
+($+31\%$/$+20\%$/MySQL $+24\%$ at $N=5{,}000$, unarchived) agreed in
+direction; the untracked reversal (shard-first $-41\%$) does not reproduce at
+either scale. MySQL/InnoDB: no server on this host, so no number is claimed;
+the harness measures both engines and CI re-runs the scaled invocation on
+every main push via service containers.
 
 ### 3. Microshard head-to-head — DONE (bit-exact mirror + SQLite bench)
 Harnessed microshard-uuid v1.0.0 via a bit-exact TS mirror (cross-checked

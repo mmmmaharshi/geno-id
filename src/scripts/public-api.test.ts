@@ -293,7 +293,7 @@ test("compileDatabaseLayout returns a named, deterministic contract", () => {
 test("compiled database layouts remain consumable through the structured API", () => {
   const result = compileDatabaseLayout({
     schema: {
-      name: "dbkey",
+      name: "shardonly",
       fields: [{ name: "shard", start: 0, length: 8, type: "shard", constraint: { allowed: [1, 2, 3, 4, 5] } }],
     },
     workload: {
