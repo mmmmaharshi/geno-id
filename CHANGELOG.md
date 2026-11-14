@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Highlights
 
 - 📝 **Run-robust native prose.** Throughput multiples, native-engine insert rates, and the compiled-vs-interpreted envelope are stated as parity bands with per-refresh values deferred to the frozen artifacts (`results/all-results.json`, `results/db-native.json`) instead of single-refresh numbers that later CI refreshes contradict.
-- 🗄️ **Manifest re-freeze.** `release_identity.package_version` bumped to 1.28.1, and the factually wrong `unsupported_claims` line ("InnoDB/MySQL results (no artifact exists...)") deleted — `results/db-native.json` exists and the manuscript claims both engines.
+- 🗄️ **Manifest re-freeze.** `release_identity.package_version` bumped to 1.28.1, and the factually wrong `unsupported_claims` line ("InnoDB/MySQL results (no artifact exists...)") deleted: `results/db-native.json` exists and the manuscript claims both engines.
 
 ### Known Issues
 
