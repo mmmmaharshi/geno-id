@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.28.1] - 2026-11-14
+
+### Summary
+
+**Patch release: native-engine and throughput prose re-frozen as run-robust (no absolutes), and the artifact manifest re-frozen to this tag.**
+
+### Highlights
+
+- 📝 **Run-robust native prose.** Throughput multiples, native-engine insert rates, and the compiled-vs-interpreted envelope are stated as parity bands with per-refresh values deferred to the frozen artifacts (`results/all-results.json`, `results/db-native.json`) instead of single-refresh numbers that later CI refreshes contradict.
+- 🗄️ **Manifest re-freeze.** `release_identity.package_version` bumped to 1.28.1, and the factually wrong `unsupported_claims` line ("InnoDB/MySQL results (no artifact exists...)") deleted: `results/db-native.json` exists and the manuscript claims both engines.
+
+### Known Issues
+
+- **Absolute rates remain host-bound; only same-rig ratios travel.** Per-refresh values vary run to run; the paper claims parity bands, not single rates.
+
+### Dependencies Updated
+
+- None.
+
 ## [1.28.0] - 2026-11-14
 
 ### Summary

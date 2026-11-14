@@ -52,7 +52,7 @@ Bharath Institute of Engineering and Technology, Ranga Reddy, Telangana, India \
 \maketitle              % typeset the title of the contribution
 
 \begin{abstract}
-Standard UUID generators cannot embed application-defined structure (a shard, a tenant, or a monotonic counter) inside a standards-compliant identifier without paying rejection sampling's exponential cost. RFC 9562 makes this gap explicit. Version 8 reserves 122 bits for exactly this purpose but defines no algorithm to fill them. We close this gap with GenoID, a declarative composition framework that produces valid v8 UUIDs from fields constrained over allowed-set, range, and monotonic vocabularies at $O(k)$ repair cost, against an expected $64^k$ draws per identifier under joint whole-UUID rejection, whose geometric tail has no upper bound on any single run (the 8-bit, 4-value special case), with a proven total-variation bound $m/2^\ell$ on every allowed-set repaired field, measured throughput $2.8$--$12.9\times$ over the closest prior art (\texttt{pg\_uuid\_v8}, and $2.2$--$14.5\times$ over \texttt{ulid-v8}) across nine CI environments, and byte-identity across an independent Rust reimplementation. It remains slower than \texttt{crypto.randomUUID()} and Snowflake (different guarantee classes); the ratio claim is against the closest structured prior art only. The design is backed by formal complexity and entropy accounting, a NIST SP~800-22 battery reported as a sanity check on the pooling path rather than security evidence, and an explicit adversarial security analysis that separates GenoID's architectural contribution from the CSPRNG-inherited randomness quality beneath it. By making shard, tenant, and sequence identity a declarative property of the key itself, GenoID targets the data-systems layer directly.
+Standard UUID generators cannot embed application-defined structure (a shard, a tenant, or a monotonic counter) inside a standards-compliant identifier without paying rejection sampling's exponential cost. RFC 9562 makes this gap explicit. Version 8 reserves 122 bits for exactly this purpose but defines no algorithm to fill them. We close this gap with GenoID, a declarative composition framework that produces valid v8 UUIDs from fields constrained over allowed-set, range, and monotonic vocabularies at $O(k)$ repair cost, against an expected $64^k$ draws per identifier under joint whole-UUID rejection, whose geometric tail has no upper bound on any single run (the 8-bit, 4-value special case), with a proven total-variation bound $m/2^\ell$ on every allowed-set repaired field, measured throughput consistently ahead of the closest prior art (\texttt{pg\_uuid\_v8} and \texttt{ulid-v8}) in every environment of a nine-job CI matrix, typically by mid-single-digit multiples but host-dependent, with exact per-environment ratios tabulated from the frozen artifact (Table~\ref{tab:paired}), and byte-identity across an independent Rust reimplementation. It remains slower than \texttt{crypto.randomUUID()} and Snowflake (different guarantee classes); the ratio claim is against the closest structured prior art only. The design is backed by formal complexity and entropy accounting, a NIST SP~800-22 battery reported as a sanity check on the pooling path rather than security evidence, and an explicit adversarial security analysis that separates GenoID's architectural contribution from the CSPRNG-inherited randomness quality beneath it. By making shard, tenant, and sequence identity a declarative property of the key itself, GenoID targets the data-systems layer directly.
 \keywords{distributed data systems, sharding, UUID, RFC 9562, constraints, evaluation}
 \end{abstract}
 
@@ -253,7 +253,8 @@ masking for concealment or plaintext for routing, not both.
 
 A resharding migration has a fixed shape. Version layout names as
 \texttt{owner dbkey.v2}, never reuse a bare name across generations, and run the
-dual-read window with readers accepting both generations while writers emit the
+dual-read window with readers accepting both generations (the versioned-layout
+\texttt{readStructured} reader over \texttt{dbkey.v1} plus \texttt{dbkey.v2}) while writers emit the
 new one; track the fraction of old-generation keys as the migration metric and
 retire the old reader when it reaches zero. Size monotonic counters from peak
 burst: a counter field admits $2^{\ell_c}$ increments per millisecond tick, and
@@ -335,15 +336,17 @@ The same arms run against native engines. At $N=10^5$ rows per build over three
 distributions (uniform, hot-tenant, bursty) on PostgreSQL~18.7 and MySQL~8.0.46
 (local host, \texttt{bytea}/binary primary key,
 64-byte payloads), the structured arm inserts at parity with UUIDv7 on PostgreSQL
-($164.6$K versus $160.7$K rows/s, p50 over 5 reps) while the shard-first arm trails
-($139.4$K rows/s); on MySQL both structured arms lead ($76.8$K and $74.6$K versus
-$58.3$K rows/s, $+32\%$/$+28\%$ over v7). Point lookups and range scans show no
+(within a few percent), and at parity with UUIDv7 on MySQL (parity-to-ahead
+depending on host; absolute rates vary run to run by more than twofold across CI
+refreshes at identical scale, so only the parity band, not any single rate, is
+claimed; per-refresh values in \texttt{results/db-native.json}). The shard-first
+arm sits in the same broad parity band on both engines. Point lookups and range scans show no
 arm separation on either engine (100-probe lookup sets within $\approx 10\%$ on
 PostgreSQL and $\approx 6\%$ on MySQL; range scans within $\approx 7\%$).
 The tracked artifact
 (\texttt{results/db-native.json}, with per-rep percentiles, query plans, and
-server versions) records the $N=10^5$ result — with the same single-host caveat that
-applies to every absolute rate in this section. The committed harness measures both engines, and
+server versions) records the $N=10^5$ result, with the same single-host caveat that
+applies to every rate in this section. The committed harness measures both engines, and
 the CI \texttt{native-db} job re-runs the same scaled invocation against
 PostgreSQL~18 and MySQL~8 service containers on every main push.
 
@@ -358,7 +361,8 @@ Cell entries are means with 95\% CI in brackets; raw per-trial arrays, query pla
 archived in \texttt{results/db-sqlite-composite.json}.
 Conceptual generalization to clustered storage engines is discussed in
 Section~3.2 below; the PostgreSQL~18 result at $N=10^5$ is archived in \texttt{results/db-native.json} and shows the
-structured arms ahead of UUIDv7 on inserts with parity elsewhere.}
+structured arms at parity with UUIDv7 on inserts with parity elsewhere
+(representative host snapshot; see Section~3.2 for the host-dependence caveat).}
 \label{tab:composite}
 \centering\footnotesize
 \begin{tabular*}{\columnwidth}{@{\extracolsep{\fill}}lcccc}
@@ -375,7 +379,7 @@ PK $+$ expression index  & 54.9 & 141 [136--145] & 12.2 [11.67--12.79] & 30.62 [
 \end{table}
 
 \subsection{Extension to clustered storage engines}
-The preceding measurements use SQLite because it requires no external daemon, but the underlying B+\!tree locality argument is confirmed on production clustered-storage engines: PostgreSQL~18.7 shows the structured arm at parity with UUIDv7 on inserts ($+2\%$) with parity elsewhere, and MySQL~8.0 shows both structured arms ahead ($+32\%$/$+28\%$), each at $N=10^5$ rows per build with \texttt{bytea}/binary primary keys. The single-host caveat applies: neither the page layout, the WAL policy, nor the cost of a secondary index translates unchanged to other deployments. The benchmark harness for both native engines is committed alongside this paper (\texttt{src/scripts/bench-db-native.ts}, with seven identifier arms, three key distributions, percentiles over $\geq 5$ reps, query plans, storage, and WAL accounting, and a validator that refuses an incomplete result), and the CI \texttt{native-db} job re-runs it at the same scale against PostgreSQL~18 and MySQL~8 service containers, so the experiment can be re-run and audited without reimplementation.
+The preceding measurements use SQLite because it requires no external daemon, but the underlying B+\!tree locality argument is confirmed on production clustered-storage engines: PostgreSQL~18.7 shows the structured arm at parity with UUIDv7 on inserts with parity elsewhere, and MySQL~8.0 shows both structured arms at parity-to-ahead depending on host, each at $N=10^5$ rows per build with \texttt{bytea}/binary primary keys. The single-host caveat applies: neither the page layout, the WAL policy, nor the cost of a secondary index translates unchanged to other deployments. The benchmark harness for both native engines is committed alongside this paper (\texttt{src/scripts/bench-db-native.ts}, with seven identifier arms, three key distributions, percentiles over $\geq 5$ reps, query plans, storage, and WAL accounting, and a validator that refuses an incomplete result), and the CI \texttt{native-db} job re-runs it at the same scale against PostgreSQL~18 and MySQL~8 service containers, so the experiment can be re-run and audited without reimplementation.
 
 
 \subsection{Sharded databases}
@@ -492,11 +496,7 @@ truncated.
 weight times end-offset, summed over fields, is the comparison work a
 range of queries performs. Treating each field as a job of length $\ell_i$
 completing at $o_i+\ell_i$, this is exactly the single-machine
-weighted-completion-time objective. By Smith's exchange argument~\cite{27}, $D$ is
-minimised by ordering fields in non-increasing $w_i/\ell_i$: swapping an
-adjacent inverted pair changes $D$ by
-$\ell_a \ell_b (w_a/\ell_a - w_b/\ell_b) \le 0$. \texttt{planBitAllocation}
-implements that order. The role-rank order is neither Smith order nor a special
+weighted-completion-time objective. By Smith's exchange argument~\cite{27}, \texttt{planBitAllocation} orders fields in non-increasing $w_i/\ell_i$, exact on one segment and near-optimal across reserved bits (proof in the appendix). The role-rank order is neither Smith order nor a special
 case of it, and the difference is measurable.
 
 \begin{table}[!ht]
@@ -685,9 +685,10 @@ Per-field uniformity is measured directly rather than inferred from whole-UUID b
 
 \subsection{NIST SP 800-22 and dieharder}
 \label{sec:nist}
-The full 15-test NIST SP~800-22 battery was run on all three structured layouts (Block Frequency implemented per SP~800-22 \S2.2 and cross-checked against reference vectors (custom implementation noted as a single point of failure); the \texttt{nist80022} package provides the remaining tests, fanned across layouts by \texttt{src/scripts/nist-full-battery.py}). On fresh $10^7$-bit exports of the random-field payload per layout (200k/98k/122k UUIDs), all 123 reported p-values (41 per layout, including the 8 Random Excursions states and 18 Random Excursions Variant states) satisfy $p \geq 0.01$ (unconditional pass probability $\approx 0.29$ under the null); machine-readable results are archived in \texttt{results/nist-sp800-22-results.json}. Because the battery reports 123 p-values at $\alpha=0.01$, marginal values below threshold are expected by chance ($\approx 1.2$ per full run): across five independent draws (615 p-values) we observe 7 failures for an empirical $1.1\%$ rate, with draws at 123/123, 120/123, 123/123, 120/123, and 122/123. Every failed draw is archived with its bit-stream provenance in \texttt{results/nist-draws/} (draws 2--5; the clean head draw's bit stream is archived with \texttt{results/nist-sp800-22-results.json}); full per-draw tables are in the appendix. no test fails in a majority of draws, and the single repeat (Spectral on multitenant, twice in five draws) is expected under the null: the per-test repeat probability is $\approx 0.001$, giving $\approx 11\%$ for at least one repeat across 123 test slots. A targeted follow-up ran the Spectral test alone over 30 fresh $10^6$-bit exports per arm (multitenant suspect, dbkey layout control, unstructured pooled control): fail rates 1/30, 0/30, 1/30, consistent with Type-I noise rather than a layout-induced spectral peak at this lower-power stream length (a matched $10^7$-bit repeat remains future work). Each layout contributes five streams, where NIST guidance prefers $\geq 100$; the battery therefore reads as evidence of no structural bias on the pooling path, not a certification. (SP~800-22 has been withdrawn by NIST and its planned revision explicitly rejects the suite's use for assessing cryptographic generators~\cite{2}; we report the result as a sanity check on the pooling path, not as evidence of security.) A curated dieharder subset (diehard $+$ STS, \texttt{-d 0 2 7 8 10 15 100 102}, 12.5\,MB per generator per trial, 5 trials, no file rewind; methodology in \texttt{sources/reproducibility.md}~\S3) reports a modal PASS on all 152 test rows across four arms (v4, rawv8, pooled genoid, struct-dbkey; \texttt{results/dieharder-results.md}). This is a CI-budget curation over payload generators, not a full-battery run, and it covers the unstructured and \texttt{dbkey} payload paths only.
+The full 15-test NIST SP~800-22 battery was run on all three structured layouts (Block Frequency implemented per SP~800-22 \S2.2 and cross-checked against reference vectors (custom implementation noted as a single point of failure); the \texttt{nist80022} package provides the remaining tests, fanned across layouts by \texttt{src/scripts/nist-full-battery.py}). On fresh $10^7$-bit exports of the random-field payload per layout (200k/98k/122k UUIDs), all 123 reported p-values (41 per layout, including the 8 Random Excursions states and 18 Random Excursions Variant states) satisfy $p \geq 0.01$ (unconditional pass probability $\approx 0.29$ under the null); machine-readable results are archived in \texttt{results/nist-sp800-22-results.json}. Because the battery reports 123 p-values at $\alpha=0.01$, marginal values below threshold are expected by chance ($\approx 1.2$ per full run): across five independent draws (615 p-values) we observe 7 failures for an empirical $1.1\%$ rate, with draws at 123/123, 120/123, 123/123, 120/123, and 122/123. Every failed draw is archived with its bit-stream provenance in \texttt{results/nist-draws/} (draws 2--5; the clean head draw's bit stream is archived with \texttt{results/nist-sp800-22-results.json}); full per-draw tables and the Spectral follow-up are in the appendix. Each layout contributes five streams, where NIST guidance prefers $\geq 100$; the battery therefore reads as evidence of no structural bias on the pooling path, not a certification. (SP~800-22 has been withdrawn by NIST and its planned revision explicitly rejects the suite's use for assessing cryptographic generators~\cite{2}; we report the result as a sanity check on the pooling path, not as evidence of security.) A curated dieharder subset (diehard $+$ STS, \texttt{-d 0 2 7 8 10 15 100 102}, 12.5\,MB per generator per trial, 5 trials, no file rewind; methodology in \texttt{sources/reproducibility.md}~\S3) reports a modal PASS on all 152 test rows across four arms (v4, rawv8, pooled genoid, struct-dbkey; \texttt{results/dieharder-results.md}). This is a CI-budget curation over payload generators, not a full-battery run, and it covers the unstructured and \texttt{dbkey} payload paths only.
 
 \subsection{Throughput and baseline comparison}
+\label{sec:throughput}
 
 The benchmark loop consumes every generated identifier, so that no generator's work can be elided as dead code; this correction reduced the measured rate of the pure-JavaScript generators by roughly $2\times$ relative to an unconsumed loop, while leaving native \texttt{crypto.randomUUID()} unchanged, serving as a useful check that the sink is doing what it claims.
 
@@ -725,9 +726,11 @@ an entropy-based UUID; it is excluded from the collision gate because its
 \begin{table}[!ht]
 \caption{\texttt{genoid-structured} against the two closest structured
 baselines, and the layout compiler against the interpreted path. Ratios
-are same-rig, same-run, so host and runtime noise cancel. All
+are same-rig, same-run, so host and runtime noise cancel. Cells are a
+representative host snapshot from the frozen artifact, not live truth;
+per-refresh values live in \texttt{results/all-results.json}. All
 comparisons against \texttt{pg\_uuid\_v8} and \texttt{ulid-v8} are
-significant at $p<10^{-6}$ (Welch) with Cohen's $d>3.9$ on every comparison (18 comparisons; Bonferroni threshold $0.05/18\approx0.003$, so all survive); ``n.s.'' marks $p>0.05$.}
+significant at $p<10^{-6}$ (Welch) with Cohen's $d>3.9$ on every comparison in the frozen matrix (18 comparisons; Bonferroni threshold $0.05/18\approx0.003$, so all survive); ``n.s.'' marks $p>0.05$.}
 \label{tab:paired}
 \centering\footnotesize
 \begin{tabular*}{\columnwidth}{@{\extracolsep{\fill}}lccc}
@@ -748,13 +751,13 @@ Deno / Windows    & 8.04$\times$ & 7.47$\times$ & 0.92 \\
 \end{tabular*}
 \end{table}
 
-\texttt{genoid-structured} outperforms the closest prior art in all nine environments: $2.8$--$12.9\times$ over \texttt{pg\_uuid\_v8} and $2.2$--$14.5\times$ over \texttt{ulid-v8}, every comparison significant at $p<10^{-6}$ (Table~\ref{tab:paired}; per-comparison $t$, $df$, $p$, and Cohen's $d$ are recorded in the consolidated artifact, \texttt{results/all-results.json}). It is at parity with or ahead of a hand-coded \texttt{v7} implementation in all nine environments (ahead in eight, at parity on the ninth), while also satisfying three declared field constraints that \texttt{v7} does not express.
+\texttt{genoid-structured} outperforms the closest prior art in every environment of the nine-job matrix, typically by mid-single-digit multiples but host-dependent, with exact per-environment ratios tabulated from the frozen artifact (Table~\ref{tab:paired}, where every comparison is significant at $p<10^{-6}$; per-comparison $t$, $df$, $p$, and Cohen's $d$ are recorded in the consolidated artifact, \texttt{results/all-results.json}). It runs at parity with or ahead of a hand-coded \texttt{v7} implementation on most environments in the frozen matrix (near parity on Bun hosts, ahead elsewhere), with modest deficits on some Bun hosts in later refreshes; the envelope is host-dependent. It also satisfies three declared field constraints that \texttt{v7} does not express.
 
-Two results run against us. \texttt{snowflake} is faster in all nine environments, by up to $\approx 2\times$; it is a 64-bit time-and-sequence integer rather than a 122-bit UUID, and it collides once its sequence wraps, so the comparison is across guarantee classes rather than within one. Second, the compiled layout path regresses on Node~22 to $0.14$--$0.22\times$ of the interpreted path (Table~\ref{tab:paired}), reversing the earlier finding that compilation was a small win; Section~\ref{sec:validity} treats this as a portability limitation rather than tuning it away. The interpreted structured path itself shows no Node-specific penalty in the refreshed data ($0.70$--$1.58\times$ of unstructured base on Node~22 against $0.72$--$0.91\times$ on Bun and Deno).
+Two results run against us. \texttt{snowflake} is faster in all nine environments, by up to $\approx 2\times$; it is a 64-bit time-and-sequence integer rather than a 122-bit UUID, and it collides once its sequence wraps, so the comparison is across guarantee classes rather than within one. On the same rig, \texttt{genoid-structured} runs at a fraction of \texttt{v4-native} (\texttt{v4-native} is fastest on most environments in the frozen matrix, with \texttt{snowflake} or pooled \texttt{genoid-v8} leading on some Node~22 environments; per-refresh values in \texttt{results/all-results.json}), so any multiples claimed here are strictly against the closest structured prior art. Second, the compiled layout path regresses on Node~22 to about $0.14$--$0.26\times$ of the interpreted path in the frozen and refreshed matrices (Table~\ref{tab:paired}), reversing the earlier finding that compilation was a small win; Section~\ref{sec:validity} treats this as a portability limitation rather than tuning it away. The interpreted structured path itself shows no Node-specific penalty in the refreshed data (within about $0.6$--$1.6\times$ of unstructured base depending on host and runtime; per-refresh values in \texttt{results/all-results.json}).
 
 \subsection{Ablation}
 \label{sec:ablation}
-A prototype layout compiler emitting inlined per-layout code yields a geometric-mean $0.56\times$ across the nine environments: near parity on Bun ($1.01$--$1.10\times$, n.s.\ on two of three), small but significant regressions on Deno ($0.92$--$0.95\times$), and a large regression on Node~22 ($0.14$--$0.22\times$; Table~\ref{tab:paired}). The compiler therefore buys nothing on the refreshed matrix, and the interpreted repair pass remains the cheaper path on every runtime; further work should target the pooling and string-formatting paths, and the Node code-generation regression, instead. The two-parent design itself is load-bearing: a single-parent ablation reaches only $0.158\times$ of production throughput with identical collision (0) and uniformity ($\leq 0.006$) behaviour (\texttt{results/structured-evidence.json}, E7), so the second parent buys a $6.3\times$ speedup, not quality.
+A prototype layout compiler emitting inlined per-layout code shows a runtime-dependent effect in the frozen and refreshed matrices: at or above parity on Bun, deficits on Deno, and a large regression on Node~22 (about $0.14$--$0.26\times$ of the interpreted path across both; Table~\ref{tab:paired} for the frozen per-environment ratios, \texttt{results/all-results.json} for per-refresh values). The compiler therefore buys nothing on the refreshed matrix, and the interpreted repair pass remains the cheaper path on every runtime; further work should target the pooling and string-formatting paths, and the Node code-generation regression, instead. The two-parent design itself is load-bearing: a single-parent ablation reaches only $0.158\times$ of production throughput with identical collision (0) and uniformity ($\leq 0.006$) behaviour (\texttt{results/structured-evidence.json}, E7), so the second parent buys a $6.3\times$ speedup, not quality.
 
 \subsection{Additional deployability checks}
 \label{sec:deployability}
@@ -784,19 +787,19 @@ The implementation, benchmark harness, experimental artifacts, golden vectors, a
 \noalign{\smallskip}\hline\noalign{\smallskip}
 E1 composition correctness (\S\ref{sec:composition-correctness}) & \texttt{bun run src/scripts/e1-production.ts} & \texttt{results/e1-production-1500k.json} \\
 Repair vs rejection sweep (\S\ref{sec:repair-vs-rejection}) & \texttt{bun run bench-rejection} & \texttt{results/rejection-sweep.json}, \texttt{.csv} \\
-Repair-distribution grid (\S\ref{sec:uniformity}) & \texttt{bun run src/scripts/bench-repair-grid.ts} & \texttt{results/repair-grid.json} \\
-$10^8$ field histogram (\S\ref{sec:evaluation}) & \texttt{bun run histogram-100m} \emph{then} \texttt{bun run histogram:maxz} & \texttt{results/shard-histogram-100m.json}, \texttt{results/shard-histogram-100m.maxz.json} \\
+Repair-distribution grid (\S\ref{sec:uniformity}) & \texttt{bun run bench-repair-grid} & \texttt{results/repair-grid.json} \\
+$10^8$ field histogram (\S\ref{sec:evaluation}) & \texttt{bun run histogram-100m \&\& bun run histogram:maxz} & \texttt{results/shard-histogram-100m.json}, \texttt{results/shard-histogram-100m.maxz.json} \\
 Bit allocation, optimality and frontier (\S\ref{sec:bit-allocation}) & \texttt{bun run bench-bit-allocation} & \texttt{results/bit-allocation.json} \\
-NIST SP 800-22 battery (\S\ref{sec:nist}) & \texttt{bun run src/scripts/export-structured.ts} \emph{then} \texttt{python src/scripts/nist-full-battery.py} & \texttt{results/nist-sp800-22-results.json}, \texttt{results/nist-draws/} (5 draws) \\
+NIST SP 800-22 battery (\S\ref{sec:nist}) & \texttt{bun run src/scripts/export-structured.ts \&\& python src/scripts/nist-full-battery.py} & \texttt{results/nist-sp800-22-results.json}, \texttt{results/nist-draws/} (draws 2--5; head draw with \texttt{nist-sp800-22-results.json}) \\
 dieharder subset (\S\ref{sec:nist}) & \texttt{bun run dieharder} & \texttt{results/dieharder-results.md} \\
 Nine-environment throughput (\S\ref{sec:throughput}) & \texttt{bun run bench-ci} (CI matrix, committed by the consolidate job) & \texttt{results/all-results.json} \\
 Browser benchmark (\S\ref{sec:deployability}) & \texttt{bun run playwright} & \texttt{results/benchmark\_results.json} \\
 SQLite B-tree locality (\S\ref{sec:deployability}) & \texttt{bun run bench-db} & \texttt{results/db-sqlite.json} \\
 SQLite composite key (\S\ref{sec:composite-bench}) & \texttt{bun run bench-sqlite-artifact} & \texttt{results/db-sqlite-composite.json} \\
-Native PostgreSQL + MySQL (\S\ref{sec:validity}) & \texttt{bun run src/scripts/bench-db-native.ts --rows=100000 --reps=5 --probes=100} (CI service containers) & \texttt{results/db-native.json} \\
-Workload-driven planning (\S\ref{sec:workload-planning}) & \texttt{bun run src/scripts/bench-workload.ts} & \texttt{results/workload-planning.json}, \texttt{results/workload-planning-regionhot.json} \\
-Microshard head-to-head (\S\ref{sec:microshard}) & \texttt{bun run src/scripts/bench-microshard.ts} & \texttt{results/microshard.json} \\
-Rust cross-language check (\S\ref{sec:cross-lang}) & \texttt{bun run src/scripts/export-golden.ts} \emph{then} \texttt{cd src/golden-check \&\& cargo run} & \texttt{golden/*.txt} \\
+Native PostgreSQL + MySQL (\S\ref{sec:validity}) & \texttt{bun run bench-db-native --rows=100000 --reps=5 --probes=100} (CI service containers) & \texttt{results/db-native.json} \\
+Workload-driven planning (\S\ref{sec:workload-planning}) & \texttt{bun run bench-workload} & \texttt{results/workload-planning.json}, \texttt{results/workload-planning-regionhot.json} \\
+Microshard head-to-head (\S\ref{sec:microshard}) & \texttt{bun run bench-microshard} & \texttt{results/microshard.json} \\
+Rust cross-language check (\S\ref{sec:cross-lang}) & \texttt{bun run export-golden \&\& cd src/golden-check \&\& cargo run} & \texttt{golden/*.txt} \\
 \noalign{\smallskip}\hline
 \end{tabular*}
 \end{table}
@@ -811,7 +814,7 @@ RFC~9562 surveyed sixteen prior implementations~\cite{4}. Representative members
 \texttt{pg\_uuid\_v8}~\cite{11}, a PostgreSQL C extension (PGXN, May~2026), is the closest prior art. It generates v4-compatible UUIDs with an embedded microsecond timestamp (XOR), recoverable by extraction function. GenoID differs: \texttt{pg\_uuid\_v8} offers one fixed stego layout with no multi-field abstraction or repair, while GenoID provides a declarative, multi-field DSL and constraint-guided repair as a portable library, published for the Node/Bun/Deno ecosystem.
 
 \subsection{Closest contemporary overlap}
-\texttt{microshard-uuid}~\cite{14} is the nearest deployable overlap: a public RFC~9562 v8 with a fixed 54-bit microsecond timestamp, 32-bit shard, and 36 random bits, advertising zero-lookup routing with extensions for SQLite~\cite{22}, PostgreSQL, MySQL~\cite{23}, DuckDB~\cite{25}, and ClickHouse~\cite{26}. It is a fixed layout, not a layout language: there is no per-field admissibility vocabulary, no repair policy, and no random-bit budget that varies by workload. GenoID concedes the fixed-layout case entirely; its claim starts where \texttt{microshard-uuid} stops, at declared multi-field layouts whose admissible sets, bounds, and counters are repaired deterministically with a stated total-variation bound.
+\texttt{microshard-uuid}~\cite{14} is the nearest deployable overlap: a public RFC~9562 v8 with a fixed 54-bit microsecond timestamp, 32-bit shard, and 36 random bits, advertising zero-lookup routing with extensions for SQLite, PostgreSQL, MySQL, DuckDB, and ClickHouse~\cite{14}. It is a fixed layout, not a layout language: there is no per-field admissibility vocabulary, no repair policy, and no random-bit budget that varies by workload. GenoID concedes the fixed-layout case entirely; its claim starts where \texttt{microshard-uuid} stops, at declared multi-field layouts whose admissible sets, bounds, and counters are repaired deterministically with a stated total-variation bound.
 
 \subsection{Constrained generation and repair lineage}
 The generic lineage is older and stronger than the UUID literature. Property-based testing compiles executable properties into generators~\cite{15}; Claessen, Dureg{\aa}rd, and Pa{\l}ka derive random data satisfying a Boolean predicate while targeting uniformity~\cite{16}; LaFontaine et al.\ repair incomplete generators from type and coverage information~\cite{17}; Goldstein et al.\ synthesise generators with guarantees~\cite{18}. The formal distinction is scope: those systems solve arbitrary predicates or synthesise generators from proof obligations. GenoID does neither. It projects one fixed-width random field into one declared admissible set, with no predicate solving and no distribution-preservation claim beyond the fibre bound of Section~\ref{sec:uniformity}. ``Constraint-guided repair'' names that projection, not a general constrained-generation result.
@@ -831,9 +834,9 @@ We disclose these openly, ranked by expected reviewer pressure.
 
 \textbf{Run-to-run stability.} The SQLite composite-key lookup measurement is the least stable quantity in this paper: the offset-56 versus offset-52 lookup difference reversed direction three times across four repeated runs of the same experiment ($+14\%$, $-2\%$, $+4.7\%$, $+4\%$), so we make no claim for it and report only the direction every arm agrees on. Insert throughput carried a similar instability in an earlier experiment, where one of three runs was uniformly $1.3$--$2.5\times$ slower under background load; the composite-key table above reports ten trials on one host, and the per-trial arrays in \texttt{results/db-sqlite-composite.json} let a reader re-check that no trial is an outlier.
 
-\textbf{Internal validity.} Benchmark confounds are mitigated by mean $\pm$ SD over 10 trials with 95\% CI and Welch $t$-tests. Two implementation bugs (a byte-consumption mismatch in \texttt{eventsourcing}'s \texttt{node}-typed field and a missing seed-state reset) were caught by the test suite before publication. A dead-code-elimination (DCE) hazard in the timing loop was identified and corrected after early throughput runs: an unconsumed loop elides the pure-JavaScript generators' work, inflating measured rates by roughly $2\times$ while leaving native \texttt{crypto.randomUUID()} unchanged; every number in Table~\ref{tab:throughput} post-dates the correction, confirmed by consuming each generated value at a sink (\texttt{.codePointAt(0)}) that the JIT cannot prove is a no-op. NIST runs unconditionally; dieharder is a CI-budget curation. The SQLite composite-key benchmark (Section~\ref{sec:composite-bench}) revealed a between-run variance component not captured by within-run CIs; we exclude a run when every arm is $>1.3\times$ slower than the median run (post-hoc rule adopted after observing the slow run; the excluded per-trial arrays are archived alongside the kept runs and the kept-run ratios agree with the excluded run, so the conclusion does not depend on the exclusion). One of three runs met the rule and is excluded; the kept-run ratios agree with the excluded run, so the conclusion does not depend on the exclusion. Absolute per-identifier times in the density sweep (Section~\ref{sec:repair-vs-rejection}) carry a warm-up ordering effect; the repair-count and trial-count results, on which the analysis rests, are order-independent.
+\textbf{Internal validity.} Benchmark confounds are mitigated by mean $\pm$ SD over 10 trials with 95\% CI and Welch $t$-tests. Two implementation bugs (a byte-consumption mismatch in \texttt{eventsourcing}'s \texttt{node}-typed field and a missing seed-state reset) were caught by the test suite before publication. A dead-code-elimination (DCE) hazard in the timing loop was identified and corrected after early throughput runs: an unconsumed loop elides the pure-JavaScript generators' work, inflating measured rates by roughly $2\times$ while leaving native \texttt{crypto.randomUUID()} unchanged; every number in Table~\ref{tab:throughput} post-dates the correction, confirmed by consuming each generated value at a sink (\texttt{.codePointAt(0)}) that the JIT cannot prove is a no-op. NIST runs unconditionally; dieharder is a CI-budget curation. The SQLite composite-key benchmark (Section~\ref{sec:composite-bench}) revealed a between-run variance component not captured by within-run CIs; we exclude a run when every arm is $>1.3\times$ slower than the median run (post-hoc rule adopted after observing the slow run; only the kept run's per-trial arrays are archived, in \texttt{results/db-sqlite-composite.json}). One of three runs met the rule and is excluded; the kept-run headline ratio is $3.1\times$ ($22.72$\,ms embedded against $7.38$\,ms composite shard scan, Table~\ref{tab:composite}), and because the rule fires only when every arm slows by the same factor, the exclusion leaves the ratio essentially unchanged; the excluded run's arrays were not committed, so no with-excluded-run ratio is reported here. Absolute per-identifier times in the density sweep (Section~\ref{sec:repair-vs-rejection}) carry a warm-up ordering effect; the repair-count and trial-count results, on which the analysis rests, are order-independent.
 
-\textbf{Runtime portability.} The refreshed nine-environment matrix no longer shows a Node-specific penalty on the interpreted structured path: it runs at $0.70$--$1.58\times$ of unstructured base on Node~22 against $0.72$--$0.91\times$ on Bun and Deno, consistently across Linux, macOS, and Windows, so the earlier boxed-\texttt{BigInt} hotspot attribution for the repair pass is superseded on current toolchains and is not repeated here. The penalty has moved to the compiled path instead: the layout compiler regresses to $0.14$--$0.22\times$ of the interpreted path on Node~22 while holding near parity on Bun and small deficits on Deno (Table~\ref{tab:paired}), a code-generation regression whose cause is under investigation. A reader deploying on Node~22 should therefore ship the interpreted structured path and benchmark before assuming any single figure transfers; the standalone portability probe on Node v26.13 (V8 14.6) measures $0.69\times$ of base throughput (95\% CI $[0.60, 0.79]$, 20 reps of 200k UUIDs; \texttt{results/node-portability.json}), consistent with the refreshed matrix range.
+\textbf{Runtime portability.} The refreshed nine-environment matrix no longer shows a Node-specific penalty on the interpreted structured path: it runs within about $0.6$--$1.6\times$ of unstructured base depending on host and runtime, consistently across Linux, macOS, and Windows, so the earlier boxed-\texttt{BigInt} hotspot attribution for the repair pass is superseded on current toolchains and is not repeated here. The penalty has moved to the compiled path instead: in the frozen and refreshed matrices the layout compiler regresses to about $0.14$--$0.26\times$ of the interpreted path on Node~22 while holding at or above parity on Bun with deficits on Deno (Table~\ref{tab:paired}), a code-generation regression whose cause is under investigation. A reader deploying on Node~22 should therefore ship the interpreted structured path and benchmark before assuming any single figure transfers; the standalone portability probe on Node v26.13 (V8 14.6) measures $0.69\times$ of base throughput (95\% CI $[0.60, 0.79]$, 20 reps of 200k UUIDs; \texttt{results/node-portability.json}), consistent with the refreshed matrix range.
 
 \textbf{Conclusion validity.} Throughput comparisons use Welch $t$-tests. ``0 collisions'' is reported alongside the birthday-bound expectation.
 
@@ -842,10 +845,14 @@ We disclose these openly, ranked by expected reviewer pressure.
 
 
 \section{Conclusion and Future Work}
-RFC~9562 leaves version~8's 122 bits undefined; GenoID fills them with a declarative, portable algorithm. Its core contribution is the \texttt{V8Layout} abstraction: typed, constrained multi-field composition with a single shared repair pass, validated through per-field uniformity at $10^8$ scale, an adversarial security analysis, and a cross-language reproducibility check. The measured $2.8$--$12.9\times$ throughput advantage over the closest prior art is a secondary result; the primary result is a framework for making shard, tenant, and sequence identity a property of the key itself, with proven $O(k)$ repair cost and the total-variation bound $m/2^\ell$ on allowed-set repaired fields.
+RFC~9562 leaves version~8's 122 bits undefined; GenoID fills them with a declarative, portable algorithm. Its core contribution is the \texttt{V8Layout} abstraction: typed, constrained multi-field composition with a single shared repair pass, validated through per-field uniformity at $10^8$ scale, an adversarial security analysis, and a cross-language reproducibility check. The measured throughput advantage over the closest prior art, ahead in every environment but host-dependent in magnitude (Table~\ref{tab:paired}), is a secondary result; the primary result is a framework for making shard, tenant, and sequence identity a property of the key itself, with proven $O(k)$ repair cost and the total-variation bound $m/2^\ell$ on allowed-set repaired fields.
 
 \section*{Appendix: battery detail}
-Full NIST per-draw p-value tables and dieharder per-trial pass fractions live in \texttt{results/nist-sp800-22-results.json}, \texttt{results/nist-draws/}, and \texttt{results/dieharder-results.md}; the body reports only the head-draw summary and the 5-draw empirical rate.
+Full NIST per-draw p-value tables and dieharder per-trial pass fractions live in \texttt{results/nist-sp800-22-results.json}, \texttt{results/nist-draws/}, and \texttt{results/dieharder-results.md}; the body reports the head-draw summary and the 5-draw empirical rate.
+
+NIST per-draw detail. No test fails in a majority of draws, and the single repeat (Spectral on multitenant, twice in five draws) is expected under the null: the per-test repeat probability is $\approx 0.001$, giving $\approx 11\%$ for at least one repeat across 123 test slots. A targeted follow-up ran the Spectral test alone over 30 fresh $10^6$-bit exports per arm (multitenant suspect, dbkey layout control, unstructured pooled control): fail rates 1/30, 0/30, 1/30, consistent with Type-I noise rather than a layout-induced spectral peak at this lower-power stream length (a matched $10^7$-bit repeat remains future work).
+
+Smith swap proof. $D$ is minimised by ordering fields in non-increasing $w_i/\ell_i$: swapping an adjacent inverted pair changes $D$ by $\ell_a \ell_b (w_a/\ell_a - w_b/\ell_b) \le 0$.
 
 \begin{thebibliography}{00}
 
@@ -917,17 +924,8 @@ Microsoft, ``NEWSEQUENTIALID.'' \url{https://learn.microsoft.com/en-us/sql-serve
 \bibitem{22}
 SQLite Consortium, ``SQLite.'' \url{https://sqlite.org/}
 
-\bibitem{23}
-Oracle, ``MySQL Reference Manual (8.x).'' \url{https://dev.mysql.com/doc/}
-
 \bibitem{24}
 Electric, ``PGlite: embeddable Postgres.'' \url{https://pglite.dev/}
-
-\bibitem{25}
-DuckDB Foundation, ``DuckDB.'' \url{https://duckdb.org/}
-
-\bibitem{26}
-ClickHouse, ``ClickHouse.'' \url{https://clickhouse.com/}
 
 \bibitem{27}
 W. E. Smith, ``Various optimizers for single-stage production,'' Naval Research Logistics Quarterly, vol.\ 3, nos.\ 1--2, pp.\ 59--66, 1956.
