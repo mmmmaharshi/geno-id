@@ -253,7 +253,8 @@ masking for concealment or plaintext for routing, not both.
 
 A resharding migration has a fixed shape. Version layout names as
 \texttt{owner dbkey.v2}, never reuse a bare name across generations, and run the
-dual-read window with readers accepting both generations while writers emit the
+dual-read window with readers accepting both generations (the versioned-layout
+\texttt{readStructured} reader over \texttt{dbkey.v1} plus \texttt{dbkey.v2}) while writers emit the
 new one; track the fraction of old-generation keys as the migration metric and
 retire the old reader when it reaches zero. Size monotonic counters from peak
 burst: a counter field admits $2^{\ell_c}$ increments per millisecond tick, and
