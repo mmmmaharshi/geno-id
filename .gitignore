@@ -8,6 +8,16 @@ dist/
 *_failure.png
 /tmp/
 
+# LaTeX build artifacts (paper.tex builds locally and in CI)
+*.aux
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.synctex.gz
+*.toc
+paper.pdf
+
 # playwright/bun test artifacts
 test-results/
 playwright-report/
