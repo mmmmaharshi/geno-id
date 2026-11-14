@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.28.0] - 2026-11-14
+
+### Summary
+
+**Throughput, native-engine, and deployability prose re-derived from the refreshed CI artifacts, and the nine residual panel-review items closed.**
+
+### Highlights
+
+- 📈 **Throughput ranges re-frozen to disk.** Same-rig speedups now 2.8–12.9x over `pg_uuid_v8` and 2.2–14.5x over `ulid-v8` across all nine CI environments (every comparison p<1e-6, Cohen's d>3.9); the Ubuntu/Bun column carries 95% CIs. Resolves the 1.27.0 known issue — the prose no longer under-claims against `results/all-results.json`.
+- 🗄️ **Native story now two-engine.** PostgreSQL 18.7 structured at parity with UUIDv7 (+2%) on inserts, MySQL 8.0.46 structured/shard-first ahead (+32%/+28%); lookups and range scans at parity on both engines (N=1e5, 5 reps, 3 distributions). No more "no MySQL number" caveat.
+- 🖥️ **Node narrative corrected.** The refreshed matrix shows no structured-path penalty on Node 22 (0.70–1.58x of base); the penalty moved to the compiled path (0.14–0.22x of interpreted), disclosed as an under-investigation code-generation regression. The old boxed-BigInt attribution is retired.
+- 🗄️ **Deployability from the 500K-row benchmark.** Structured inserts at 90.3K rows/s vs 61.5K (v7) vs 7.0K (v4), near-identical page density, TEXT-masking caveat stated.
+- ⚖️ **Review follow-ups closed.** Direct-construction baseline paragraph; TV bound scoped to allowed-set fields; Smith (1956) bibliography entry; Claessen JFP DOI fix; NIST repeat chance (~11%) with power caveat; explicit >1.3x run-exclusion rule; operator runbook (versioned names, dual-read window, 2^lc burst sizing, backstep safety, privacy); routing de-scoped to future work.
+
+### Known Issues
+
+- **Absolute M/s remain host-bound; only same-rig ratios travel.** The darwin-Node cell showing structured 1.58x above base is reported as measured and reads as shared-runner noise.
+- **Compiled-on-Node regression cause unknown.** Interpreted path recommended on Node 22 until the code-generation gap is root-caused.
+
+### Dependencies Updated
+
+- None.
+
 ## [1.27.0] - 2026-11-14
 
 ### Summary
