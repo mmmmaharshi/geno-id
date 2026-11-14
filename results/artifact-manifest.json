@@ -1,8 +1,8 @@
 {
   "manifest_version": "1.0",
-  "commit": "3126287",
+  "commit": "789b9c5",
   "package_version": "1.28.1",
-  "generated_at": "2026-10-09T00:00:00Z",
+  "generated_at": "2026-11-14T00:00:00Z",
   "note": "artifact map maintained alongside the manuscript; each entry names the committed file under results/ that backs the claim",
   "artifacts": {
     "sec_composition_correctness": {
@@ -42,7 +42,7 @@
     },
     "sec_throughput": {
       "section": "Throughput (Section 5.5)",
-      "claim": "genoid-structured outperforms prior art 2.8-12.9x over pg_uuid_v8 and 2.2-14.5x over ulid-v8 across nine CI environments (all 18 comparisons p<1e-6)",
+      "claim": "genoid-structured ahead of the closest structured prior art in every environment of the nine-job matrix, typically mid-single-digit multiples but host-dependent, exact per-environment ratios tabulated from the frozen artifact (all 18 comparisons p<1e-6)",
       "artifact": "results/all-results.json",
       "generated": [
         "dist/bench-ci-results.json",
@@ -151,7 +151,7 @@
       "pg_uuid_v8 baseline described as RFC v8 in related work — corrected to v4-compatible"
     ],
     "future_work": [
-      "InnoDB/MySQL benchmarking infrastructure",
+      "Cluster-scale / secondary-index cost work on InnoDB/MySQL beyond the committed single-host db-native.json benchmark",
       "GA ablation/degraded-source experiments"
     ],
     "unarchived_artifacts": [
