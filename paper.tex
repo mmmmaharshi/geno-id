@@ -342,7 +342,7 @@ arm separation on either engine (100-probe lookup sets within $\approx 10\%$ on
 PostgreSQL and $\approx 6\%$ on MySQL; range scans within $\approx 7\%$).
 The tracked artifact
 (\texttt{results/db-native.json}, with per-rep percentiles, query plans, and
-server versions) records the $N=10^5$ result — with the same single-host caveat that
+server versions) records the $N=10^5$ result, with the same single-host caveat that
 applies to every absolute rate in this section. The committed harness measures both engines, and
 the CI \texttt{native-db} job re-runs the same scaled invocation against
 PostgreSQL~18 and MySQL~8 service containers on every main push.

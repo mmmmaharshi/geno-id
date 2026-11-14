@@ -39,6 +39,7 @@ Used by `/wayfinder`. The **map** is a single issue with **child** issues as tic
 
 - **Map**: a single issue labelled `wayfinder:map`, holding the Notes / Decisions-so-far / Fog body. `gh issue create --label wayfinder:map`.
 - **Child ticket**: an issue linked to the map as a GitHub sub-issue (`gh api` on the sub-issues endpoint). Where sub-issues aren't enabled, add the child to a task list in the map body and put `Part of #<map>` at the top of the child body. Labels: `wayfinder:<type>` (`research`/`prototype`/`grilling`/`task`). Once claimed, the ticket is assigned to the driving dev.
+- **Spec fan-out**: a spec issue with more than one story gets one child ticket per story before implementation starts, each named by its story ID.
 - **Blocking**: GitHub's native issue dependencies are canonical. Add an edge with `gh api --method POST repos/<owner>/<repo>/issues/<child>/dependencies/blocked_by -F issue_id=<blocker-db-id>`, where `<blocker-db-id>` is the blocker's numeric database ID. Where dependencies are unavailable, add `Blocked by: #<n>, #<n>` at the top of the child body. A ticket is unblocked when every blocker is closed.
 - **Frontier query**: list the map's open children, drop any with an open blocker or assignee, and select the first item in map order.
 - **Claim**: `gh issue edit <n> --add-assignee @me`, the session's first write.

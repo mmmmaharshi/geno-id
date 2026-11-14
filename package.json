@@ -23,6 +23,7 @@
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.scripts.json --noEmit",
     "test": "bun test src/scripts --timeout=30000",
+    "check:paper": "bun run src/scripts/check-paper.ts",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
     "format": "ultracite fix",

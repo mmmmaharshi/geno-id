@@ -1,0 +1,43 @@
+name: paper
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'paper.tex'
+      - 'results/artifact-manifest.json'
+      - 'src/scripts/check-paper*.ts'
+      - '.github/workflows/paper.yml'
+  pull_request:
+    paths:
+      - 'paper.tex'
+      - 'results/artifact-manifest.json'
+      - 'src/scripts/check-paper*.ts'
+      - '.github/workflows/paper.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: paper lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install
+      - run: bun run check:paper
+
+  build:
+    name: latexmk paper.tex
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile manuscript
+        uses: xu-cheng/latex-action@v3
+        with:
+          root_file: paper.tex
+          docker_image: danteev/texlive@sha256:0d9a3e04eb3a6918c64c502c2129e9ffbf5ec0c55ea74f0eff277bc564ae5c41
