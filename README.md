@@ -183,13 +183,13 @@ const events = Array.from({ length: 100 }, () => genStructuredGenoID(eventLayout
 GenoID is faster than other structured UUID generators.
 The compiled variant is near-native speed.
 
-| Generator | Ops/sec (Bun, macOS A18 Pro) | Collisions (n=1M) | NIST |
+| Generator | Ops/sec (Bun, macOS CI) | Collisions (n=1M) | NIST |
 |---|---|---|---|
-| v4-native | 24.92 M | 0 | — |
-| genoid-v8 (unstructured) | 20.52 M | 0 | — |
-| **genoid-compiled (dbkey)** | **10.49 M** | **0** | **15/15** |
+| v4-native | 19.35 M | 0 | — |
+| genoid-v8 (unstructured) | 2.65 M | 0 | — |
+| **genoid-compiled (dbkey)** | **2.22 M** | **0** | **15/15** |
 
-Full table across 7 runtimes and 3 operating systems: run `bun run bench-ci`.
+Full table across 3 runtimes × 3 operating systems (nine CI environments): run `bun run bench-ci`.
 
 ## API
 
@@ -294,8 +294,8 @@ GenoID uses the operating system CSPRNG (`crypto.getRandomValues`).
 Each pool refill draws fresh entropy.
 Minimum entropy is 122 bits (same as UUIDv4).
 
-**Pool forward secrecy.** The pool refills every 256 UUIDs.
-An adversary who reads the process memory predicts at most 256 future UUIDs.
+**Pool forward secrecy.** The base pool refills every 256 UUIDs; structured pools hold up to 1024.
+An adversary who reads the process memory predicts at most 256 future UUIDs from the base pool (up to 1024 from a structured pool — lower it with `configurePools()` if that window is too large).
 
 **Metadata leakage.** Structured layouts expose the timestamp, shard, counter, and tenant by design.
 This is consistent with RFC 9562 section 8.
@@ -324,6 +324,7 @@ bun run playwright  # browser (Chromium, Firefox, WebKit)
 |---|---|
 | pg-uuid-v8 | Fixed layout (timestamp only). No declarative fields, no repair. |
 | ULID | One layout (timestamp + random). No custom fields. |
+| microshard-uuid | Fixed RFC 9562 v8 layout (timestamp + shard). No layout language, no repair. |
 | Snowflake | Requires a ZooKeeper-like coordinator. Not a UUID. |
 | KSUID | Fixed layout (timestamp + random). No constraints. |
 
