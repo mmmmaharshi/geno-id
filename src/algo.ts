@@ -1485,27 +1485,17 @@ function structuredValue(layout: V8Layout, f: V8Field, _rng: Rng, now?: number):
   }
 }
 
-// Layout caches are keyed by structure hash, not layout name.
-const _structureHashCache = new WeakMap<V8Layout, string>()
+// Layout caches are keyed by canonical structure key, not layout name.
+const _structureKeyCache = new WeakMap<V8Layout, string>()
 const _layoutIdentities = new Map<string, string>()
 
-function cyrb53(str: string): string {
-  let h1 = 0xdeadbeef, h2 = 0x41c6ce57
-  for (let i = 0; i < str.length; i++) {
-    const ch = str.codePointAt(i) ?? 0
-    h1 = Math.imul(h1 ^ ch, 2654435761)
-    h2 = Math.imul(h2 ^ ch, 1597334677)
-  }
-  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909)
-  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909)
-  return ("0000000" + (h2 >>> 0).toString(16)).slice(-8) + ("0000000" + (h1 >>> 0).toString(16)).slice(-8)
-}
-
-// Canonical hash of a layout's field structure.
-export function layoutStructureHash(layout: V8Layout): string {
-  let h = _structureHashCache.get(layout)
-  if (h === undefined) {
-    const canonical = JSON.stringify(layout.fields.map((f) => [
+// Canonical key of a layout's field structure. The key is the canonical
+// string itself: hashing it would add collision risk for no benefit,
+// since Map handles string keys directly.
+export function layoutStructureKey(layout: V8Layout): string {
+  let k = _structureKeyCache.get(layout)
+  if (k === undefined) {
+    k = JSON.stringify(layout.fields.map((f) => [
       f.name,
       f.start,
       f.length,
@@ -1516,23 +1506,22 @@ export function layoutStructureHash(layout: V8Layout): string {
       f.constraint?.monotonic ?? null,
       f.value ?? null,
     ]))
-    h = cyrb53(canonical)
-    _structureHashCache.set(layout, h)
+    _structureKeyCache.set(layout, k)
   }
-  return h
+  return k
 }
 
 function assertLayoutIdentity(layout: V8Layout): string {
-  const hash = layoutStructureHash(layout)
+  const key = layoutStructureKey(layout)
   const seen = _layoutIdentities.get(layout.name)
   if (seen === undefined) {
-    _layoutIdentities.set(layout.name, hash)
-  } else if (seen !== hash) {
+    _layoutIdentities.set(layout.name, key)
+  } else if (seen !== key) {
     throw new Error(
-      `layout "${layout.name}": field structure differs from the previously registered layout "${layout.name}" (structure ${seen} vs ${hash})`,
+      `layout "${layout.name}": field structure differs from the previously registered layout "${layout.name}" (registered ${seen.slice(0, 120)} vs new ${key.slice(0, 120)})`,
     )
   }
-  return hash
+  return key
 }
 
 // Resolve a layout's monotonic tick (RFC 9562 §6.2): the wall clock
@@ -1687,7 +1676,7 @@ const _spPool = new Map<string, { pool: Uint8Array<ArrayBuffer>; strs: string[];
 
 function refillSingleParentPool(layout: V8Layout): void {
   const w = wordTable(), t = HEX8, size = _structPoolN
-  const structureHash = layoutStructureHash(layout)
+  const structureHash = layoutStructureKey(layout)
   let entry = _spPool.get(structureHash)
   let pool: Uint8Array<ArrayBuffer>
   let strs: string[]
@@ -1750,7 +1739,7 @@ function refillSingleParentPool(layout: V8Layout): void {
 
 export function genStructuredGenoIDSingleParent(layout: V8Layout): string {
   ensureValidated(layout)
-  const structureHash = layoutStructureHash(layout)
+  const structureHash = layoutStructureKey(layout)
   let p = _spPool.get(structureHash)
   if (!p || p.idx >= p.size) {
     refillSingleParentPool(layout)
@@ -1775,7 +1764,7 @@ export function genStructuredGenoID(input: V8Layout | DatabaseLayoutCompilation)
   const layout = "layout" in input ? input.layout : input
   ensureValidated(layout)
   if (getStructuredGenerationMode() === "compiled-direct-v8") {
-    const structureHash = layoutStructureHash(layout)
+    const structureHash = layoutStructureKey(layout)
     const fn = _compiledGenCache.get(structureHash)
     if (fn) return fn()
     try {

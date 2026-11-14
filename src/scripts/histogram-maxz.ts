@@ -1,6 +1,10 @@
 import { readFileSync, writeFileSync } from "node:fs"
 import path from "node:path"
 
+// Stays TypeScript (not a scipy one-liner) on purpose: analyzeHistogram is
+// imported by histogram-maxz.test.ts, which fails the gate if the archived
+// artifact drifts — a Python step could not serve as that seam.
+
 export interface MaxzResult {
   cells: number
   maxAbsZ: number
@@ -92,7 +96,6 @@ export function analyzeHistogram(histogramPath = path.join(root, "results", "sha
     ...result,
     verdict: result.significantBonferroni || result.significantSidak ? "deviation" : "consistent with sampling noise",
     perField: perField.map(({ layout, field, cells, maxAbsZ }) => ({ layout, field, cells, maxAbsZ })),
-    generatedAt: new Date().toISOString(),
   }
 }
 

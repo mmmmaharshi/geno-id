@@ -125,13 +125,56 @@ export function expressionIndexShardPredicate(shard: number): string {
   return `substr(hex(id),14,2) = '${shardToHex(shard)}'`
 }
 
-// Shard value carried by a generated UUID for the given arm.
-export function extractDbkeyShard(bytes: Uint8Array, arm: CompositeKeyArm): number {
-  return arm === "embedded56" ? bytes[7] : ((bytes[6] & 0x0f) << 4) | (bytes[7] >> 4)
+// One definition per arm replaces every arm === switch: pregeneration,
+// insert shape, and scan query all read from this table.
+export interface CompositeKeyArmDef {
+  layout: typeof DBKEY_LAYOUT
+  rowKind: "shard-id" | "id" | "text"
+  scanQuery: string
+  extractShard: (bytes: Uint8Array) => number
 }
 
-export function isCompositeArm(arm: CompositeKeyArm): boolean {
-  return arm === "composite" || arm === "composite-indexed"
+const straddledShard = (bytes: Uint8Array): number => ((bytes[6] & 0x0f) << 4) | (bytes[7] >> 4)
+const byteAlignedShard = (bytes: Uint8Array): number => bytes[7]
+
+export const ARM_DEF: Record<CompositeKeyArm, CompositeKeyArmDef> = {
+  composite: {
+    layout: DBKEY_LAYOUT,
+    rowKind: "shard-id",
+    scanQuery: "SELECT val FROM ids WHERE shard = 3",
+    extractShard: straddledShard,
+  },
+  "composite-indexed": {
+    layout: DBKEY_LAYOUT,
+    rowKind: "shard-id",
+    scanQuery: "SELECT val FROM ids WHERE shard = 3",
+    extractShard: straddledShard,
+  },
+  embedded: {
+    layout: DBKEY_LAYOUT,
+    rowKind: "id",
+    scanQuery:
+      "SELECT val FROM ids WHERE (substr(id,7,1) & x'0f') = x'00' AND (substr(id,8,1) & x'f0') = x'30'",
+    extractShard: straddledShard,
+  },
+  embedded56: {
+    layout: DBKEY_LAYOUT_OFF56,
+    rowKind: "id",
+    scanQuery: "SELECT val FROM ids WHERE substr(id,8,1) = x'03'",
+    extractShard: byteAlignedShard,
+  },
+  concatenated: {
+    layout: DBKEY_LAYOUT,
+    rowKind: "text",
+    scanQuery: "SELECT val FROM ids WHERE id LIKE '3:%'",
+    extractShard: straddledShard,
+  },
+  "expression-index": {
+    layout: DBKEY_LAYOUT,
+    rowKind: "id",
+    scanQuery: `SELECT val FROM ids WHERE ${expressionIndexShardPredicate(3)}`,
+    extractShard: straddledShard,
+  },
 }
 
 // Exact table DDL per composite-key arm, recorded into the artifact.
@@ -164,15 +207,14 @@ export const ARM_KEY_ENCODING: Record<CompositeKeyArm, "TEXT" | "BLOB(16)" | "IN
 
 function pregenIds(arm: CompositeKeyArm, n: number): unknown[] {
   const ids: unknown[] = []
+  const def = ARM_DEF[arm]
   for (let i = 0; i < n; i++) {
-    const layout = arm === "embedded56" ? DBKEY_LAYOUT_OFF56 : DBKEY_LAYOUT
-    const uuid = algo.genStructuredGenoID(layout)
+    const uuid = algo.genStructuredGenoID(def.layout)
     const bytes = uuidToBytes(uuid)
-    const shard = extractDbkeyShard(bytes, arm)
-    if (isCompositeArm(arm)) ids.push({ shard, id: bytes, val: i })
-    else if (arm === "embedded" || arm === "expression-index") ids.push({ id: bytes, val: i })
-    else if (arm === "embedded56")   ids.push({ id: bytes, val: i })
-    else                             ids.push({ id: `${shard}:${uuid}`, val: i })
+    const shard = def.extractShard(bytes)
+    if (def.rowKind === "shard-id") ids.push({ shard, id: bytes, val: i })
+    else if (def.rowKind === "id") ids.push({ id: bytes, val: i })
+    else ids.push({ id: `${shard}:${uuid}`, val: i })
   }
   return ids
 }
@@ -187,7 +229,7 @@ export function benchCompositeKeyArm(arm: CompositeKeyArm, n: number, ids: unkno
 
   const batch = 10_000
   const insertStart = performance.now()
-  const compositeArm = isCompositeArm(arm)
+  const compositeArm = ARM_DEF[arm].rowKind === "shard-id"
   const insertStmt = compositeArm
     ? db.prepare("INSERT INTO ids (shard, id, val) VALUES (?, ?, ?)")
     : db.prepare("INSERT INTO ids (id, val) VALUES (?, ?)")
@@ -218,22 +260,8 @@ export function benchCompositeKeyArm(arm: CompositeKeyArm, n: number, ids: unkno
   for (const row of sampleRows) stmt.get(row.id)
   const lookupElapsed = performance.now() - lookupStart
 
-  // Range scan by shard.
-  // Embedded predicate reads the straddled shard (bytes 6 low nibble + 7 high nibble); byte 6 high nibble is the v8 version.
-  let scanQuery: string
-  if (isCompositeArm(arm)) {
-    scanQuery = "SELECT val FROM ids WHERE shard = 3"
-  } else if (arm === "expression-index") {
-    scanQuery = `SELECT val FROM ids WHERE ${expressionIndexShardPredicate(3)}`
-  } else if (arm === "embedded56") {
-    scanQuery = "SELECT val FROM ids WHERE substr(id,8,1) = x'03'"
-  } else if (arm === "embedded") {
-    const shardHi = (s: number) => (s >> 4) & 0x0f
-    const shardLo = (s: number) => (s & 0x0f) << 4
-    scanQuery = `SELECT val FROM ids WHERE (substr(id,7,1) & x'0f') = x'0${shardHi(3).toString(16)}' AND (substr(id,8,1) & x'f0') = x'${shardLo(3).toString(16)}'`
-  } else {
-    scanQuery = "SELECT val FROM ids WHERE id LIKE '3:%'"
-  }
+  // Range scan by shard. Embedded predicate reads the straddled shard (bytes 6 low nibble + 7 high nibble); byte 6 high nibble is the v8 version.
+  const scanQuery = ARM_DEF[arm].scanQuery
   const scanStart = performance.now()
   db.query(scanQuery).all()
   const scanElapsed = performance.now() - scanStart
