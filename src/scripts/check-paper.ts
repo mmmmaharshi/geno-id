@@ -26,10 +26,12 @@ export function lintPaperText(text: string): PaperViolation[] {
   return hits;
 }
 
-const source = readFileSync(paperPath, "utf-8");
-const hits = lintPaperText(source);
-if (hits.length > 0) {
-  for (const h of hits) console.error(`${h.line}: ${h.rule}: ${h.text}`);
-  process.exit(1);
+if (import.meta.main) {
+  const source = readFileSync(paperPath, "utf-8");
+  const hits = lintPaperText(source);
+  if (hits.length > 0) {
+    for (const h of hits) console.error(`${h.line}: ${h.rule}: ${h.text}`);
+    process.exit(1);
+  }
+  console.log("paper.tex clean");
 }
-console.log("paper.tex clean");
