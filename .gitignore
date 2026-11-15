@@ -16,7 +16,14 @@ dist/
 *.out
 *.synctex.gz
 *.toc
+*.bbl
+*.blg
+*.lof
+*.lot
 paper.pdf
+
+# generated live-panel exports (spec lives in TEMP per AGENTS.md)
+out/
 
 # playwright/bun test artifacts
 test-results/
