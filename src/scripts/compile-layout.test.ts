@@ -242,6 +242,7 @@ test("compileLayout deterministic: same seed produces same output", () => {
 
   // Do NOT override Date.now — want wall-clock time. The timestamps of
   // concurrent calls may differ by a ms, so we compare only shape + constraints.
+  const wallStart = Date.now();
   const idsA: string[] = []
   for (let i = 0; i < 100; i++) idsA.push(runA.cfn())
 
@@ -267,12 +268,14 @@ test("compileLayout deterministic: same seed produces same output", () => {
     const bA = uuidToBytes(uuidA)
     const bB = uuidToBytes(uuidB)
 
-    // Timestamp field (offset 0, 48 bits) — may differ across a clock tick,
-    // and by seconds under loaded CI running suites in parallel.
+    // Timestamp field (offset 0, 48 bits). Both timestamps were taken between
+    // wallStart and now, so their difference cannot exceed the elapsed wall
+    // time; the +1000ms covers only a mid-test NTP step, not load.
     const tsA = Number(getFieldValue(bA, layout.fields.find((f) => f.name === "timestamp")!))
     const tsB = Number(getFieldValue(bB, layout.fields.find((f) => f.name === "timestamp")!))
     const tsDiff = Math.abs(tsA - tsB)
-    assert.ok(tsDiff <= 5000, `timestamp diff ${tsDiff}ms > 5000ms`)
+    const wallMs = Date.now() - wallStart
+    assert.ok(tsDiff <= wallMs + 1000, `timestamp diff ${tsDiff}ms > elapsed ${wallMs}ms + 1000ms`)
 
     // Shard — depends only on CSPRNG, must match
     const shardA = Number(getFieldValue(bA, shardField))
