@@ -77,9 +77,9 @@ const DRAWS_TIMEOUT = 30_000
 
 test("range clamp: production path matches the stated endpoint bound", { timeout: DRAWS_TIMEOUT }, () => {
   const layout = completeLayout("range-clamp-cell", [
-    { name: "w", start: 0, length: 8, type: "shard", constraint: { min: 10, max: 245 } },
+    { name: "shard", start: 0, length: 8, type: "shard", constraint: { min: 10, max: 245 } },
   ])
-  const field = layout.fields.find((f) => f.name === "w")!
+  const field = layout.fields.find((f) => f.name === "shard")!
   const predicted = rangeClampMass(8, 10, 245)
   const N = 200_000
   let atMin = 0
