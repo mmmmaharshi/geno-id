@@ -14,10 +14,19 @@ functional, reusable) at the level a Scopus Q1 systems/security venue expects.
 | TypeScript | `7.0.2` (pinned in `package.json` devDependencies) |
 | Python (NIST bridge only) | 3.x + `numpy`, `scipy`, `nist80022` (imported by `scripts/nist-bridge.py`) |
 | dieharder (extended randomness only) | installed on the host (`brew install dieharder` / `apt install dieharder`) — see §3 |
+| LaTeX (manuscript only) | `latexmk` from a full TeX Live (`paper.yml` CI job); class file vendored as `svproc.cls` v1.3 (2016/07/20), byte-identical across independent public mirrors |
 
 `bun.lock` pins every transitive dependency, so `bun install` reproduces the
 exact dependency graph used to produce the numbers in the README, not just
 compatible semver ranges.
+
+The manuscript class file is the one dependency that cannot be pinned from a
+registry: `svproc.cls` is Springer's proceedings class, not on CTAN. The
+vendored copy matches the v1.3 header found byte-identical in multiple
+independent public repositories. Before camera-ready submission, diff it
+against the venue's author kit (`diff` the two files; every macro the paper
+uses is covered by `bun run check:paper` plus the `latexmk` CI build, which
+fail on any divergence that matters).
 
 ## 2. One-command reproduction of each claim
 
