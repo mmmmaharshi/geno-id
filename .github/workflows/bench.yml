@@ -55,8 +55,11 @@ jobs:
         id: cache-bun
         uses: actions/cache@v4
         with:
-          path: ${{ runner.os == 'Windows' && '~\.bun' || '~/.bun/install/cache' }}
+          path: |
+            node_modules
+            ${{ runner.os == 'Windows' && '~\.bun' || '~/.bun/install/cache' }}
           key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
+          restore-keys: ${{ runner.os }}-bun-
       - run: bun install
       - run: bun run build
       - run: bun run bench-ci
@@ -92,8 +95,11 @@ jobs:
         id: cache-bun
         uses: actions/cache@v4
         with:
-          path: ${{ runner.os == 'Windows' && '~\.bun' || '~/.bun/install/cache' }}
+          path: |
+            node_modules
+            ${{ runner.os == 'Windows' && '~\.bun' || '~/.bun/install/cache' }}
           key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
+          restore-keys: ${{ runner.os }}-bun-
       - run: bun install
       - run: bun run build
       - run: bun x tsx src/scripts/bench-ci.ts
@@ -125,8 +131,11 @@ jobs:
         id: cache-bun
         uses: actions/cache@v4
         with:
-          path: ${{ runner.os == 'Windows' && '~\.bun' || '~/.bun/install/cache' }}
+          path: |
+            node_modules
+            ${{ runner.os == 'Windows' && '~\.bun' || '~/.bun/install/cache' }}
           key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
+          restore-keys: ${{ runner.os }}-bun-
       - run: bun install
       - run: bun run build
       - uses: denoland/setup-deno@v2
@@ -171,8 +180,11 @@ jobs:
         id: cache-bun
         uses: actions/cache@v4
         with:
-          path: ~/.bun/install/cache
+          path: |
+            node_modules
+            ~/.bun/install/cache
           key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
+          restore-keys: ${{ runner.os }}-bun-
       - run: bun install
       - run: bun run build
       # The Rust check compares against the COMMITTED vectors, before anything
@@ -238,8 +250,11 @@ jobs:
         id: cache-bun
         uses: actions/cache@v4
         with:
-          path: ~/.bun/install/cache
+          path: |
+            node_modules
+            ~/.bun/install/cache
           key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
+          restore-keys: ${{ runner.os }}-bun-
       - run: bun install
       - run: bun run build
       - name: Run native-DB benchmark (PostgreSQL + MySQL service containers)
