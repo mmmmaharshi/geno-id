@@ -38,7 +38,7 @@ fail on any divergence that matters).
 | NIST SP 800-22, all 15 tests, all sample layouts | `python scripts/nist-full-battery.py` (after `bun scripts/export-structured.ts`) | `results/nist-sp800-22-results.json` + stdout per-test p-values |
 | Concurrent generation, cross-worker collision (Task B) | `bun run bench-concurrent` | stdout |
 | SQLite B-tree index locality (Task C) | `bun run bench-sqlite` | stdout |
-| 100M-scale collision test, all cores (Task D) | `bun run collision-100m` | stdout |
+| 100M-scale collision test, all cores (Task D) | `bun run collision-100m`; Deno port runs weekly in `.github/workflows/deno-collision.yml` | stdout |
 | Extended dieharder battery (this addition) | `bun run dieharder` (exports 100M-bit samples if missing, then runs the curated subset and writes `dist/dieharder-results.md`) | `dist/dieharder-results.md` |
 | Baseline generators (pg_uuid_v8, ULID, ULID-v8, KSUID, Snowflake) known-answer tests | `bun test scripts/baselines.test.ts` and `scripts/baselines-verify.test.ts` | pass/fail per generator |
 | Full unit test suite | `bun run test` | pass/fail (29 tests as of v1.11.x) |

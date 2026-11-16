@@ -31,10 +31,17 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  # Cancel superseded PR runs. Pushes to main stay serial: native-db and
+  # consolidate auto-commit artifacts and must not be cut off mid-commit.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   bun-matrix:
     name: bun ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
@@ -44,6 +51,12 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
+      - name: Cache Bun dependencies
+        id: cache-bun
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.os == 'Windows' && '~\.bun' || '~/.bun/install/cache' }}
+          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
       - run: bun install
       - run: bun run build
       - run: bun run bench-ci
@@ -61,6 +74,7 @@ jobs:
   node-matrix:
     name: node ${{ matrix.node-version }} on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -74,6 +88,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
+      - name: Cache Bun dependencies
+        id: cache-bun
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.os == 'Windows' && '~\.bun' || '~/.bun/install/cache' }}
+          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
       - run: bun install
       - run: bun run build
       - run: bun x tsx src/scripts/bench-ci.ts
@@ -91,6 +111,7 @@ jobs:
   deno-matrix:
     name: deno ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -100,6 +121,12 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
+      - name: Cache Bun dependencies
+        id: cache-bun
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.os == 'Windows' && '~\.bun' || '~/.bun/install/cache' }}
+          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
       - run: bun install
       - run: bun run build
       - uses: denoland/setup-deno@v2
@@ -109,9 +136,6 @@ jobs:
         run: deno check src/scripts/deno/bench-ci.ts src/scripts/deno/bench-structured.ts src/scripts/deno/bench.ts src/scripts/deno/collision-100m.ts src/scripts/deno/collision-100m-worker.ts src/scripts/deno/deno-io.ts src/scripts/deno/export-ablation.ts src/scripts/deno/export-baselines.ts src/scripts/deno/export-bits.ts src/scripts/deno/export-degraded.ts src/scripts/deno/export-samples.ts src/scripts/deno/export-structured.ts src/scripts/deno/export-weak-entropy.ts src/scripts/deno/pool.ts src/scripts/deno/stats-core.ts src/scripts/deno/stats-worker.ts src/scripts/deno/stats.ts
       - name: CI benchmark (Deno)
         run: deno run --allow-read --allow-write --allow-env --allow-sys src/scripts/deno/bench-ci.ts
-      - name: 100M collision test (Deno, ubuntu only)
-        if: matrix.os == 'ubuntu-latest'
-        run: deno run --allow-read --allow-env --allow-sys src/scripts/deno/collision-100m.ts
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -122,6 +146,7 @@ jobs:
   docs-links:
     name: docs code-reference check
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
@@ -135,12 +160,19 @@ jobs:
   golden-check:
     name: golden-vector check (Rust)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
       - uses: dtolnay/rust-toolchain@stable
+      - name: Cache Bun dependencies
+        id: cache-bun
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
       - run: bun install
       - run: bun run build
       # The Rust check compares against the COMMITTED vectors, before anything
@@ -202,6 +234,12 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
+      - name: Cache Bun dependencies
+        id: cache-bun
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
       - run: bun install
       - run: bun run build
       - name: Run native-DB benchmark (PostgreSQL + MySQL service containers)
@@ -241,6 +279,7 @@ jobs:
   consolidate:
     name: consolidate CI results
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     # Serialize with the native-db job: both push whole-file JSON
     # rewrites of results/, which conflict deterministically under rebase.
     concurrency:

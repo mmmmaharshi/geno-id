@@ -1,0 +1,37 @@
+name: deno-collision
+
+on:
+  schedule:
+    - cron: '17 3 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deno-collision
+  cancel-in-progress: false
+
+jobs:
+  collision:
+    name: 100M collision test (Deno)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Cache Bun dependencies
+        id: cache-bun
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
+      - run: bun install
+      - run: bun run build
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: "2.9.3"
+      - name: 100M collision test (fanned across cores)
+        run: deno run --allow-read --allow-env --allow-sys src/scripts/deno/collision-100m.ts

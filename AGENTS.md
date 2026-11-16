@@ -62,7 +62,7 @@ GenoID is a TypeScript RFC 9562 v8 UUID library + CLI + browser benchmark. The p
 | `bun run verify-playwright` | Dry-run Playwright with jsdom | ~5s | `bun install` |
 | `open index.html` | Interactive browser benchmark | manual | Any browser |
 | `deno run --allow-read --allow-write --allow-env --allow-sys src/scripts/deno/bench-ci.ts` | CI-shaped Deno benchmark + collisions | ~30s | `deno` |
-| `deno run --allow-read --allow-env --allow-sys src/scripts/deno/collision-100m.ts` | Deno 100M collision test (fanned across cores) | ~1min | `deno` |
+| `deno run --allow-read --allow-env --allow-sys src/scripts/deno/collision-100m.ts` | Deno 100M collision test (fanned across cores; weekly `deno-collision` workflow, not per push) | ~7min | `deno` |
 | `deno run --allow-read --allow-write --allow-env --allow-sys src/scripts/deno/stats.ts` | Deno NIST SP 800-22 battery | ~30s | `deno` |
 | `deno check src/scripts/deno/bench-ci.ts src/scripts/deno/collision-100m.ts src/scripts/deno/stats.ts` | Type-check Deno CI entry ports | ~5s | `deno` |
 
@@ -107,7 +107,7 @@ GenoID is a TypeScript RFC 9562 v8 UUID library + CLI + browser benchmark. The p
 
 - **Build:** `bun run build` → `dist/` (gitignored; rebuild after changing `src/algo.ts`/`src/benchmark.ts`/`src/bench-core.ts`).
 - **Browser benchmark (deployable):** `open index.html` or serve `dist/`. `index.html` loads `dist/benchmark.js` (ES module) and calls `init()`.
-- **CI/CD:** `.github/workflows/bench.yml` runs a matrix: `bun-matrix` (ubuntu/macos/windows), `node-matrix` (Node 22 × 3 OS), `deno-matrix` (Deno 2.9.3 × 3 OS), then a `consolidate` job merging per-env `bench-ci-results.json` into one table. Deno is CI-only.
+- **CI/CD:** `.github/workflows/bench.yml` runs a matrix: `bun-matrix` (ubuntu/macos/windows), `node-matrix` (Node 22 × 3 OS), `deno-matrix` (Deno 2.9.3 × 3 OS), then a `consolidate` job merging per-env `bench-ci-results.json` into one table. Deno is CI-only. The 100M collision test runs weekly in `.github/workflows/deno-collision.yml` and is type-checked on every push by `deno-matrix`. Bun dependencies are cached per OS; PR runs cancel superseded jobs, pushes to `main` do not (evidence auto-commits serialize).
 - **Release:** changesets (metadata + git tags only; no npm registry). See Automatic versioning.
 
 ## Quality Gates (Agent workflow)
