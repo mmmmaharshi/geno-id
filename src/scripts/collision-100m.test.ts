@@ -28,18 +28,24 @@ const algo = (await import(
 
 const N = 1_000_000
 
-test("Task D: production generators produce 0 collisions at scale", { timeout: 30000 }, () => {
-  for (const [label, gen] of [
-    ["v4-native", algo.genV4Native],
-    ["genoid-v8", algo.genGenoID],
-    ["v7", algo.genV7],
-    ["genoid-structured", () => algo.genStructuredGenoID(DBKEY_LAYOUT)],
-  ] as const) {
-    const r = collisionTestScaled(gen, N)
-    assert.equal(r.collisions, 0, `${label} should have 0 collisions at N=${N}`)
-    assert.ok(r.tableMB > 0 && r.tableMB < 1024, `${label} table memory should be bounded`)
-  }
-})
+const GENERATORS = [
+  ["v4-native", algo.genV4Native],
+  ["genoid-v8", algo.genGenoID],
+  ["v7", algo.genV7],
+  ["genoid-structured", () => algo.genStructuredGenoID(DBKEY_LAYOUT)],
+] as const
+
+function assertNoCollisions(label: string, gen: () => string): void {
+  const r = collisionTestScaled(gen, N)
+  assert.equal(r.collisions, 0, `${label} should have 0 collisions at N=${N}`)
+  assert.ok(r.tableMB > 0 && r.tableMB < 1024, `${label} table memory should be bounded`)
+}
+
+for (const [label, gen] of GENERATORS) {
+  test(`Task D: ${label} produces 0 collisions at N=${N}`, () => {
+    assertNoCollisions(label, gen)
+  })
+}
 
 test("Task D: detector catches real duplicates (sanity check)", () => {
   let t = 0
