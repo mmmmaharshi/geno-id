@@ -185,6 +185,8 @@ Example: Phase A (new baselines + 10M collision scaling + NIST on baselines) →
 - Required checks before submission: `bun run lint`, `bun run typecheck`, `bun run test`, `bun run build`, `bun run bench-ci` (and `bun run playwright` for browser/deployable changes).
 - Do not update git config, skip hooks, or force-push unless explicitly requested.
 - Tags alone do not create a Release page — use `gh release create` after push.
+- Use `git twig new` instead of `git worktree add` for every new worktree. See `docs/agents/worktrees.md` for the full rules.
+- For code searches that need syntax or structure, use `ast-grep --lang <language> -p '<pattern>'` by default; reach for a text search only when the user asks for a plain-text search. See `docs/agents/ast-grep.md`.
 
 ## Security Considerations
 
