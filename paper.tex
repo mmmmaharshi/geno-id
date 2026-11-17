@@ -62,6 +62,8 @@ Imagine ten database servers where each record's ID must reveal which one owns i
 
 Existing UUIDs fall short: v4 carries no structure, v7 fixes one timestamp layout, and \texttt{pg\_uuid\_v8} embeds an encrypted timestamp with no multi-field composition. Structure in the key is not always the right choice; a composite key is simpler whenever the identifier never leaves the database, as discussed in Section~\ref{sec:why-embed} states the conditions under which it is, and Section~\ref{sec:composite-bench} quantifies the cost of the alternative. GenoID declares field structure once as a \texttt{V8Layout} and satisfies it by deterministic repair, drawing from pre-populated CSPRNG pools to amortize entropy cost.
 
+Whether embedding an ordered key pays off is itself conditional, and an external cost model gives the decision rule. The buffer saturation ratio model~\cite{30} defines BSR as the buffer-pool size divided by total index size and predicts that once BSR drops below 1.0 a uniformly random key insert must read a page from disk before it can write, moving insert cost from CPU bound to I/O bound. The model derives from B-tree page splits, LRU eviction under uniform random keys, and a two-phase InnoDB I/O cost function, and it places the latency inflection near BSR = 1.0 using published PostgreSQL benchmark data plus one production incident; its output is a practitioner table mapping BSR ranges to a key choice. This is an external model that GenoID did not run, and it applies to random primary keys in an OLTP B-tree, not to GenoID's own measurements. Its role here is a decision aid: it tells a reader when an ordered key is worth emitting, namely when the index outgrows the buffer pool, and when that ordering is unnecessary. GenoID can emit a monotone field through the same declarative layout, so a deployment in the model's BSR < 1 regime may choose an ordered key without changing frameworks; the model's stated conditions define where that choice matters.
+
 \noindent\textbf{Contributions.}
 \begin{itemize}
     \item A declarative RFC~9562 v8 layout abstraction for typed, constrained fields.
@@ -819,6 +821,9 @@ RFC~9562 surveyed sixteen prior implementations~\cite{4}. Representative members
 \subsection{Closest contemporary overlap}
 \texttt{microshard-uuid}~\cite{14} is the nearest deployable overlap: a public RFC~9562 v8 with a fixed 54-bit microsecond timestamp, 32-bit shard, and 36 random bits, advertising zero-lookup routing with extensions for SQLite, PostgreSQL, MySQL, DuckDB, and ClickHouse~\cite{14}. It is a fixed layout, not a layout language: there is no per-field admissibility vocabulary, no repair policy, and no random-bit budget that varies by workload. GenoID concedes the fixed-layout case entirely; its claim starts where \texttt{microshard-uuid} stops, at declared multi-field layouts whose admissible sets, bounds, and counters are repaired deterministically with a stated total-variation bound.
 
+\subsection{Source-Known Identifiers}
+Source-Known Identifiers~\cite{29} is the closest overlapping prior art to the metadata-in-key goal. It specifies a fixed three-tier scheme: a 64-bit timestamp-ordered key, a 128-bit entity identifier that adds entity type, epoch and a keyed message authentication code for zero-lookup origin checks inside a shared-key trust domain, and an encrypted variant that conceals the metadata while preserving linkability of repeated identifiers. GenoID is a different contribution. Where Source-Known Identifiers fixes its three tiers and establishes origin with a keyed MAC or encryption, GenoID is a declarative multi-field layout compiler: an author declares field offsets, widths and admissible sets over the RFC~9562 v8 payload, and a deterministic constraint-repair pass satisfies them at generation time with a proven per-field total-variation bound $m/2^\ell$. GenoID embeds no keyed MAC and performs no encryption, so it makes no integrity or confidentiality claim; its fields are metadata by declaration and are read directly from the key. The two works therefore optimise different things. Source-Known Identifiers targets compact cross-tier identity and origin verification under one key, while GenoID targets the composition of arbitrary application fields into a standards-defined identifier with deterministic repair and a stated uniformity guarantee.
+
 \subsection{Constrained generation and repair lineage}
 The generic lineage is older and stronger than the UUID literature. Property-based testing compiles executable properties into generators~\cite{15}; Claessen, Dureg{\aa}rd, and Pa{\l}ka derive random data satisfying a Boolean predicate while targeting uniformity~\cite{16}; LaFontaine et al.\ repair incomplete generators from type and coverage information~\cite{17}; Goldstein et al.\ synthesise generators with guarantees~\cite{18}. The formal distinction is scope: those systems solve arbitrary predicates or synthesise generators from proof obligations. GenoID does neither. It projects one fixed-width random field into one declared admissible set, with no predicate solving and no distribution-preservation claim beyond the fibre bound of Section~\ref{sec:uniformity}. ``Constraint-guided repair'' names that projection, not a general constrained-generation result.
 
@@ -938,6 +943,12 @@ W. E. Smith, ``Various optimizers for single-stage production,'' Naval Research 
 
 \bibitem{28}
 Google, ``Protocol Buffers documentation: overview.'' \url{https://protobuf.dev/overview/}
+
+\bibitem{29}
+D. S. K{\i}l{\i}c{c}, ``Source-Known Identifiers: a three-tier identity system for distributed applications,'' arXiv:2604.00151 [cs.DC], v3, Sep.~2026. \url{https://arxiv.org/abs/2604.00151}
+
+\bibitem{30}
+A. K. Vishwakarma, ``When UUIDs break your database: a formal threshold model for B-tree performance degradation under random primary keys in OLTP systems,'' Zenodo preprint, Mar.~2026. \url{https://doi.org/10.5281/zenodo.19034539}
 
 \end{thebibliography}
 
