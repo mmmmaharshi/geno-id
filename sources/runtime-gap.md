@@ -51,6 +51,10 @@ The spread column tells the story: generators that call `getRandomValues` per UU
 
 ## Reproduction
 
+These tables are a frozen observation from the CI matrix at commit `3712d2b`
+(Bun 1.3.x, Node 20/22/23). Later matrix refreshes use Bun `latest` and Node 22
+only, so regenerate current numbers instead of treating these as live values.
+
 ```bash
 # Full CI matrix (CI only, ~20 min)
 git push origin main  # triggers .github/workflows/bench.yml
@@ -58,6 +62,10 @@ git push origin main  # triggers .github/workflows/bench.yml
 # Local single environment
 bun run bench-ci      # ~30 s
 
-# Cross-environment consolidated report
-bun run ci-consolidate dist/  # merges all *-results.json in dist/
+# Cross-environment consolidated report (current matrix; no script alias)
+bun x tsx src/scripts/ci-consolidate.ts combined
 ```
+
+The current nine-environment ratios live in `results/all-results.json` and are
+summarized in `docs/benchmarks.md`; the Node-specific penalty narrative in this
+file was superseded by the refreshed matrix and is retained only as history.
