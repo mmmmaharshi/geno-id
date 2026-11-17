@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.28.2] - 2026-11-17
+
+### Summary
+
+**Manuscript re-freeze after the five-seat peer review: reproducibility, claim framing, and artifact parity corrected.**
+
+### Highlights
+
+- 🧪 **Reproducibility repaired.** The manuscript and artifact manifest now agree with the committed artifacts: cluster numbers, 41-per-layout NIST p-values, and the three archived composite repeat runs. A one-host multi-shard experiment with per-trial arrays is mapped in the artifact table.
+- ⚖️ **Claims rescoped.** The scan comparison now uses a like-for-like full sweep (1.91x) and labels the per-shard figure by rows read; Welch tests are named unpaired; the 64^k contrast is one representative cell; the exclusion rule is dated without "pre-registered"; the microshard burst confound and the compiler's rejection are disclosed.
+- 📚 **Prior art added.** Source-Known Identifiers and the B-tree saturation threshold model are cited and differentiated; a BDRO methodology subsection records the refinement loop.
+
+### Known Issues
+
+- The local multi-shard experiment is one host with in-process SQLite files; no network dispatch, replication, or cross-node clock skew was measured. It is not production-scale evidence.
+- The release tag must contain the manuscript and artifacts it names; a later manuscript edit without a new tag breaks this freeze.
+
+### Dependencies Updated
+
+- None.
+
 ## [1.28.1] - 2026-11-14
 
 ### Summary
