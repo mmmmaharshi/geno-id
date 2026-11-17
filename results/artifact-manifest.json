@@ -28,7 +28,7 @@
     },
     "sec_nist": {
       "section": "NIST SP 800-22 (Section 5.4)",
-      "claim": "43 reported p-values per layout (41 test categories plus decomposition states), all p >= 0.01",
+      "claim": "41 reported p-values per layout (123 total across three layouts), all p >= 0.01",
       "artifact": "results/nist-sp800-22-results.json, results/nist-draws/",
       "command": "bun run src/scripts/export-structured.ts && python src/scripts/nist-full-battery.py",
       "verified": true
@@ -144,7 +144,7 @@
     },
     "sec_cluster": {
       "section": "Local multi-shard experiment (Section 3.4)",
-      "claim": "Small local multi-shard scan and versioned resharding: shard-major scan 4.11 ms versus frozen single-index 22.72 ms at 100000 rows (5.53x), reshard 40609 rows/s for 20000 rows, dual read 35.07 us versus single-layout 26.01 us (1.35x)",
+      "claim": "Small local multi-shard scan and versioned resharding: the like-for-like full sweep of five shard files over 100000 rows is 11.89 ms against the frozen single-index 22.72 ms (1.91x), and the 2.38 ms figure is a 20000-row per-shard scan; reshard 51939 rows/s for 20000 rows, dual read 17.39 us versus single-layout 11.41 us (1.52x)",
       "artifact": "results/cluster-experiment.json",
       "command": "bun run bench-cluster",
       "verified": true
