@@ -61,7 +61,7 @@
     "sec_cross_lang": {
       "section": "Cross-language reproducibility (Section 5.8)",
       "claim": "Rust reimplementation byte-identical: 3000 UUIDs, zero mismatches",
-      "artifact": "golden/*.txt + golden-check/",
+      "artifact": "golden/*.txt + src/golden-check/",
       "command": "bun run export-golden && cd src/golden-check && cargo run",
       "verified": true
     },
@@ -76,6 +76,13 @@
       "section": "Cost of embedding versus a composite key (Section 3.2)",
       "claim": "Schema comparison at N=10^5 with per-trial arrays, query plans, and host metadata",
       "artifact": "results/db-sqlite-composite.json",
+      "command": "bun run bench-sqlite-artifact",
+      "verified": true
+    },
+    "sec_db_composite_repeat_runs": {
+      "section": "Internal validity: run exclusion (Threats to Validity)",
+      "claim": "Three full repeat runs of the composite-key experiment (N=10^5, 10 trials, 1000 lookups); none meets the >1.3x-on-all-arms exclusion rule, so all are kept; the all-runs headline ratio is 3.8x",
+      "artifact": "results/db-sqlite-composite-run1.json, results/db-sqlite-composite-run2.json, results/db-sqlite-composite-run3.json",
       "command": "bun run bench-sqlite-artifact",
       "verified": true
     },
