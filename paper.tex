@@ -404,14 +404,14 @@ cluster. The committed experiment (\texttt{results/cluster-experiment.json})
 uses one host with 4 logical cores and in-process SQLite shard files,
 100{,}000 identifiers spread over \texttt{dbkey.v1} shards 1--5, and a
 five-trial shard-major scan that reads one shard file in full. One shard
-scan averages $4.11$\,ms against the frozen single-index embedded-arm
-shard scan of $22.72$\,ms at the same row count, a $5.53\times$ ratio;
-sweeping all five shards averages $20.52$\,ms. A versioned reshard adds
+scan averages $2.38$\,ms against the frozen single-index embedded-arm
+shard scan of $22.72$\,ms at the same row count, a $9.55\times$ ratio;
+sweeping all five shards averages $11.89$\,ms. A versioned reshard adds
 shards 6--8 under \texttt{dbkey.v2}: migrating 20{,}000 identifiers through
-the shared field-composition path runs at 40{,}609 rows/s, a dual-read window
+the shared field-composition path runs at 51{,}939 rows/s, a dual-read window
 calling \texttt{readStructured} over \texttt{dbkey.v1} and
-\texttt{dbkey.v2} averages $35.07\,\mu$s per read against $26.01\,\mu$s for
-the matching single-layout read ($1.35\times$ overhead), and each version
+\texttt{dbkey.v2} averages $17.39\,\mu$s per read against $11.41\,\mu$s for
+the matching single-layout read ($1.52\times$ overhead), and each version
 resolves 200 of the 400 sampled probes. The per-trial arrays are archived,
 and these are one-host, bounded-scale measurements rather than stable
 cross-host rates. The limits matter: there is no

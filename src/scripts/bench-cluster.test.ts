@@ -31,8 +31,8 @@ interface ClusterArtifact {
     rowsMigrated: number
     rowsPerSec: number
     integrityOk: boolean
-    dualRead: { trials: number; readsPerTrial: number; meanUs: number; v1Resolved: number; v2Resolved: number }
-    singleRead: { trials: number; readsPerTrial: number; meanUs: number }
+    dualRead: { trials: number; readsPerTrial: number; meanUs: number; samplesUs: number[]; v1Resolved: number; v2Resolved: number }
+    singleRead: { trials: number; readsPerTrial: number; meanUs: number; samplesUs: number[] }
   }
   derived: {
     shard_major_scan_ratio_vs_single_index: number
@@ -42,6 +42,7 @@ interface ClusterArtifact {
 }
 
 const round2 = (n: number): number => Math.round(n * 100) / 100
+const meanOf = (xs: number[]): number => xs.reduce((a, b) => a + b, 0) / xs.length
 
 function artifact(): ClusterArtifact {
   return read("results/cluster-experiment.json") as ClusterArtifact
@@ -88,9 +89,15 @@ test("cluster reshard ratios match the archived read and migration measurements"
   assert.equal(a.reshard.rowsMigrated, 20_000)
   assert.ok(a.reshard.integrityOk)
   assert.ok(a.reshard.rowsPerSec > 0)
+  const dualSamples: number[] = a.reshard.dualRead.samplesUs
+  const singleSamples: number[] = a.reshard.singleRead.samplesUs
+  assert.equal(dualSamples.length, a.reshard.dualRead.trials)
+  assert.equal(singleSamples.length, a.reshard.singleRead.trials)
+  assert.equal(a.reshard.dualRead.meanUs, round2(meanOf(dualSamples)))
+  assert.equal(a.reshard.singleRead.meanUs, round2(meanOf(singleSamples)))
   assert.equal(
     a.derived.dual_read_overhead_ratio,
-    round2(a.reshard.dualRead.meanUs / a.reshard.singleRead.meanUs),
+    round2(round2(meanOf(dualSamples)) / round2(meanOf(singleSamples))),
   )
   const classified = a.reshard.dualRead.v1Resolved + a.reshard.dualRead.v2Resolved
   assert.equal(a.reshard.dualRead.trials, a.reshard.singleRead.trials)

@@ -17,8 +17,8 @@
       "cpuModel": "11th Gen Intel(R) Core(TM) i3-1115G4 @ 3.00GHz",
       "logicalCores": 4,
       "runtime": "Bun 1.4.4",
-      "commitSha": "e0dd5b4840826807e93ccec8d7b71e574489cd6d",
-      "generatedAt": "2026-11-17T06:57:15.796Z"
+      "commitSha": "00781cce2b63d0dfe1fc82a824bd062aedbf1540",
+      "generatedAt": "2026-11-17T07:19:23.984Z"
     },
     "limits": [
       "Single host with in-process SQLite files; no network dispatch, replication, consensus, or cross-node clock skew",
@@ -72,8 +72,8 @@
     ]
   },
   "load": {
-    "elapsedMs": 255.04,
-    "rowsPerSec": 392103
+    "elapsedMs": 146.28,
+    "rowsPerSec": 683602
   },
   "scan": {
     "ddl": "CREATE TABLE ids (id BLOB(16) PRIMARY KEY, val INTEGER) WITHOUT ROWID",
@@ -88,63 +88,63 @@
     "shardMajor": {
       "perTrialMs": [
         [
-          3.32,
-          2.78,
-          2.74,
-          3.11,
-          13.72
+          2.22,
+          2.37,
+          2.47,
+          3.36,
+          2.6
         ],
         [
-          3.1,
-          2.87,
-          2.7,
-          2.8,
-          2.78
+          2.5,
+          2.52,
+          2.52,
+          2.62,
+          2.55
         ],
         [
-          2.82,
-          2.77,
-          2.84,
-          3.13,
-          3
+          2.71,
+          2.64,
+          2.58,
+          2.57,
+          2.6
         ],
         [
-          5.6,
-          2.84,
-          2.87,
-          2.79,
-          2.81
+          3.41,
+          7.12,
+          1.29,
+          1.56,
+          1.64
         ],
         [
-          2.91,
-          2.73,
-          2.89,
-          13.86,
-          8.86
+          1.14,
+          1.05,
+          1.07,
+          1.17,
+          1.16
         ]
       ],
-      "meanMs": 4.11,
-      "fullSweepMeanMs": 20.52,
+      "meanMs": 2.38,
+      "fullSweepMeanMs": 11.89,
       "fullSweepPerTrialMs": [
-        25.66,
-        14.24,
-        14.55,
-        16.92,
-        31.25
+        13.02,
+        12.71,
+        13.09,
+        15.02,
+        5.59
       ],
       "samples": 25
     }
   },
   "reshard": {
     "rowsMigrated": 20000,
-    "elapsedMs": 492.5,
-    "rowsPerSec": 40609,
+    "elapsedMs": 385.07,
+    "rowsPerSec": 51939,
     "postShardRowCounts": {
-      "1": 16075,
-      "2": 15982,
-      "3": 15965,
-      "4": 15937,
-      "5": 16041,
+      "1": 16098,
+      "2": 15816,
+      "3": 15882,
+      "4": 16113,
+      "5": 16091,
       "6": 6667,
       "7": 6667,
       "8": 6666
@@ -153,23 +153,37 @@
     "dualRead": {
       "trials": 5,
       "readsPerTrial": 400,
-      "meanUs": 35.07,
+      "meanUs": 17.39,
+      "samplesUs": [
+        15.377500000000168,
+        15.538499999999544,
+        19.447999999999865,
+        17.298749999999927,
+        19.275250000000028
+      ],
       "readStructuredCalls": 4200,
       "v1Resolved": 200,
       "v2Resolved": 200,
-      "checksum": 12036
+      "checksum": 12012
     },
     "singleRead": {
       "trials": 5,
       "readsPerTrial": 400,
-      "meanUs": 26.01,
+      "meanUs": 11.41,
+      "samplesUs": [
+        11.254749999999945,
+        8.55700000000013,
+        11.310500000000161,
+        10.554750000000013,
+        15.359750000000076
+      ],
       "readStructuredCalls": 2400,
-      "checksum": 12036
+      "checksum": 12012
     }
   },
   "derived": {
-    "shard_major_scan_ratio_vs_single_index": 5.53,
-    "dual_read_overhead_ratio": 1.35,
+    "shard_major_scan_ratio_vs_single_index": 9.55,
+    "dual_read_overhead_ratio": 1.52,
     "v2_resolved_fraction": 0.5
   }
 }
