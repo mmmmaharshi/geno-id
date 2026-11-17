@@ -32,19 +32,22 @@ fail on any divergence that matters).
 
 | Claim in README / CHANGELOG | Command | Output |
 |---|---|---|
-| Composition correctness (E1), repair-vs-rejection (E2), collision/uniformity (E3-E5), throughput (E6), single-parent ablation (E7) | `bun run scripts/bench-structured.ts` | stdout table + `results/structured-evidence.json` |
+| Composition correctness (E1), repair-vs-rejection (E2), collision/uniformity (E3-E5), throughput (E6), single-parent ablation (E7) | `bun run src/scripts/bench-structured.ts` | stdout table + `results/structured-evidence.json` |
 | Node.js speed + uniformity + collision (v4/v7/hash/mr/GenoID) | `bun run bench` | stdout, with mean±std/95%CI + Welch t-test (v1.9.0+) |
 | CI-style condensed JSON benchmark | `bun run bench-ci` | `dist/bench-ci-results.json` |
-| NIST SP 800-22, all 15 tests, all sample layouts | `python scripts/nist-full-battery.py` (after `bun scripts/export-structured.ts`) | `results/nist-sp800-22-results.json` + stdout per-test p-values |
+| NIST SP 800-22, all 15 tests, all sample layouts | `python src/scripts/nist-full-battery.py` (after `bun run src/scripts/export-structured.ts`) | `results/nist-sp800-22-results.json` + stdout per-test p-values |
 | Concurrent generation, cross-worker collision (Task B) | `bun run bench-concurrent` | stdout |
 | SQLite B-tree index locality (Task C) | `bun run bench-sqlite` | stdout |
 | 100M-scale collision test, all cores (Task D) | `bun run collision-100m`; Deno port runs weekly in `.github/workflows/deno-collision.yml` | stdout |
 | Extended dieharder battery (this addition) | `bun run dieharder` (exports 100M-bit samples if missing, then runs the curated subset and writes `dist/dieharder-results.md`) | `dist/dieharder-results.md` |
-| Baseline generators (pg_uuid_v8, ULID, ULID-v8, KSUID, Snowflake) known-answer tests | `bun test scripts/baselines.test.ts` and `scripts/baselines-verify.test.ts` | pass/fail per generator |
-| Full unit test suite | `bun run test` | pass/fail (29 tests as of v1.11.x) |
+| Baseline generators (pg_uuid_v8, ULID, ULID-v8, KSUID, Snowflake) known-answer tests | `bun test src/scripts/baselines.test.ts` and `src/scripts/baselines-verify.test.ts` | pass/fail per generator |
+| Full unit test suite | `bun run test` | pass/fail (270 pass as of v1.28.1 + BDRO work; `check:paper` and `evidence:verify` are separate gates) |
 | Browser benchmark (interactive, with 95% CI table) | `bun run build && open index.html`, click "Run All" | in-page results table |
 | Automated headless-browser check (deployable = development parity) | `bun run playwright` (Chromium/Firefox/WebKit) | stdout, `browserErrors: []` per engine expected |
 | Multi-OS / multi-runtime matrix + consolidated report | Push to a branch / open a PR (runs `.github/workflows/bench.yml`); or run any single `bun run bench-ci` locally per OS | `ci-consolidated` GitHub Actions artifact |
+| SQLite composite-key repeat runs (three full matrices, exclusion audit) | `bun run bench-sqlite-artifact` three times with `SQLITE_OUT` pointing at distinct files | `results/db-sqlite-composite-run{1,2,3}.json` |
+| Local multi-shard scan and reshard (not production-scale) | `bun run bench-cluster` | `results/cluster-experiment.json`, with per-trial arrays and a small local scale statement |
+| Manuscript lint and evidence verification | `bun run check:paper` and `bun run evidence:verify` | pass/fail; the LaTeX build runs in `.github/workflows/paper.yml` |
 
 All of the above are deterministic in *procedure* (same script, same inputs)
 but **not** in *output values*, because every generator draws from the OS
@@ -55,11 +58,11 @@ large sample counts rather than a single run, per
 
 ## 3. Extended dieharder battery — methodology and disclosed limitation
 
-NIST SP 800-22 (`scripts/nist-bridge.py`, full 15-test battery) validates
+NIST SP 800-22 (`src/scripts/nist-bridge.py`, full 15-test battery) validates
 ~1.22M-bit samples. dieharder is a larger, independently-implemented battery
 that expects much more data before its harder sub-tests (e.g.
 `rgb_lagged_sum`, `diehard_bitstream`) can run without the input file being
-rewound (re-used), which invalidates their p-values. `scripts/export-dieharder.ts`
+rewound (re-used), which invalidates their p-values. `src/scripts/export-dieharder.ts`
 exports 100M-bit (12.5MB) raw binary samples per generator (v4, raw-v8,
 GenoID-pooled, GenoID-structured `dbkey`) to close that gap — 12.5MB avoids
 rewinding on any dieharder sub-test's default sample request for a single
@@ -122,7 +125,7 @@ run saturates the machine instead of running the invocations strictly in series
 run, only faster.
 
 The exporter and the curated test list live in `scripts/dieharder-common.ts`
-and `scripts/run-dieharder.ts`; the agent authoring this document should run
+and `src/scripts/run-dieharder.ts`; the agent authoring this document should run
 `bun run dieharder` once `dieharder` is installed on the host and confirm the
 results before citing dieharder as a completed result in a paper draft.
 
