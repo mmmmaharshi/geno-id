@@ -388,13 +388,34 @@ Listing~\ref{lst:dbkey} embeds the owning shard directly in the key.
 A router extracts bits 52--59 and dispatches without consulting a
 shard map as a mechanism: routing becomes a bit-mask and a comparison, replacing a
 hash computation and a ring lookup under consistent hashing in the single-key case
-(no cluster-scale routing experiment; cross-node dispatch and resharding cost remain future work). The 48-bit timestamp prefix orders keys by emission
+(a small local multi-shard measurement follows below; cross-node dispatch on a hosted service remains future work). The 48-bit timestamp prefix orders keys by emission
 time; on 16-byte binary storage this yields the insert and lookup
 behaviour of Table~\ref{tab:composite}, while
 Section~\ref{sec:deployability} shows the effect is masked entirely
 under 36-byte text encoding.
 The trade-offs of embedding vs a composite key are discussed in
 Sections~\ref{sec:why-embed} and~\ref{sec:composite-bench}.
+
+\label{sec:cluster}
+We quantify that routing claim on a small local deployment, not a hosted
+cluster. The committed experiment (\texttt{results/cluster-experiment.json})
+uses one host with 4 logical cores and in-process SQLite shard files,
+100{,}000 identifiers spread over \texttt{dbkey.v1} shards 1--5, and a
+five-trial shard-major scan that reads one shard file in full. One shard
+scan averages $4.11$\,ms against the frozen single-index embedded-arm
+shard scan of $22.72$\,ms at the same row count, a $5.53\times$ ratio;
+sweeping all five shards averages $20.52$\,ms. A versioned reshard adds
+shards 6--8 under \texttt{dbkey.v2}: migrating 20{,}000 identifiers through
+the shared field-composition path runs at 40{,}609 rows/s, a dual-read window
+calling \texttt{readStructured} over \texttt{dbkey.v1} and
+\texttt{dbkey.v2} averages $35.07\,\mu$s per read against $26.01\,\mu$s for
+the matching single-layout read ($1.35\times$ overhead), and each version
+resolves 200 of the 400 sampled probes. The per-trial arrays are archived,
+and these are one-host, bounded-scale measurements rather than stable
+cross-host rates. The limits matter: there is no
+network dispatch, replication, consensus, or cross-node clock skew, so this
+is a small local cluster and not production-scale evidence; cross-node
+behaviour remains future work.
 
 \subsection{Multi-tenant isolation}
 The \texttt{multitenant} layout (Listing~\ref{lst:multitenant})
@@ -799,6 +820,7 @@ Nine-environment throughput (\S\ref{sec:throughput}) & \texttt{bun run bench-ci}
 Browser benchmark (\S\ref{sec:deployability}) & \texttt{bun run playwright} & \texttt{results/benchmark\_results.json} \\
 SQLite B-tree locality (\S\ref{sec:deployability}) & \texttt{bun run bench-db} & \texttt{results/db-sqlite.json} \\
 SQLite composite key (\S\ref{sec:composite-bench}) & \texttt{bun run bench-sqlite-artifact} & \texttt{results/db-sqlite-composite.json} \\
+Local multi-shard scan and reshard (\S\ref{sec:cluster}) & \texttt{bun run bench-cluster} & \texttt{results/cluster-experiment.json} \\
 Native PostgreSQL + MySQL (\S\ref{sec:validity}) & \texttt{bun run bench-db-native --rows=100000 --reps=5 --probes=100} (CI service containers) & \texttt{results/db-native.json} \\
 Workload-driven planning (\S\ref{sec:workload-planning}) & \texttt{bun run bench-workload} & \texttt{results/workload-planning.json}, \texttt{results/workload-planning-regionhot.json} \\
 Microshard head-to-head (\S\ref{sec:microshard}) & \texttt{bun run bench-microshard} & \texttt{results/microshard.json} \\
@@ -834,7 +856,7 @@ On throughput, prior work amortizes CSPRNG draws via pooling~\cite{12}, and Post
 \label{sec:validity}
 We disclose these openly, ranked by expected reviewer pressure.
 
-\textbf{External validity.} Rust reimplementation produces byte-identical output across 3000 seeded UUIDs and three layouts. Performance portability remains future work. Benchmarks run on shared CI runners; numbers are relative comparisons. No sharded-cluster routing experiment: cross-node dispatch cost, resharding cost, and cross-node clock-skew behavior are future work; routing claims rest on the single-key bit-mask mechanism.
+\textbf{External validity.} Rust reimplementation produces byte-identical output across 3000 seeded UUIDs and three layouts. Performance portability remains future work. Benchmarks run on shared CI runners; numbers are relative comparisons. A small local multi-shard experiment (Section~\ref{sec:cluster}) measures shard-major scan and resharding cost on one host, but cross-node dispatch, replication, and clock skew are unmeasured; the routing claim still rests on the single-key bit-mask mechanism.
 
 \textbf{Construct validity.} NIST PASS/FAIL is necessary but not sufficient for security; Section~\ref{sec:security} provides a threat model and entropy accounting.
 

@@ -134,6 +134,13 @@
       "artifact": "results/db-native.json",
       "command": "bun run bench-db-native --rows=100000 --reps=5 --probes=100",
       "verified": true
+    },
+    "sec_cluster": {
+      "section": "Local multi-shard experiment (Section 3.4)",
+      "claim": "Small local multi-shard scan and versioned resharding: shard-major scan 4.11 ms versus frozen single-index 22.72 ms at 100000 rows (5.53x), reshard 40609 rows/s for 20000 rows, dual read 35.07 us versus single-layout 26.01 us (1.35x)",
+      "artifact": "results/cluster-experiment.json",
+      "command": "bun run bench-cluster",
+      "verified": true
     }
   },
   "notes": {

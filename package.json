@@ -42,6 +42,7 @@
     "bench-concurrent": "bun run src/scripts/bench-concurrent.ts",
     "bench-sqlite": "bun run src/scripts/bench-sqlite.ts",
     "bench-sqlite-artifact": "bun run src/scripts/bench-sqlite-artifact.ts",
+    "bench-cluster": "bun run src/scripts/bench-cluster.ts",
     "collision-100m": "bun run src/scripts/collision-100m.ts",
     "histogram-100m": "bun run src/scripts/histogram-100m.ts",
     "histogram:maxz": "bun run src/scripts/histogram-maxz.ts",
