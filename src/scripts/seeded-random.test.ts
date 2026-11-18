@@ -7,7 +7,7 @@ import path from "node:path"
 // createSeededRandom's stream is degenerate (bytes 0/128 dominate), which is
 // fine for golden vectors + the Rust port but fatal for any uniformity
 // assertion. Distribution-asserting tests must use mulberry32 instead
-// (see CODING_STANDARDS.md, Deterministic Testing). This test fails if
+// (see the coding-standards skill, Seeded RNG Discipline). This test fails if
 // anyone "fixes" the stream and breaks byte-identity with the Rust port,
 // or if determinism itself regresses.
 
