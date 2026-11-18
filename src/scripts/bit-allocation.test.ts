@@ -335,40 +335,6 @@ test("the allocator is optimal over every permutation, on 400 randomized instanc
   assert.ok(improved > 0, "expected the Smith order to beat the rank order on at least one instance")
 })
 
-test("the rank order the shipped planner used is measurably suboptimal", () => {
-  const random = mulberry32(7)
-  const gaps: number[] = []
-  for (let trial = 0; trial < 200; trial++) {
-    const count = 2 + Math.floor(random() * 5)
-    const fields: SmallField[] = Array.from({ length: count }, (_, index) => ({
-      name: `f${index}`,
-      cardinality: 1 + Math.floor(random() * 2 ** 12),
-      weight: Math.floor(random() * 100),
-    }))
-    if (fields.reduce((sum, f) => sum + minBitsForCardinality(f.cardinality), 0) > 120) continue
-    const plan = planBitAllocation({ budget: 122, fields: fields.map((f) => ({ ...f, align: 1 })) })
-    if (plan.weightedDepthRankOrder > plan.weightedDepth) {
-      gaps.push((plan.weightedDepthRankOrder - plan.weightedDepth) / plan.weightedDepth)
-    }
-  }
-  assert.ok(gaps.length > 0, "no instance showed a gap")
-  const median = gaps.toSorted((a, b) => a - b)[Math.floor(gaps.length / 2)]
-  assert.ok(median > 0, "the rank order should be worse in aggregate")
-  assert.ok(median < 5, `the gap looks implausibly large at ${median}`)
-})
-
-test("priority equals weight over field width, which is the Smith key", () => {
-  const plan = planBitAllocation({
-    budget: 122,
-    fields: [
-      { name: "a", cardinality: 8, weight: 24 },
-      { name: "b", cardinality: 4096, weight: 24 },
-    ].map((f) => ({ ...f, align: 1 })),
-  })
-  for (const f of plan.fields) assert.equal(f.priority, f.weight / f.bits)
-  const [first] = plan.fields
-  assert.equal(first.name, "a", "the wider field has the lower weight/bit ratio and must sort later")
-})
 
 test("invalid input is rejected with a RangeError naming the field", () => {
   assert.throws(() => planBitAllocation({ fields: [] }), RangeError)

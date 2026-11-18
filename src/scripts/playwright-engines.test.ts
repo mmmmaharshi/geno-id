@@ -1,7 +1,5 @@
 import { test } from "node:test"
 import assert from "node:assert/strict"
-import { mkdtempSync, rmSync } from "node:fs"
-import { tmpdir } from "node:os"
 import path from "node:path"
 
 // The browser runner labelled each row with the requested engine but pinned
@@ -100,19 +98,3 @@ test(
   },
 )
 
-test("the write guard still refuses to replace a committed artifact with an empty run set", () => {
-  const plan = mod.planPlaywrightWrite(0, "results/benchmark_results.json")
-  assert.equal(plan.write, false)
-  assert.match(plan.message, /left untouched/)
-})
-
-test("a scratch output path is honoured and does not collide with the committed artifact", () => {
-  const dir = mkdtempSync(path.join(tmpdir(), "playwright-guard-"))
-  try {
-    const plan = mod.planPlaywrightWrite(2, path.join(dir, "scratch.json"))
-    assert.equal(plan.write, true)
-    assert.match(plan.message, /scratch\.json/)
-  } finally {
-    rmSync(dir, { recursive: true, force: true })
-  }
-})

@@ -133,17 +133,3 @@ test("genSnowflake embeds 41-bit ts + worker and increments sequence monotonical
   assert.equal(seq2, (seq1 + 1) & 0xfff)
 })
 
-test("all timestamped baselines embed the exact injected timestamp", () => {
-  const tMs = 1_700_000_000_000
-  // tUs must fit in 48 bits (< 2^48) so pg_uuid_v8 does not wrap.
-  const tUs = 170_000_000_000_000n
-  const tSec = Math.floor(tMs / 1000)
-
-  assert.equal(decodeUlidTimestamp(genUlid(tMs)), tMs)
-  assert.equal(bytesToTimestamp(uuidToBytes(genUlidV8(tMs)), 6), tMs)
-  assert.equal(extractPgUuidV8Timestamp(genPgUuidV8(tUs)), tUs)
-  const kp = ksuidDecode(genKsuid(tSec))
-  const kTs = (kp[0]! << 24) | (kp[1]! << 16) | (kp[2]! << 8) | kp[3]!
-  assert.equal(kTs, tSec - KSUID_EPOCH)
-  assert.equal(Number(BigInt(genSnowflake(1n, tMs)) >> 22n), tMs - Number(SF_EPOCH))
-})

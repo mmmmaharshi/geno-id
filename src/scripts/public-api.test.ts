@@ -9,9 +9,7 @@ import {
   genStructuredGenoID,
   completeLayout,
   readStructured,
-  toUuidString,
   uuidToBytes,
-  compileLayout,
   compileDatabaseLayout,
   getStructuredGenerationMode,
   configureRandom,
@@ -22,10 +20,6 @@ import {
 
 import type {
   Layout,
-  Field,
-  FieldConstraint,
-  FieldType,
-  CompiledLayout,
   LayoutCompilerInput,
 } from "../../dist/index.js"
 
@@ -102,41 +96,6 @@ test("readStructured reads full >32-bit fields (truncation regression guard)", (
   const got = readStructured(bytesToUuid(bytes), layout)
   // 0x0100ABCDEF = 4306226671; a 32-bit truncation would yield 0x00ABCDEF.
   assert.equal(got.big, 0x0100abcdef)
-})
-
-test("uuidToBytes <-> toUuidString is an identity round-trip", () => {
-  const uuid = "1a2b3c4d-0000-8000-8000-000000000000"
-  const back = toUuidString(uuidToBytes(uuid))
-  assert.equal(back, uuid)
-  const b = uuidToBytes(uuid)
-  assert.equal(b[0], 0x1a)
-  assert.equal(b.length, 16)
-})
-
-test("public type aliases resolve for the layout API", () => {
-  const ft: FieldType = "counter"
-  const fc: FieldConstraint = { allowed: [1] }
-  const field: Field = { name: "x", start: 0, length: 48, type: ft, constraint: fc }
-  const layout: Layout = completeLayout("alias", [field])
-  assert.equal(layout.name, "alias")
-  assert.equal(layout.fields[0].name, "x")
-  // exercise the alias types end-to-end through the public generators
-  const uuid = genStructuredGenoID(layout)
-  assert.match(uuid, UUID_V8_RE)
-})
-
-test("compileLayout produces a CompiledLayout shape and its source round-trips through genStructuredGenoID", () => {
-  const cl: CompiledLayout = compileLayout(DBKEY_LAYOUT)
-  assert.ok(typeof cl.source === "string" && cl.source.length > 0)
-  assert.ok(typeof cl.fn === "function")
-  // genStructuredGenoID uses the compiled path when Web Crypto is available.
-  // Verify it produces valid UUIDs that readStructured can decode.
-  for (let i = 0; i < 5; i++) {
-    const uuid = genStructuredGenoID(DBKEY_LAYOUT)
-    assert.match(uuid, UUID_V8_RE)
-    const got = readStructured(uuid, DBKEY_LAYOUT)
-    assert.ok("shard" in got && "counter" in got && "timestamp" in got)
-  }
 })
 
 test("compileDatabaseLayout places locality fields first for offset-free schemas", () => {

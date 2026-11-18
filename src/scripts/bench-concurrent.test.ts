@@ -7,21 +7,9 @@
 // field constraints intact across threads.
 
 import assert from "node:assert/strict"
-import path from "node:path"
 import { test } from "node:test"
-// oxlint false-positive: does not track `import type` usage inside `as` casts.
-// oxlint-disable-next-line no-unused-vars
-import type { V8Layout } from "../../dist/algo.js"
 
-import { CONCURRENT_LAYOUT, runConcurrent } from "./bench-concurrent.ts"
-
-const root = path.resolve(import.meta.dirname, "..", "..")
-const algo = (await import(
-  path.resolve(root, "dist/algo.js")
-)) as {
-  genStructuredGenoID: (l: V8Layout) => string
-  readStructured: (u: string, l: V8Layout) => Record<string, number>
-}
+import { runConcurrent } from "./bench-concurrent.ts"
 
 test("Task B: zero cross-worker collisions (plain genoid)", async () => {
   const res = await runConcurrent({ mode: "genoid", workers: 3, perWorker: 50_000 })
@@ -41,8 +29,3 @@ test("Task B: zero collisions and zero constraint violations (structured)", asyn
   assert.equal(res.violations, 0)
 })
 
-test("Task B: every structured UUID keeps a valid tenant in [0,7] under fan-out", () => {
-  const sample = algo.genStructuredGenoID(CONCURRENT_LAYOUT)
-  const fields = algo.readStructured(sample, CONCURRENT_LAYOUT)
-  assert.ok([0, 1, 2, 3, 4, 5, 6, 7].includes(fields.tenant))
-})

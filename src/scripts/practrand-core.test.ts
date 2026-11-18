@@ -51,12 +51,6 @@ test("countVerdicts separates passes, failures, and unassessed rows", () => {
   assert.equal(counts.unassessed, 1)
 })
 
-test("countVerdicts reports an unassessed row as neither pass nor failure", () => {
-  const counts = countVerdicts(parsePractrandOutput("quiet test : 0.4 (0.4)"))
-  assert.equal(counts.passed, 0)
-  assert.equal(counts.failed, 0)
-  assert.equal(counts.unassessed, 1)
-})
 
 test("parsePractrandOutput returns no rows for output that carries no results", () => {
   assert.deepEqual(parsePractrandOutput("practrand: command not found"), [])

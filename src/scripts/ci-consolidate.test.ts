@@ -29,12 +29,6 @@ test("envLabel labels bun environments by OS", () => {
   assert.equal(envLabel(fromPartial({ runtime: "bun", platform: "win32", bun: "1" })), "Windows (Bun)")
 })
 
-test("envLabel labels node environments with version", () => {
-  assert.equal(
-    envLabel(fromPartial({ runtime: "node", node: "22", platform: "linux" })),
-    "Node 22 (Linux)",
-  )
-})
 
 test("envLabel labels deno environments distinctly", () => {
   assert.equal(

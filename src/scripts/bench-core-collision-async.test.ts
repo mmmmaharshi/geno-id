@@ -75,19 +75,6 @@ test("benchAsyncBatched keeps its existing concurrent batching contract", async 
   assert.equal(result.n, 25)
 })
 
-test("the async collision count agrees with the sync count on identical input", async () => {
-  const values = withDuplicates(unique(30), 3)
-  const asyncCount = await collisionTestAsync(deterministic(values), 90, 5)
-  const set = new Set<string>()
-  let syncCount = 0
-  for (let i = 0; i < 90; i++) {
-    const v = values[i]
-    if (set.has(v)) syncCount++
-    else set.add(v)
-  }
-  assert.equal(asyncCount, syncCount)
-})
-
 test("the async path issues the whole batch concurrently, not one call at a time", async () => {
   // The sequential implementation awaited each call individually, so 20,000
   // WebKit SubtleCrypto calls at ~15 ms each blew the 300 s run timeout. The

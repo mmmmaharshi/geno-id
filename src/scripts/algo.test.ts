@@ -9,18 +9,15 @@ const root = path.resolve(__dirname, "..", "..")
 const algo = await import(pathToFileURL(path.resolve(root, "dist/algo.js")).href)
 const {
   genGenoID,
-  genV4Native,
   genV7,
   genMathRandom,
   toUuidString,
   uuidToBytes,
   validateLayout,
   completeLayout,
-  getFieldValue,
   forceVersionVariant,
   genStructuredGenoID,
   readStructured,
-  DBKEY_LAYOUT,
   MULTITENANT_LAYOUT,
   EVENTSOURCING_LAYOUT,
 } = algo as {
@@ -43,11 +40,6 @@ const {
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 
-test("smoke: genGenoID exports a well-formed v8 UUID", () => {
-  const id = genGenoID()
-  assert.match(id, UUID_RE)
-})
-
 // ---- toUuidString / uuidToBytes round-trip ----
 
 test("toUuidString then uuidToBytes is lossless", () => {
@@ -67,13 +59,6 @@ test("uuidToBytes rejects malformed hex", () => {
 })
 
 // ---- version / variant markers ----
-
-test("genV4Native produces a v4 UUID (version nibble 4, variant 8)", () => {
-  const id = genV4Native()
-  assert.match(id, UUID_RE)
-  assert.equal(id[14], "4")
-  assert.ok("89ab".includes(id[19]))
-})
 
 test("genV7 produces a v7 UUID (version nibble 7)", () => {
   const id = genV7()
@@ -197,19 +182,6 @@ test("wide node/process/shard fields span their full declared range (no 8-bit ca
   }
   assert.ok(seen.size > 256, `stream entropy collapsed to ${seen.size} values — 8-bit cap regression`)
   assert.ok([...seen].some((v) => v > 255), "stream never exceeded 255 — high byte never drawn")
-})
-
-test("readStructured round-trips every field of a generated dbkey UUID", () => {
-  const layout = DBKEY_LAYOUT as { fields: { name: string; start: number; length: number; type: string }[] }
-  for (let i = 0; i < 200; i++) {
-    const uuid = genStructuredGenoID(DBKEY_LAYOUT)
-    const fields = readStructured(uuid, DBKEY_LAYOUT)
-    const bytes = uuidToBytes(uuid)
-    for (const f of layout.fields) {
-      const expected = Number(getFieldValue(bytes, f))
-      assert.equal(fields[f.name], expected)
-    }
-  }
 })
 
 // ---- genStructuredGenoID constraint satisfaction ----

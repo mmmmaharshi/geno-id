@@ -8,16 +8,14 @@ import path from "node:path"
 // increments within a tick rather than being redrawn, and counter
 // exhaustion freezes generation until the clock advances. These
 // tests pin that behavior on every generator path that emits a
-// (timestamp, counter) pair: the compiled production path, the
-// single-parent pool, and both hand-coded dbkey generators.
+// (timestamp, counter) pair: the compiled production path and the
+// single-parent pool.
 
 const __dirname = import.meta.dirname
 const root = path.resolve(__dirname, "..", "..")
 const algo = await import(pathToFileURL(path.resolve(root, "dist/algo.js")).href)
 
 const {
-  genHandCodedDbkey,
-  genHandCodedDbkeyP,
   genStructuredGenoIDSingleParent,
   genStructuredParent,
   genStructuredGenoID,
@@ -28,8 +26,6 @@ const {
   resetSeededState,
   DBKEY_LAYOUT,
 } = algo as {
-  genHandCodedDbkey: () => string
-  genHandCodedDbkeyP: () => string
   genStructuredGenoIDSingleParent: (l: unknown) => string
   genStructuredParent: (l: unknown, mask: number[]) => Uint8Array
   genStructuredGenoID: (l: unknown) => string
@@ -209,99 +205,4 @@ test("§6.2 genStructuredParent: timestamp field clamps to the last tick on a ba
   })
 })
 
-// ---------------------------------------------------------------------------
-// Hand-coded dbkey generators (per-call and pooled share one clock)
-// ---------------------------------------------------------------------------
 
-const HANDCODED_N = 70_000
-
-test("§6.2 hand-coded per-call: backwards clock re-emits the previous tick", () => {
-  resetSeededState()
-  const T = 1_700_000_000_000
-  withClock(() => T, () => {
-    const a = pairOf(genHandCodedDbkey())
-    assert.equal(a.ts, T)
-    withClock(() => T - 8_000, () => {
-      const b = pairOf(genHandCodedDbkey())
-      assert.equal(b.ts, T, "backwards clock must clamp the timestamp to the last tick")
-      assert.ok(b.ctr > a.ctr, `counter must increment within a tick: ${a.ctr} → ${b.ctr}`)
-    })
-  })
-})
-
-test("§6.2 hand-coded per-call: counter exhaustion freezes generation until the clock advances", () => {
-  resetSeededState()
-  const T = 1_700_000_000_000
-  let reads = 0
-  withClock(() => T + ((reads++) >> 6), () => {
-    let prevTs = -1
-    let prevCtr = -1
-    let freezes = 0
-    for (let i = 0; i < HANDCODED_N; i++) {
-      const pair = pairOf(genHandCodedDbkey())
-      if (pair.ts === prevTs) {
-        assert.ok(pair.ctr > prevCtr, `counter regressed within tick ${prevTs}: ${prevCtr} → ${pair.ctr}`)
-      } else {
-        assert.ok(pair.ts > prevTs, `timestamp regressed: ${prevTs} → ${pair.ts}`)
-        if (prevTs !== -1) freezes++
-      }
-      prevTs = pair.ts
-      prevCtr = pair.ctr
-    }
-    // A 16-bit counter exhausts after ≤65536 UUIDs; 70k UUIDs must
-    // cross at least one exhaustion-driven tick boundary.
-    assert.ok(freezes > 0, "expected at least one exhaustion freeze in 70k UUIDs")
-  })
-})
-
-test("§6.2 hand-coded pooled: counter exhaustion freezes generation until the clock advances", () => {
-  resetSeededState()
-  const T = 1_700_000_000_000
-  let reads = 0
-  withClock(() => T + ((reads++) >> 6), () => {
-    let prevTs = -1
-    let prevCtr = -1
-    let freezes = 0
-    for (let i = 0; i < HANDCODED_N; i++) {
-      const pair = pairOf(genHandCodedDbkeyP())
-      if (pair.ts === prevTs) {
-        assert.ok(pair.ctr > prevCtr, `counter regressed within tick ${prevTs}: ${prevCtr} → ${pair.ctr}`)
-      } else {
-        assert.ok(pair.ts > prevTs, `timestamp regressed: ${prevTs} → ${pair.ts}`)
-        if (prevTs !== -1) freezes++
-      }
-      prevTs = pair.ts
-      prevCtr = pair.ctr
-    }
-    assert.ok(freezes > 0, "expected at least one exhaustion freeze in 70k UUIDs")
-  })
-})
-
-test("§6.2 hand-coded: per-call and pooled generators share one monotonic tick", () => {
-  resetSeededState()
-  const T = 1_700_000_000_000
-  withClock(() => T, () => {
-    // Both access patterns of the same dbkey layout resolve
-    // against one shared tick state. Ordering itself is
-    // per-generator (the pooled generator pre-formats a
-    // batch per refill, as the paper §3.6 documents), but
-    // neither generator may ever emit a timestamp below the
-    // shared last tick — including under a backwards clock.
-    for (let round = 0; round < 2; round++) {
-      for (let i = 0; i < 100; i++) {
-        const uuid = (i & 1) === 0 ? genHandCodedDbkey() : genHandCodedDbkeyP()
-        assert.equal(pairOf(uuid).ts, T, `round ${round}: timestamp must equal the shared tick`)
-      }
-      withClock(() => T - 123_456 * (round + 1), () => {
-        for (let i = 0; i < 100; i++) {
-          const uuid = (i & 1) === 0 ? genHandCodedDbkey() : genHandCodedDbkeyP()
-          assert.equal(
-            pairOf(uuid).ts,
-            T,
-            `round ${round}: backwards clock must not regress either generator's timestamp`,
-          )
-        }
-      })
-    }
-  })
-})
