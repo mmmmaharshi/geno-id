@@ -146,7 +146,7 @@ const DRAWS = 200_000
 // but run 3x slower in the full suite, where the Playwright engine tests
 // saturate the cores. A per-test timeout is the portable lever both bun and
 // node honor.
-const DRAWS_TIMEOUT = 30_000
+const DRAWS_TIMEOUT = 60_000
 
 test("fibre theorem: multitenant tenant and region are exactly uniform on both paths", () => {
   for (const name of ["tenant", "region"]) {

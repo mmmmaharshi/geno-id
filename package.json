@@ -22,7 +22,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "bun check -p tsconfig.json && bun check -p tsconfig.scripts.json",
-    "test": "bun test src/scripts --timeout=30000",
+    "test": "bun test --parallel --timeout=30000 src/scripts",
     "check:paper": "bun run src/scripts/check-paper.ts",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
