@@ -1,6 +1,7 @@
 import { performance } from "node:perf_hooks"
 import { pathToFileURL } from "node:url"
 import path from "node:path"
+import type { V8Layout } from "../../dist/algo.js"
 
 const __dirname = import.meta.dirname
 const root = path.resolve(__dirname, "..", "..")
@@ -17,11 +18,11 @@ const {
   createSeededRandom,
   resetSeededState,
 } = algo as {
-  genStructuredGenoID: (l: any) => string
-  genStructuredGenoIDSingleParent: (l: any) => string
-  repairConstraints: (l: any, b: Uint8Array) => number
+  genStructuredGenoID: (l: V8Layout) => string
+  genStructuredGenoIDSingleParent: (l: V8Layout) => string
+  repairConstraints: (l: V8Layout, b: Uint8Array) => number
   forceVersionVariant: (b: Uint8Array) => void
-  DBKEY_LAYOUT: any
+  DBKEY_LAYOUT: V8Layout
   HEX8: string[]
   wordTable: () => string[] | null
   configureRandom: (fn: ((buf: Uint8Array) => void) | null) => void
@@ -29,7 +30,7 @@ const {
   resetSeededState: () => void
 }
 
-const L = DBKEY_LAYOUT as any
+const L = DBKEY_LAYOUT
 const N = 500_000
 const WARM = 4096
 

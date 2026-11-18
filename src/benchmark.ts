@@ -264,13 +264,20 @@ async function runAll(): Promise<void> {
   btn.disabled = false
 }
 
+interface BenchmarkGlobals {
+  runAll: typeof runAll
+  copyToClipboard: typeof copyToClipboard
+  copyTableToClipboard: typeof copyTableToClipboard
+}
+
 export function init(host?: Window & typeof globalThis): void {
   const w = host ?? (typeof window !== "undefined" ? window : undefined)
   if (!w) return
   showSamples()
-  ;(w as any).runAll = runAll
-  ;(w as any).copyToClipboard = copyToClipboard
-  ;(w as any).copyTableToClipboard = copyTableToClipboard
+  const globals = w as Window & typeof globalThis & BenchmarkGlobals
+  globals.runAll = runAll
+  globals.copyToClipboard = copyToClipboard
+  globals.copyTableToClipboard = copyTableToClipboard
 }
 
 export { runAll, copyToClipboard, copyTableToClipboard }
