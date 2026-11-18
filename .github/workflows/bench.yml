@@ -38,6 +38,32 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  test:
+    name: unit tests (parallel, all cores)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Cache Bun dependencies
+        id: cache-bun
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
+          restore-keys: ${{ runner.os }}-bun-
+      - run: bun install
+      - run: bun run build
+      - name: Install Playwright browsers
+        run: bun x playwright install --with-deps chromium firefox webkit
+      # bun test runs files in a single process by default; --parallel uses
+      # one worker per core (4 on ubuntu-latest) for all 247 tests.
+      - run: bun run test
+
   bun-matrix:
     name: bun ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
