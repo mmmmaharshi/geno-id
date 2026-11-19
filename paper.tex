@@ -326,11 +326,10 @@ with none of its scan advantage: where the key must carry routing,
 embedding still wins; where it need not, the expression index trades
 insert throughput for tooling, not for savings.
 
-We also withdraw a claim an earlier revision of this paper made, that
-declaring the shard at a byte-aligned offset (56 rather than the shipped
-52) yields a lookup advantage. Across four repeated runs of the same
+We find no lookup advantage in declaring the shard at a byte-aligned offset
+(56 rather than the shipped 52). Across four repeated runs of the same
 experiment the direction of the effect reversed three times ($+14\%$,
-$-2\%$, $+4.7\%$, $+4\%$ in favour of the aligned offset), i.e.\ it is
+$-2\%$, $+4.7\%$, $+4\%$ in favour of the aligned offset), so it is
 not separable from run-to-run variance at these trial counts, and SQLite
 evidently evaluates the straddling two-byte predicate as cheaply as the
 byte-aligned one. The aligned-offset variant was measured on the same rig
@@ -507,10 +506,11 @@ it sits. Width is an entropy question, a field holding one of five values
 needs three bits, not eight, and every surplus bit comes out of the residual
 entropy the collision guarantee depends on. Position is a locality question,
 a field a query filters on costs more the deeper it sits, because every
-comparison walks past it. The planner that shipped with earlier revisions
-answered neither: widths were caller-declared and never checked against the
-cardinality they must represent, and position was chosen by sorting fields into
-three workload-role ranks and, inside a rank, by descending width.
+comparison walks past it. A planner that leaves widths caller-declared and
+unchecked against the cardinality they must represent fails the width question.
+A planner that orders fields by three workload-role ranks and, inside a rank,
+by descending width fails the position question. Section~\ref{sec:bit-allocation}
+gives the ordering rule that satisfies both.
 
 \noindent\emph{Widths first.} A field whose domain contains $c$ values requires
 $\lceil \log_2 c \rceil$ bits, so that is a hard floor, and it is the
@@ -691,7 +691,24 @@ Four questions organize the evaluation. RQ1 (composition): does every emitted UU
 \subsection{Benchmark-driven research optimization}
 \label{sec:methodology}
 
-We hardened the claims through a benchmark-driven research optimization (BDRO) loop of six repeatable practices. Quantitative claims use envelope wording with no absolutes: throughput is a same-rig ratio of means with a host-dependent envelope rather than a single absolute rate (\S\ref{sec:throughput}). After a post-release artifact refresh moved some measured ratios, every envelope was re-validated against three artifact vintages, the frozen release tag, an issue snapshot commit, and the current CI-refreshed head, and only wording true of all three was kept. Negative controls delimit the positive results: the \texttt{Math.random} collision gate (\S\ref{sec:evaluation}, collision and uniformity) and the inverted region-heavy control of the workload loop (\S\ref{sec:workload-planning}), which converges to parity rather than manufacturing a win, were run deliberately, not selected after the fact. The composite-key repeat runs follow an exclusion rule declared after observing between-run variance and before selecting any run, stated in Section~\ref{sec:validity}; no run met it, so no exclusion occurred and no reported number rests on a selective exclusion. Every table and figure traces to an exact command and archived file in the artifact map (Table~\ref{tab:artifact-map}, Availability section). The cost is split by cadence: unit tests, the paper lint and LaTeX build, the golden-vector byte checks (\S\ref{sec:cross-lang}), and the throughput matrix run on every push; the latter reports same-rig ratios of means, and the coefficient of variation of individual arms stays below $0.37$ in the frozen matrix (worst case node/darwin \texttt{v4-native}, $0.366$), so outlier sensitivity is visible from the archived per-trial samples. Expensive stress tests run on the project's nightly-versus-per-push schedule so the large collision scan and curation-heavy statistical batteries do not gate routine changes.
+The evaluation obeys six reporting constraints, each chosen to keep a claim
+tied to evidence that can fail. Quantitative claims use envelope wording.
+Absolute rates vary by host, so throughput is a same-rig ratio of means with a
+host-dependent envelope (\S\ref{sec:throughput}). A wording must hold across
+independent artifact refreshes before it is kept, so a claim that depends on a
+single run is not reported. Negative controls delimit positive results. The
+\texttt{Math.random} collision gate (\S\ref{sec:evaluation}, collision and
+uniformity) and the inverted region-heavy control of the workload loop
+(\S\ref{sec:workload-planning}) set the boundary of what the main results show;
+the latter converges to parity. An exclusion rule is fixed before a run is
+selected, so no reported number rests on a selective exclusion
+(Section~\ref{sec:validity}); no run met the rule. Every table and figure traces
+to an exact command and archived file (Table~\ref{tab:artifact-map}, Availability
+section). Fast checks and slow stress tests run at different cadences so a
+curation-heavy battery does not gate a routine change. The individual-arm
+coefficient of variation stays below $0.37$ in the frozen matrix (worst case
+node/darwin \texttt{v4-native}, $0.366$), so outlier sensitivity is visible from
+the archived per-trial samples.
 
 \subsection{Composition correctness}
 \label{sec:composition-correctness}
@@ -800,7 +817,14 @@ Two results run against us. \texttt{snowflake} is faster in all nine environment
 
 \subsection{Ablation}
 \label{sec:ablation}
-A prototype layout compiler emitting inlined per-layout code was evaluated and rejected: it shows a runtime-dependent effect in the frozen and refreshed matrices: at or above parity on Bun, deficits on Deno, and a large regression on Node~22 (about $0.14$--$0.26\times$ of the interpreted path across both; Table~\ref{tab:paired} for the frozen per-environment ratios, \texttt{results/all-results.json} for per-refresh values). The compiler therefore buys nothing on the refreshed matrix, and the interpreted repair pass remains the cheaper path on every runtime; further work should target the pooling and string-formatting paths, and the Node code-generation regression, instead. The two-parent design itself is load-bearing: a single-parent ablation reaches only $0.158\times$ of production throughput with identical collision (0) and uniformity ($\leq 0.006$) behaviour (\texttt{results/structured-evidence.json}, E7), so the second parent buys a $6.3\times$ speedup, not quality.
+A prototype layout compiler that emits inlined per-layout code is not the
+shipped path. Its measured effect is runtime-dependent: at or above parity on
+Bun, deficits on Deno, and a large regression on Node~22 (about $0.14$--$0.26\times$
+of the interpreted path across both; Table~\ref{tab:paired} for the frozen
+per-environment ratios, \texttt{results/all-results.json} for per-refresh
+values). The interpreted repair pass is therefore the cheaper path on every
+runtime, and further work should target the pooling and string-formatting paths
+and the Node code-generation regression. The two-parent design itself is load-bearing: a single-parent ablation reaches only $0.158\times$ of production throughput with identical collision (0) and uniformity ($\leq 0.006$) behaviour (\texttt{results/structured-evidence.json}, E7), so the second parent buys a $6.3\times$ speedup, not quality.
 
 \subsection{Additional deployability checks}
 \label{sec:deployability}
@@ -813,7 +837,12 @@ To turn the portability claim into a checkable artifact, the composition core wa
 
 To establish that the vectors discriminate rather than merely agree, the check re-runs against deliberately broken semantics, and CI fails unless the breakage is detected. Shifting the index-modulo repair by one position fails \texttt{dbkey} (994/1000) and \texttt{multitenant} (1000/1000) while leaving \texttt{eventsourcing} and \texttt{conformance}, which declare no admissible-set constraint, untouched (0/1000 each); the six clean \texttt{dbkey} draws are ones whose raw values were already admissible, where repair is idempotent by design and any repair variant agrees. Freezing the tick-keyed counter instead of incrementing it fails \texttt{dbkey} (999/1000) and \texttt{eventsourcing} (999/1000) and leaves \texttt{multitenant} and \texttt{conformance}, which declare no counter, untouched (0/1000 each); the single agreement per run is the first UUID, which both paths seed from the same draw. Each layout is sensitive to exactly the constraint kinds it declares, and the per-layout mismatch counts are printed by the check itself.
 
-The vectors were regenerated after the repair and counter algorithms changed during development; on re-verification the prior Rust port had diverged on both, a divergence a prose specification would not have surfaced. The vectors are checked into \texttt{golden/} and verified in CI on every push, serving as an executable specification for any future port.
+The vectors make a semantic disagreement visible that prose cannot. When the
+repair and counter operators are altered, the committed vectors detect the
+change: the Rust port diverges on both operators under test, and a prose
+specification would not surface the divergence. The vectors are checked into
+\texttt{golden/} and verified in CI on every push, serving as an executable
+specification for any future port.
 
 In production, each port draws from its own OS CSPRNG; the seeded byte stream exists only for cross-language verification. Different buffering in a Rust port would be no less correct for producing different byte sequences.
 
@@ -884,7 +913,7 @@ We disclose these openly, ranked by expected reviewer pressure.
 
 \textbf{Run-to-run stability.} The SQLite composite-key lookup measurement is the least stable quantity in this paper: the offset-56 versus offset-52 lookup difference reversed direction three times across four repeated runs of the same experiment ($+14\%$, $-2\%$, $+4.7\%$, $+4\%$), so we make no claim for it and report only the direction every arm agrees on. Insert throughput carried a similar instability in an earlier experiment, where one of three runs was uniformly $1.3$--$2.5\times$ slower under background load; the composite-key table above reports ten trials on one host, and the per-trial arrays in \texttt{results/db-sqlite-composite.json} let a reader re-check that no trial is an outlier.
 
-\textbf{Internal validity.} Benchmark confounds are mitigated by mean $\pm$ SD over 10 trials with 95\% CI and Welch $t$-tests. Two implementation bugs (a byte-consumption mismatch in \texttt{eventsourcing}'s \texttt{node}-typed field and a missing seed-state reset) were caught by the test suite before publication. A dead-code-elimination (DCE) hazard in the timing loop was identified and corrected after early throughput runs: an unconsumed loop elides the pure-JavaScript generators' work, inflating measured rates by roughly $2\times$ while leaving native \texttt{crypto.randomUUID()} unchanged; every number in Table~\ref{tab:throughput} post-dates the correction, confirmed by consuming each generated value into a live accumulator that the JIT cannot prove is a no-op (`benchSync` in \texttt{src/bench-core.ts}). NIST runs unconditionally; dieharder is a CI-budget curation. The SQLite composite-key benchmark (Section~\ref{sec:composite-bench}) revealed a between-run variance component not captured by within-run CIs; we applied a post-hoc rule under which a run is excluded only when every arm is $>1.3\times$ slower than the median run. All three full repeat runs are archived (\texttt{results/db-sqlite-composite-run1.json}, \texttt{results/db-sqlite-composite-run2.json}, \texttt{results/db-sqlite-composite-run3.json}; $N=10^5$, 10 trials, 1000 lookups per trial), so a reader can re-check the rule from the committed per-trial arrays. None of the three runs met the rule, so no run is excluded. The kept run backing Table~\ref{tab:composite} (\texttt{results/db-sqlite-composite.json}) gives a headline ratio of $3.1\times$ ($22.72$\,ms embedded against $7.38$\,ms composite shard scan); pooling all three runs gives an all-runs headline ratio of $3.8\times$ ($20.33$\,ms embedded against $5.29$\,ms composite shard scan, 30 trials per arm). The two ratios agree in direction and are of similar magnitude, and we report both rather than selecting a single run. Absolute per-identifier times in the density sweep (Section~\ref{sec:repair-vs-rejection}) carry a warm-up ordering effect; the repair-count and trial-count results, on which the analysis rests, are order-independent.
+\textbf{Internal validity.} Benchmark confounds are mitigated by mean $\pm$ SD over 10 trials with 95\% CI and Welch $t$-tests. Two implementation defects in the measured paths are guarded by tests: a byte-consumption mismatch in \texttt{eventsourcing}'s \texttt{node}-typed field and a missing seed-state reset. A dead-code-elimination (DCE) hazard in the timing loop was identified and corrected after early throughput runs: an unconsumed loop elides the pure-JavaScript generators' work, inflating measured rates by roughly $2\times$ while leaving native \texttt{crypto.randomUUID()} unchanged; every number in Table~\ref{tab:throughput} post-dates the correction, confirmed by consuming each generated value into a live accumulator that the JIT cannot prove is a no-op (`benchSync` in \texttt{src/bench-core.ts}). NIST runs unconditionally; dieharder is a CI-budget curation. The SQLite composite-key benchmark (Section~\ref{sec:composite-bench}) revealed a between-run variance component not captured by within-run CIs; we applied a post-hoc rule under which a run is excluded only when every arm is $>1.3\times$ slower than the median run. All three full repeat runs are archived (\texttt{results/db-sqlite-composite-run1.json}, \texttt{results/db-sqlite-composite-run2.json}, \texttt{results/db-sqlite-composite-run3.json}; $N=10^5$, 10 trials, 1000 lookups per trial), so a reader can re-check the rule from the committed per-trial arrays. None of the three runs met the rule, so no run is excluded. The kept run backing Table~\ref{tab:composite} (\texttt{results/db-sqlite-composite.json}) gives a headline ratio of $3.1\times$ ($22.72$\,ms embedded against $7.38$\,ms composite shard scan); pooling all three runs gives an all-runs headline ratio of $3.8\times$ ($20.33$\,ms embedded against $5.29$\,ms composite shard scan, 30 trials per arm). The two ratios agree in direction and are of similar magnitude, and we report both rather than selecting a single run. Absolute per-identifier times in the density sweep (Section~\ref{sec:repair-vs-rejection}) carry a warm-up ordering effect; the repair-count and trial-count results, on which the analysis rests, are order-independent.
 
 \textbf{Runtime portability.} The refreshed nine-environment matrix no longer shows a Node-specific penalty on the interpreted structured path: it runs within about $0.6$--$1.6\times$ of unstructured base depending on host and runtime, consistently across Linux, macOS, and Windows, so the earlier boxed-\texttt{BigInt} hotspot attribution for the repair pass is superseded on current toolchains and is not repeated here. The penalty has moved to the compiled path instead: in the frozen and refreshed matrices the layout compiler regresses to about $0.14$--$0.26\times$ of the interpreted path on Node~22 while holding at or above parity on Bun with deficits on Deno (Table~\ref{tab:paired}), a code-generation regression whose cause is under investigation. A reader deploying on Node~22 should therefore ship the interpreted structured path and benchmark before assuming any single figure transfers; the standalone portability probe on Node v26.13 (V8 14.6) measures $0.69\times$ of base throughput (95\% CI $[0.60, 0.79]$, 20 reps of 200k UUIDs; \texttt{results/node-portability.json}), consistent with the refreshed matrix range.
 
