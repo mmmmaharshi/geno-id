@@ -22,6 +22,7 @@ interface Manifest {
   commit: string
   package_version: string
   artifacts: Record<string, { artifact: string; generated?: string[] }>
+  metrics?: { artifact: string; path: string; value: number; precision?: number }[]
   notes: {
     release_identity: { package_version: string; frozen_commit: string }
     unsupported_claims: string[]
@@ -46,6 +47,7 @@ const result = verifyEvidenceTree(
     packageVersionFromPackage: pkg.version,
     releaseIdentityVersion: manifest.notes.release_identity.package_version,
     artifacts: manifest.artifacts,
+    metrics: manifest.metrics,
   },
   root,
 )
@@ -57,6 +59,14 @@ for (const entry of result.missing) {
 if (result.missing.length > 0) {
   fail(`${result.missing.length} of ${result.checked} mapped artifacts are missing`)
 }
+for (const m of result.metricMismatches) {
+  console.error(
+    `  METRIC DRIFT ${m.expectation.artifact}:${m.expectation.path} claim=${m.expectation.value} actual=${m.actual ?? "missing"}`,
+  )
+}
+if (result.metricMismatches.length > 0) {
+  fail(`${result.metricMismatches.length} manifest metric claim(s) drifted from their artifacts`)
+}
 console.log(
-  `EVIDENCE VERIFIED: ${result.checked} artifacts present, package version ${pkg.version}, ${Object.keys(manifest.artifacts).length} claims mapped.`,
+  `EVIDENCE VERIFIED: ${result.checked} artifacts present, ${manifest.metrics?.length ?? 0} metric claims checked, package version ${pkg.version}, ${Object.keys(manifest.artifacts).length} claims mapped.`,
 )

@@ -15,6 +15,7 @@ Triage uses the default five labels. See `docs/agents/triage-labels.md`.
 ### Domain docs
 
 Domain documentation uses a single-context layout. See `docs/agents/domain.md`.
+Research vocabulary is defined in `GLOSSARY.md`; use its terms in manuscripts and docs.
 
 ## Start here (next action)
 
@@ -115,7 +116,7 @@ GenoID is a TypeScript RFC 9562 v8 UUID library + CLI + browser benchmark. The p
 After every change to any `.ts` file, run in order. **Stop and fix on any failure — do not continue.**
 
 - **Shell:** on Windows use the dedicated `grep`/`read` tools — never `head`, `tail`, `grep`, or `wc` pipes (they do not exist in this shell).
-- **Background shells are unreliable here:** prefer foreground waits with generous timeouts for gate runs; use background only for truly long jobs, and on spawn failure run foreground instead of retrying background.
+- **Background shells are unreliable here:** prefer foreground waits with generous timeouts for gate runs; use background only for truly long jobs, and on spawn failure run foreground instead of retrying background. After an interrupted test command, list and close orphan `bun` processes before timing anything again; leftover browser workers invalidate measurements.
 
 1. `/thermo-nuclear-code-quality-review` — kill duplication, spaghetti, oversized files, redundant layers.
 2. `bun run lint` — oxlint over all `.ts`.

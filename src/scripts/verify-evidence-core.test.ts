@@ -101,6 +101,63 @@ test("a glob that matches nothing is missing", () => {
   }
 })
 
+test("a metric expectation that matches the artifact verifies", () => {
+  const f = fixture()
+  try {
+    f.write("results/a.json", JSON.stringify({ derived: { ratio: 9.55 } }))
+    const result = verifyEvidenceTree(
+      {
+        package_version: "1.2.3",
+        artifacts: { one: { artifact: "results/a.json" } },
+        metrics: [{ artifact: "results/a.json", path: "derived.ratio", value: 9.55 }],
+      },
+      f.dir,
+    )
+    assert.equal(result.metricMismatches.length, 0)
+  } finally {
+    rmSync(f.dir, { recursive: true, force: true })
+  }
+})
+
+test("a metric expectation that drifted from the artifact is reported", () => {
+  const f = fixture()
+  try {
+    f.write("results/a.json", JSON.stringify({ derived: { ratio: 9.55 } }))
+    const result = verifyEvidenceTree(
+      {
+        package_version: "1.2.3",
+        artifacts: { one: { artifact: "results/a.json" } },
+        metrics: [{ artifact: "results/a.json", path: "derived.ratio", value: 5.53 }],
+      },
+      f.dir,
+    )
+    assert.equal(result.metricMismatches.length, 1)
+    assert.equal(result.metricMismatches[0].expectation.value, 5.53)
+    assert.equal(result.metricMismatches[0].actual, 9.55)
+  } finally {
+    rmSync(f.dir, { recursive: true, force: true })
+  }
+})
+
+test("a metric expectation with a missing JSON path is reported", () => {
+  const f = fixture()
+  try {
+    f.write("results/a.json", JSON.stringify({ derived: {} }))
+    const result = verifyEvidenceTree(
+      {
+        package_version: "1.2.3",
+        artifacts: { one: { artifact: "results/a.json" } },
+        metrics: [{ artifact: "results/a.json", path: "derived.ratio", value: 9.55 }],
+      },
+      f.dir,
+    )
+    assert.equal(result.metricMismatches.length, 1)
+    assert.equal(result.metricMismatches[0].actual, null)
+  } finally {
+    rmSync(f.dir, { recursive: true, force: true })
+  }
+})
+
 test("a version mismatch between the manifest and the package is an error", () => {
   const f = fixture()
   try {

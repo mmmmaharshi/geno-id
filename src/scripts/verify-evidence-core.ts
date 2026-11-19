@@ -1,8 +1,29 @@
-import { existsSync, readdirSync } from "node:fs"
+import { existsSync, readFileSync, readdirSync } from "node:fs"
 import path from "node:path"
 
 // The verification logic behind `src/scripts/verify-evidence.ts`, kept separate so
 // it can be tested without touching the repository's own results directory.
+
+export interface MetricExpectation {
+  /** Artifact path, relative to root, whose JSON is read. */
+  artifact: string
+  /** Dot-separated path into the parsed JSON. */
+  path: string
+  /** Value the manuscript and manifest claim. */
+  value: number
+  /** Decimal places both sides are rounded to before comparison. */
+  precision?: number
+}
+
+export interface MetricMismatch {
+  expectation: MetricExpectation
+  actual: number | null
+}
+
+export interface MissingArtifact {
+  id: string
+  spec: string
+}
 
 export interface EvidenceTreeInput {
   package_version: string
@@ -11,11 +32,8 @@ export interface EvidenceTreeInput {
   /** The version the manifest's release-identity block names. */
   releaseIdentityVersion?: string
   artifacts: Record<string, { artifact: string }>
-}
-
-export interface MissingArtifact {
-  id: string
-  spec: string
+  /** Machine-readable numeric claims pinned to fields in their artifacts. */
+  metrics?: MetricExpectation[]
 }
 
 export interface EvidenceTreeResult {
@@ -23,6 +41,8 @@ export interface EvidenceTreeResult {
   missing: MissingArtifact[]
   /** Set when the manifest and the package disagree on their identity. */
   versionError: string | null
+  /** Metric expectations whose artifact value no longer matches the claim. */
+  metricMismatches: MetricMismatch[]
 }
 
 // A mapped artifact is a comma-separated list of paths; a glob means "every
@@ -70,5 +90,26 @@ export function verifyEvidenceTree(input: EvidenceTreeInput, root: string): Evid
     versionError = `release identity ${input.releaseIdentityVersion} != package.json ${input.package_version}`
   }
 
-  return { checked, missing, versionError }
+  const metricMismatches: MetricMismatch[] = []
+  for (const expectation of input.metrics ?? []) {
+    const file = path.join(root, expectation.artifact)
+    let actual: number | null = null
+    if (existsSync(file)) {
+      const json = JSON.parse(readFileSync(file, "utf-8")) as unknown
+      let node: unknown = json
+      for (const key of expectation.path.split(".")) {
+        node = node !== null && typeof node === "object" && key in node
+          ? (node as Record<string, unknown>)[key]
+          : undefined
+      }
+      if (typeof node === "number") actual = node
+    }
+    const round = (n: number): number =>
+      expectation.precision === undefined ? n : Number(n.toFixed(expectation.precision))
+    if (actual === null || round(actual) !== round(expectation.value)) {
+      metricMismatches.push({ expectation, actual })
+    }
+  }
+
+  return { checked, missing, versionError, metricMismatches }
 }

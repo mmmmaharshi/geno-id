@@ -150,6 +150,17 @@
       "verified": true
     }
   },
+  "metrics": [
+    { "artifact": "results/cluster-experiment.json", "path": "scan.shardMajor.meanMs", "value": 2.38 },
+    { "artifact": "results/cluster-experiment.json", "path": "scan.shardMajor.fullSweepMeanMs", "value": 11.89 },
+    { "artifact": "results/cluster-experiment.json", "path": "reshard.rowsPerSec", "value": 51939 },
+    { "artifact": "results/cluster-experiment.json", "path": "reshard.dualRead.meanUs", "value": 17.39 },
+    { "artifact": "results/cluster-experiment.json", "path": "reshard.singleRead.meanUs", "value": 11.41 },
+    { "artifact": "results/cluster-experiment.json", "path": "derived.dual_read_overhead_ratio", "value": 1.52 },
+    { "artifact": "results/db-sqlite-composite.json", "path": "arms.embedded.shardRangeScanMs.mean", "value": 22.72, "precision": 2 },
+    { "artifact": "results/db-sqlite-composite.json", "path": "arms.composite.shardRangeScanMs.mean", "value": 7.38, "precision": 2 },
+    { "artifact": "results/nist-sp800-22-results.json", "path": "total_tests", "value": 123 }
+  ],
   "notes": {
     "release_identity": {
       "policy": "the manuscript freezes to one release tag; every cited artifact must exist in that tag's tree",
