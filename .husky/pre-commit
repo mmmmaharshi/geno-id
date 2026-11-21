@@ -1,3 +1,4 @@
 bun x lint-staged
 bun run typecheck
 bun run check:paper
+bun run evidence:verify
