@@ -41,7 +41,7 @@ fail on any divergence that matters).
 | 100M-scale collision test, all cores (Task D) | `bun run collision-100m`; Deno port runs weekly in `.github/workflows/deno-collision.yml` | stdout |
 | Extended dieharder battery (this addition) | `bun run dieharder` (exports 100M-bit samples if missing, then runs the curated subset and writes `dist/dieharder-results.md`) | `dist/dieharder-results.md` |
 | Baseline generators (pg_uuid_v8, ULID, ULID-v8, KSUID, Snowflake) known-answer tests | `bun test src/scripts/baselines.test.ts` and `src/scripts/baselines-verify.test.ts` | pass/fail per generator |
-| Full unit test suite | `bun run test` | pass/fail (270 pass as of v1.28.1 + BDRO work; `check:paper` and `evidence:verify` are separate gates) |
+| Full unit test suite | `bun run test` | pass/fail (250 pass; `check:paper` and `evidence:verify` are separate gates) |
 | Browser benchmark (interactive, with 95% CI table) | `bun run build && open index.html`, click "Run All" | in-page results table |
 | Automated headless-browser check (deployable = development parity) | `bun run playwright` (Chromium/Firefox/WebKit) | stdout, `browserErrors: []` per engine expected |
 | Multi-OS / multi-runtime matrix + consolidated report | Push to a branch / open a PR (runs `.github/workflows/bench.yml`); or run any single `bun run bench-ci` locally per OS | `ci-consolidated` GitHub Actions artifact |

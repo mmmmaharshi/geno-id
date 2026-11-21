@@ -19,8 +19,8 @@ Research vocabulary is defined in `GLOSSARY.md`; use its terms in manuscripts an
 
 ## Start here (next action)
 
-1. Pick the task. Implement code → run the **Quality gates** (below). Docs/config only → run gate 9 (verify) + ask before publish.
-2. After any `.ts` change, the quality gates are the contract: lint → typecheck → test → build → bench-ci → playwright. Zero errors before continuing.
+1. Pick the task. Implement code → run the **Quality gates** (below). Docs/config only → run `bun run check:paper` + `bun run evidence:verify` + ask before publish.
+2. After any `.ts` change, the quality gates are the contract: lint → typecheck → test → build → check:paper → evidence:verify → bench-ci → playwright. Zero errors before continuing.
 3. Never push or publish without explicit confirmation.
 
 ## Project Overview
@@ -53,7 +53,9 @@ GenoID is a TypeScript RFC 9562 v8 UUID library + CLI + browser benchmark. The p
 | `bun run lint` | oxlint over all `.ts` | ~3s | `bun install` |
 | `bun run lint:fix` | Auto-fix lint issues | ~3s | `bun install` |
 | `bun run typecheck` | Typecheck root + scripts tsconfigs | ~10s | `bun install` |
-| `bun run test` | Run all unit tests (`src/scripts/*.test.ts`) | ~4s | `bun install` |
+| `bun run test` | Run all unit tests (`src/scripts/*.test.ts`, `--parallel`) | ~2min (browser engines) | `bun install` |
+| `bun run check:paper` | Deterministic dash gate for `paper.tex` | ~5s | `bun install` |
+| `bun run evidence:verify` | Verify manifest claims against committed artifacts | ~5s | `bun install` |
 | `bun run bench-ci` | Condensed CI-shaped benchmark + collisions → `dist/bench-ci-results.json` | ~30s | `bun install` |
 | `bun run bench-rejection` | O(k) vs (1/d)^k repair sweep → `results/rejection-sweep.json` | ~5s | `bun install` |
 | `bun run bench-db` | SQLite index-locality benchmark → `results/db-sqlite.json` | ~30s | `bun install` |
@@ -82,11 +84,11 @@ GenoID is a TypeScript RFC 9562 v8 UUID library + CLI + browser benchmark. The p
 
 ## Testing Instructions
 
-- Run all tests: `bun run test` (~4s; Bun runner over `src/scripts/*.test.ts`)
+- Run all tests: `bun run test` (~2min parallel; Bun runner over `src/scripts/*.test.ts`, includes browser engines)
 - Run a subset: `bun test src/scripts/algo.test.ts`
 - Typecheck (not a test but a gate): `bun run typecheck`
 - e2e (browser): `bun run playwright` — asserts `browserErrors: []`, `GenoID-structured` present, 0 collisions
-- Coverage expectation: **`NN pass, 0 fail`** before continuing.
+- Coverage expectation: **250 pass, 0 fail** before continuing.
 
 **TDD discipline:** follow [`mattpocock/skills@tdd`](https://skills.sh/mattpocock/skills/tdd) — write the failing test first (red), then only enough implementation to pass (green). Confirm the public seam under test; tests verify behavior through public interfaces, never implementation details.
 
@@ -123,12 +125,14 @@ After every change to any `.ts` file, run in order. **Stop and fix on any failur
 3. `bun run typecheck` — both root + scripts tsconfigs.
 4. `bun run test` — Bun test runner over `src/scripts/*.test.ts`.
 5. `bun run build` — compiles to `dist/`.
-6. `bun run bench-rejection` — validates O(k) vs O((1/d)^k) repair bound. **Confirm no NaN/null cells + `results/rejection-sweep.json` written.**
-7. `bun run bench-db` — index-locality benchmark. **Confirm output written to `results/db-sqlite.json`.**
-8. `bun run bench-ci` — condensed CI-shaped benchmark + collisions (exact command the CI matrix runs per environment). **Confirm 0 collisions + clean `dist/bench-ci-results.json`.**
-9. `bun run playwright` — browser/deployable check. **Confirm** `browserErrors: []`, `GenoID-structured` present, 0 collisions.
-10. Fix any errors from above before continuing.
-11. **After any change** that passes gates 1–10, **ask the user** if they want `npm publish`. Do not publish without explicit confirmation.
+6. `bun run check:paper` — deterministic dash gate for `paper.tex`. **Confirm clean.**
+7. `bun run evidence:verify` — manifest claims vs committed artifacts. **Confirm verified.**
+8. `bun run bench-rejection` — validates O(k) vs O((1/d)^k) repair bound. **Confirm no NaN/null cells + `results/rejection-sweep.json` written.**
+9. `bun run bench-db` — index-locality benchmark. **Confirm output written to `results/db-sqlite.json`.**
+10. `bun run bench-ci` — condensed CI-shaped benchmark + collisions (exact command the CI matrix runs per environment). **Confirm 0 collisions + clean `dist/bench-ci-results.json`.**
+11. `bun run playwright` — browser/deployable check. **Confirm** `browserErrors: []`, `GenoID-structured` present, 0 collisions.
+12. Fix any errors from above before continuing.
+13. **After any change** that passes gates 1–11, **ask the user** if they want `npm publish`. Do not publish without explicit confirmation.
 
 ### Visible wins (what "green" looks like)
 
@@ -136,7 +140,9 @@ After every change to any `.ts` file, run in order. **Stop and fix on any failur
 |---|---|
 | lint | `oxlint` exits 0 |
 | typecheck | both `tsc` configs exit 0 |
-| test | `NN pass, 0 fail` |
+| test | `250 pass, 0 fail` |
+| check:paper | `paper.tex clean` |
+| evidence:verify | `EVIDENCE VERIFIED` |
 | bench-rejection | no NaN/null cells, `results/rejection-sweep.json` written |
 | bench-db | output written to `results/db-sqlite.json` |
 | bench-ci | all collision rows `PASS`, `dist/bench-ci-results.json` written |
