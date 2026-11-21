@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.28.3] - 2026-11-21
+
+### Summary
+
+**Patch re-freeze: manuscript, manifest, and evidence cut to one tag after post-1.28.2 edits.**
+
+### Highlights
+
+- 📝 **Manuscript re-frozen.** The RFC-1958 scaffold comparison draft, design-principles subsection, and review-history-as-rationale rewrites merged after v1.28.2 are now inside the frozen tag.
+- 🗄️ **Manifest re-frozen.** Numeric claims pinned to artifacts (`evidence:verify` enforces them), `release_identity` bumped to 1.28.3, and all refreshed evidence (rejection sweep, browser benchmark, consolidated nine-environment matrix, native PostgreSQL/MySQL) archived under this tag.
+- 📚 **Docs synced.** Quality gates list `check:paper` + `evidence:verify`, test expectation corrected to 250 pass, and the pre-commit hook runs typecheck + `check:paper` + `evidence:verify`.
+
+### Known Issues
+
+- The local multi-shard experiment is one host with in-process SQLite files; no network dispatch, replication, or cross-node clock skew was measured. It is not production-scale evidence.
+- The release tag must contain the manuscript and artifacts it names; a later manuscript edit without a new tag breaks this freeze.
+
+### Dependencies Updated
+
+- None.
+
 ## [1.28.2] - 2026-11-17
 
 ### Summary
