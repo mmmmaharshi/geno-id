@@ -254,7 +254,6 @@ GA genuinely helps UUIDs only through *composition*, not randomness. Implemented
 | `src/scripts/baselines.test.ts` | TDD unit tests for baseline generators |
 | `src/scripts/export-baselines.ts` | Export random-payload bit streams of UUID-shaped baselines |
 | `src/scripts/nist-bridge.py` | Full 15-test NIST SP 800-22 battery |
-| `src/scripts/test-crypto-v8.ts` | Node.js crypto test suite adapted for v8 (4 tests) |
 | `src/scripts/stats.ts` | In-house monobit, runs, chi-square, pairwise correlation, entropy |
 | `src/scripts/bench-cluster.ts` / `.test.ts` | Small local multi-shard scan and versioned reshard; writes `results/cluster-experiment.json` (not production-scale evidence) |
 | `src/scripts/check-paper.ts` / `.test.ts` | Deterministic dash gate for `paper.tex`, wired into `check:paper` and pre-commit |
