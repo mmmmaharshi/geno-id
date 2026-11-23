@@ -84,7 +84,7 @@ interface WorkerMsg {
 
 async function workerRun(): Promise<void> {
   const { mode, perWorker } = workerData as WorkerData
-  const ids: string[] = new Array(perWorker)
+  const ids: string[] = Array.from<string>({ length: perWorker })
   let violations = 0
   if (mode === "genoid-structured") {
     for (let i = 0; i < perWorker; i += 1) {

@@ -7,7 +7,7 @@ export async function mapPool<T, R>(
   fn: (item: T, index: number) => Promise<R>,
   max: number,
 ): Promise<R[]> {
-  const out = new Array<R>(items.length)
+  const out = Array.from<R>({ length: items.length })
   let cursor = 0
   const worker = async (): Promise<void> => {
     for (;;) {

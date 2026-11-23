@@ -75,7 +75,7 @@ const CROCKFORD = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
 
 export function genUlid(nowMs: number = Date.now()): string {
   const ts = BigInt(nowMs)
-  const tsChars = new Array<string>(10)
+  const tsChars = Array.from<string>({ length: 10 })
   let t = ts
   for (let i = 9; i >= 0; i -= 1) {
     tsChars[i] = CROCKFORD[Number(t & 31n)]
@@ -84,7 +84,7 @@ export function genUlid(nowMs: number = Date.now()): string {
   const rnd = randomBytes(10)
   let r = 0n
   for (const x of rnd) {r = (r << 8n) | BigInt(x)}
-  const rndChars = new Array<string>(16)
+  const rndChars = Array.from<string>({ length: 16 })
   for (let i = 15; i >= 0; i -= 1) {
     rndChars[i] = CROCKFORD[Number(r & 31n)]
     r >>= 5n
@@ -116,7 +116,7 @@ export function genKsuid(nowSec: number = Math.floor(Date.now() / 1000)): string
   payload.set(randomBytes(16), 4)
   let num = 0n
   for (const x of payload) {num = (num << 8n) | BigInt(x)}
-  const chars = new Array<string>(27)
+  const chars = Array.from<string>({ length: 27 })
   for (let i = 26; i >= 0; i -= 1) {
     chars[i] = BASE62[Number(num % 62n)]
     num /= 62n

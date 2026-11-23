@@ -42,7 +42,7 @@ let _leanFootprint = false
 export function wordTable(): string[] | null {
   if (_leanFootprint) {return null}
   if (_wordTable === null) {
-    const w = new Array<string>(65_536)
+    const w = Array.from<string>({ length: 65_536 })
     for (let i = 0; i < 65_536; i += 1) {w[i] = HEX8[i >> 8] + HEX8[i & 0xff]}
     _wordTable = w
   }
@@ -256,7 +256,7 @@ const GENO_POOL_DEFAULT = 256
 const STRUCT_POOL_DEFAULT = 1024
 let _genoPoolN = GENO_POOL_DEFAULT
 let _genoPool = new Uint8Array(GENO_ENTRY_BYTES * _genoPoolN)
-let _genoStrs = new Array<string>(_genoPoolN)
+let _genoStrs = Array.from<string>({ length: _genoPoolN })
 let _genoIdx = _genoPoolN
 const _child = new Uint8Array(16)
 
@@ -469,7 +469,7 @@ function validateLayoutStructure(
   layoutName: string,
   requireComplete: boolean,
 ): LayoutValidationFailure | undefined {
-  const covered = new Array<boolean>(128).fill(false)
+  const covered = Array.from<boolean>({ length: 128 }).fill(false)
   const names = new Set<string>()
   for (const field of fields) {
     if (names.has(field.name)) {
@@ -708,7 +708,7 @@ export function readStructured(uuid: string, layout: V8Layout): Record<string, n
  * 128 UUID bits. Returns a new layout; the input is not mutated.
  */
 export function completeLayout(name: string, fields: V8Field[]): V8Layout {
-  const covered = new Array<boolean>(128).fill(false)
+  const covered = Array.from<boolean>({ length: 128 }).fill(false)
   for (const f of fields) {
     for (let i = 0; i < f.length; i += 1) {covered[f.start + i] = true}
   }
@@ -923,7 +923,7 @@ function placeSchemaFields(
   fields: readonly LayoutSchemaField[],
   profiles: readonly WorkloadFieldProfile[],
 ): V8Field[] {
-  const starts = new Array<number | undefined>(fields.length)
+  const starts = Array.from<number | undefined>({ length: fields.length })
   const usedBits = new Set<number>()
   for (const [index, field] of fields.entries()) {
     const path = `schema.fields[${index}]`
@@ -1707,7 +1707,7 @@ function refillSingleParentPool(layout: V8Layout): void {
     strs.length = size
   } else {
     pool = new Uint8Array(STRUCT_ENTRY * size)
-    strs = new Array<string>(size)
+    strs = Array.from<string>({ length: size })
     _spPool.set(structureKey, { idx: 0, pool, size, strs })
   }
   fillRandom(pool)
@@ -1833,7 +1833,7 @@ export function configurePools(cfg: PoolConfig): void {
     }
     _genoPoolN = n
     _genoPool = new Uint8Array(GENO_ENTRY_BYTES * n)
-    _genoStrs = new Array<string>(n)
+    _genoStrs = Array.from<string>({ length: n })
     // force a refill on the next genGenoID()
     _genoIdx = n
   }

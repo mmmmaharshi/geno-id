@@ -37,7 +37,7 @@ function uuidToFreeBits(uuid: string): string {
 // 2. genoid-full: current GenoID (34B, crossover + mutation)
 const ENTRY = 34, POOL = 256
 const _pool = new Uint8Array(ENTRY * POOL)
-const _strs = new Array<string>(POOL)
+const _strs = Array.from<string>({ length: POOL })
 let _idx = POOL
 const _child = new Uint8Array(16)
 const _child16 = new Uint16Array(_child.buffer)
@@ -84,7 +84,7 @@ function genFull(): string {
 
 // 3. crossover-only: 34B, crossover, NO mutation
 const _poolX = new Uint8Array(ENTRY * POOL)
-const _strsX = new Array<string>(POOL)
+const _strsX = Array.from<string>({ length: POOL })
 let _idxX = POOL
 const _childX = new Uint8Array(16)
 const _childX16 = new Uint16Array(_childX.buffer)
@@ -116,7 +116,7 @@ function genCrossoverOnly(): string {
 
 // 4. mutation-only: 34B, NO crossover (always all from parent A), mutation
 const _poolM = new Uint8Array(ENTRY * POOL)
-const _strsM = new Array<string>(POOL)
+const _strsM = Array.from<string>({ length: POOL })
 let _idxM = POOL
 const _childM = new Uint8Array(16)
 const _childM16 = new Uint16Array(_childM.buffer)
@@ -153,7 +153,7 @@ async function exportSamples(
   fn: () => string,
   count: number,
 ): Promise<string> {
-  const bits: string[] = new Array(count)
+  const bits: string[] = Array.from<string>({ length: count })
   for (let i = 0; i < count; i += 1) {
     bits[i] = uuidToFreeBits(fn())
   }

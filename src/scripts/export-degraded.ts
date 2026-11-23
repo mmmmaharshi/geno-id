@@ -174,7 +174,7 @@ async function exportSamples(
   fn: () => string,
   count: number,
 ): Promise<string> {
-  const bits: string[] = new Array(count)
+  const bits: string[] = Array.from<string>({ length: count })
   for (let i = 0; i < count; i += 1) {
     bits[i] = uuidToFreeBits(fn())
   }
