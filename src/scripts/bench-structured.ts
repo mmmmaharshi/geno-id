@@ -226,7 +226,7 @@ function e3e4e5(): E345Result {
   console.log(`  theoretical 50% collision n (${totalBits} random bits): ${birthdayBound50(totalBits).toExponential(2)}`)
 
   // Uniformity on random-field bits (reuse the canonical bit extractor)
-  const ones = new Array<number>(totalBits).fill(0)
+  const ones = Array.from<number>({ length: totalBits }).fill(0)
   const M = 50_000
   for (let i = 0; i < M; i += 1) {
     const bits = uuidToRandomBits(genStructuredGenoID(layout), layout)
@@ -296,7 +296,7 @@ function e7(): E7Result {
   const M = 50_000
   const uniformityMaxDev: Record<string, number> = {}
   for (const [label, gen] of [["pooled single-parent", () => genStructuredGenoIDSingleParent(layout)] as const, ["production", () => genStructuredGenoID(layout)] as const]) {
-    const ones = new Array<number>(totalBits).fill(0)
+    const ones = Array.from<number>({ length: totalBits }).fill(0)
     for (let i = 0; i < M; i += 1) {
       const bits = uuidToRandomBits(gen(), layout)
       let idx = 0

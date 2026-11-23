@@ -133,7 +133,7 @@ async function uniformityTest(
 ): Promise<UniformityResult> {
   let onesCount = 0,
     totalBits = 0
-  const byteHistogram: number[] = new Array(256).fill(0)
+  const byteHistogram: number[] = Array.from<number>({ length: 256 }).fill(0)
   for (let i = 0; i < n; i += 1) {
     const uuid = await genFn()
     const bytes = new Uint8Array(

@@ -336,7 +336,7 @@ for (const engine of ENGINES) {
     const db = await openDb(engine)
     await db.createIdsTable()
     await db.insertIds(ids)
-    const expected = new Array<number>(hotField.values.length).fill(0)
+    const expected = Array.from<number>({ length: hotField.values.length }).fill(0)
     for (const bytes of ids) {expected[decodeField(bytes, start, hotField.length)] += 1}
     for (const v of hotField.values) {
       const got = await db.countRanges(fieldRanges(v, start, hotField.length))

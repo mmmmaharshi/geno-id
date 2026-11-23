@@ -132,7 +132,7 @@ test("completeLayout fills every non-nibble bit with a random filler", () => {
     { constraint: { allowed: [1, 2, 3, 4, 5] }, length: 8, name: "shard", start: 52, type: "shard" },
     { constraint: { monotonic: true }, length: 16, name: "counter", start: 66, type: "counter" },
   ]) as { fields: { name: string; type: string; start: number; length: number }[] }
-  const covered = new Array<boolean>(128).fill(false)
+  const covered = Array.from<boolean>({ length: 128 }).fill(false)
   for (const f of layout.fields) {
     for (let i = 0; i < f.length; i += 1) {covered[f.start + i] = true}
   }

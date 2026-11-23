@@ -56,7 +56,7 @@ for (const ell of [3, 4, 8, 12, 16]) {
     // Predicted fibre sizes from the closed form.
     const fibres = Array.from({ length: m }, (_, i) => Math.floor((space - 1 - i) / m) + 1)
     const predicted = fibres.map((c) => c / space)
-    const counts = new Array<number>(m).fill(0)
+    const counts = Array.from<number>({ length: m }).fill(0)
     for (let i = 0; i < N; i += 1) {
       const v = Math.floor(rand() * space)
       counts[v % m] += 1

@@ -39,7 +39,7 @@ const totalBits = dbkey.fields
   .reduce((s, f) => s + f.length, 0)
 
 test("completeLayout covers all 128 bits and leaves reserved nibbles as gaps", () => {
-  const covered = new Array<boolean>(128).fill(false)
+  const covered = Array.from<boolean>({ length: 128 }).fill(false)
   for (const f of dbkey.fields) {
     for (let i = 0; i < f.length; i += 1) {covered[f.start + i] = true}
   }

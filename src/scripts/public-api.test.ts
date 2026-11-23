@@ -56,7 +56,7 @@ test("completeLayout covers all 128 bits and leaves reserved v8 nibbles as gaps"
     { constraint: { allowed: [1, 2, 3, 4, 5] }, length: 8, name: "shard", start: 52, type: "shard" },
     { constraint: { monotonic: true }, length: 16, name: "counter", start: 66, type: "counter" },
   ])
-  const covered = new Array<boolean>(128).fill(false)
+  const covered = Array.from<boolean>({ length: 128 }).fill(false)
   for (const f of layout.fields) {
     for (let i = 0; i < f.length; i += 1) {covered[f.start + i] = true}
   }

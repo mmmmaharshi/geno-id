@@ -91,8 +91,8 @@ function main(): void {
   const M = 50_000
   const bitsGeno = uuidToRandomBits(genStructuredGenoID(DBKEY_LAYOUT), DBKEY_LAYOUT)
   const nBits = bitsGeno.length
-  const onesG = new Array<number>(nBits).fill(0)
-  const onesP = new Array<number>(nBits).fill(0)
+  const onesG = Array.from<number>({ length: nBits }).fill(0)
+  const onesP = Array.from<number>({ length: nBits }).fill(0)
   for (let i = 0; i < M; i += 1) {
     const bg = uuidToRandomBits(genStructuredGenoID(DBKEY_LAYOUT), DBKEY_LAYOUT)
     const bp = bitsFromUuidNs(genPgUuidV8())

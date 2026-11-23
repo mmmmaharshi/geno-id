@@ -199,7 +199,7 @@ export interface LayoutBitField {
 }
 
 export function freeMaskForLayout(fields: readonly LayoutBitField[]): number[] {
-  const mask = new Array<number>(16).fill(0)
+  const mask = Array.from<number>({ length: 16 }).fill(0)
   for (const field of fields) {
     if (field.type !== "random") {continue}
     for (let offset = 0; offset < field.length; offset += 1) {
