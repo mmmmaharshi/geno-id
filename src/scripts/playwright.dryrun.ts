@@ -103,7 +103,7 @@ async function makeMockBrowser(): Promise<MockBrowser> {
         if (fn()) {return true}
         if (Date.now() - start > timeout)
           {throw new Error("waitForFunction timed out")}
-        await new Promise((r) => setTimeout(r, 10))
+        await (globalThis as any).Bun?.sleep?.(10) ?? new Promise((r) => setTimeout(r, 10))
       }
     },
   }
