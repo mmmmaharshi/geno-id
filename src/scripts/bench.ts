@@ -39,8 +39,8 @@ function validateFormat(uuid: string, expectedVersionNibble: string): boolean {
   if (!re.test(uuid)) {
     return false
   }
-  const versionChar = uuid[14]
-  const variantChar = uuid[19]
+  const versionChar = uuid.charAt(14)
+  const variantChar = uuid.charAt(19)
   return versionChar === expectedVersionNibble && "89ab".includes(variantChar)
 }
 

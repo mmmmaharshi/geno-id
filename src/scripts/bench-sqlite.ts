@@ -415,7 +415,7 @@ if (import.meta.main) {
   console.log(["Arm", "insert rows/s", "CI95", "bytes/row", "lookup µs", "CI95", "range ms", "CI95"].join("\t"))
   for (let i = 0; i < configs.length; i += 1) {
     const r = allResults[i]
-    const arm = configs[i][0]
+    const [arm] = configs[i]
     console.log([
       arm.padEnd(18),
       Math.round(r.insert.mean).toString(),

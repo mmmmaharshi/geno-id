@@ -96,7 +96,7 @@ for (const res of results) {
 console.log(
   "\n -= 1- Pairwise byte-position correlation, GenoID only (flags |z|>3.5 across 120 pairs) ---",
 )
-const geno = results[0]
+const [geno] = results
 if (geno.corrFlags.length === 0) {
   console.log("  none flagged.")
 } else {

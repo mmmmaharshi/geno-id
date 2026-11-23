@@ -100,7 +100,7 @@ function rowsFromOutput(out: string): Result[] {
     if (parts.length >= 4) {
       const assess = parts.at(-1)!
       const pval = parts.at(-2)!
-      const name = parts[0]
+      const [name] = parts
       if (ASSESS_RE.test(assess) && !Number.isNaN(Number(pval))) {
         rows.push({ assess, name, pval })
       }
@@ -144,7 +144,7 @@ function aggregate(assessments: string[]): { assess: string; detail: string } {
   const counts = new Map<string, number>()
   for (const a of assessments) {counts.set(a, (counts.get(a) ?? 0) + 1)}
   const order = ["PASSED", "WEAK", "SKIPPED", "ERROR", "FAILED"]
-  let best = assessments[0]
+  let [best] = assessments
   let bestCount = -1
   for (const a of order) {
     const c = counts.get(a) ?? 0

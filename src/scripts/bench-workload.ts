@@ -165,8 +165,8 @@ interface BenchDb {
 function rangeBounds(range: [number, number]): [Uint8Array, Uint8Array] {
   const loB = new Uint8Array(16)
   const hiB = new Uint8Array(16).fill(0xff)
-  loB[0] = range[0]
-  hiB[0] = range[1]
+  const [lo0] = range; loB[0] = lo0
+  const [, hi0] = range; hiB[0] = hi0
   return [loB, hiB]
 }
 
@@ -243,8 +243,8 @@ function fieldRanges(value: number, start: number, length: number): [number, num
     if (((b >> shift) & mask) === value) {values.push(b)}
   }
   const runs: [number, number][] = []
-  let runStart = values[0]
-  let prev = values[0]
+  let [runStart] = values
+  let [prev] = values
   for (const v of values.slice(1)) {
     if (v !== prev + 1) {
       runs.push([runStart, prev])

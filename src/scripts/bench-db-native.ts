@@ -275,7 +275,7 @@ async function mysqlInnoDB(): Promise<Engine> {
       >(
         "SELECT @@innodb_buffer_pool_size AS buffer_pool, @@innodb_flush_log_at_trx_commit AS flush, @@max_connections AS max_conn",
       )
-      const row = settings[0]
+      const [row] = settings
       return {
         serverConfig: {
           innodb_buffer_pool_size: String(row?.buffer_pool ?? ""),
@@ -324,7 +324,7 @@ async function mysqlInnoDB(): Promise<Engine> {
       const [rows] = await client.query<(RowDataPacket & { data: number; idx: number })[]>(
         "SELECT data_length AS data, index_length AS idx FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 't'",
       )
-      const row = rows[0]
+      const [row] = rows
       return {
         indexBytes: Number(row?.idx ?? 0),
         tableBytes: Number(row?.data ?? 0),

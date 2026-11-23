@@ -138,7 +138,7 @@ function lgamma(x: number): number {
     return Math.log(Math.PI / Math.sin(Math.PI * x)) - lgamma(1 - x)
   }
   const y = x - 1
-  let a = LANCZOS[0]
+  let [a] = LANCZOS
   const t = y + 7 + 0.5
   for (let i = 1; i < 9; i += 1) {a += LANCZOS[i] / (y + i)}
   return 0.5 * Math.log(2 * Math.PI) + (y + 0.5) * Math.log(t) - t + Math.log(a)

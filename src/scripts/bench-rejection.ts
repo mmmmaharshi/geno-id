@@ -146,7 +146,7 @@ for (const { k, allowedSize } of allConfigs) {
   let rejNs: number | null = null
   if (analytical <= REJECT_FEASIBLE_MAX) {
     const r = rejectNsPerId(set, k, REJECT_SAMPLES, REJECT_FEASIBLE_MAX * 8)
-    if (r) { trialsPerId = r.trialsPerId; rejNs = r.nsPerId; measured = true }
+    if (r) { ({ trialsPerId, nsPerId: rejNs } = r); measured = true }
   }
 
   cells.push({

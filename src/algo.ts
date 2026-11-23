@@ -1702,8 +1702,8 @@ function refillSingleParentPool(layout: V8Layout): void {
   let pool: Uint8Array<ArrayBuffer>
   let strs: string[]
   if (entry && entry.pool.length >= STRUCT_ENTRY * size) {
-    pool = entry.pool
-    strs = entry.strs
+    ({ pool } = entry)
+    ({ strs } = entry)
     strs.length = size
   } else {
     pool = new Uint8Array(STRUCT_ENTRY * size)
