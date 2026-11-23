@@ -57,16 +57,16 @@ const N = Number(process.env.WORKLOAD_N ?? 200_000)
 const REPS = Math.max(1, Number(process.env.WORKLOAD_REPS ?? 5))
 const LOOKUPS = Number(process.env.WORKLOAD_LOOKUPS ?? 500)
 const OUT = process.env.WORKLOAD_OUT ?? "results/workload-planning.json"
-const SEED = Number(process.env.WORKLOAD_SEED ?? 0x9e_37_79_b9) >>> 0
+const SEED = Math.trunc(Number(process.env.WORKLOAD_SEED ?? 0x9e_37_79_b9))
 
 // Seeded xorshift32: the trace distribution is fixed and archived.
 function rng32(seed: number): () => number {
-  let s = seed >>> 0 || 1
+  let s = Math.trunc(seed)
   return () => {
     s ^= s << 13
     s ^= s >>> 17
     s ^= s << 5
-    return (s >>> 0) / 0x1_00_00_00_00
+    return Math.trunc(s) / 0x1_00_00_00_00
   }
 }
 

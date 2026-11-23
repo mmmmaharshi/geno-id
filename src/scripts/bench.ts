@@ -140,7 +140,7 @@ async function uniformityTest(
       uuid
         .replaceAll('-', "")
         .match(/.{2}/g)!
-u        .map((h) => Number.parseInt(h, 16)),
+        .map((h) => Number.parseInt(h, 16)),
     )
     byteHistogram[bytes[0]] += 1
     for (const byte of bytes) {

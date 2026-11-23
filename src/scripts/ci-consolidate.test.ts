@@ -66,12 +66,12 @@ test("renderConsolidated renders a header and one column per environment", () =>
     makeResult({ bun: null, node: "22", platform: "linux", runtime: "node" }, 12_500_000),
     makeResult({ bun: "1", platform: "linux", runtime: "bun" }, 11_192_453),
   ])
-  assert.match(md, /## GenoID CI benchmark — consolidated/)u
-  assert.match(md, /Ubuntu \(Bun\)/)u
-  assert.match(md, /Node 22 \(Linux\)/)u
-  assert.match(md, /\| v4 \|/)u
-  assert.match(md, /11\.19M/)u
-  assert.match(md, /PASS/)u
+  assert.match(md, /## GenoID CI benchmark — consolidated/u)
+  assert.match(md, /Ubuntu \(Bun\)/u)
+  assert.match(md, /Node 22 \(Linux\)/u)
+  assert.match(md, /\| v4 \|/u)
+  assert.match(md, /11\.19M/u)
+  assert.match(md, /PASS/u)
 })
 
 test("renderConsolidated orders columns bun-first then node by version", () => {
@@ -131,5 +131,5 @@ test("renderConsolidated orders deno columns by OS using deno's 'windows' platfo
 
 test("renderConsolidated handles an empty result set", () => {
   const md = renderConsolidated([])
-  assert.match(md, /No benchmark artifacts found/)u
+  assert.match(md, /No benchmark artifacts found/u)
 })

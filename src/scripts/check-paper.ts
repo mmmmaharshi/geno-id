@@ -12,7 +12,7 @@ export interface PaperViolation {
 
 const RULES: { name: string; pattern: RegExp }[] = [
   { name: "triple-dash", pattern: /---/u },
-  { name: "unicode-em-dash", pattern: /—/ }u,
+  { name: "unicode-em-dash", pattern: /—/u },
   { name: "unicode-en-dash", pattern: /–/ },
 ];
 

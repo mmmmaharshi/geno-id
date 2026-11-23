@@ -44,7 +44,7 @@ const N = Number(process.env.MICRO_N ?? 200_000)
 const REPS = Math.max(1, Number(process.env.MICRO_REPS ?? 5))
 const LOOKUPS = Number(process.env.MICRO_LOOKUPS ?? 500)
 const OUT = process.env.MICRO_OUT ?? "results/microshard.json"
-const SEED = Number(process.env.MICRO_SEED ?? 0x9e_37_79_b9) >>> 0
+const SEED = Math.trunc(Number(process.env.MICRO_SEED ?? 0x9e_37_79_b9))
 const BURST_N = Number(process.env.MICRO_BURST_N ?? 200_000)
 
 // ---- microshard-uuid bit mirror (verified against the pip package) ----
@@ -86,7 +86,7 @@ function genMicroshard(shard: number, nowMicros?: number, rand36?: number): stri
 function extractMicroShard(bytes: Uint8Array): number {
   const shardHigh = bytes[7] & 0x3f
   const shardLow = ((bytes[8] & 0x3f) << 20) | (bytes[9] << 12) | (bytes[10] << 4) | ((bytes[11] >> 4) & 0x0f)
-  return (shardHigh * 0x4_00_00_00 + shardLow) >>> 0
+  return Math.trunc((shardHigh * 0x4_00_00_00 + shardLow))
 }
 function tenantField(start: number) {
   return { constraint: { allowed: [0, 1, 2, 3, 4, 5, 6, 7] }, length: 3, name: "tenant", start, type: "shard" }
@@ -97,12 +97,12 @@ function regionField(start: number) {
 const genoidLayout = completeLayout("microshard-exp-genoid", [tenantField(0), regionField(3)])
 
 function xorshift(seed: number): () => number {
-  let s = seed >>> 0 || 1
+  let s = Math.trunc(seed) || 1
   return () => {
     s ^= s << 13
     s ^= s >>> 17
     s ^= s << 5
-    return (s >>> 0) / 0x1_00_00_00_00
+    return (Math.trunc(s)) / 0x1_00_00_00_00
   }
 }
 

@@ -285,12 +285,12 @@ function permutations<T>(items: readonly T[]): T[][] {
 }
 
 function mulberry32(seed: number): () => number {
-  let a = seed >>> 0
+  let a = Math.trunc(seed)
   return () => {
-    a = (a + 0x6d_2b_79_f5) >>> 0
+    a = Math.trunc((a + 0x6d_2b_79_f5))
     let t = Math.imul(a ^ (a >>> 15), a | 1)
     t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
-    return ((t ^ (t >>> 14)) >>> 0) / 4_294_967_296
+    return Math.trunc(t) / 4_294_967_296
   }
 }
 

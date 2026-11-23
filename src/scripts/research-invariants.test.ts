@@ -109,7 +109,7 @@ const LAYOUT_BY_NAME: Record<string, unknown> = {
 // RFC 9562 v8 canonical form with version nibble 8 and variant bits 10xx.
 const V8_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-8[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u
 
-interface Fiueld {
+interface Field {
   name: string
   start: number
   length: number

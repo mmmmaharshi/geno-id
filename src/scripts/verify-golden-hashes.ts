@@ -33,7 +33,7 @@ const recorded = new Map<string, string>()
 for (const line of fs.readFileSync(MANIFEST, "utf-8").split("\n")) {
   const trimmed = line.trim()
   if (trimmed.length === 0) {continue}
-  const match = /^([0-9a-f]{64})\s+(.+)$/u.euxec(trimmed)
+  const match = /^([0-9a-f]{64})\s+(.+)$/u.exec(trimmed)
   if (!match) {fail(`unreadable manifest line: "${trimmed}"`)}
   recorded.set(match[2], match[1])
 }

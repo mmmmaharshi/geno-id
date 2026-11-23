@@ -18,7 +18,7 @@ const { rangeClampMass } = (await import(
 
 const N = Number(process.env.REPAIR_GRID_N ?? 200_000)
 const OUT = process.env.REPAIR_GRID_OUT ?? "results/repair-grid.json"
-const SEED = Number(process.env.REPAIR_GRID_SEED ?? 0x9e_37_79_b9) >>> 0
+const SEED = Math.trunc(Number(process.env.REPAIR_GRID_SEED ?? 0x9e_37_79_b9))
 
 interface GridCell {
   m: number
