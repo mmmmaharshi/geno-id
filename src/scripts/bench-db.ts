@@ -159,7 +159,7 @@ function runArm(arm: Arm, mode: string, dir: string): ArmRun {
 
   const rng = mulberry32(42)
   const payload = new Uint8Array(BLOB_BYTES)
-  for (let i = 0; i < BLOB_BYTES; i += 1) {payload[i] = (rng() * 256) | 0}
+  for (let i = 0; i < BLOB_BYTES; i += 1) {payload[i] = Math.trunc(rng() * 256)}
 
   const series: { atRows: number; rowsPerSec: number }[] = []
   const sampleKeys: Uint8Array[] = []
@@ -172,7 +172,7 @@ function runArm(arm: Arm, mode: string, dir: string): ArmRun {
   db.exec("BEGIN")
   for (let i = 0; i < ROWS; i += 1) {
     const id = arm.key()
-    const tenant = (rng() * 5 | 0) + 1
+    const tenant = Math.trunc(rng() * 5) + 1
     insert.run(id, tenant, i, payload)
     if (i % sampleStride === 0 && sampleKeys.length < 5000) {sampleKeys.push(id)}
     if ((i + 1) % BATCH === 0) { db.exec("COMMIT"); db.exec("BEGIN") }
@@ -244,7 +244,7 @@ function readExperiments(dir: string, reps: number): {
     db.exec("BEGIN")
     for (let i = 0; i < ROWS; i += 1) {
       const id = arm.key()
-      insert.run(id, (rng() * 5 | 0) + 1, i, payload)
+      insert.run(id, Math.trunc(rng() * 5) + 1, i, payload)
       if (i % stride === 0 && samples.length < 5000) {samples.push(id)}
       if ((i + 1) % 10_000 === 0) { db.exec("COMMIT"); db.exec("BEGIN") }
     }
@@ -340,7 +340,7 @@ function loadForWriteAmp(arm: Arm, dir: string, withIndex: boolean, rows: number
   const t0 = process.hrtime.bigint()
   db.exec("BEGIN")
   for (let i = 0; i < rows; i += 1) {
-    insert.run(arm.key(), (rng() * 5 | 0) + 1, i, payload)
+    insert.run(arm.key(), Math.trunc(rng() * 5) + 1, i, payload)
     if ((i + 1) % 10_000 === 0) { db.exec("COMMIT"); db.exec("BEGIN") }
   }
   db.exec("COMMIT")

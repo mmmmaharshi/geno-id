@@ -112,7 +112,7 @@ function e1(): E1Result {
     // field-boundary crossover always inherits a valid structured value.
     const A = genStructuredParent(layout, structIdx)
     const B = genStructuredParent(layout, structIdx)
-    const fieldSelect = (Math.random() * 65_536) | 0
+    const fieldSelect = Math.trunc(Math.random() * 65_536)
     const child = composeStructured(layout, A, B, fieldSelect)
     for (const [fi, f] of layout.fields.entries()) {
       if (f.type === "random") {continue}

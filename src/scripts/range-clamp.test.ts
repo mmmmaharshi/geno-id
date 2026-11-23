@@ -34,7 +34,7 @@ const {
 function seededUniformFill(seed: number): (buf: Uint8Array) => void {
   const rand = mulberry32(seed)
   return (buf: Uint8Array): void => {
-    for (let i = 0; i < buf.length; i += 1) {buf[i] = (rand() * 256) | 0}
+    for (let i = 0; i < buf.length; i += 1) {buf[i] = Math.trunc(rand() * 256)}
   }
 }
 

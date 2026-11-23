@@ -29,7 +29,7 @@ function rawBytes(v: number[]): Uint8Array {
 
 function generateRaw(): Uint8Array {
   const b = new Uint8Array(16)
-  for (let i = 0; i < 16; i += 1) {b[i] = (Math.random() * 256) | 0}
+  for (let i = 0; i < 16; i += 1) {b[i] = Math.trunc(Math.random() * 256)}
   return b
 }
 
