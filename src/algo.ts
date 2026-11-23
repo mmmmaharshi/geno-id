@@ -158,8 +158,8 @@ export function resetSeededState(): void {
 }
 
 export function createSeededRandom(seed0: number, seed1: number): RandomFill {
-  let s0 = seed0 >>> 0
-  let s1 = seed1 >>> 0
+  let s0 = Math.trunc(seed0)
+  let s1 = Math.trunc(seed1)
   return (buf: Uint8Array): void => {
     let off = 0
     while (off < buf.length) {

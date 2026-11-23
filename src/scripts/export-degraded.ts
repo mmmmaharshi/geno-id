@@ -109,7 +109,7 @@ let lcgState = 42
 function lcgBytes(n: number): Uint8Array {
   const b = new Uint8Array(n)
   for (let i = 0; i < n; i += 1) {
-    lcgState = (lcgState * 1_103_515_245 + 12_345) >>> 0
+    lcgState = Math.trunc(lcgState * 1_103_515_245 + 12_345)
     b[i] = (lcgState >> 16) & 0xff
   }
   return b
