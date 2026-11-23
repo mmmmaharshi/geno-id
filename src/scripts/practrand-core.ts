@@ -21,7 +21,7 @@ export interface PractRandRow {
   verdict: string | null
 }
 
-const ROW_RE = /^\s*(.+?)\s*:\s*([0-9]*\.?[0-9]+(?:[eE][+-]?\d+)?)\s*\(\s*([0-9]*\.?[0-9]+(?:[eE][+-]?\d+)?)\s*\)\s*(.*)$/u
+const ROW_RE = /^\s*(?<name>.+?)\s*:\s*(?<value>[0-9]*\.?[0-9]+(?:[eE][+-]?\d+)?)\s*\(\s*(?<pct>[0-9]*\.?[0-9]+(?:[eE][+-]?\d+)?)\s*\)\s*(?<rest>.*)$/u
 
 const VERDICT_RE = /\[(?<verdict>unusual|very unusual|extremely unusual|FAILED|failed|PASSED|passed)\]/u
 

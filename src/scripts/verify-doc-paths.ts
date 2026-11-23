@@ -18,7 +18,7 @@ const files = [
 
 // Backticked or directive paths like `src/scripts/bench.ts`, results/*.json,
 // golden/*.txt, .github/workflows/bench.yml. Skips URLs and bare words.
-const PATTERN = /`((?:src|results|golden|docs|scripts|\.github)\/[^`\s]+?)`/gu
+const PATTERN = /`(?<path>(?:src|results|golden|docs|scripts|\.github)\/[^`\s]+?)`/gu
 
 let missing = 0
 for (const rel of files) {

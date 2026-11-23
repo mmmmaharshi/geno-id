@@ -61,7 +61,7 @@ const ALLOWED_CONSOLE_ERRORS: RegExp[] = []
 function parseArgs(argv: string[]): Record<string, string | boolean> {
   const args: Record<string, string | boolean> = {}
   for (const raw of argv) {
-    const m = raw.match(/^--([^=]+)(?:=(.*))?$/)
+    const m = raw.match(/^--(?<name>[^=]+)(?:=(?<value>.*))?$/)
      if (m) {
       args[m[1]] = m[2] === undefined ? true : m[2]
     }
@@ -241,7 +241,7 @@ async function runBenchmark(
       generationPlan: await page.evaluate(() => {
         const el = document.querySelector("#planLabel")
         const text = el?.textContent ?? ""
-        const match = /Generation plan:\s*(\S+)/.exec(text)
+        const match = /Generation plan:\s*(?<plan>\S+)/.exec(text)
         return match ? match[1] : "unknown"
       }),
       htmlPath,
