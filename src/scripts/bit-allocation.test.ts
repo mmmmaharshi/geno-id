@@ -132,9 +132,9 @@ test("the shipped dbkey layout is feasible with a 2M-id collision budget", () =>
     ...base,
     collisionTarget: 0.01,
     fields: [
-      { name: "timestamp", cardinality: 2 ** 48, weight: 0, leading: true, align: 1 },
-      { name: "shard", cardinality: 5, weight: 40 },
-      { name: "counter", cardinality: 65536, weight: 5 },
+      { align: 1, cardinality: 2 ** 48, leading: true, name: "timestamp", weight: 0 },
+      { cardinality: 5, name: "shard", weight: 40 },
+      { cardinality: 65536, name: "counter", weight: 5 },
     ],
     volume: 2_000_000,
   })
@@ -155,7 +155,7 @@ test("over-budget structure is reported, not silently truncated", () => {
     ],
   })
   assert.equal(plan.feasible, false)
-  assert.match(plan.reason ?? "", /structured floors total/)
+  assert.match(plan.reason ?? "", /structured floors total/u)
   assert.equal(plan.fields.length, 0)
 })
 
@@ -171,7 +171,7 @@ test("structure whose floors fit the budget but will not pack is reported, not t
     ],
   })
   assert.equal(plan.feasible, false)
-  assert.match(plan.reason ?? "", /does not fit/)
+  assert.match(plan.reason ?? "", /does not fit/u)
   assert.equal(plan.fields.length, 0)
 })
 
@@ -179,11 +179,11 @@ test("structure that leaves too little entropy for the collision budget is refus
   const plan = planBitAllocation({
     ...base,
     collisionTarget: 0.01,
-    fields: [{ name: "wide", cardinality: 2 ** 90, weight: 1 }],
+    fields: [{ cardinality: 2 ** 90, name: "wide", weight: 1 }],
     volume: 2_000_000,
   })
   assert.equal(plan.feasible, false)
-  assert.match(plan.reason ?? "", /collision budget needs/)
+  assert.match(plan.reason ?? "", /collision budget needs/u)
 })
 
 test("a feasible plan partitions the 128 bits exactly, reserved bits excluded", () => {
@@ -192,12 +192,12 @@ test("a feasible plan partitions the 128 bits exactly, reserved bits excluded", 
     fields: [
       { align: 1, cardinality: 2 ** 48, leading: true, name: "ts", weight: 0 },
       { cardinality: 5, name: "shard", weight: 40 },
-      { cardinality: 65536, name: "ctr", weight: 5 },
+      { cardinality: 65_536, name: "ctr", weight: 5 },
     ],
   })
   const covered = new Set<number>()
-  for (const f of plan.fields) {for (let b = f.offset; b < f.offset + f.bits; b += 1) covered.add(b)}
-  for (const run of plan.filler) {for (let b = run.offset; b < run.offset + run.bits; b += 1) covered.add(b)}
+  for (const f of plan.fields) {for (let b = f.offset; b < f.offset + f.bits; b += 1) {covered.add(b)}}
+  for (const run of plan.filler) {for (let b = run.offset; b < run.offset + run.bits; b += 1) {covered.add(b)}}
   for (const b of [48, 49, 50, 51, 64, 65]) {assert.ok(!covered.has(b), `reserved bit ${b} was allocated`)}
   assert.equal(covered.size + 6, 128, "allocated plus reserved bits must cover the UUID")
   assert.equal(plan.structuredBits + plan.randomBits, 122)
@@ -338,11 +338,11 @@ test("the allocator is optimal over every permutation, on 400 randomized instanc
 
 test("invalid input is rejected with a RangeError naming the field", () => {
   assert.throws(() => planBitAllocation({ fields: [] }), RangeError)
-  assert.throws(() => planBitAllocation({ fields: [{ cardinality: 0, name: "a", weight: 1 }] }), /cardinality/)
-  assert.throws(() => planBitAllocation({ fields: [{ cardinality: 2, name: "", weight: 1 }] }), /non-empty name/)
+  assert.throws(() => planBitAllocation({ fields: [{ cardinality: 0, name: "a", weight: 1 }] }), /cardinaulity/u)
+  assert.throws(() => planBitAllocation({ fields: [{ cardinality: 2, name: "", weight: 1 }] }), /non-empty uname/u)
   assert.throws(
     () => planBitAllocation({ fields: [{ cardinality: 2, name: "a", weight: -1 }] }),
-    /weight/,
+    /weuight/u,
   )
   assert.throws(
     () => planBitAllocation({ budget: 0, fields: [{ cardinality: 2, name: "a", weight: 1 }] }),

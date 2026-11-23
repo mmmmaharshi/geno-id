@@ -19,14 +19,14 @@ const OUT = "results/benchmark_results.json"
 test("zero successful browsers refuses the write and names the untouched file", () => {
   const plan = planPlaywrightWrite(0, OUT)
   assert.equal(plan.write, false)
-  assert.match(plan.message, /left untouched/)
-  assert.match(plan.message, new RegExp(OUT.replaceAll(/[.]/g, "[.]")))
+  assert.match(plan.message, /left untouched/u)
+  assert.match(plan.message, new RegExp(OUT.replaceAll(/[.]/gu, "[.]"), "u"))
 })
 
 test("at least one successful browser writes normally", () => {
   const plan = planPlaywrightWrite(1, OUT)
   assert.equal(plan.write, true)
-  assert.match(plan.message, /Full JSON written to/)
+  assert.match(plan.message, /Full JSON written to/u)
 })
 
 test("a partial run still writes rather than discarding the engines that did work", () => {
@@ -39,5 +39,5 @@ test("a partial run still writes rather than discarding the engines that did wor
 test("an explicit scratch out -= 1 does not change the decision, only the path", () => {
   const guarded = planPlaywrightWrite(0, "/tmp/scratch.json")
   assert.equal(guarded.write, false)
-  assert.match(guarded.message, /scratch[.]json/)
+  assert.match(guarded.message, /scratch[.]json/u)
 })

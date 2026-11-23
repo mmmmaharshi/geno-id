@@ -6,7 +6,7 @@ import type { V8Field, V8Layout } from "../../dist/algo.js"
 
 const __dirname = import.meta.dirname!
 const root = path.resolve(__dirname, "..", "..")
-const algoPath = `file://${path.join(root, "dist", "algo.js").replaceAll(/\\/g, "/")}`
+const algoPath = `file://${path.join(root, "dist", "algo.js").replaceAll('\\', "/")}`
 
 const algo = await import(algoPath) as {
   genStructuredGenoID: (l: V8Layout) => string
@@ -104,7 +104,7 @@ const result = {
   elapsed_ms: { collision: Math.round(elapsedColl * 100) / 100, e1: Math.round(elapsedE1 * 100) / 100 },
   experiment: "E1-production-1500k",
   layout: DBKEY_LAYOUT.name,
-  layout_fields: DBKEY_LAYOUT.fields.map((f) => ({ name: f.name, type: f.type, start: f.start, length: f.length, constraint: f.constraint })),
+  layout_fields: DBKEY_LAYOUT.fields.map((f) => ({ constraint: f.constraint, length: f.length, name: f.name, start: f.start, type: f.type })),
   mismatches: mismatchCount,
   monotonicity_violations: monotonicityViolations,
   pass: mismatchCount === 0 && constraintViolations === 0 && monotonicityViolations === 0,

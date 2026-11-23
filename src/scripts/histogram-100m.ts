@@ -23,7 +23,7 @@ interface V8Layout {
 
 const __dirname = import.meta.dirname!
 const root = path.resolve(__dirname, "..", "..")
-const algoPath = `file://${path.join(root, "dist", "algo.js").replaceAll(/\\/g, "/")}`
+const algoPath = `file://${path.join(root, "dist", "algo.js").replaceAll('\\', "/")}`
 
 const algo = (await import(algoPath)) as {
   genStructuredGenoID: (l: V8Layout) => string

@@ -68,7 +68,7 @@ export function verifyEvidenceTree(input: EvidenceTreeInput, root: string): Evid
   const missing: MissingArtifact[] = []
   for (const [id, entry] of Object.entries(input.artifacts)) {
     const specs = entry.artifact
-      .split(/[,+]/)
+      .split(/[,+]/u)
       .map((s) => s.trim())
       .filter((s) => s.length > 0)
     for (const spec of specs) {

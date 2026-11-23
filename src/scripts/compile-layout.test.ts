@@ -47,7 +47,7 @@ test("compileLayout produces valid UUID v8 format for all layouts", () => {
     assert.equal(uuid.length, 36, `${name}: expected 36-char UUID, got "${uuid}"`)
     assert.match(
       uuid,
-      /^[0-9a-f]{8}-[0-9a-f]{4}-8[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+      /^[0-9a-f]{8}-[0-9a-f]{4}-8[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u,
       `${name}: invalid v8 format: "${uuid}"`,
     )
   }
@@ -251,7 +251,7 @@ test("compileLayout deterministic: same seed produces same output", () => {
   for (let i = 0; i < 100; i += 1) {
     const uuid = idsA[i]
     assert.match(uuid, /^[0-9a-f]{8}-[0-9a-f]{4}-8[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/)
-    const b = uuidToBytes(uuid)
+  u  const b = uuidToBytes(uuid)
     const shard = Number(getFieldValue(b, shardField))
     assert.ok(shard >= 1 && shard <= 5, `shard ${shard} out of range`)
   }

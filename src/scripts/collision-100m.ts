@@ -42,7 +42,7 @@ const MASK64 = (1n << 64n) - 1n
 
 // Parse a UUID string into its 128-bit value as two 64-bit halves.
 export function uuidToKey(uuid: string): { hi: bigint; lo: bigint } {
-  const hex = uuid.length === 36 ? uuid.replaceAll(/-/g, "") : uuid
+  const hex = uuid.length === 36 ? uuid.replaceAll('-', "") : uuid
   const v = BigInt(`0x${hex}`)
   return { hi: (v >> 64n) & MASK64, lo: v & MASK64 }
 }

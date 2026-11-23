@@ -110,7 +110,7 @@ async function showSamples(): Promise<void> {
     let html = ""
     for (const a of ALGOS) {
       const val = a.async ? await a.fn() : a.fn() as string
-      const escaped = val.replaceAll(/\\/g, "\\\\").replaceAll(/'/g, "\\'")
+      const escaped = val.replaceAll('\\', "\\\\").replaceAll('\'', "\\'")
       html += `<div><b>${a.name}:</b> <code>${val}</code> <button onclick="copyToClipboard('${escaped}', this)">Copy</button></div>`
     }
     box.innerHTML = html
@@ -149,15 +149,15 @@ async function runAll(): Promise<void> {
   const planEl = document.querySelector("#planLabel") as HTMLDivElement
   if (planEl) {planEl.textContent = `Generation plan: ${plan}`}
   const nSync = Number.parseInt(
-    (document.getElementById("nSync") as HTMLInputElement).value,
+    (document.querySelector("#nSync") as HTMLInputElement).value,
     10,
   )
   const nAsync = Number.parseInt(
-    (document.getElementById("nAsync") as HTMLInputElement).value,
+    (document.querySelector("#nAsync") as HTMLInputElement).value,
     10,
   )
   const nColl = Number.parseInt(
-    (document.getElementById("nColl") as HTMLInputElement).value,
+    (document.querySelector("#nColl") as HTMLInputElement).value,
     10,
   )
 

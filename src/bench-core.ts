@@ -5,7 +5,7 @@ export interface BenchResult {
 }
 
 export function benchSync(fn: () => string, n: number): BenchResult {
-  if (n <= 0) {return { n, elapsed: 0, opsPerSec: 0 }}
+  if (n <= 0) {return { elapsed: 0, n, opsPerSec: 0 }}
   let sink = 0
   const start = performance.now()
   for (let i = 0; i < n; i += 1) {

@@ -86,9 +86,9 @@ interface Result {
   assess: string
 }
 
-const ASSESS_RE = /PASSED|FAILED|WEAK|REVERSED|SUCCESS/i
+const ASSESS_RE = /PASSED|FAILED|WEAK|REVERSED|SUCCESS/iu
 
-// Collect every assessment row from dieharder stdout. dieharder prints a header
+// Collect euvery assessment row from dieharder stdout. dieharder prints a header
 // row (`test_name | ntup | tsamples | psamples | p-value | Assessment`) whose
 // last column is "Assessment" and therefore does not match ASSESS_RE, so it is
 // skipped. Some tests (e.g. opso, dna, sts_serial) emit multiple data rows — all
@@ -125,12 +125,12 @@ function runOneTest(
       { encoding: "utf-8", maxBuffer: 64 * 1024 * 1024 },
       (err, stdout) => {
         if (err) {
-          resolve({ rows: [{ name: `test ${t}`, pval: "n/a", assess: "SKIPPED" }], t })
+          resolve({ rows: [{ assess: "SKIPPED", name: `test ${t}`, pval: "n/a" }], t })
           return
         }
         const r = rowsFromOutput(stdout)
         resolve({
-          rows: r.length > 0 ? r : [{ name: `test ${t}`, pval: "n/a", assess: "ERROR" }],
+          rows: r.length > 0 ? r : [{ assess: "ERROR", name: `test ${t}`, pval: "n/a" }],
           t,
         })
       },
@@ -202,16 +202,16 @@ async function main(): Promise<void> {
     for (const t of CURATED_TESTS) {
       const rowsPerTrial = byTest.get(t) ?? []
       let maxRows = 0
-      for (const r of rowsPerTrial) {if (r.length > maxRows) maxRows = r.length}
+      for (const r of rowsPerTrial) {if (r.length > maxRows) {maxRows = r.length}}
       for (let j = 0; j < maxRows; j += 1) {
         const subRows = rowsPerTrial.map((r) => r[j]).filter(Boolean) as Result[]
         if (subRows.length === 0) {continue}
         const agg = aggregate(subRows.map((s) => s.assess))
         if (agg.assess === "ERROR" || agg.assess === "SKIPPED") {errors += 1}
-        else if (/FAILED|REVERSED/i.test(agg.assess)) {
+        else if (/FAILED|REVERSED/iu.test(agg.assess)) {
           failed += 1
           if (agg.assess === "FAILED") {persistentFail += 1}
-        } else if (/WEAK/i.test(agg.assess)) {weak += 1}
+        } else if (/WEAK/iu.test(agg.assess)) {weak += 1}
         else {passed += 1}
         md += `| ${g} | ${subRows[0].name} | ${subRows[0].pval} | ${agg.assess} | ${agg.detail} |\n`
       }

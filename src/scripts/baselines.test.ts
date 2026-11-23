@@ -2,7 +2,7 @@ import { test } from "node:test"
 import assert from "node:assert/strict"
 import { genUlid, bytesToUuid, uuidToBytes } from "./baselines.ts"
 
-const CROCKFORD = /^[0-9A-HJKMNP-TV-Z]{26}$/
+const CROCKFORD = /^[0-9A-HJKMNP-TV-Z]{26}$/u
 
 test("genUlid produces 26 Crockford chars and sorts chronologically", () => {
   const a = genUlid(1000)

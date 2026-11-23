@@ -91,7 +91,7 @@ test("classifyRejectionCell rejects an analytical cell that reports wall-clock t
         rejectionTrialsPerId: 4.096e6,
         speedupVsGeno: 100,
       }),
-    /analytical cell cannot report measured runtime/,
+    /analytical cell cannot report measured runtime/u,
   )
 })
 
@@ -105,7 +105,7 @@ test("buildSuiteEvidence requires p-values for measured suites", () => {
         status: "measured",
         suite: "in-house",
       }),
-    /measured suite requires sample bits and p-values/,
+    /measured suite requires sample bits and p-values/u,
   )
 })
 
@@ -134,7 +134,7 @@ test("buildSuiteEvidence requires a limitation for an unavailable suite", () => 
         status: "unavailable",
         suite: "testu01",
       }),
-    /unavailable suite requires a limitation/,
+    /unavailable suite requires a limitation/u,
   )
 })
 

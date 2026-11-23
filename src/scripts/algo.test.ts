@@ -38,7 +38,7 @@ const {
   EVENTSOURCING_LAYOUT: unknown
 }
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u
 
 // ---- toUuidString / uuidToBytes round-trip ----
 
@@ -96,7 +96,7 @@ test("validateLayout rejects fields overlapping the reserved v8 nibble", () => {
   assert.throws(() =>
     validateLayout(fromAny({
       fields: [
-        { name: "x", start: 48, length: 4, type: "random" },
+        { length: 4, name: "x", start: 48, type: "random" },
       ],
       name: "bad",
     })),
@@ -106,7 +106,7 @@ test("validateLayout rejects fields overlapping the reserved v8 nibble", () => {
 test("validateLayout rejects layouts with uncovered bits", () => {
   assert.throws(() =>
     validateLayout(fromAny({
-      fields: [{ name: "x", start: 0, length: 8, type: "random" }],
+      fields: [{ length: 8, name: "x", start: 0, type: "random" }],
       name: "sparse",
     })),
   )
@@ -116,8 +116,8 @@ test("validateLayout rejects structured fields wider than 48 bits", () => {
   assert.throws(() =>
     validateLayout(fromAny({
       fields: [
-        { name: "x", start: 0, length: 64, type: "counter" },
-        { name: "g", start: 64, length: 64, type: "random" },
+        { length: 64, name: "x", start: 0, type: "counter" },
+        { length: 64, name: "g", start: 64, type: "random" },
       ],
       name: "wide",
     })),

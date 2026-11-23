@@ -13,12 +13,12 @@ function makeResult(env: Partial<EnvInfo>, ops: number): CIBenchmarkResult {
     node: "",
     platform: "linux",
     runtime: "bun",
-    totalMemoryMB: 16000,
+    totalMemoryMB: 16_000,
     ...env,
   }
   return {
-    benchmarks: [{ name: "v4", opsPerSec: ops, usPerOp: 0, ci95: [ops, ops], std: 0, cv: 0, trials: 10, samples: [ops] }],
-    collisions: [{ name: "v4", n: 1000000, collisions: 0 }],
+    benchmarks: [{ ci95: [ops, ops], cv: 0, name: "v4", opsPerSec: ops, samples: [ops], std: 0, trials: 10, usPerOp: 0 }],
+    collisions: [{ collisions: 0, n: 1000000, name: "v4" }],
     environment: full,
   }
 }
@@ -66,12 +66,12 @@ test("renderConsolidated renders a header and one column per environment", () =>
     makeResult({ bun: null, node: "22", platform: "linux", runtime: "node" }, 12_500_000),
     makeResult({ bun: "1", platform: "linux", runtime: "bun" }, 11_192_453),
   ])
-  assert.match(md, /## GenoID CI benchmark — consolidated/)
-  assert.match(md, /Ubuntu \(Bun\)/)
-  assert.match(md, /Node 22 \(Linux\)/)
-  assert.match(md, /\| v4 \|/)
-  assert.match(md, /11\.19M/)
-  assert.match(md, /PASS/)
+  assert.match(md, /## GenoID CI benchmark — consolidated/)u
+  assert.match(md, /Ubuntu \(Bun\)/)u
+  assert.match(md, /Node 22 \(Linux\)/)u
+  assert.match(md, /\| v4 \|/)u
+  assert.match(md, /11\.19M/)u
+  assert.match(md, /PASS/)u
 })
 
 test("renderConsolidated orders columns bun-first then node by version", () => {
@@ -131,5 +131,5 @@ test("renderConsolidated orders deno columns by OS using deno's 'windows' platfo
 
 test("renderConsolidated handles an empty result set", () => {
   const md = renderConsolidated([])
-  assert.match(md, /No benchmark artifacts found/)
+  assert.match(md, /No benchmark artifacts found/)u
 })

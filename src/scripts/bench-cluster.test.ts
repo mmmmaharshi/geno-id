@@ -55,7 +55,7 @@ function reference(pathInRepo: string): ReferenceArtifact {
 test("cluster artifact records host scale, shard counts, and stated limits", () => {
   const a = artifact()
   assert.equal(a.experiment, "cluster-shard-scan-reshard")
-  assert.match(a.description, /not production-scale evidence/)
+  assert.match(a.description, /not production-scale evidence/u)
   assert.equal(a.deployment.nodes, 1)
   assert.equal(a.deployment.shardCountBefore, 5)
   assert.equal(a.deployment.shardCountAfter, 8)
@@ -63,7 +63,7 @@ test("cluster artifact records host scale, shard counts, and stated limits", () 
   assert.ok(a.deployment.host.logicalCores > 0)
   assert.ok(a.deployment.host.runtime.length > 0)
   assert.ok(a.deployment.limits.length >= 3)
-  assert.ok(a.deployment.limits.some((s) => /not production-scale evidence/.test(s)))
+  assert.ok(a.deployment.limits.some((s) => /not production-scale evidence/u.test(s)))
 })
 
 test("cluster scan comparison uses the frozen single-index artifact at the same row count", () => {
@@ -108,7 +108,7 @@ test("cluster reshard ratios match the archived read and migration measurements"
 
 test("paper maps the cluster claim to its command and committed artifact", () => {
   const paper = readFileSync(path.resolve(root, "paper.tex"), "utf-8")
-  assert.match(paper, /bun run bench-cluster/)
-  assert.match(paper, /results\/cluster-experiment\.json/)
-  assert.match(paper, /sec:cluster/)
+  assert.match(paper, /bun run bench-cluster/u)
+  assert.match(paper, /results\/cluster-experiment\.json/u)
+  assert.match(paper, /sec:cluster/u)
 })

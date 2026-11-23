@@ -107,9 +107,9 @@ const LAYOUT_BY_NAME: Record<string, unknown> = {
 }
 
 // RFC 9562 v8 canonical form with version nibble 8 and variant bits 10xx.
-const V8_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-8[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
+const V8_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-8[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u
 
-interface Field {
+interface Fiueld {
   name: string
   start: number
   length: number
@@ -187,7 +187,7 @@ function scanStatsSeq(name: string, iters: number): Stats {
     const b = uuidToBytes(uuid)
     if (layout) {
       const r = readStructured(uuid, layout)
-      for (const cf of cfields) {if (violates(cf, r[cf.name])) violations += 1}
+      for (const cf of cfields) {if (violates(cf, r[cf.name])) {violations += 1}}
       for (const p of positions as number[]) {
         ones += bitAt(b, p)
         total += 1
@@ -208,7 +208,7 @@ function scanStatsSeq(name: string, iters: number): Stats {
 const WORKER_SRC = `
 const { parentPort, workerData } = require("node:worker_threads")
 const FORCED = new Set([48,49,50,51,64,65])
-const V8_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-8[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
+const V8_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-8[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u
 const bitAt = (b,p) => (b[p>>3] >> (7-(p&7))) & 1
 const algoP = import(workerData.algoUrl)
 function randPos(l){const o=[];for(const f of l.fields){if(f.type!=="random")continue;for(let i=0;i<f.length;i += 1){const p=f.start+i;if(!FORCED.has(p))o.push(p);}}return o;}
@@ -513,14 +513,14 @@ test("INV-7: declared fields round-trip exactly", () => {
 
 test("INV-8: embeddability APIs reject invalid configuration", () => {
   // @ts-expect-error — intentional bad input
-  assert.throws(() => configureRandom(123), /expected a function/)
+  assert.throws(() => configureRandom(123), /expected a function/u)
   for (const bad of [0, -1, 3.5, Number.NaN]) {
-    assert.throws(() => configurePools({ structuredPoolSize: bad }), /positive integer/, `structuredPoolSize=${bad} not rejected`)
-    assert.throws(() => configurePools({ simplePoolSize: bad }), /positive integer/, `simplePoolSize=${bad} not rejected`)
+    assert.throws(() => configurePools({ structuredPoolSize: bad }), /positive integer/u, `structuredPoolSize=${bad} not rejected`)
+    assert.throws(() => configurePools({ simplePoolSize: bad }), /positive integer/u, `simplePoolSize=${bad} not rejected`)
   }
 })
 
-// ---------------------------------------------------------------------------
+// ----u-----------------------------------------------------------------------
 // INV-9 — THE GOAL-PRESERVATION GUARD. Re-run the load-bearing invariants
 // (v8 conformance, zero constraint violations, entropy) with the embeddability
 // features ACTIVE: distinct injected CSPRNG + ESP8266-class tiny pools. This is

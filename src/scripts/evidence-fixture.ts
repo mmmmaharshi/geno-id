@@ -44,9 +44,9 @@ const collisions = collisionTest(() => genStructuredGenoID(layout), SAMPLE_SIZE)
 const claim: EvidenceClaim = {
   artifacts: [
     {
+      bytes: Buffer.byteLength(raw),
       path: rawPath,
       sha256: createHash("sha256").update(raw).digest("hex"),
-      bytes: Buffer.byteLength(raw),
     },
   ],
   id: "fixture-structured-collision",

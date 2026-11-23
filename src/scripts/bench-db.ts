@@ -107,7 +107,7 @@ const T95: Record<number, number> = { 1: 12.706, 2: 4.303, 3: 3.182, 4: 2.776, 5
 function meanCI(xs: number[]): { mean: number; ci95: [number, number] } {
   const n = xs.length
   const m = xs.reduce((a, b) => a + b, 0) / n
-  if (n < 2) {return { mean: m, ci95: [m, m] }}
+  if (n < 2) {return { ci95: [m, m], mean: m }}
   const sd = Math.sqrt(xs.reduce((a, x) => a + (x - m) ** 2, 0) / (n - 1))
   const t = n - 1 >= 30 ? 1.96 : (T95[n - 1] ?? 1.96)
   const margin = (t * sd) / Math.sqrt(n)
@@ -299,7 +299,7 @@ function readExperiments(dir: string, reps: number): {
   const baselineIndexed = aggregateReps(idxSamples)
 
   for (const db of Object.values(built)) {db.close()}
-  try { for (const f of fs.readdirSync(dir)) {if (f.startsWith("read-")) fs.rmSync(path.join(dir, f), { force: true })} } catch {
+  try { for (const f of fs.readdirSync(dir)) {if (f.startsWith("read-")) {fs.rmSync(path.join(dir, f), { force: true })}} } catch {
     /* ignore */
   }
 
@@ -364,7 +364,7 @@ if (import.meta.main) {
   const result: Record<string, unknown> = {
     config: { blobBytes: BLOB_BYTES, cacheMb: CACHE_MB, readReps: READ_REPS, rows: ROWS, runs: RUNS, sampleEvery: SAMPLE_EVERY },
     engine: "bun:sqlite",
-    hardware: { arch: os.arch(), cores: os.cpus().length, cpu: os.cpus()[0]?.model, memMB: Math.round(os.totalmem() / 1048576), platform: os.platform() },
+    hardware: { arch: os.arch(), cores: os.cpus().length, cpu: os.cpus()[0]?.model, memMB: Math.round(os.totalmem() / 1_048_576), platform: os.platform() },
     modes: {},
     note: "Relative index-locality benchmark. Headline = insert throughput (SQLite repacks pages, so on-disk size diverges less than production InnoDB). Anchor: uuid_v4 -> uuid_v7 insert speedup reproduces the published ULID result. Partition differentiator is STORAGE + WRITE-AMPLIFICATION, not read latency: GenoID answers a partition query from the PK with zero index (a range scan, slower than an indexed probe), while non-structured keys must carry a secondary index — paying its insert tax and storage (see writeAmplification). Read metrics are mean ± 95% CI over readReps repeated probe sets.",
     sqliteVersion: (new Database(":memory:").query("SELECT sqlite_version() v").get() as { v: string }).v,

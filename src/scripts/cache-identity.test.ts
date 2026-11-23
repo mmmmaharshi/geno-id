@@ -31,18 +31,18 @@ function tagLayout(value: number) {
 
 test("same-named structurally different layouts fail closed at the public-generator seam", () => {
   const first = tagLayout(1)
-  assert.match(genStructuredGenoID(first), /^[0-9a-f-]{36}$/)
+  assert.match(genStructuredGenoID(first), /^[0-9a-f-]{36}$/u)
   const second = tagLayout(2)
   // Must throw, and the error must name the layout.
-  assert.throws(() => genStructuredGenoID(second), /dup/)
+  assert.throws(() => genStructuredGenoID(second), /dup/u)
 })
 
 test("identical re-declaration under the same name still generates", () => {
   const first = tagLayout(1)
   const redeclared = tagLayout(1)
-  assert.match(genStructuredGenoID(first), /^[0-9a-f-]{36}$/)
+  assert.match(genStructuredGenoID(first), /^[0-9a-f-]{36}$/u)
   const id = genStructuredGenoID(redeclared)
-  assert.match(id, /^[0-9a-f-]{36}$/)
+  assert.match(id, /^[0-9a-f-]{36}$/u)
   assert.equal(readStructured(id, redeclared).tag, 1)
 })
 
@@ -51,8 +51,8 @@ test("same-named differing layouts do not share validation", () => {
   genStructuredGenoID(good)
   // Invalid structure (length<=0) under the same name must throw, never
   // silently reuse the cached validation of the good layout.
-  const bad = { fields: [{ name: "bad", start: 0, length: 0, type: "random" }], name: "vld" }
-  assert.throws(() => genStructuredGenoID(bad), /vld/)
+  const bad = { fields: [{ length: 0, name: "bad", start: 0, type: "random" }], name: "vld" }
+  assert.throws(() => genStructuredGenoID(bad), /vld/u)
 })
 
 test("resetSeededState clears the name registry: re-declaration after reset registers fresh", () => {

@@ -70,7 +70,7 @@ function trialBits(size: number): string {
     const lim = Math.min(size, 16)
     for (let j = 0; j < lim; j += 1) {s += b[j].toString(2).padStart(8, "0")}
     const chars = [...s]
-    for (const idx of [48, 49, 50, 51, 64, 65]) {if (idx < chars.length) chars[idx] = ""}
+    for (const idx of [48, 49, 50, 51, 64, 65]) {if (idx < chars.length) {chars[idx] = ""}}
     out += chars.join("")
   }
   return out

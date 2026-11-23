@@ -21,9 +21,9 @@ export interface PractRandRow {
   verdict: string | null
 }
 
-const ROW_RE = /^\s*(.+?)\s*:\s*([0-9]*\.?[0-9]+(?:[eE][+-]?\d+)?)\s*\(\s*([0-9]*\.?[0-9]+(?:[eE][+-]?\d+)?)\s*\)\s*(.*)$/
+const ROW_RE = /^\s*(.+?)\s*:\s*([0-9]*\.?[0-9]+(?:[eE][+-]?\d+)?)\s*\(\s*([0-9]*\.?[0-9]+(?:[eE][+-]?\d+)?)\s*\)\s*(.*)$/u
 
-const VERDICT_RE = /\[(unusual|very unusual|extremely unusual|FAILED|failed|PASSED|passed)\]/
+const VERDICT_RE = /\[(unusual|very unusual|extremely unusual|FAILED|failed|PASSED|passed)\]/u
 
 export function parsePractrandOutput(output: string): PractRandRow[] {
   const rows: PractRandRow[] = []
@@ -60,7 +60,7 @@ export function countVerdicts(rows: readonly PractRandRow[]): {
   let unassessed = 0
   for (const row of rows) {
     if (row.verdict === null) {unassessed += 1}
-    else if (/unusual|failed/i.test(row.verdict)) {failed += 1}
+    else if (/unusual|failed/iu.test(row.verdict)) {failed += 1}
     else {passed += 1}
   }
   return { failed, passed, unassessed }

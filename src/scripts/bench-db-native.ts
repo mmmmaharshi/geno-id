@@ -61,7 +61,7 @@ const ARMS: Record<string, () => string> = {
 }
 
 
-const hex = (uuid: string): string => uuid.replaceAll(/-/g, "")
+const hex = (uuid: string): string => uuid.replaceAll('-', "")
 const now = () => performance.now()
 
 interface Cell {
@@ -131,9 +131,9 @@ async function postgres(): Promise<Engine> {
             for (let i = 0; i < perWriter; i += 1) {
               const id = Buffer.alloc(16)
               id.writeUInt32BE(writer + 1, 0)
-              id.writeUInt32BE(random() * 0xffffffff, 4)
-              id.writeUInt32BE(random() * 0xffffffff, 8)
-              id.writeUInt32BE(random() * 0xffffffff, 12)
+              id.writeUInt32BE(random() * 0xff_ff_ff_ff, 4)
+              id.writeUInt32BE(random() * 0xff_ff_ff_ff, 8)
+              id.writeUInt32BE(random() * 0xff_ff_ff_ff, 12)
               await conn.query("INSERT INTO t (id, tenant, payload) VALUES ($1, $2, $3)", [
                 `\\x${id.toString("hex")}`,
                 1 + (writer % 5),
@@ -143,7 +143,7 @@ async function postgres(): Promise<Engine> {
           }),
         )
       } finally {
-        for (const conn of conns) await conn.end()
+        for (const conn of conns) {await conn.end()}
       }
       return perWriter * WRITERS
     },
@@ -161,8 +161,8 @@ async function postgres(): Promise<Engine> {
         "SELECT name, setting FROM pg_settings WHERE name IN ('shared_buffers','max_connections','fsync','synchronous_commit','server_version')",
       )
       return {
-        serverVersion: version.rows[0]?.v ?? "",
         serverConfig: Object.fromEntries(settings.rows.map((row) => [row.name, row.setting])),
+        serverVersion: version.rows[0]?.v ?? "",
       }
     },
     async insertBatch(ids, tenants, payload) {
@@ -173,7 +173,7 @@ async function postgres(): Promise<Engine> {
       let hits = 0
       for (let i = 0; i < probes; i += 1) {
         const res = await client.query(`SELECT 1 FROM t WHERE id = '\\x${ids[i % ids.length]}'::bytea`)
-        if (res.rowCount) hits += 1
+        if (res.rowCount) {hits += 1}
       }
       return hits
     },
@@ -200,7 +200,7 @@ async function postgres(): Promise<Engine> {
         "SELECT pg_table_size('t') AS heap, pg_indexes_size('t') AS idx, pg_total_relation_size('t') AS total",
       )
       const row = res.rows[0] ?? { heap: 0, idx: 0, total: 0 }
-      return { tableBytes: row.heap, indexBytes: row.idx, totalBytes: row.total }
+      return { indexBytes: row.idx, tableBytes: row.heap, totalBytes: row.total }
     },
     async update(limit) {
       await client.query(
@@ -230,12 +230,12 @@ async function mysqlInnoDB(): Promise<Engine> {
     },
     async concurrentWriters(perWriter) {
       const pool = mysql.createPool({
+        connectionLimit: WRITERS,
+        database: process.env.MYSQL_DB ?? "genoid",
         host: process.env.MYSQL_HOST ?? "localhost",
+        password: process.env.MYSQL_PASSWORD ?? "password",
         port: Number(process.env.MYSQL_PORT ?? 3306),
         user: process.env.MYSQL_USER ?? "root",
-        password: process.env.MYSQL_PASSWORD ?? "password",
-        database: process.env.MYSQL_DB ?? "genoid",
-        connectionLimit: WRITERS,
       })
       const random = mulberry32(99)
       try {
@@ -244,9 +244,9 @@ async function mysqlInnoDB(): Promise<Engine> {
             for (let i = 0; i < perWriter; i += 1) {
               const id = Buffer.alloc(16)
               id.writeUInt32BE(writer + 1, 0)
-              id.writeUInt32BE(Math.floor(random() * 0xffffffff), 4)
-              id.writeUInt32BE(Math.floor(random() * 0xffffffff), 8)
-              id.writeUInt32BE(Math.floor(random() * 0xffffffff), 12)
+              id.writeUInt32BE(Math.floor(random() * 0xff_ff_ff_ff), 4)
+              id.writeUInt32BE(Math.floor(random() * 0xff_ff_ff_ff), 8)
+              id.writeUInt32BE(Math.floor(random() * 0xff_ff_ff_ff), 12)
               await pool.query("INSERT INTO t (id, tenant, payload) VALUES (?, ?, ?)", [
                 id,
                 1 + (writer % 5),
@@ -277,12 +277,12 @@ async function mysqlInnoDB(): Promise<Engine> {
       )
       const row = settings[0]
       return {
-        serverVersion: version[0]?.v ?? "",
         serverConfig: {
           innodb_buffer_pool_size: String(row?.buffer_pool ?? ""),
           innodb_flush_log_at_trx_commit: String(row?.flush ?? ""),
           max_connections: String(row?.max_conn ?? ""),
         },
+        serverVersion: version[0]?.v ?? "",
       }
     },
     async insertBatch(ids, tenants, payload) {
@@ -295,7 +295,7 @@ async function mysqlInnoDB(): Promise<Engine> {
         const [rows] = await client.query<RowDataPacket[]>("SELECT id FROM t WHERE id = ?", [
           Buffer.from(ids[i % ids.length], "hex"),
         ])
-        if (rows.length) hits += 1
+        if (rows.length) {hits += 1}
       }
       return hits
     },
@@ -326,8 +326,8 @@ async function mysqlInnoDB(): Promise<Engine> {
       )
       const row = rows[0]
       return {
-        tableBytes: Number(row?.data ?? 0),
         indexBytes: Number(row?.idx ?? 0),
+        tableBytes: Number(row?.data ?? 0),
         totalBytes: Number(row?.data ?? 0) + Number(row?.idx ?? 0),
       }
     },

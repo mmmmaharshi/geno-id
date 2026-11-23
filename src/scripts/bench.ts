@@ -35,7 +35,7 @@ const { genV4Native, genV7, genMathRandom, genHashUUID, genGenoID, genStructured
   }
 
 function validateFormat(uuid: string, expectedVersionNibble: string): boolean {
-  const re = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
+  const re = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u
   if (!re.test(uuid)) {
     return false
   }
@@ -140,7 +140,7 @@ async function uniformityTest(
       uuid
         .replaceAll('-', "")
         .match(/.{2}/g)!
-        .map((h) => Number.parseInt(h, 16)),
+u        .map((h) => Number.parseInt(h, 16)),
     )
     byteHistogram[bytes[0]] += 1
     for (const byte of bytes) {

@@ -56,7 +56,7 @@ export interface Percentiles {
 }
 
 export function percentiles(values: readonly number[]): Percentiles {
-  if (values.length === 0) {return { p50: 0, p95: 0, p99: 0, max: 0, samples: 0 }}
+  if (values.length === 0) {return { max: 0, p50: 0, p95: 0, p99: 0, samples: 0 }}
   const sorted = values.toSorted((left, right) => left - right)
   const at = (quantile: number): number => sorted.at(Math.min(sorted.length - 1, Math.floor(quantile * sorted.length))) ?? 0
   return { max: sorted.at(-1) ?? 0, p50: at(0.5), p95: at(0.95), p99: at(0.99), samples: sorted.length }

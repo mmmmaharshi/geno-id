@@ -18,14 +18,14 @@ const files = [
 
 // Backticked or directive paths like `src/scripts/bench.ts`, results/*.json,
 // golden/*.txt, .github/workflows/bench.yml. Skips URLs and bare words.
-const PATTERN = /`((?:src|results|golden|docs|scripts|\.github)\/[^`\s]+?)`/g
+const PATTERN = /`((?:src|results|golden|docs|scripts|\.github)\/[^`\s]+?)`/gu
 
 let missing = 0
 for (const rel of files) {
   const text = fs.readFileSync(path.join(root, rel), "utf-8")
   const seen = new Set<string>()
   for (const m of text.matchAll(PATTERN)) {
-    const ref = m[1].replace(/:\d+$/, "").replace(/[.,:;)]+$/, "")
+    const ref = m[1].replace(/:\d+$/u, "").replace(/[.,:;)]+$/u, "")
     if (seen.has(ref) || ref.includes("*") || ref.endsWith("/")) {continue}
     seen.add(ref)
     const abs = path.join(root, ref)

@@ -28,17 +28,17 @@ test("env vars override the default target", () => {
 
 test("every engine documents the env vars that retarget the harness", () => {
   for (const name of ["postgresql", "mysql-innodb"] as const) {
-    assert.match(SERVER_ENV[name], /HOST/, `${name} must document a host override`)
-    assert.match(SERVER_ENV[name], /PORT/, `${name} must document a port override`)
+    assert.match(SERVER_ENV[name], /HOST/u, `${name} must document a host override`)
+    assert.match(SERVER_ENV[name], /PORT/u, `${name} must document a port override`)
   }
 })
 
 test("the unreachable message names the target and the retargeting env vars", () => {
   const lines = unreachableMessage("postgresql", { host: "localhost", port: 5432 })
   const text = lines.join("\n")
-  assert.match(text, /localhost:5432/)
-  assert.match(text, /PG_HOST/)
-  assert.match(text, /cannot run here/)
+  assert.match(text, /localhost:5432/u)
+  assert.match(text, /PG_HOST/u)
+  assert.match(text, /cannot run here/u)
   assert.equal(lines.length, 3)
 })
 

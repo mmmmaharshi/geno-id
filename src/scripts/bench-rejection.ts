@@ -122,7 +122,7 @@ interface CellConfig { k: number; allowedSize: number }
 const allConfigs: CellConfig[] = []
 for (const k of K_VALUES)
   {for (const size of ALLOWED_SIZES)
-    allConfigs.push({ k, allowedSize: size })}
+    {allConfigs.push({ k, allowedSize: size })}}
 
 // Fisher-Yates shuffle
 for (let i = allConfigs.length - 1; i > 0; i -= 1) {

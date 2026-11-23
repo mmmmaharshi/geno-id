@@ -44,7 +44,7 @@ export function welchTTest(a: number[], b: number[]): WelchResult {
   const mb = meanOf(b)
   const va = varianceOf(a)
   const vb = varianceOf(b)
-  if (va + vb === 0) {return { t: 0, df: Math.max(1, na + nb - 2), p: 1 }}
+  if (va + vb === 0) {return { df: Math.max(1, na + nb - 2), p: 1, t: 0 }}
   const se = Math.sqrt(va / na + vb / nb)
   const t = (ma - mb) / se
   const df = (va / na + vb / nb) ** 2 /

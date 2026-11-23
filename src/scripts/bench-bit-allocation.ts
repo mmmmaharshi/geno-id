@@ -218,7 +218,7 @@ function shippedDbkey(): Record<string, unknown> {
   return {
     collisionProbabilityAt2M: collisionProbabilityUpperBound(2_000_000, plan.randomBits),
     depthHeadroomVsRankOrder: plan.weightedDepthRankOrder - plan.weightedDepth,
-    fields: plan.fields.map((f) => ({ name: f.name, bits: f.bits, offset: f.offset, priority: Number(f.priority.toFixed(4)) })),
+    fields: plan.fields.map((f) => ({ bits: f.bits, name: f.name, offset: f.offset, priority: Number(f.priority.toFixed(4)) })),
     randomBits: plan.randomBits,
     requiredRandomBitsFor2MAt1Percent: minRandomBitsForCollisionBudget(2_000_000, 0.01),
     structuredBits: plan.structuredBits,
@@ -252,7 +252,7 @@ const report = {
     suboptimalCount: optimality.suboptimalCount,
     suboptimalInstances: optimality.records
       .filter((r) => !r.smithIsOptimal)
-      .map((r) => ({ instance: r.instance, smithDepth: r.smithDepth, bruteForceDepth: r.bruteForceDepth })),
+      .map((r) => ({ bruteForceDepth: r.bruteForceDepth, instance: r.instance, smithDepth: r.smithDepth })),
     suboptimalRelativeExcess: optimality.suboptimalRelativeExcess,
     suboptimalStructuredBitsRange: optimality.suboptimalStructuredBitsRange,
     trialsRequested: TRIALS,

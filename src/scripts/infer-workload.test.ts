@@ -62,14 +62,14 @@ test("inferWorkload estimates selectivity from matched/scanned pairs", () => {
 })
 
 test("inferWorkload rejects an empty trace", () => {
-  assert.throws(() => inferWorkload([], schema), /non-empty/)
+  assert.throws(() => inferWorkload([], schema), /non-empty/u)
 })
 
 test("inferWorkload rejects filters on unknown fields", () => {
-  assert.throws(() => inferWorkload([point("read", { ghost: 1 })], schema), /ghost/)
+  assert.throws(() => inferWorkload([point("read", { ghost: 1 })], schema), /ghost/u)
 })
 
 test("inferWorkload rejects garbage events", () => {
-  assert.throws(() => inferWorkload([{ filters: {}, kind: "point", op: "delete" }], schema), /op/)
-  assert.throws(() => inferWorkload([{ filters: {}, kind: "fetch", op: "read" }], schema), /kind/)
+  assert.throws(() => inferWorkload([{ filters: {}, kind: "point", op: "delete" }], schema), /op/u)
+  assert.throws(() => inferWorkload([{ filters: {}, kind: "fetch", op: "read" }], schema), /kind/u)
 })

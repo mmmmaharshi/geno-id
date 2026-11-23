@@ -104,7 +104,7 @@ test("uuidToBytes decodes the canonical UUID byte order", () => {
 test("uuidToRandomBits emits only random-field bits, produces correct-length output", () => {
   const bits = uuidToRandomBits(genStructuredGenoID(dbkey), dbkey)
   assert.equal(bits.length, totalBits)
-  assert.match(bits, /^[01]+$/)
+  assert.match(bits, /^[01]+$/u)
   const again = uuidToRandomBits(genStructuredGenoID(dbkey), dbkey)
   assert.equal(again.length, totalBits)
 })

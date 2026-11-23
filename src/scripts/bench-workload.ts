@@ -179,7 +179,7 @@ function makeSqliteDb(): BenchDb {
     async countRanges(ranges: [number, number][]): Promise<number> {
       const terms = ranges.map(() => "(id >= ? AND id <= ?)").join(" OR ")
       const params: Uint8Array[] = []
-      for (const r of ranges) params.push(...rangeBounds(r))
+      for (const r of ranges) {params.push(...rangeBounds(r))}
       const row = db.prepare(`SELECT COUNT(*) AS n FROM ids WHERE ${terms}`).get(...params) as { n: number }
       return row.n
     },
@@ -190,7 +190,7 @@ function makeSqliteDb(): BenchDb {
     async insertIds(ids: Uint8Array[]): Promise<number> {
       const insert = db.prepare("INSERT INTO ids (id) VALUES (?)")
       const start = performance.now()
-      for (const bytes of ids) insert.run(bytes)
+      for (const bytes of ids) {insert.run(bytes)}
       return ids.length / ((performance.now() - start) / 1000)
     },
   }
@@ -206,7 +206,7 @@ function makePgDb(): BenchDb {
       let i = 0
       const terms = ranges.map(() => `(id >= $${i += 1} AND id <= $${i += 1})`).join(" OR ")
       const params: Uint8Array[] = []
-      for (const r of ranges) params.push(...rangeBounds(r))
+      for (const r of ranges) {params.push(...rangeBounds(r))}
       const result = await db.query(`SELECT COUNT(*) AS n FROM ids WHERE ${terms}`, params)
       return Number((result.rows[0] as { n: string }).n)
     },

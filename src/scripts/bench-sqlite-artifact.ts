@@ -65,14 +65,12 @@ const report = {
     Object.entries(summaries).map(([arm, s]) => [
       arm,
       {
-        insertRowsPerSec: s.insert,
-        pointLookupUs: s.lookupUs,
-        shardRangeScanMs: s.rangeScanMs,
-        keyEncoding: s.keyEncoding,
-        ddl: s.ddl,
         bytesPerRow: s.bytesPerRow,
-        integrityOk: s.results.every((r) => r.integrityOk),
+        ddl: s.ddl,
         freelistCountMax: Math.max(...s.results.map((r) => r.freelistCount)),
+        insertRowsPerSec: s.insert,
+        integrityOk: s.results.every((r) => r.integrityOk),
+        keyEncoding: s.keyEncoding,
         perTrial: s.results.map((r) => ({
           insertRowsPerSec: r.opsPerSec,
           pointLookupUs: r.pointLookupUs,
@@ -81,6 +79,8 @@ const report = {
           pageCount: r.pageCount,
           pageSize: r.pageSize,
         })),
+        pointLookupUs: s.lookupUs,
+        shardRangeScanMs: s.rangeScanMs,
       },
     ]),
   ),

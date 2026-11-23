@@ -33,7 +33,7 @@ function bench(label: string, fn: () => unknown): number[] {
 function meanCI(xs: number[]): { mean: number; ci95: [number, number] } {
   const T95: Record<number, number> = { 1: 12.706, 2: 4.303, 3: 3.182, 4: 2.776, 5: 2.571, 6: 2.447, 7: 2.365, 8: 2.306, 9: 2.262 }
   const m = xs.reduce((a, b) => a + b, 0) / xs.length
-  if (xs.length < 2) {return { mean: m, ci95: [m, m] };}
+  if (xs.length < 2) {return { ci95: [m, m], mean: m };}
   const sd = Math.sqrt(xs.reduce((a, x) => a + (x - m) ** 2, 0) / (xs.length - 1))
   const t = xs.length - 1 >= 30 ? 1.96 : (T95[xs.length - 1] ?? 1.96)
   const margin = (t * sd) / Math.sqrt(xs.length)

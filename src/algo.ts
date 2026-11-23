@@ -221,7 +221,7 @@ export function genV7(): string {
 
 export function genMathRandom(): string {
   return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replaceAll(
-    /[xy]/g,
+    /[xy]/gu,
     (c: string) => {
       const r = Math.trunc(Math.random() * 16)
       const v = c === "x" ? r : (r & 0x3) | 0x8
@@ -664,7 +664,7 @@ function fieldByteMasks(f: V8Field): ByteMask[] {
 
 export function uuidToBytes(uuid: string): Uint8Array {
   const h = uuid.replaceAll("-", "")
-  if (!/^[0-9a-fA-F]{32}$/.test(h)) {
+  if (!/^[0-9a-fA-F]{32}$/u.test(h)) {
     throw new Error(`uuidToBytes: invalid UUID hex string "${uuid}"`)
   }
   const b = new Uint8Array(16)
@@ -1307,7 +1307,7 @@ function pack(
     }
     let end = cursor
     while (end < 128 && !used.has(end) && !NIBBLE_BITS.has(end)) {end += 1}
-    if (end - cursor > 0) {filler.push({ offset: cursor, bits: end - cursor })}
+    if (end - cursor > 0) {filler.push({ bits: end - cursor, offset: cursor })}
     cursor = end
   }
   return { filler, placed, used }
@@ -1980,10 +1980,8 @@ function genLayoutSource(layout: V8Layout, raw: boolean, poolSize = 0): string {
     if (needsTick) {lines.push("let _tick=0;const _mctr={};")}
     const hasMono = fieldMeta.some((m) => m.f.constraint?.monotonic)
     if (hasMono) {lines.push("const _last={};")}
-    lines.push(`const _bp=new Uint8Array(${poolSize * 16});`, `const _p=new Array(${poolSize});`)
-    lines.push(`let _pi=${poolSize};`, "return function(){")
-    lines.push(`if(_pi>=${poolSize}){`, "cr.getRandomValues(_bp);")
-    lines.push(`for(_pi=0;_pi<${poolSize};_pi += 1){const _o=_pi*16;`)
+    lines.push(`const _bp=new Uint8Array(${poolSize * 16});`, `const _p=new Array(${poolSize});`, `let _pi=${poolSize};`, "return function(){")
+    lines.push(`if(_pi>=${poolSize}){`, "cr.getRandomValues(_bp);", `for(_pi=0;_pi<${poolSize};_pi += 1){const _o=_pi*16;`)
   } else {
     lines.push("const b=new Uint8Array(16);let _ctr=0;")
     if (needsTick) {lines.push("let _tick=0;const _mctr={};")}
@@ -2082,8 +2080,7 @@ function genLayoutSource(layout: V8Layout, raw: boolean, poolSize = 0): string {
     // Pooled: emit field + format into fieldLines, then substitute b[ → b[_o+
     emitFieldBlock(fieldLines)
     const poolfy = (s: string) => s.replaceAll("b[", "_bp[_o+")
-    lines.push(...fieldLines.map((l) => `  ${  poolfy(l)}`), `  _p[_pi]=${poolfy(COMPILED_FMT_EXPR)};`)
-    lines.push("}_pi=0;}", "return _p[_pi += 1];")
+    lines.push(...fieldLines.map((l) => `  ${  poolfy(l)}`), `  _p[_pi]=${poolfy(COMPILED_FMT_EXPR)};`, "}_pi=0;}", "return _p[_pi += 1];")
     lines.push("};")
   }
 

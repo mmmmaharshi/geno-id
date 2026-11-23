@@ -33,7 +33,7 @@ function bytesToUuid(b: Uint8Array): string {
   return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20, 32)}`
 }
 
-const UUID_V8_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-8[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
+const UUID_V8_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-8[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u
 
 test("genGenoID emits a valid RFC 9562 v8 UUID", () => {
   const uuid = genGenoID()
@@ -102,9 +102,9 @@ test("compileDatabaseLayout places locality fields first for offset-free schemas
   const input: LayoutCompilerInput = {
     schema: {
       fields: [
-        { name: "timestamp", length: 48, type: "timestamp-ms" },
-        { name: "shard", length: 8, type: "shard", constraint: { allowed: [1, 2, 3, 4, 5] } },
-        { name: "counter", length: 16, type: "counter", constraint: { monotonic: true } },
+        { length: 48, name: "timestamp", type: "timestamp-ms" },
+        { constraint: { allowed: [1, 2, 3, 4, 5] }, length: 8, name: "shard", type: "shard" },
+        { constraint: { monotonic: true }, length: 16, name: "counter", type: "counter" },
       ],
       name: "dbkey",
     },
@@ -133,8 +133,8 @@ test("compileDatabaseLayout keeps explicit offsets hard while placing remaining 
   const result = compileDatabaseLayout({
     schema: {
       fields: [
-        { name: "tenant", start: 0, length: 8, type: "shard" },
-        { name: "lookup", length: 8, type: "process" },
+        { length: 8, name: "tenant", start: 0, type: "shard" },
+        { length: 8, name: "lookup", type: "process" },
       ],
       name: "mixed",
     },
@@ -156,7 +156,7 @@ test("compileDatabaseLayout preserves wide fields and RFC 9562 markers", () => {
   const allowed = [0x1_00_00_00_00, 0x1_00_00_00_01]
   const result = compileDatabaseLayout({
     schema: {
-      fields: [{ name: "trace", length: 40, type: "process", constraint: { allowed } }],
+      fields: [{ constraint: { allowed }, length: 40, name: "trace", type: "process" }],
       name: "wide",
     },
     workload: {
@@ -175,7 +175,7 @@ test("compileDatabaseLayout preserves wide fields and RFC 9562 markers", () => {
 
 test("compileDatabaseLayout rejects an empty workload field list", () => {
   const input = fromAny<LayoutCompilerInput, unknown>({
-    schema: { fields: [{ name: "shard", start: 0, length: 8, type: "shard" }], name: "key" },
+    schema: { fields: [{ length: 8, name: "shard", start: 0, type: "shard" }], name: "key" },
     workload: { fields: [], readWeight: 1, writeWeight: 1 },
   })
 
@@ -193,22 +193,22 @@ test("compileDatabaseLayout returns a named, deterministic contract", () => {
   const input: LayoutCompilerInput = {
     schema: {
       fields: [
-        { name: "timestamp", start: 0, length: 48, type: "timestamp-ms" },
+        { length: 48, name: "timestamp", start: 0, type: "timestamp-ms" },
         {
+          constraint: { allowed: [1, 2, 3, 4, 5] },
+          length: 8,
           name: "shard",
           start: 52,
-          length: 8,
           type: "shard",
-          constraint: { allowed: [1, 2, 3, 4, 5] },
         },
-        { name: "counter", start: 66, length: 16, type: "counter", constraint: { monotonic: true } },
+        { constraint: { monotonic: true }, length: 16, name: "counter", start: 66, type: "counter" },
       ],
       name: "dbkey",
     },
     workload: {
       fields: [
         { name: "shard", role: "partition", selectivity: 0.8 },
-        { name: "counter", role: "lookup", readWeight: 1, writeWeight: 1 },
+        { name: "counter", readWeight: 1, role: "lookup", writeWeight: 1 },
       ],
       readWeight: 0.25,
       writeWeight: 0.75,
@@ -252,7 +252,7 @@ test("compileDatabaseLayout returns a named, deterministic contract", () => {
 test("compiled database layouts remain consumable through the structured API", () => {
   const result = compileDatabaseLayout({
     schema: {
-      fields: [{ name: "shard", start: 0, length: 8, type: "shard", constraint: { allowed: [1, 2, 3, 4, 5] } }],
+      fields: [{ constraint: { allowed: [1, 2, 3, 4, 5] }, length: 8, name: "shard", start: 0, type: "shard" }],
       name: "shardonly",
     },
     workload: {
@@ -269,7 +269,7 @@ test("compiled database layouts remain consumable through the structured API", (
 
 test("compileDatabaseLayout rejects reserved schema bits with stable field errors", () => {
   const input: LayoutCompilerInput = {
-    schema: { fields: [{ name: "version", start: 48, length: 1, type: "fixed", value: 1 }], name: "key" },
+    schema: { fields: [{ length: 1, name: "version", start: 48, type: "fixed", value: 1 }], name: "key" },
     workload: {
       fields: [{ name: "version", role: "lookup" }],
       readWeight: 1,
@@ -290,7 +290,7 @@ test("compileDatabaseLayout rejects reserved schema bits with stable field error
 
 test("compileDatabaseLayout rejects unknown workload fields with stable field errors", () => {
   const input: LayoutCompilerInput = {
-    schema: { fields: [{ name: "shard", start: 0, length: 8, type: "shard" }], name: "key" },
+    schema: { fields: [{ length: 8, name: "shard", start: 0, type: "shard" }], name: "key" },
     workload: {
       fields: [{ name: "missing", role: "partition" }],
       readWeight: 1,
@@ -313,8 +313,8 @@ test("compileDatabaseLayout rejects overlapping schema fields with stable errors
   const input: LayoutCompilerInput = {
     schema: {
       fields: [
-        { name: "first", start: 0, length: 8, type: "shard" },
-        { name: "second", start: 4, length: 8, type: "shard" },
+        { length: 8, name: "first", start: 0, type: "shard" },
+        { length: 8, name: "second", start: 4, type: "shard" },
       ],
       name: "key",
     },
@@ -338,7 +338,7 @@ test("compileDatabaseLayout rejects overlapping schema fields with stable errors
 
 test("compileDatabaseLayout requires workload weights", () => {
   const input = fromAny<LayoutCompilerInput, unknown>({
-    schema: { fields: [{ name: "shard", start: 0, length: 8, type: "shard" }], name: "key" },
+    schema: { fields: [{ length: 8, name: "shard", start: 0, type: "shard" }], name: "key" },
     workload: {
       fields: [{ name: "shard", role: "partition" }],
       writeWeight: 1,
@@ -371,10 +371,10 @@ test("named generation modes preserve public field semantics", () => {
   const result = compileDatabaseLayout({
     schema: {
       fields: [
-        { name: "marker", length: 8, type: "fixed", value: 5 },
-        { name: "shard", length: 8, type: "shard", constraint: { allowed: [1, 2, 3] } },
-        { name: "counter", length: 16, type: "counter", constraint: { monotonic: true } },
-        { name: "trace", length: 40, type: "process" },
+        { length: 8, name: "marker", type: "fixed", value: 5 },
+        { constraint: { allowed: [1, 2, 3] }, length: 8, name: "shard", type: "shard" },
+        { constraint: { monotonic: true }, length: 16, name: "counter", type: "counter" },
+        { length: 40, name: "trace", type: "process" },
       ],
       name: "modes",
     },

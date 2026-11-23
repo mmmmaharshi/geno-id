@@ -162,7 +162,7 @@ export async function runBattery(
       sumsq[i] += v * v
     }
     for (const i of activeBytes) {
-      for (const j of activeBytes) {if (j > i) sumprod[i * 16 + j] += bytes[i] * bytes[j]}
+      for (const j of activeBytes) {if (j > i) {sumprod[i * 16 + j] += bytes[i] * bytes[j]}}
     }
   }
 

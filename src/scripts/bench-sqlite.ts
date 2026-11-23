@@ -212,7 +212,7 @@ function pregenIds(arm: CompositeKeyArm, n: number): unknown[] {
     const uuid = algo.genStructuredGenoID(def.layout)
     const bytes = uuidToBytes(uuid)
     const shard = def.extractShard(bytes)
-    if (def.rowKind === "shard-id") {ids.push({ shard, id: bytes, val: i })}
+    if (def.rowKind === "shard-id") {ids.push({ id: bytes, shard, val: i })}
     else if (def.rowKind === "id") {ids.push({ id: bytes, val: i })}
     else {ids.push({ id: `${shard}:${uuid}`, val: i })}
   }

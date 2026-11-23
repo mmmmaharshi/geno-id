@@ -12,7 +12,7 @@ import type { BenchEntry, CIBenchmarkResult, CollisionEntry, ComparisonEntry, En
 
 export function envLabel(e: EnvInfo): string {
   if (e.runtime === "deno") {
-    const v = e.node.replace(/^deno-/, "")
+    const v = e.node.replace(/^deno-/u, "")
     const osName = platformName(e.platform)
     return `Deno ${v} (${osName})`
   }

@@ -184,7 +184,7 @@ test("a version mismatch inside the release identity is an error", () => {
       },
       f.dir,
     )
-    assert.match(result.versionError ?? "", /release identity 1\.0\.0 != package\.json 1\.2\.3/)
+    assert.match(result.versionError ?? "", /release identity 1\.0\.0 != package\.json 1\.2\.3/u)
   } finally {
     rmSync(f.dir, { force: true, recursive: true })
   }

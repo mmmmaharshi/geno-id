@@ -31,13 +31,13 @@ function baseInput(): EvidenceManifestInput {
   return {
     claims: [
       {
-        id: "fixture-uniqueness",
-        statement: "Fixture identifiers are unique.",
-        type: "measured",
-        summary: "0 collisions in 10000 identifiers.",
-        uncertainty: "Single bounded fixture run.",
-        limitation: "Not a collision-probability estimate.",
         artifacts: [{ path: "raw/uuids.txt", sha256: "a".repeat(64), bytes: 16 }],
+        id: "fixture-uniqueness",
+        limitation: "Not a collision-probability estimate.",
+        statement: "Fixture identifiers are unique.",
+        summary: "0 collisions in 10000 identifiers.",
+        type: "measured",
+        uncertainty: "Single bounded fixture run.",
       },
     ],
     command: "bun run evidence:fixture",
@@ -86,7 +86,7 @@ test("verifyEvidenceArtifacts reports verified, missing, and mismatch states", (
   const manifest = createEvidenceManifest(baseInput())
   const states = verifyEvidenceArtifacts(manifest, (artifactPath) => {
     if (artifactPath === "raw/missing.txt") {return { exists: false }}
-    if (artifactPath === "raw/changed.txt") {return { exists: true, bytes: 16, sha256: "b".repeat(64) }}
+    if (artifactPath === "raw/changed.txt") {return { bytes: 16, exists: true, sha256: "b".repeat(64) }}
     return { bytes: 16, exists: true, sha256: "a".repeat(64) }
   })
   assert.deepEqual(states[0], { path: "raw/uuids.txt", status: "verified" })

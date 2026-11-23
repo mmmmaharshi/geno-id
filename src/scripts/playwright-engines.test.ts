@@ -29,15 +29,15 @@ const ENGINES = ["chromium", "firefox", "webkit"] as const
 
 // Engine fingerprints taken from the real navigator.userAgent of each engine.
 const MUST_MATCH: Record<string, RegExp> = {
-  chromium: /HeadlessChrome\/\d+/,
-  firefox: /Firefox\/\d+/,
-  webkit: /Version\/\d+\.\d+ Safari\/\d+/,
+  chromium: /HeadlessChrome\/\d+/u,
+  firefox: /Firefox\/\d+/u,
+  webkit: /Version\/\d+\.\d+ Safari\/\d+/u,
 }
 // A foreign engine's signature must never appear in this engine's row.
 const MUST_NOT_MATCH: Record<string, RegExp> = {
-  chromium: /^(?!.*HeadlessChrome).*$/,
-  firefox: /HeadlessChrome/,
-  webkit: /HeadlessChrome/,
+  chromium: /^(?!.*HeadlessChrome).*$/u,
+  firefox: /HeadlessChrome/u,
+  webkit: /HeadlessChrome/u,
 }
 
 const N_SYNC = Number(process.env.PW_TEST_SYNC ?? 2000)

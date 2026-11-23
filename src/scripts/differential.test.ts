@@ -19,7 +19,7 @@ const { compileRawLayout, interpretRawLayout, getFieldValue, uuidToBytes, DBKEY_
     EVENTSOURCING_LAYOUT: V8Layout
   }
 
-const V8_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-8[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
+const V8_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-8[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u
 
 function rawBytes(v: number[]): Uint8Array {
   const b = new Uint8Array(16)
@@ -55,23 +55,23 @@ interface LayoutCfg {
 const LAYOUTS: LayoutCfg[] = [
   {
     constraints: [
-      { field: "shard", check: (v: number) => v >= 1 && v <= 5 },
-      { field: "counter", check: (_v: number) => true },
+      { check: (v: number) => v >= 1 && v <= 5, field: "shard" },
+      { check: (_v: number) => true, field: "counter" },
     ],
     layout: DBKEY_LAYOUT,
     name: "dbkey",
   },
   {
     constraints: [
-      { field: "tenant", check: (v: number) => v >= 1 && v <= 8 },
-      { field: "region", check: (v: number) => v >= 1 && v <= 4 },
+      { check: (v: number) => v >= 1 && v <= 8, field: "tenant" },
+      { check: (v: number) => v >= 1 && v <= 4, field: "region" },
     ],
     layout: MULTITENANT_LAYOUT,
     name: "multitenant",
   },
   {
     constraints: [
-      { field: "seq", check: (_v: number) => true },
+      { check: (_v: number) => true, field: "seq" },
     ],
     layout: EVENTSOURCING_LAYOUT,
     name: "eventsourcing",
