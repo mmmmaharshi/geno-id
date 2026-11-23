@@ -6,7 +6,7 @@ import type { V8Field, V8Layout } from "../../dist/algo.js"
 
 const __dirname = import.meta.dirname!
 const root = path.resolve(__dirname, "..", "..")
-const algoPath = `file://${path.join(root, "dist", "algo.js").replace(/\\/g, "/")}`
+const algoPath = `file://${path.join(root, "dist", "algo.js").replaceAll(/\\/g, "/")}`
 
 const algo = await import(algoPath) as {
   genStructuredGenoID: (l: V8Layout) => string
@@ -22,9 +22,9 @@ const { genStructuredGenoID, uuidToBytes, getFieldValue, DBKEY_LAYOUT } = algo
 // but for the timestamp field (independent code path).
 function vManualTs(bytes: Uint8Array, layout: V8Layout): bigint {
   const f = layout.fields.find((field) => field.type === "timestamp-ms" || field.type === "timestamp-us")
-  if (!f) return -1n
+  if (!f) {return -1n}
   let v = 0n
-  for (let bit = 0; bit < f.length; bit++) {
+  for (let bit = 0; bit < f.length; bit += 1) {
     const pos = f.start + bit
     const byteIdx = pos >> 3
     const bitIdx = 7 - (pos & 7)
@@ -34,7 +34,7 @@ function vManualTs(bytes: Uint8Array, layout: V8Layout): bigint {
 }
 
 // Warm up pools
-for (let i = 0; i < 2048; i++) genStructuredGenoID(DBKEY_LAYOUT)
+for (let i = 0; i < 2048; i += 1) {genStructuredGenoID(DBKEY_LAYOUT)}
 
 // E1 production: generate UUIDs via shipped path, parse back, verify all fields
 const N = 500_000
@@ -53,12 +53,12 @@ let lastTs = -1n
 let lastCtr = -1n
 
 for (const f of structFields) {
-  if (f.name === "counter") break
+  if (f.name === "counter") {break}
 }
 
 const startTime = performance.now()
 
-for (let i = 0; i < N; i++) {
+for (let i = 0; i < N; i += 1) {
   const uuid = genStructuredGenoID(DBKEY_LAYOUT)
   const bytes = uuidToBytes(uuid)
 
@@ -68,20 +68,20 @@ for (let i = 0; i < N; i++) {
 
     // Manual bit-extraction via independent code path
     let vManual = 0n
-    for (let bit = 0; bit < f.length; bit++) {
+    for (let bit = 0; bit < f.length; bit += 1) {
       const pos = f.start + bit
       const byteIdx = pos >> 3
       const bitIdx = 7 - (pos & 7)
       vManual = (vManual << 1n) | ((BigInt(bytes[byteIdx]) >> BigInt(bitIdx)) & 1n)
     }
 
-    if (vRaw !== vManual || BigInt(vParsed) !== vManual) mismatchCount++
+    if (vRaw !== vManual || BigInt(vParsed) !== vManual) {mismatchCount += 1}
 
-    if (f.constraint?.allowed && !f.constraint.allowed.includes(vParsed)) constraintViolations++
+    if (f.constraint?.allowed && !f.constraint.allowed.includes(vParsed)) {constraintViolations += 1}
 
     if (f.name === "counter") {
       const ts = vManualTs(bytes, DBKEY_LAYOUT)
-      if (ts < lastTs || (ts === lastTs && vManual < lastCtr)) monotonicityViolations++
+      if (ts < lastTs || (ts === lastTs && vManual < lastCtr)) {monotonicityViolations += 1}
       lastTs = ts
       lastCtr = vManual
     }
@@ -96,21 +96,21 @@ const collisions = collisionTest(() => genStructuredGenoID(DBKEY_LAYOUT), 2_000_
 const elapsedColl = performance.now() - collStart
 
 const result = {
-  experiment: "E1-production-1500k",
-  description: "Composition correctness against shipped prod path genStructuredGenoID(DBKEY_LAYOUT)",
   algorithm: typeof algo.getStructuredGenerationMode === "function" ? algo.getStructuredGenerationMode() : "compiled-direct-v8",
+  collision_count: collisions,
+  collision_test_n: 2_000_000,
+  constraint_violations: constraintViolations,
+  description: "Composition correctness against shipped prod path genStructuredGenoID(DBKEY_LAYOUT)",
+  elapsed_ms: { collision: Math.round(elapsedColl * 100) / 100, e1: Math.round(elapsedE1 * 100) / 100 },
+  experiment: "E1-production-1500k",
   layout: DBKEY_LAYOUT.name,
   layout_fields: DBKEY_LAYOUT.fields.map((f) => ({ name: f.name, type: f.type, start: f.start, length: f.length, constraint: f.constraint })),
+  mismatches: mismatchCount,
+  monotonicity_violations: monotonicityViolations,
+  pass: mismatchCount === 0 && constraintViolations === 0 && monotonicityViolations === 0,
   sample_count: N,
   structured_field_count: structFields.length,
   total_field_checks: totalFieldChecks,
-  mismatches: mismatchCount,
-  constraint_violations: constraintViolations,
-  monotonicity_violations: monotonicityViolations,
-  pass: mismatchCount === 0 && constraintViolations === 0 && monotonicityViolations === 0,
-  collision_test_n: 2_000_000,
-  collision_count: collisions,
-  elapsed_ms: { e1: Math.round(elapsedE1 * 100) / 100, collision: Math.round(elapsedColl * 100) / 100 },
 }
 
 mkdirSync("results", { recursive: true })
@@ -126,6 +126,6 @@ console.log("Constraint violations (shard in {1..5}):", constraintViolations)
 console.log("Monotonicity violations ((timestamp,counter) pair):", monotonicityViolations)
 console.log("PASS:", result.pass)
 console.log("Collision test (2M):", collisions, "collisions")
-console.log("Time: " + result.elapsed_ms.e1.toFixed(1) + "ms E1 + " + result.elapsed_ms.collision.toFixed(1) + "ms collision")
+console.log(`Time: ${  result.elapsed_ms.e1.toFixed(1)  }ms E1 + ${  result.elapsed_ms.collision.toFixed(1)  }ms collision`)
 console.log("Result saved: results/e1-production-1500k.json")
 

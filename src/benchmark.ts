@@ -8,14 +8,8 @@ import {
   getStructuredGenerationMode,
   DBKEY_LAYOUT,
 } from "./algo.js"
-import {
-  benchRepeated,
-  benchRepeatedAsync,
-  birthdayBound50,
-  collisionTest,
-  collisionTestAsync,
-  type BenchStats,
-} from "./bench-core.js"
+import { benchRepeated, benchRepeatedAsync, birthdayBound50, collisionTest, collisionTestAsync } from './bench-core.js';
+import type { BenchStats } from './bench-core.js';
 
 interface AlgoEntry {
   key: string
@@ -29,60 +23,60 @@ interface AlgoEntry {
 
 const ALGOS: AlgoEntry[] = [
   {
+    async: false,
+    entropy: 122,
+    fn: genV4Native,
     key: "v4",
     name: "crypto.randomUUID (v4)",
-    fn: genV4Native,
-    async: false,
-    entropy: 122,
-    source: "OS CSPRNG",
     secLabel: "High",
+    source: "OS CSPRNG",
   },
   {
-    key: "v7",
-    name: "UUIDv7 (custom, RFC 9562)",
-    fn: genV7,
     async: false,
     entropy: 74,
-    source: "OS CSPRNG",
+    fn: genV7,
+    key: "v7",
+    name: "UUIDv7 (custom, RFC 9562)",
     secLabel: "High* (timestamp leaks creation time)",
+    source: "OS CSPRNG",
   },
   {
-    key: "hash",
-    name: "SHA-256 hash-derived (v5-style)",
-    fn: genHashUUID,
     async: true,
     entropy: 121,
-    source: "OS CSPRNG + SHA-256",
+    fn: genHashUUID,
+    key: "hash",
+    name: "SHA-256 hash-derived (v5-style)",
     secLabel: "High (slower)",
+    source: "OS CSPRNG + SHA-256",
   },
   {
+    async: false,
+    entropy: 122,
+    fn: genMathRandom,
     key: "mr",
     name: "Math.random (v4-format)",
-    fn: genMathRandom,
-    async: false,
-    entropy: 122,
-    source: "Xorshift128+ PRNG",
     secLabel: "Insecure (state-recoverable)",
+    source: "Xorshift128+ PRNG",
   },
   {
+    async: false,
+    entropy: 122,
+    fn: genGenoID,
     key: "geno",
     name: "GenoID (proposed, v8)",
-    fn: genGenoID,
-    async: false,
-    entropy: 122,
+    secLabel: "High (near-native speed)",
     source:
       "Pooled OS CSPRNG (refills every 256 UUIDs) + byte-level crossover/mutation",
-    secLabel: "High (near-native speed)",
   },
   {
-    key: "geno-struct",
-    name: "GenoID-structured (dbkey, v8)",
-    fn: () => genStructuredGenoID(DBKEY_LAYOUT),
     async: false,
     entropy: 50,
+    fn: () => genStructuredGenoID(DBKEY_LAYOUT),
+    key: "geno-struct",
+    name: "GenoID-structured (dbkey, v8)",
+    secLabel: "High (composition framework)",
     source:
       "Pooled CSPRNG + declared v8 layout (timestamp/shard/monotonic-counter) + field-boundary crossover + constraint repair",
-    secLabel: "High (composition framework)",
   },
 ]
 
@@ -101,7 +95,7 @@ async function copyToClipboard(
 }
 
 async function copyTableToClipboard(tableId: string, btn: HTMLButtonElement): Promise<void> {
-  const table = document.getElementById(tableId) as HTMLTableElement
+  const table = document.querySelector(`#${tableId}`) as HTMLTableElement
   const rows = [...table.querySelectorAll("tr")].map((tr) =>
     [...tr.children].map((cell) => (cell.textContent ?? "").trim()).join("\t"),
   )
@@ -109,14 +103,14 @@ async function copyTableToClipboard(tableId: string, btn: HTMLButtonElement): Pr
 }
 
 async function showSamples(): Promise<void> {
-  const box = document.getElementById("samples") as HTMLDivElement
-  if (!box) return
+  const box = document.querySelector("#samples") as HTMLDivElement
+  if (!box) {return}
   box.innerHTML = "Loading samples..."
   try {
     let html = ""
     for (const a of ALGOS) {
       const val = a.async ? await a.fn() : a.fn() as string
-      const escaped = val.replace(/\\/g, "\\\\").replace(/'/g, "\\'")
+      const escaped = val.replaceAll(/\\/g, "\\\\").replaceAll(/'/g, "\\'")
       html += `<div><b>${a.name}:</b> <code>${val}</code> <button onclick="copyToClipboard('${escaped}', this)">Copy</button></div>`
     }
     box.innerHTML = html
@@ -126,14 +120,14 @@ async function showSamples(): Promise<void> {
 }
 
 function log(msg: string): void {
-  const el = document.getElementById("log") as HTMLPreElement
-  if (!el) return
-  el.textContent += msg + "\n"
+  const el = document.querySelector("#log") as HTMLPreElement
+  if (!el) {return}
+  el.textContent += `${msg  }\n`
   el.scrollTop = el.scrollHeight
 }
 
 function fmt(x: number): string {
-  if (x > 1e6) return x.toExponential(3)
+  if (x > 1e6) {return x.toExponential(3)}
   return x.toLocaleString(undefined, { maximumFractionDigits: 1 })
 }
 
@@ -142,27 +136,27 @@ function fmt(x: number): string {
 const TRIALS = 10
 
 async function runAll(): Promise<void> {
-  const btn = document.getElementById("runBtn") as HTMLButtonElement
-  if (!btn) return
+  const btn = document.querySelector("#runBtn") as HTMLButtonElement
+  if (!btn) {return}
   const origLabel = btn.textContent
   btn.disabled = true
   btn.textContent = "Running..."
-  const logEl = document.getElementById("log") as HTMLPreElement
-  if (logEl) logEl.textContent = ""
+  const logEl = document.querySelector("#log") as HTMLPreElement
+  if (logEl) {logEl.textContent = ""}
   // The evidence artifact must name the production path this run used, so
   // a reader can tell a compiled run from a lower-level or injected one.
   const plan = getStructuredGenerationMode()
-  const planEl = document.getElementById("planLabel") as HTMLDivElement
-  if (planEl) planEl.textContent = `Generation plan: ${plan}`
-  const nSync = parseInt(
+  const planEl = document.querySelector("#planLabel") as HTMLDivElement
+  if (planEl) {planEl.textContent = `Generation plan: ${plan}`}
+  const nSync = Number.parseInt(
     (document.getElementById("nSync") as HTMLInputElement).value,
     10,
   )
-  const nAsync = parseInt(
+  const nAsync = Number.parseInt(
     (document.getElementById("nAsync") as HTMLInputElement).value,
     10,
   )
-  const nColl = parseInt(
+  const nColl = Number.parseInt(
     (document.getElementById("nColl") as HTMLInputElement).value,
     10,
   )
@@ -202,7 +196,7 @@ async function runAll(): Promise<void> {
       <td>${a.entropy}</td>
       <td>${a.source}</td>
       <td>${a.secLabel}</td>`
-      tbody.appendChild(tr)
+      tbody.append(tr)
     }
   }
 
@@ -215,7 +209,7 @@ async function runAll(): Promise<void> {
       collTbody.innerHTML = ""
       for (const a of ALGOS) {
         btn.textContent = `Running... (collisions: ${a.name})`
-        const n = a.async ? Math.min(nColl, 50000) : nColl
+        const n = a.async ? Math.min(nColl, 50_000) : nColl
         const colls = a.async
           ? await collisionTestAsync(a.fn as () => Promise<string>, n)
           : collisionTest(a.fn as () => string, n)
@@ -224,7 +218,7 @@ async function runAll(): Promise<void> {
         tr.innerHTML = `<td>${a.name}</td><td>${n.toLocaleString()}${
           a.async ? " (reduced, async cost)" : ""
         }</td><td>${colls}</td><td>${fmt(bound)}</td>`
-        collTbody.appendChild(tr)
+        collTbody.append(tr)
         log(`  ${a.name}: ${colls} collisions in ${n.toLocaleString()} samples`)
       }
     }
@@ -246,7 +240,7 @@ async function runAll(): Promise<void> {
     const v4 = v4r.mean
     const pool = poolR.mean
     const st = stR.mean
-    const box = document.getElementById("nativeCallout") as HTMLDivElement
+    const box = document.querySelector("#nativeCallout") as HTMLDivElement
     if (box) {
       box.innerHTML = `<p>Native baseline throughput (this browser engine):
         <b>v4 = ${fmt(v4)} ops/s</b>.
@@ -271,8 +265,8 @@ interface BenchmarkGlobals {
 }
 
 export function init(host?: Window & typeof globalThis): void {
-  const w = host ?? (typeof window !== "undefined" ? window : undefined)
-  if (!w) return
+  const w = host ?? (typeof window === "undefined" ? undefined : window)
+  if (!w) {return}
   showSamples()
   const globals = w as Window & typeof globalThis & BenchmarkGlobals
   globals.runAll = runAll

@@ -21,6 +21,6 @@ test("bytesToUuid / uuidToBytes are inverse for all 16 bytes", () => {
 
 function randomProbe(): Uint8Array {
   const b = new Uint8Array(16)
-  for (let i = 0; i < 16; i++) b[i] = (i * 37 + 11) & 0xff
+  for (let i = 0; i < 16; i += 1) {b[i] = (i * 37 + 11) & 0xff}
   return b
 }

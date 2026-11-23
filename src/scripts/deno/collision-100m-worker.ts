@@ -87,9 +87,9 @@ ctx.addEventListener("message", (e: MessageEvent<WorkerData>) => {
   }
   const set = new Uuid128Set(n)
   let collisions = 0
-  for (let i = 0; i < n; i++) {
+  for (let i = 0; i < n; i += 1) {
     const { hi, lo } = uuidToKey(gen())
-    if (set.add(hi, lo)) collisions++
+    if (set.add(hi, lo)) collisions += 1
   }
   const tableMB = (set.capacity * 8 * 2 + set.capacity) / (1024 * 1024)
   // oxlint-disable-next-line unicorn/require-post-message-target-origin

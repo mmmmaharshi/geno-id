@@ -66,9 +66,7 @@ export type EvidenceArtifactState =
   | { path: string; status: "missing" }
   | { path: string; status: "mismatch"; expected: string; actual: string | undefined }
 
-export interface EvidenceArtifactReader {
-  (path: string): { exists: boolean; bytes?: number; sha256?: string }
-}
+export type EvidenceArtifactReader = (path: string) => { exists: boolean; bytes?: number; sha256?: string };
 
 function requireText(value: unknown, code: EvidenceManifestErrorCode, field: string): string {
   if (typeof value !== "string" || value.trim() === "") {
@@ -96,13 +94,13 @@ export function createEvidenceManifest(input: EvidenceManifestInput): EvidenceMa
     }
   }
   return {
-    implementationCommit,
-    compilerInput: input.compilerInput,
-    generationPlan: input.generationPlan,
-    repairPolicy: input.repairPolicy,
-    command,
-    environment: input.environment,
     claims: input.claims,
+    command,
+    compilerInput: input.compilerInput,
+    environment: input.environment,
+    generationPlan: input.generationPlan,
+    implementationCommit,
+    repairPolicy: input.repairPolicy,
     sourceHash: createHash("sha256").update(input.source).digest("hex"),
   }
 }
@@ -114,13 +112,13 @@ export function verifyEvidenceArtifacts(
   return manifest.claims.flatMap((claim) =>
     claim.artifacts.map((artifact) => {
       const actual = read(artifact.path)
-      if (!actual.exists) return { path: artifact.path, status: "missing" as const }
+      if (!actual.exists) {return { path: artifact.path, status: "missing" as const }}
       if (actual.sha256 !== artifact.sha256 || actual.bytes !== artifact.bytes) {
         return {
+          actual: actual.sha256,
+          expected: artifact.sha256,
           path: artifact.path,
           status: "mismatch" as const,
-          expected: artifact.sha256,
-          actual: actual.sha256,
         }
       }
       return { path: artifact.path, status: "verified" as const }

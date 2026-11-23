@@ -34,33 +34,33 @@ test("tenantFor spreads uniform keys and concentrates hot-tenant keys", () => {
   assert.equal(tenantFor("uniform", 0, random), 1)
   assert.equal(tenantFor("uniform", 1000, random), 1)
   assert.equal(tenantFor("bursty", 0, random), 1)
-  assert.notEqual(tenantFor("bursty", 8_000, random), 1)
+  assert.notEqual(tenantFor("bursty", 8000, random), 1)
 })
 
 function baseResult(overrides: Partial<EngineResult> = {}): EngineResult {
   const cell = {
-    reps: 5,
-    insert: percentiles([1, 2, 3]),
-    pointLookup: percentiles([1, 2, 3]),
-    rangeScan: { ms: 4, rows: 100, plan: "Index Scan" },
-    update: percentiles([1, 2, 3]),
-    delete: percentiles([1, 2, 3]),
-    maintenance: percentiles([1, 2, 3]),
     concurrentWriters: 1000,
+    delete: percentiles([1, 2, 3]),
+    insert: percentiles([1, 2, 3]),
+    maintenance: percentiles([1, 2, 3]),
+    pointLookup: percentiles([1, 2, 3]),
+    rangeScan: { ms: 4, plan: "Index Scan", rows: 100 },
+    reps: 5,
+    update: percentiles([1, 2, 3]),
   }
   return {
-    engine: "postgresql",
-    serverVersion: "PostgreSQL 16.4",
-    serverConfig: { shared_buffers: "64MB" },
-    rows: 1000,
-    reps: 5,
     arms: { uuid_v7: cell },
-    workloads: [...WORKLOADS],
     distributions: [...DISTRIBUTIONS],
+    engine: "postgresql",
+    maintenance: { uuid_v7: 12 },
     queryPlans: { rangeScan: "Index Scan using t_pkey" },
+    reps: 5,
+    rows: 1000,
+    serverConfig: { shared_buffers: "64MB" },
+    serverVersion: "PostgreSQL 16.4",
     storage: { tableBytes: 1024 },
     walBytes: 2048,
-    maintenance: { uuid_v7: 12 },
+    workloads: [...WORKLOADS],
     ...overrides,
   }
 }
@@ -117,7 +117,7 @@ test("validateNativeResult rejects an arm without range scan evidence", () => {
 test("enginesWithResults lists only the engines the artifact actually measured", () => {
   assert.deepEqual(enginesWithResults({ postgresql: baseResult() }), ["postgresql"])
   assert.deepEqual(
-    enginesWithResults({ postgresql: baseResult(), "mysql-innodb": baseResult() }),
+    enginesWithResults({ "mysql-innodb": baseResult(), postgresql: baseResult() }),
     ["postgresql", "mysql-innodb"],
   )
   assert.deepEqual(enginesWithResults({}), [])

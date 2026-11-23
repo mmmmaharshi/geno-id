@@ -6,13 +6,13 @@ import path from "node:path"
 
 const root = path.resolve(import.meta.dirname, "..", "..")
 const read = (rel: string) => JSON.parse(readFileSync(path.join(root, rel), "utf-8"))
-const M = (n: number) => (n / 1e6).toFixed(2) + "M"
+const M = (n: number) => `${(n / 1e6).toFixed(2)  }M`
 
 const all = read("results/all-results.json")
 const rows = Object.values(all as Record<string, { environment: { runtime: string; platform: string }; benchmarks: { name: string; opsPerSec: number }[] }>)
   .map((e) => {
     const ops: Record<string, number> = {}
-    for (const b of e.benchmarks) ops[b.name] = b.opsPerSec
+    for (const b of e.benchmarks) {ops[b.name] = b.opsPerSec}
     const env = `${e.environment.runtime}/${e.environment.platform}`
     return `| ${env} | ${M(ops["genoid-structured"])} | ${(ops["genoid-structured"] / ops["pg-uuid-v8"]).toFixed(1)}x | ${(ops["genoid-structured"] / ops["ulid-v8"]).toFixed(1)}x | ${(ops["genoid-structured"] / ops["genoid-v8"]).toFixed(2)}x |`
   })

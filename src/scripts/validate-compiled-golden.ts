@@ -21,7 +21,7 @@ function readFile(filepath: string): string[] {
 
 function validateUUID(uuid: string, context: string): number {
   const errors: string[] = []
-  if (uuid.length !== 36) errors.push(`length ${uuid.length} != 36`)
+  if (uuid.length !== 36) {errors.push(`length ${uuid.length} != 36`)}
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-8[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(uuid)) {
     errors.push(`invalid v8 format`)
   }
@@ -48,12 +48,12 @@ function checkLayout(
   let ok = 0
   let total = 0
   const fieldMap: Record<string, Field> = {}
-  for (const f of layout.fields) fieldMap[f.name] = f
+  for (const f of layout.fields) {fieldMap[f.name] = f}
 
-  for (let i = 0; i < lines.length; i++) {
+  for (let i = 0; i < lines.length; i += 1) {
     const uuid = lines[i]
-    total++
-    if (!validateUUID(uuid, `${name}[${i}]`)) continue
+    total += 1
+    if (!validateUUID(uuid, `${name}[${i}]`)) {continue}
 
     const bytes = uuidToBytes(uuid)
 
@@ -70,7 +70,7 @@ function checkLayout(
     let fieldErr = false
     for (const [fieldName, checkFn] of Object.entries(constraints)) {
       const field = fieldMap[fieldName]
-      if (!field) continue
+      if (!field) {continue}
       const val = Number(getFieldValue(bytes, field))
       const err = checkFn(val, i)
       if (err) {
@@ -78,15 +78,15 @@ function checkLayout(
         fieldErr = true
       }
     }
-    if (!fieldErr) ok++
+    if (!fieldErr) {ok += 1}
   }
 
   // Collision check
   const set = new Set(lines)
   const collisions = lines.length - set.size
-  if (collisions > 0) console.error(`  ${name}: ${collisions} collisions`)
+  if (collisions > 0) {console.error(`  ${name}: ${collisions} collisions`)}
 
-  return { ok, errors: collisions > 0 ? [`${collisions} collisions`] : [] }
+  return { errors: collisions > 0 ? [`${collisions} collisions`] : [], ok }
 }
 
 const compiledDir = path.resolve(root, "golden")
@@ -110,14 +110,14 @@ const shardField = DBKEY_LAYOUT.fields.find((f) => f.name === "shard")!
 const ctrField = DBKEY_LAYOUT.fields.find((f) => f.name === "counter")!
 let prevCtr = -1
 let ctrWrapCount = 0
-for (let i = 0; i < dbkey.length; i++) {
+for (let i = 0; i < dbkey.length; i += 1) {
   const b = uuidToBytes(dbkey[i])
   const shard = Number(getFieldValue(b, shardField))
-  if (shard >= 1 && shard <= 5) shardOk++
+  if (shard >= 1 && shard <= 5) {shardOk += 1}
   const ctr = Number(getFieldValue(b, ctrField))
-  if (ctr < prevCtr && !(prevCtr === 0xffff && ctr === 0)) {
-    if (ctrWrapCount < 3) console.error(`  dbkey[${i}]: counter regressed ${prevCtr} → ${ctr}`)
-    ctrWrapCount++
+  if (ctr < prevCtr && !(prevCtr === 0xff_ff && ctr === 0)) {
+    if (ctrWrapCount < 3) {console.error(`  dbkey[${i}]: counter regressed ${prevCtr} → ${ctr}`)}
+    ctrWrapCount += 1
   }
   prevCtr = ctr
 }
@@ -136,9 +136,9 @@ let regionOk = 0
 for (const uuid of multitenant) {
   const b = uuidToBytes(uuid)
   const tenant = Number(getFieldValue(b, mtField))
-  if (tenant >= 1 && tenant <= 8) tenantOk++
+  if (tenant >= 1 && tenant <= 8) {tenantOk += 1}
   const region = Number(getFieldValue(b, regField))
-  if (region >= 1 && region <= 4) regionOk++
+  if (region >= 1 && region <= 4) {regionOk += 1}
 }
 console.log(`  tenant in [1..8]: ${tenantOk}/${multitenant.length}`)
 console.log(`  region in [1..4]: ${regionOk}/${multitenant.length}`)
@@ -155,9 +155,9 @@ let seqRegressions = 0
 for (const uuid of eventsourcing) {
   const b = uuidToBytes(uuid)
   const stream = Number(getFieldValue(b, strField))
-  if (stream > 0) streamOk++
+  if (stream > 0) {streamOk += 1}
   const seq = Number(getFieldValue(b, seqField))
-  if (seq < seqPrev && !(seqPrev === 0xffffff && seq === 0)) seqRegressions++
+  if (seq < seqPrev && !(seqPrev === 0xff_ff_ff && seq === 0)) {seqRegressions += 1}
   seqPrev = seq
 }
 console.log(`  stream > 0: ${streamOk}/${eventsourcing.length}`)

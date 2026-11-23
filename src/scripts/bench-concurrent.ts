@@ -30,13 +30,13 @@ const { completeLayout, genGenoID, genStructuredGenoID, readStructured } = algo
 // constrained random field, the rest CSPRNG. Used to prove the
 // constraint-repair path stays correct when generation is fanned out.
 export const CONCURRENT_LAYOUT: V8Layout = completeLayout("concurrent-dbkey", [
-  { name: "shard", start: 0, length: 8, type: "shard" },
+  { length: 8, name: "shard", start: 0, type: "shard" },
   {
+    constraint: { allowed: [0, 1, 2, 3, 4, 5, 6, 7] },
+    length: 3,
     name: "tenant",
     start: 8,
-    length: 3,
     type: "random",
-    constraint: { allowed: [0, 1, 2, 3, 4, 5, 6, 7] },
   },
 ])
 
@@ -58,7 +58,7 @@ function isV8(uuid: string): boolean {
 }
 
 function structuredViolations(uuid: string): number {
-  if (!isV8(uuid)) return 1
+  if (!isV8(uuid)) {return 1}
   const fields = readStructured(uuid, CONCURRENT_LAYOUT)
   for (const f of CONCURRENT_LAYOUT.fields) {
     if (
@@ -87,13 +87,13 @@ async function workerRun(): Promise<void> {
   const ids: string[] = new Array(perWorker)
   let violations = 0
   if (mode === "genoid-structured") {
-    for (let i = 0; i < perWorker; i++) {
+    for (let i = 0; i < perWorker; i += 1) {
       const u = genStructuredGenoID(CONCURRENT_LAYOUT)
       ids[i] = u
       violations += structuredViolations(u)
     }
   } else {
-    for (let i = 0; i < perWorker; i++) {
+    for (let i = 0; i < perWorker; i += 1) {
       const u = genGenoID()
       ids[i] = u
       violations += isV8(u) ? 0 : 1
@@ -121,7 +121,7 @@ export async function runConcurrent(opts: {
         w.on("message", resolve)
         w.on("error", reject)
         w.on("exit", (code) => {
-          if (code !== 0) reject(new Error(`worker exited with code ${code}`))
+          if (code !== 0) {reject(new Error(`worker exited with code ${code}`))}
         })
       })
     }),
@@ -131,11 +131,11 @@ export async function runConcurrent(opts: {
   let violations = 0
   for (const r of results) {
     violations += r.violations
-    for (const id of r.ids) seen.add(id)
+    for (const id of r.ids) {seen.add(id)}
   }
   const unique = seen.size
   const ms = performance.now() - start
-  return { mode, workers, perWorker, total, unique, collisions: total - unique, violations, ms }
+  return { collisions: total - unique, mode, ms, perWorker, total, unique, violations, workers }
 }
 
 if (!isMainThread) {
@@ -144,6 +144,6 @@ if (!isMainThread) {
   const mode = (process.env.CONCURRENT_MODE as "genoid" | "genoid-structured") ?? "genoid"
   const workers = Number(process.env.CONCURRENT_WORKERS ?? Math.max(2, os.cpus().length))
   const perWorker = Number(process.env.CONCURRENT_PER_WORKER ?? 200_000)
-  const res = await runConcurrent({ mode, workers, perWorker })
+  const res = await runConcurrent({ mode, perWorker, workers })
   console.log(JSON.stringify(res, null, 2))
 }

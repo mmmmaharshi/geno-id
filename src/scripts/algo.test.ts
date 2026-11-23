@@ -44,7 +44,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 
 test("toUuidString then uuidToBytes is lossless", () => {
   const bytes = new Uint8Array(16)
-  for (let i = 0; i < 16; i++) bytes[i] = (i * 37 + 11) & 0xff
+  for (let i = 0; i < 16; i += 1) {bytes[i] = (i * 37 + 11) & 0xff}
   const s = toUuidString(bytes)
   const back = uuidToBytes(s)
   assert.deepEqual([...back], [...bytes])
@@ -74,7 +74,7 @@ test("genMathRandom produces a v4-format UUID", () => {
 })
 
 test("genGenoID forces the v8 version and RFC variant nibbles", () => {
-  for (let i = 0; i < 50; i++) {
+  for (let i = 0; i < 50; i += 1) {
     const b = uuidToBytes(genGenoID())
     // version nibble (bits 48-51) = 0x8, variant (bits 64-65) = 10xx
     assert.equal((b[6] & 0xf0) >> 4, 0x8)
@@ -95,10 +95,10 @@ test("forceVersionVariant sets v8 + RFC variant and rejects short buffers", () =
 test("validateLayout rejects fields overlapping the reserved v8 nibble", () => {
   assert.throws(() =>
     validateLayout(fromAny({
-      name: "bad",
       fields: [
         { name: "x", start: 48, length: 4, type: "random" },
       ],
+      name: "bad",
     })),
   )
 })
@@ -106,8 +106,8 @@ test("validateLayout rejects fields overlapping the reserved v8 nibble", () => {
 test("validateLayout rejects layouts with uncovered bits", () => {
   assert.throws(() =>
     validateLayout(fromAny({
-      name: "sparse",
       fields: [{ name: "x", start: 0, length: 8, type: "random" }],
+      name: "sparse",
     })),
   )
 })
@@ -115,11 +115,11 @@ test("validateLayout rejects layouts with uncovered bits", () => {
 test("validateLayout rejects structured fields wider than 48 bits", () => {
   assert.throws(() =>
     validateLayout(fromAny({
-      name: "wide",
       fields: [
         { name: "x", start: 0, length: 64, type: "counter" },
         { name: "g", start: 64, length: 64, type: "random" },
       ],
+      name: "wide",
     })),
   )
 })
@@ -128,15 +128,15 @@ test("validateLayout rejects structured fields wider than 48 bits", () => {
 
 test("completeLayout fills every non-nibble bit with a random filler", () => {
   const layout = completeLayout("dbkey", [
-    { name: "timestamp", start: 0, length: 48, type: "timestamp-ms" },
-    { name: "shard", start: 52, length: 8, type: "shard", constraint: { allowed: [1, 2, 3, 4, 5] } },
-    { name: "counter", start: 66, length: 16, type: "counter", constraint: { monotonic: true } },
+    { length: 48, name: "timestamp", start: 0, type: "timestamp-ms" },
+    { constraint: { allowed: [1, 2, 3, 4, 5] }, length: 8, name: "shard", start: 52, type: "shard" },
+    { constraint: { monotonic: true }, length: 16, name: "counter", start: 66, type: "counter" },
   ]) as { fields: { name: string; type: string; start: number; length: number }[] }
   const covered = new Array<boolean>(128).fill(false)
   for (const f of layout.fields) {
-    for (let i = 0; i < f.length; i++) covered[f.start + i] = true
+    for (let i = 0; i < f.length; i += 1) {covered[f.start + i] = true}
   }
-  for (const r of [48, 49, 50, 51, 64, 65]) assert.equal(covered[r], false)
+  for (const r of [48, 49, 50, 51, 64, 65]) {assert.equal(covered[r], false)}
   assert.equal(covered.filter(Boolean).length, 122)
   assert.ok(layout.fields.some((f) => f.name.startsWith("rand_") && f.type === "random"))
 })
@@ -148,12 +148,12 @@ test("wide (>32-bit) random filler carries real high-bit entropy across generati
   // 32 bits must participate in full — the high bits must vary between
   // generated UUIDs (not be frozen at zero by integer truncation).
   const layout = completeLayout("widefield", [
-    { name: "wide", start: 0, length: 48, type: "random" },
-    { name: "mid", start: 52, length: 12, type: "random" },
-    { name: "rest", start: 66, length: 62, type: "random" },
+    { length: 48, name: "wide", start: 0, type: "random" },
+    { length: 12, name: "mid", start: 52, type: "random" },
+    { length: 62, name: "rest", start: 66, type: "random" },
   ])
   const seen = new Set<number>()
-  for (let i = 0; i < 200; i++) {
+  for (let i = 0; i < 200; i += 1) {
     const uuid = genStructuredGenoID(layout)
     const fields = readStructured(uuid, layout)
     seen.add(fields.rest)
@@ -176,7 +176,7 @@ test("wide node/process/shard fields span their full declared range (no 8-bit ca
   const stream = layout.fields.find((f) => f.name === "stream")!
   assert.equal(stream.length, 16, "stream must be declared 16-bit for this guard")
   const seen = new Set<number>()
-  for (let i = 0; i < 5000; i++) {
+  for (let i = 0; i < 5000; i += 1) {
     const fields = readStructured(genStructuredGenoID(EVENTSOURCING_LAYOUT), EVENTSOURCING_LAYOUT)
     seen.add(fields.stream)
   }
@@ -188,16 +188,16 @@ test("wide node/process/shard fields span their full declared range (no 8-bit ca
 
 test("genStructuredGenoID never violates a field's allowed/monotonic constraint", () => {
   const checks: [unknown, Record<string, number | number[]>][] = [
-    [MULTITENANT_LAYOUT, { tenant: [1, 2, 3, 4, 5, 6, 7, 8], region: [1, 2, 3, 4] }],
+    [MULTITENANT_LAYOUT, { region: [1, 2, 3, 4], tenant: [1, 2, 3, 4, 5, 6, 7, 8] }],
     [EVENTSOURCING_LAYOUT, {}],
   ]
   for (const [layout, allowed] of checks) {
     const typed = layout as { fields: { name: string; constraint?: { allowed?: number[]; monotonic?: boolean } }[] }
-    for (let i = 0; i < 500; i++) {
+    for (let i = 0; i < 500; i += 1) {
       const fields = readStructured(genStructuredGenoID(layout), layout)
       for (const f of typed.fields) {
         const c = f.constraint
-        if (c?.allowed) assert.ok((allowed[f.name] as number[]).includes(fields[f.name]))
+        if (c?.allowed) {assert.ok((allowed[f.name] as number[]).includes(fields[f.name]))}
       }
     }
   }

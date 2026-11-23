@@ -20,13 +20,13 @@ const STANDARD_FREE_MASK = [
 
 function uuidToFreeBits(uuid: string): string {
   let bits = ""
-  for (let i = 0; i < 16; i++) {
+  for (let i = 0; i < 16; i += 1) {
     const idx = HEX_STARTS[i]
     const hi = hexVal(uuid.codePointAt(idx)!)
     const lo = hexVal(uuid.codePointAt(idx + 1)!)
     const v = (hi << 4) | lo
     const free = v & STANDARD_FREE_MASK[i]
-    for (let b = 0; b < 8; b++) {
+    for (let b = 0; b < 8; b += 1) {
       if (STANDARD_FREE_MASK[i] & (1 << b)) {
         bits += (free >> b) & 1 ? "1" : "0"
       }
@@ -41,7 +41,7 @@ async function generateSamples(
   count: number,
 ): Promise<string> {
   let allBits = ""
-  for (let i = 0; i < count; i++) {
+  for (let i = 0; i < count; i += 1) {
     allBits += uuidToFreeBits(fn())
   }
   const file = await writeBitsFile(`${label}.bits.txt`, allBits)

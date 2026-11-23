@@ -15,7 +15,7 @@ function hexVal(c: number): number {
 }
 
 function hexToBytes(s: string, out: Uint8Array): Uint8Array {
-  for (let i = 0; i < 16; i++) {
+  for (let i = 0; i < 16; i += 1) {
     const idx = HEX_STARTS[i]
     out[i] = (hexVal(s.codePointAt(idx)!) << 4) | hexVal(s.codePointAt(idx + 1)!)
   }
@@ -117,12 +117,12 @@ export async function runBattery(
     totalFreeBits = 0,
     prevBit = -1
   const activeBytes: number[] = []
-  for (let i = 0; i < 16; i++) {
+  for (let i = 0; i < 16; i += 1) {
     if (FREE_MASK[i] !== 0x00) activeBytes.push(i)
   }
 
   const freqFull: (Float64Array | null)[] = []
-  for (let i = 0; i < 16; i++) {
+  for (let i = 0; i < 16; i += 1) {
     freqFull.push(
       FREE_MASK[i] === 0x00
         ? null
@@ -135,28 +135,28 @@ export async function runBattery(
   const sumprod = new Float64Array(16 * 16)
   const bytes = new Uint8Array(16)
 
-  for (let s = 0; s < n; s++) {
+  for (let s = 0; s < n; s += 1) {
     const uuid: string = isAsync ? await (fn() as Promise<string>) : (fn() as string)
     hexToBytes(uuid, bytes)
 
-    for (let i = 0; i < 16; i++) {
+    for (let i = 0; i < 16; i += 1) {
       const v = bytes[i]
       const free = v & FREE_MASK[i]
-      for (let b = 0; b < 8; b++) {
+      for (let b = 0; b < 8; b += 1) {
         if (FREE_MASK[i] & (1 << b)) {
           const bit = (v >> b) & 1
           if (bit === 1) {
-            onesFree++
+            onesFree += 1
           }
-          totalFreeBits++
+          totalFreeBits += 1
           if (prevBit !== -1 && bit !== prevBit) {
-            runsCount++
+            runsCount += 1
           }
           prevBit = bit
         }
       }
       if (freqFull[i]) {
-        freqFull[i]![free]++
+        freqFull[i]![free] += 1
       }
       sum[i] += v
       sumsq[i] += v * v
@@ -189,7 +189,7 @@ export async function runBattery(
     const k = freqFull[i]!.length
     const expected = n / k
     let chi2 = 0
-    for (let c = 0; c < k; c++) {
+    for (let c = 0; c < k; c += 1) {
       const d = freqFull[i]![c] - expected
       chi2 += (d * d) / expected
     }
@@ -226,19 +226,19 @@ export async function runBattery(
 
   let entropyCount = 0,
     entropySum = 0
-  for (let i = 0; i < 16; i++) {
+  for (let i = 0; i < 16; i += 1) {
     if (FREE_MASK[i] !== 0xff) {
       continue
     }
     let H = 0
-    for (let c = 0; c < 256; c++) {
+    for (let c = 0; c < 256; c += 1) {
       const p = freqFull[i]![c] / n
       if (p > 0) {
         H -= p * Math.log2(p)
       }
     }
     entropySum += H
-    entropyCount++
+    entropyCount += 1
   }
   const avgByteEntropy = entropySum / entropyCount
 

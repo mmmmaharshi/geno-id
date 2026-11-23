@@ -28,7 +28,7 @@ function lgamma(x: number): number {
     -176.61502916214059, 12.507343278686905, -0.13857109526572012,
     9.9843695780195716e-6, 1.5056327351493116e-7,
   ]
-  for (let i = 1; i < 9; i++) a += LANCZOS[i - 1] / (y + i)
+  for (let i = 1; i < 9; i += 1) a += LANCZOS[i - 1] / (y + i)
   return 0.5 * Math.log(2 * Math.PI) + (y + 0.5) * Math.log(t) - t + Math.log(a)
 }
 function betacf(x: number, a: number, b: number): number {
@@ -43,7 +43,7 @@ function betacf(x: number, a: number, b: number): number {
   if (Math.abs(d) < FPMIN) d = FPMIN
   d = 1 / d
   let h = d
-  for (let m = 1; m <= MAXIT; m++) {
+  for (let m = 1; m <= MAXIT; m += 1) {
     const m2 = 2 * m
     let aa = (m * (b - m) * x) / ((qam + m2) * (a + m2))
     d = 1 + aa * d
@@ -146,13 +146,13 @@ function printCompare(label: string, a: BenchStats, b: BenchStats): void {
 }
 
 console.log("--- Format validation (10 samples each) ---")
-for (let i = 0; i < 10; i++) {
+for (let i = 0; i < 10; i += 1) {
   if (!validateFormat(genV4Native(), "4")) throw new Error("v4 format fail")
 }
-for (let i = 0; i < 10; i++) {
+for (let i = 0; i < 10; i += 1) {
   if (!validateFormat(genV7(), "7")) throw new Error("v7 format fail")
 }
-for (let i = 0; i < 10; i++) {
+for (let i = 0; i < 10; i += 1) {
   if (!validateFormat(genMathRandom(), "4"))
     throw new Error("mathrandom format fail")
 }
@@ -164,7 +164,7 @@ const nSync = 500_000
 const nAsync = 50_000
 const TRIALS = 10
 
-console.log(`\n--- Speed benchmark (Deno ${Deno.version.deno}, V8, ${TRIALS} repeated trials) ---`)
+console.log(`\n -= 1- Speed benchmark (Deno ${Deno.version.deno}, V8, ${TRIALS} repeated trials) ---`)
 const sV4 = benchRepeated(genV4Native, nSync, TRIALS)
 console.log("crypto.randomUUID (v4):", fmtStats(sV4))
 const sV7 = benchRepeated(genV7, nSync, TRIALS)
@@ -177,7 +177,7 @@ const sGeno = benchRepeated(genGenoID, nSync, TRIALS)
 console.log("GenoID (v8, GA-inspired, pooled):", fmtStats(sGeno))
 console.log("  vs native v4:", `${(sV4.mean / sGeno.mean).toFixed(1)}x slower`)
 
-console.log("\n--- Collision test ---")
+console.log("\n -= 1- Collision test ---")
 const nColl = 2_000_000
 console.log(
   `v4 native, n=${nColl}:`,
@@ -219,7 +219,7 @@ async function uniformityTest(
   let onesCount = 0,
     totalBits = 0
   const byteHistogram: number[] = new Array(256).fill(0)
-  for (let i = 0; i < n; i++) {
+  for (let i = 0; i < n; i += 1) {
     const uuid = await genFn()
     const bytes = new Uint8Array(
       uuid
@@ -227,13 +227,13 @@ async function uniformityTest(
         .match(/.{2}/g)!
         .map((h) => Number.parseInt(h, 16)),
     )
-    byteHistogram[bytes[0]]++
+    byteHistogram[bytes[0]] += 1
     for (const byte of bytes) {
-      for (let b = 0; b < 8; b++) {
+      for (let b = 0; b < 8; b += 1) {
         if ((byte >> b) & 1) {
-          onesCount++
+          onesCount += 1
         }
-        totalBits++
+        totalBits += 1
       }
     }
   }
@@ -253,11 +253,11 @@ async function uniformityTest(
   return { bitBalance, chiSq }
 }
 
-console.log("\n--- Uniformity validation ---")
+console.log("\n -= 1- Uniformity validation ---")
 await uniformityTest(async () => genV4Native(), 20_000, "v4 native")
 await uniformityTest(async () => genGenoID(), 20_000, "GenoID (v8, GA-inspired, pooled)")
 
-console.log("\n--- Theoretical n for 50% collision probability ---")
+console.log("\n -= 1- Theoretical n for 50% collision probability ---")
 console.log("v4 (122 bits):", birthdayBound50(122).toExponential(3))
 console.log("v7 random part (74 bits):", birthdayBound50(74).toExponential(3))
 console.log("hash-derived (121 bits):", birthdayBound50(121).toExponential(3))
@@ -267,7 +267,7 @@ console.log("GenoID (122 bits):", birthdayBound50(122).toExponential(3))
 // pg_uuid_v8 is the closest prior art (UUID v4-compatible steganographic timestamp).
 // ULID / KSUID / Snowflake are the broader structured-ID landscape.
 
-console.log(`\n--- Baseline throughput (Deno ${Deno.version.deno}, V8, ${TRIALS} repeated trials) ---`)
+console.log(`\n -= 1- Baseline throughput (Deno ${Deno.version.deno}, V8, ${TRIALS} repeated trials) ---`)
 const sPg = benchRepeated(genPgUuidV8, nSync, TRIALS)
 printRate("pg_uuid_v8 (steganographic v4, XOR)", sPg)
 const sUlid = benchRepeated(genUlid, nSync, TRIALS)
@@ -279,7 +279,7 @@ printRate("KSUID (27-char base62, 160-bit)", sKsuid)
 const sSnow = benchRepeated(() => genSnowflake(), nSync, TRIALS)
 printRate("Snowflake (64-bit int)", sSnow)
 
-console.log("\n--- Statistical significance (Welch t-test, GenoID vs baselines) ---")
+console.log("\n -= 1- Statistical significance (Welch t-test, GenoID vs baselines) ---")
 printCompare("GenoID vs v4", sGeno, sV4)
 printCompare("GenoID vs v7", sGeno, sV7)
 printCompare("GenoID vs pg_uuid_v8 (closest prior art)", sGeno, sPg)
@@ -290,11 +290,11 @@ function printRate(label: string, r: BenchStats) {
   console.log(`${label}:`, fmtStats(r))
 }
 
-console.log("\n--- Baseline collision (UUID-shaped only, n=2M) ---")
+console.log("\n -= 1- Baseline collision (UUID-shaped only, n=2M) ---")
 console.log(`pg_uuid_v8, n=${nColl}:`, collisionTest(genPgUuidV8, nColl), "collisions")
 console.log(`ULID-v8, n=${nColl}:`, collisionTest(genUlidV8, nColl), "collisions")
 
-console.log("\n--- Baseline uniformity (random payload only, monobit) ---")
+console.log("\n -= 1- Baseline uniformity (random payload only, monobit) ---")
 // Naive whole-UUID histograms are invalid for timestamped IDs (byte0 is a constant
 // timestamp), so we measure ones-balance over the random payload bits instead.
 function randomMonobit(
@@ -305,7 +305,7 @@ function randomMonobit(
 ): void {
   let ones = 0
   let total = 0
-  for (let i = 0; i < n; i++) {
+  for (let i = 0; i < n; i += 1) {
     const bits = extractRandomBits(fn(), fixed)
     for (const b of bits) ones += b
     total += bits.length
@@ -325,15 +325,15 @@ await randomMonobit(genUlidV8, TIMESTAMPED_FIXED, 20_000, "ULID-v8 (UUID-mapped)
 function collisionTestBigInt(fn: () => string, n: number): number {
   const set = new Set<bigint>()
   let collisions = 0
-  for (let i = 0; i < n; i++) {
+  for (let i = 0; i < n; i += 1) {
     const v = BigInt("0x" + fn().replaceAll("-", ""))
-    if (set.has(v)) collisions++
+    if (set.has(v)) collisions += 1
     else set.add(v)
   }
   return collisions
 }
 
-console.log("\n--- Large-scale collision (n=10M, exact BigInt) ---")
+console.log("\n -= 1- Large-scale collision (n=10M, exact BigInt) ---")
 const nLarge = 10_000_000
 console.log(`v4 native, n=${nLarge}:`, collisionTestBigInt(genV4Native, nLarge), "collisions")
 console.log(`GenoID, n=${nLarge}:`, collisionTestBigInt(genGenoID, nLarge), "collisions")
@@ -349,7 +349,7 @@ console.log(`ULID-v8, n=${nLarge}:`, collisionTestBigInt(genUlidV8, nLarge), "co
 // Non-UUID-shaped IDs (ULID/KSUID are base32/base62 strings, Snowflake is a
 // 64-bit int) use the canonical string-Set collisionTest (not the hex-BigInt
 // path, which only applies to 128-bit UUIDs).
-console.log("\n--- Baseline collision (non-UUID-shaped, n=2M, exact string Set) ---")
+console.log("\n -= 1- Baseline collision (non-UUID-shaped, n=2M, exact string Set) ---")
 console.log(`ULID, n=${nColl}:`, collisionTest(genUlid, nColl), "collisions")
 console.log(`KSUID, n=${nColl}:`, collisionTest(genKsuid, nColl), "collisions")
 console.log(

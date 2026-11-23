@@ -55,9 +55,9 @@ function weightedDepthOfOrder(fields: readonly Spec[]): number {
   for (const field of fields) {
     const bits = minBitsForCardinality(field.cardinality)
     let offset = -1
-    for (let candidate = 0; candidate + bits <= 128; candidate++) {
+    for (let candidate = 0; candidate + bits <= 128; candidate += 1) {
       let ok = true
-      for (let b = candidate; b < candidate + bits; b++) {
+      for (let b = candidate; b < candidate + bits; b += 1) {
         if ([48, 49, 50, 51, 64, 65].includes(b) || used.has(b)) {
           ok = false
           break
@@ -68,19 +68,19 @@ function weightedDepthOfOrder(fields: readonly Spec[]): number {
         break
       }
     }
-    if (offset === -1) return Number.POSITIVE_INFINITY
-    for (let b = offset; b < offset + bits; b++) used.add(b)
+    if (offset === -1) {return Number.POSITIVE_INFINITY}
+    for (let b = offset; b < offset + bits; b += 1) {used.add(b)}
     depth += field.weight * (offset + bits)
   }
   return depth
 }
 
 function permutations<T>(items: readonly T[]): T[][] {
-  if (items.length <= 1) return [[...items]]
+  if (items.length <= 1) {return [[...items]]}
   const out: T[][] = []
-  for (let i = 0; i < items.length; i++) {
+  for (let i = 0; i < items.length; i += 1) {
     const rest = [...items.slice(0, i), ...items.slice(i + 1)]
-    for (const tail of permutations(rest)) out.push([items[i], ...tail])
+    for (const tail of permutations(rest)) {out.push([items[i], ...tail])}
   }
   return out
 }
@@ -113,41 +113,44 @@ function runOptimalitySweep(trials: number, seed: number): {
 } {
   const random = mulberry32(seed)
   const records: TrialRecord[] = []
-  for (let trial = 0; trial < trials; trial++) {
+  for (let trial = 0; trial < trials; trial += 1) {
     const count = 2 + Math.floor(random() * 4)
     const fields: Spec[] = Array.from({ length: count }, (_, index) => ({
-      name: `f${index}`,
       cardinality: 1 + Math.floor(random() * 2 ** 12),
+      name: `f${index}`,
       weight: Math.floor(random() * 100),
     }))
-    if (fields.reduce((sum, f) => sum + minBitsForCardinality(f.cardinality), 0) > 118) continue
+    if (fields.reduce((sum, f) => sum + minBitsForCardinality(f.cardinality), 0) > 118) {continue}
 
     const plan = planBitAllocation({
       budget: 122,
       fields: fields.map((f) => ({ ...f, align: 1 })),
     })
-    if (!plan.feasible) continue
+    if (!plan.feasible) {continue}
     const brute = Math.min(...permutations(fields).map((order) => weightedDepthOfOrder(order)))
     const gap = (plan.weightedDepthRankOrder - plan.weightedDepth) / plan.weightedDepth
     records.push({
-      instance: trial,
-      fieldCount: count,
-      structuredBits: plan.structuredBits,
-      smithDepth: plan.weightedDepth,
-      rankDepth: plan.weightedDepthRankOrder,
       bruteForceDepth: brute,
-      smithIsOptimal: plan.weightedDepth === brute,
+      fieldCount: count,
       gapVsRank: Number(gap.toFixed(6)),
+      instance: trial,
+      rankDepth: plan.weightedDepthRankOrder,
+      smithDepth: plan.weightedDepth,
+      smithIsOptimal: plan.weightedDepth === brute,
+      structuredBits: plan.structuredBits,
     })
   }
   const gaps = records.map((r) => r.gapVsRank).toSorted((a, b) => a - b)
   const suboptimal = records.filter((r) => !r.smithIsOptimal)
   return {
-    records,
+    agreementWithinFirstSegment:
+      records.filter((r) => r.structuredBits <= 48 && r.smithIsOptimal).length /
+      Math.max(1, records.filter((r) => r.structuredBits <= 48).length),
     bruteForceAgreement: records.filter((r) => r.smithIsOptimal).length / records.length,
-    rankWorseCount: records.filter((r) => r.gapVsRank > 0).length,
-    medianGapVsRank: gaps[Math.floor(gaps.length / 2)] ?? 0,
     maxGapVsRank: gaps.at(-1) ?? 0,
+    medianGapVsRank: gaps[Math.floor(gaps.length / 2)] ?? 0,
+    rankWorseCount: records.filter((r) => r.gapVsRank > 0).length,
+    records,
     suboptimalCount: suboptimal.length,
     suboptimalRelativeExcess: suboptimal.map((r) =>
       Number(((r.smithDepth - r.bruteForceDepth) / r.bruteForceDepth).toFixed(6)),
@@ -159,9 +162,6 @@ function runOptimalitySweep(trials: number, seed: number): {
             Math.min(...suboptimal.map((r) => r.structuredBits)),
             Math.max(...suboptimal.map((r) => r.structuredBits)),
           ],
-    agreementWithinFirstSegment:
-      records.filter((r) => r.structuredBits <= 48 && r.smithIsOptimal).length /
-      Math.max(1, records.filter((r) => r.structuredBits <= 48).length),
   }
 }
 
@@ -181,22 +181,22 @@ function runFrontier(): FrontierPoint[] {
   // capacity and costs residual entropy. Weighted depth is recomputed for
   // each point with the same relative weights, so only the field widths move.
   const points: FrontierPoint[] = []
-  const weights = { tenant: 90, shard: 40, seq: 5, node: 1 }
+  const weights = { node: 1, seq: 5, shard: 40, tenant: 90 }
   for (const extraTenant of [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]) {
     const tenantBits = 3 + extraTenant
     const fields = [
-      { name: "tenant", cardinality: 2 ** tenantBits, weight: weights.tenant, align: 1 as const },
-      { name: "shard", cardinality: 5, weight: weights.shard, align: 1 as const },
-      { name: "seq", cardinality: 2 ** 24, weight: weights.seq, align: 1 as const },
-      { name: "node", cardinality: 2 ** 16, weight: weights.node, align: 1 as const },
+      { align: 1 as const, cardinality: 2 ** tenantBits, name: "tenant", weight: weights.tenant },
+      { align: 1 as const, cardinality: 5, name: "shard", weight: weights.shard },
+      { align: 1 as const, cardinality: 2 ** 24, name: "seq", weight: weights.seq },
+      { align: 1 as const, cardinality: 2 ** 16, name: "node", weight: weights.node },
     ]
     const plan = planBitAllocation({ budget: 122, fields })
-    if (!plan.feasible) break
+    if (!plan.feasible) {break}
     points.push({
-      structuredBits: plan.structuredBits,
-      randomBits: plan.randomBits,
-      weightedDepth: Math.round(plan.weightedDepth),
       collisionProbabilityAt2M: Number(collisionProbabilityUpperBound(2_000_000, plan.randomBits).toExponential(3)),
+      randomBits: plan.randomBits,
+      structuredBits: plan.structuredBits,
+      weightedDepth: Math.round(plan.weightedDepth),
     })
   }
   return points
@@ -210,73 +210,73 @@ function shippedDbkey(): Record<string, unknown> {
   const plan = planBitAllocation({
     budget: 122,
     fields: [
-      { name: "timestamp", cardinality: 2 ** 48, weight: 0, leading: true, align: 1 },
-      { name: "shard", cardinality: 5, weight: 40, align: 1 },
-      { name: "counter", cardinality: 2 ** 16, weight: 5, align: 1 },
+      { align: 1, cardinality: 2 ** 48, leading: true, name: "timestamp", weight: 0 },
+      { align: 1, cardinality: 5, name: "shard", weight: 40 },
+      { align: 1, cardinality: 2 ** 16, name: "counter", weight: 5 },
     ],
   })
   return {
+    collisionProbabilityAt2M: collisionProbabilityUpperBound(2_000_000, plan.randomBits),
+    depthHeadroomVsRankOrder: plan.weightedDepthRankOrder - plan.weightedDepth,
     fields: plan.fields.map((f) => ({ name: f.name, bits: f.bits, offset: f.offset, priority: Number(f.priority.toFixed(4)) })),
-    structuredBits: plan.structuredBits,
     randomBits: plan.randomBits,
     requiredRandomBitsFor2MAt1Percent: minRandomBitsForCollisionBudget(2_000_000, 0.01),
+    structuredBits: plan.structuredBits,
     weightedDepth: plan.weightedDepth,
-    depthHeadroomVsRankOrder: plan.weightedDepthRankOrder - plan.weightedDepth,
-    collisionProbabilityAt2M: collisionProbabilityUpperBound(2_000_000, plan.randomBits),
   }
 }
 
 
 const TRIALS = 500
 const started = performance.now()
-const optimality = runOptimalitySweep(TRIALS, 20261009)
+const optimality = runOptimalitySweep(TRIALS, 20_261_009)
 const frontier = runFrontier()
 const dbkey = shippedDbkey()
 const elapsed = performance.now() - started
 
 const report = {
-  experiment: "bit-allocation",
-  description:
-    "RQ-A: bit allocation in a fixed-length identifier as single-machine weighted completion time, solved by Smith's rule",
   algorithm: "smith-rule",
   budgetBits: 122,
-  reservedBits: [48, 49, 50, 51, 64, 65],
-  environment: {
-    os: `${os.platform()} ${os.release()} ${os.arch()}`,
-    cpuModel: os.cpus()[0]?.model ?? "unknown",
-    runtime: `Bun ${(globalThis as { Bun?: { version: string } }).Bun?.version ?? process.version}`,
-    commitSha: gitSha(root),
-    generatedAt: new Date().toISOString(),
-  },
+  description:
+    "RQ-A: bit allocation in a fixed-length identifier as single-machine weighted completion time, solved by Smith's rule",
   e_a1_optimality: {
-    trialsRequested: TRIALS,
-    instancesPacked: optimality.records.length,
-    perInstance: optimality.records,
+    agreementWithinFirstSegment: optimality.agreementWithinFirstSegment,
     bruteForceAgreement: optimality.bruteForceAgreement,
+    instancesPacked: optimality.records.length,
+    maxGapVsRankOrder: optimality.maxGapVsRank,
+    medianGapVsRankOrder: optimality.medianGapVsRank,
+    note:
+      "smithDepth is compared against the exact optimum over every permutation of the same instance; bruteForceAgreement is the fraction of instances where the allocator attains it",
+    perInstance: optimality.records,
+    rankOrderWorseOn: optimality.rankWorseCount,
+    suboptimalCount: optimality.suboptimalCount,
     suboptimalInstances: optimality.records
       .filter((r) => !r.smithIsOptimal)
       .map((r) => ({ instance: r.instance, smithDepth: r.smithDepth, bruteForceDepth: r.bruteForceDepth })),
-    rankOrderWorseOn: optimality.rankWorseCount,
-    medianGapVsRankOrder: optimality.medianGapVsRank,
-    maxGapVsRankOrder: optimality.maxGapVsRank,
-    suboptimalCount: optimality.suboptimalCount,
     suboptimalRelativeExcess: optimality.suboptimalRelativeExcess,
     suboptimalStructuredBitsRange: optimality.suboptimalStructuredBitsRange,
-    agreementWithinFirstSegment: optimality.agreementWithinFirstSegment,
-    note:
-      "smithDepth is compared against the exact optimum over every permutation of the same instance; bruteForceAgreement is the fraction of instances where the allocator attains it",
+    trialsRequested: TRIALS,
   },
   e_a2_entropy_locality_frontier: {
     note:
       "the tenant field is widened one bit at a time; structuredBits and randomBits sum to the 122-bit payload budget, and the collision probability is the exact upper bound for 2M ids at the residual width",
     points: frontier,
-    widthAtWhichCollisionBudgetFails50Percent:
-      frontier.find((p) => p.collisionProbabilityAt2M > 0.5)?.structuredBits ?? null,
     widthAtWhichCollisionBudgetFails1Percent:
       frontier.find((p) => p.collisionProbabilityAt2M > 0.01)?.structuredBits ?? null,
+    widthAtWhichCollisionBudgetFails50Percent:
+      frontier.find((p) => p.collisionProbabilityAt2M > 0.5)?.structuredBits ?? null,
   },
   e_a3_shipped_dbkey: dbkey,
   elapsedMsTotal: Math.round(elapsed * 100) / 100,
+  environment: {
+    commitSha: gitSha(root),
+    cpuModel: os.cpus()[0]?.model ?? "unknown",
+    generatedAt: new Date().toISOString(),
+    os: `${os.platform()} ${os.release()} ${os.arch()}`,
+    runtime: `Bun ${(globalThis as { Bun?: { version: string } }).Bun?.version ?? process.version}`,
+  },
+  experiment: "bit-allocation",
+  reservedBits: [48, 49, 50, 51, 64, 65],
 }
 
 mkdirSync(path.dirname(path.resolve(root, "results", "x")), { recursive: true })

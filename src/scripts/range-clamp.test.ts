@@ -34,7 +34,7 @@ const {
 function seededUniformFill(seed: number): (buf: Uint8Array) => void {
   const rand = mulberry32(seed)
   return (buf: Uint8Array): void => {
-    for (let i = 0; i < buf.length; i++) buf[i] = (rand() * 256) | 0
+    for (let i = 0; i < buf.length; i += 1) {buf[i] = (rand() * 256) | 0}
   }
 }
 
@@ -77,20 +77,20 @@ const DRAWS_TIMEOUT = 30_000
 
 test("range clamp: production path matches the stated endpoint bound", { timeout: DRAWS_TIMEOUT }, () => {
   const layout = completeLayout("range-clamp-cell", [
-    { name: "shard", start: 0, length: 8, type: "shard", constraint: { min: 10, max: 245 } },
+    { constraint: { max: 245, min: 10 }, length: 8, name: "shard", start: 0, type: "shard" },
   ])
   const field = layout.fields.find((f) => f.name === "shard")!
   const predicted = rangeClampMass(8, 10, 245)
   const N = 200_000
   let atMin = 0
   let atMax = 0
-  configureRandom(seededUniformFill(0x9e3779b9))
+  configureRandom(seededUniformFill(0x9e_37_79_b9))
   try {
-    for (let i = 0; i < N; i++) {
+    for (let i = 0; i < N; i += 1) {
       const v = Number(getFieldValue(uuidToBytes(genStructuredGenoID(layout)), field))
       assert.ok(v >= 10 && v <= 245, `value ${v} outside the declared range [10, 245]`)
-      if (v === 10) atMin++
-      else if (v === 245) atMax++
+      if (v === 10) {atMin += 1}
+      else if (v === 245) {atMax += 1}
     }
   } finally {
     configureRandom(null)

@@ -41,7 +41,7 @@ function allowedOf(
   }
   const out: Record<string, number[]> = {}
   for (const f of typed.fields) {
-    if (f.constraint?.allowed) out[f.name] = f.constraint.allowed
+    if (f.constraint?.allowed) {out[f.name] = f.constraint.allowed}
   }
   return out
 }
@@ -49,8 +49,8 @@ function allowedOf(
 test("structured UUIDs never emit a field outside its allowed set (single-parent bug)", () => {
   for (const layout of [MULTITENANT_LAYOUT, EVENTSOURCING_LAYOUT, DBKEY_LAYOUT]) {
     const allowed = allowedOf(layout)
-    if (Object.keys(allowed).length === 0) continue
-    for (let i = 0; i < 500; i++) {
+    if (Object.keys(allowed).length === 0) {continue}
+    for (let i = 0; i < 500; i += 1) {
       const fields = readStructured(genStructuredGenoID(layout), layout)
       for (const [name, set] of Object.entries(allowed)) {
         assert.ok(

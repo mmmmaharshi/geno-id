@@ -42,7 +42,7 @@ const MUST_NOT_MATCH: Record<string, RegExp> = {
 
 const N_SYNC = Number(process.env.PW_TEST_SYNC ?? 2000)
 const N_ASYNC = Number(process.env.PW_TEST_ASYNC ?? 200)
-const N_COLL = Number(process.env.PW_TEST_COLL ?? 20000)
+const N_COLL = Number(process.env.PW_TEST_COLL ?? 20_000)
 
 test(
   "every engine row comes from the engine it claims, and the three agents differ",
@@ -55,11 +55,11 @@ test(
       for (const engine of ENGINES) {
         const output = await mod.runBenchmark(
           {
-            url: `${server.origin}/index.html`,
-            "n-sync": String(N_SYNC),
             "n-async": String(N_ASYNC),
             "n-coll": String(N_COLL),
+            "n-sync": String(N_SYNC),
             timeout: "300000",
+            url: `${server.origin}/index.html`,
           },
           { browser: engine },
         )

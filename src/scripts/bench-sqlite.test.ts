@@ -78,7 +78,7 @@ test("expression-index arm shares the embedded table and seeks via its index", (
   assert.equal(arm[0], ARM_DDL.embedded[0], "expression-index must use the same table as embedded")
   assert.ok(arm.some((s) => s.startsWith("CREATE INDEX")), "expression-index must add a secondary index")
   const db = new Database(":memory:")
-  for (const ddl of arm) db.run(ddl)
+  for (const ddl of arm) {db.run(ddl)}
   const plan = db.query(
     `EXPLAIN QUERY PLAN SELECT val FROM ids WHERE ${expressionIndexShardPredicate(3)}`,
   ).all() as { detail: string }[]
@@ -91,7 +91,7 @@ test("expression-index arm shares the embedded table and seeks via its index", (
 
 test("expression-index arm extracts the shard correctly and fills a clean B-tree", () => {
   const ids: { id: Uint8Array; val: number }[] = []
-  for (let i = 0; i < 2000; i++) {
+  for (let i = 0; i < 2000; i += 1) {
     const uuid = algo.genStructuredGenoID(DBKEY_LAYOUT)
     ids.push({ id: uuidToBytes(uuid), val: i })
   }
@@ -99,10 +99,10 @@ test("expression-index arm extracts the shard correctly and fills a clean B-tree
   assert.equal(r.integrityOk, true, "integrity_check failed")
   assert.ok(r.pointLookupUs > 0 && r.pointLookupUs < 1000, `lookup out of range: ${r.pointLookupUs}`)
   const db = new Database(":memory:")
-  for (const ddl of ARM_DDL["expression-index"]) db.run(ddl)
+  for (const ddl of ARM_DDL["expression-index"]) {db.run(ddl)}
   const stmt = db.prepare("INSERT INTO ids (id, val) VALUES (?, ?)")
   db.run("BEGIN")
-  for (const row of ids) stmt.run(row.id, row.val)
+  for (const row of ids) {stmt.run(row.id, row.val)}
   db.run("COMMIT")
   for (const shard of [1, 3, 5]) {
     const pred = expressionIndexShardPredicate(shard)

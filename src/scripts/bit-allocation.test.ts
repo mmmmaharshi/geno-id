@@ -67,10 +67,10 @@ test("minBitsForCardinality rejects non-positive or non-integer input", () => {
 })
 
 test("every cardinality floor round-trips: the widened field can hold the domain", () => {
-  for (let cardinality = 1; cardinality <= 5000; cardinality++) {
+  for (let cardinality = 1; cardinality <= 5000; cardinality += 1) {
     const bits = minBitsForCardinality(cardinality)
     assert.ok(2 ** bits >= cardinality, `${cardinality} values do not fit in ${bits} bits`)
-    if (bits > 1) assert.ok(2 ** (bits - 1) < cardinality, `${bits} bits is not minimal for ${cardinality} values`)
+    if (bits > 1) {assert.ok(2 ** (bits - 1) < cardinality, `${bits} bits is not minimal for ${cardinality} values`)}
   }
 })
 
@@ -81,7 +81,7 @@ test("every cardinality floor round-trips: the widened field can hold the domain
 test("collisionProbabilityUpperBound is monotone decreasing in the random-bit budget", () => {
   const n = 1_000_000
   let previous = 1
-  for (let r = 0; r <= 80; r++) {
+  for (let r = 0; r <= 80; r += 1) {
     const p = collisionProbabilityUpperBound(n, r)
     assert.ok(p <= previous, `collision bound rose from ${previous} to ${p} at r=${r}`)
     previous = p
@@ -130,13 +130,13 @@ const base = { budget: 122 }
 test("the shipped dbkey layout is feasible with a 2M-id collision budget", () => {
   const plan = planBitAllocation({
     ...base,
+    collisionTarget: 0.01,
     fields: [
       { name: "timestamp", cardinality: 2 ** 48, weight: 0, leading: true, align: 1 },
       { name: "shard", cardinality: 5, weight: 40 },
       { name: "counter", cardinality: 65536, weight: 5 },
     ],
     volume: 2_000_000,
-    collisionTarget: 0.01,
   })
   assert.equal(plan.feasible, true)
   assert.equal(plan.structuredBits, 48 + 3 + 16)
@@ -149,9 +149,9 @@ test("over-budget structure is reported, not silently truncated", () => {
   const plan = planBitAllocation({
     ...base,
     fields: [
-      { name: "a", cardinality: 2 ** 50, weight: 1 },
-      { name: "b", cardinality: 2 ** 50, weight: 1 },
-      { name: "c", cardinality: 2 ** 50, weight: 1 },
+      { cardinality: 2 ** 50, name: "a", weight: 1 },
+      { cardinality: 2 ** 50, name: "b", weight: 1 },
+      { cardinality: 2 ** 50, name: "c", weight: 1 },
     ],
   })
   assert.equal(plan.feasible, false)
@@ -166,8 +166,8 @@ test("structure whose floors fit the budget but will not pack is reported, not t
   const plan = planBitAllocation({
     ...base,
     fields: [
-      { name: "a", cardinality: 2 ** 60, weight: 1 },
-      { name: "b", cardinality: 2 ** 60, weight: 1 },
+      { cardinality: 2 ** 60, name: "a", weight: 1 },
+      { cardinality: 2 ** 60, name: "b", weight: 1 },
     ],
   })
   assert.equal(plan.feasible, false)
@@ -178,9 +178,9 @@ test("structure whose floors fit the budget but will not pack is reported, not t
 test("structure that leaves too little entropy for the collision budget is refused", () => {
   const plan = planBitAllocation({
     ...base,
+    collisionTarget: 0.01,
     fields: [{ name: "wide", cardinality: 2 ** 90, weight: 1 }],
     volume: 2_000_000,
-    collisionTarget: 0.01,
   })
   assert.equal(plan.feasible, false)
   assert.match(plan.reason ?? "", /collision budget needs/)
@@ -190,15 +190,15 @@ test("a feasible plan partitions the 128 bits exactly, reserved bits excluded", 
   const plan = planBitAllocation({
     ...base,
     fields: [
-      { name: "ts", cardinality: 2 ** 48, weight: 0, leading: true, align: 1 },
-      { name: "shard", cardinality: 5, weight: 40 },
-      { name: "ctr", cardinality: 65536, weight: 5 },
+      { align: 1, cardinality: 2 ** 48, leading: true, name: "ts", weight: 0 },
+      { cardinality: 5, name: "shard", weight: 40 },
+      { cardinality: 65536, name: "ctr", weight: 5 },
     ],
   })
   const covered = new Set<number>()
-  for (const f of plan.fields) for (let b = f.offset; b < f.offset + f.bits; b++) covered.add(b)
-  for (const run of plan.filler) for (let b = run.offset; b < run.offset + run.bits; b++) covered.add(b)
-  for (const b of [48, 49, 50, 51, 64, 65]) assert.ok(!covered.has(b), `reserved bit ${b} was allocated`)
+  for (const f of plan.fields) {for (let b = f.offset; b < f.offset + f.bits; b += 1) covered.add(b)}
+  for (const run of plan.filler) {for (let b = run.offset; b < run.offset + run.bits; b += 1) covered.add(b)}
+  for (const b of [48, 49, 50, 51, 64, 65]) {assert.ok(!covered.has(b), `reserved bit ${b} was allocated`)}
   assert.equal(covered.size + 6, 128, "allocated plus reserved bits must cover the UUID")
   assert.equal(plan.structuredBits + plan.randomBits, 122)
 })
@@ -207,15 +207,15 @@ test("fields never overlap each other", () => {
   const plan = planBitAllocation({
     ...base,
     fields: [
-      { name: "a", cardinality: 2 ** 20, weight: 3 },
-      { name: "b", cardinality: 7, weight: 30 },
-      { name: "c", cardinality: 2 ** 8, weight: 1 },
-      { name: "d", cardinality: 33, weight: 12 },
+      { cardinality: 2 ** 20, name: "a", weight: 3 },
+      { cardinality: 7, name: "b", weight: 30 },
+      { cardinality: 2 ** 8, name: "c", weight: 1 },
+      { cardinality: 33, name: "d", weight: 12 },
     ],
   })
   const spans = plan.fields.map((f) => [f.offset, f.offset + f.bits] as const)
-  for (let i = 0; i < spans.length; i++) {
-    for (let j = i + 1; j < spans.length; j++) {
+  for (let i = 0; i < spans.length; i += 1) {
+    for (let j = i + 1; j < spans.length; j += 1) {
       assert.ok(
         spans[i][1] <= spans[j][0] || spans[j][1] <= spans[i][0],
         `${plan.fields[i].name} overlaps ${plan.fields[j].name}`,
@@ -228,8 +228,8 @@ test("a leading field is forced to offset 0", () => {
   const plan = planBitAllocation({
     ...base,
     fields: [
-      { name: "hot", cardinality: 5, weight: 1000 },
-      { name: "ts", cardinality: 2 ** 48, weight: 0, leading: true, align: 1 },
+      { cardinality: 5, name: "hot", weight: 1000 },
+      { align: 1, cardinality: 2 ** 48, leading: true, name: "ts", weight: 0 },
     ],
   })
   const ts = plan.fields.find((f) => f.name === "ts")!
@@ -256,7 +256,7 @@ function weightedDepthOfOrder(fields: readonly SmallField[], align: 1 | 4 | 8): 
     let offset = -1
     for (let candidate = 0; candidate + bits <= 128; candidate += align) {
       let ok = true
-      for (let b = candidate; b < candidate + bits; b++) {
+      for (let b = candidate; b < candidate + bits; b += 1) {
         if ([48, 49, 50, 51, 64, 65].includes(b) || used.has(b)) {
           ok = false
           break
@@ -268,18 +268,18 @@ function weightedDepthOfOrder(fields: readonly SmallField[], align: 1 | 4 | 8): 
       }
     }
     assert.notEqual(offset, -1, "brute-force order did not pack")
-    for (let b = offset; b < offset + bits; b++) used.add(b)
+    for (let b = offset; b < offset + bits; b += 1) {used.add(b)}
     depth += field.weight * (offset + bits)
   }
   return depth
 }
 
 function permutations<T>(items: readonly T[]): T[][] {
-  if (items.length <= 1) return [[...items]]
+  if (items.length <= 1) {return [[...items]]}
   const out: T[][] = []
-  for (let i = 0; i < items.length; i++) {
+  for (let i = 0; i < items.length; i += 1) {
     const rest = [...items.slice(0, i), ...items.slice(i + 1)]
-    for (const tail of permutations(rest)) out.push([items[i], ...tail])
+    for (const tail of permutations(rest)) {out.push([items[i], ...tail])}
   }
   return out
 }
@@ -287,10 +287,10 @@ function permutations<T>(items: readonly T[]): T[][] {
 function mulberry32(seed: number): () => number {
   let a = seed >>> 0
   return () => {
-    a = (a + 0x6d2b79f5) >>> 0
+    a = (a + 0x6d_2b_79_f5) >>> 0
     let t = Math.imul(a ^ (a >>> 15), a | 1)
     t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+    return ((t ^ (t >>> 14)) >>> 0) / 4_294_967_296
   }
 }
 
@@ -298,8 +298,8 @@ test("Smith's rule beats the rank order on the textbook case where longest-first
   // w/p: a = 10, b = 0.1, so a must precede b. Sorting by length alone
   // reverses that and costs 6x on the weighted-depth objective.
   const fields: SmallField[] = [
-    { name: "a", cardinality: 2, weight: 10 },
-    { name: "b", cardinality: 2 ** 10, weight: 1 },
+    { cardinality: 2, name: "a", weight: 10 },
+    { cardinality: 2 ** 10, name: "b", weight: 1 },
   ]
   assert.ok(weightedDepthOfOrder(fields, 1) < weightedDepthOfOrder([fields[1], fields[0]], 1))
   const plan = planBitAllocation({ budget: 122, fields: fields.map((f) => ({ ...f, align: 1 })) })
@@ -308,18 +308,18 @@ test("Smith's rule beats the rank order on the textbook case where longest-first
 })
 
 test("the allocator is optimal over every permutation, on 400 randomized instances", () => {
-  const random = mulberry32(20261009)
+  const random = mulberry32(20_261_009)
   let improved = 0
-  for (let trial = 0; trial < 400; trial++) {
+  for (let trial = 0; trial < 400; trial += 1) {
     const count = 1 + Math.floor(random() * 6)
     const fields: SmallField[] = Array.from({ length: count }, (_, index) => ({
-      name: `f${index}`,
       cardinality: 1 + Math.floor(random() * 2 ** 8),
+      name: `f${index}`,
       weight: Math.floor(random() * 50),
     }))
     // Skip instances whose floors cannot pack.
     const floorTotal = fields.reduce((sum, f) => sum + minBitsForCardinality(f.cardinality), 0)
-    if (floorTotal > 120) continue
+    if (floorTotal > 120) {continue}
 
     const plan = planBitAllocation({ budget: 122, fields: fields.map((f) => ({ ...f, align: 1 })) })
     assert.equal(plan.feasible, true, `trial ${trial} was unexpectedly infeasible`)
@@ -330,7 +330,7 @@ test("the allocator is optimal over every permutation, on 400 randomized instanc
       best,
       `trial ${trial}: allocator depth ${plan.weightedDepth} but brute force found ${best} for ${JSON.stringify(fields)}`,
     )
-    if (plan.weightedDepth < plan.weightedDepthRankOrder) improved++
+    if (plan.weightedDepth < plan.weightedDepthRankOrder) {improved += 1}
   }
   assert.ok(improved > 0, "expected the Smith order to beat the rank order on at least one instance")
 })
@@ -338,23 +338,23 @@ test("the allocator is optimal over every permutation, on 400 randomized instanc
 
 test("invalid input is rejected with a RangeError naming the field", () => {
   assert.throws(() => planBitAllocation({ fields: [] }), RangeError)
-  assert.throws(() => planBitAllocation({ fields: [{ name: "a", cardinality: 0, weight: 1 }] }), /cardinality/)
-  assert.throws(() => planBitAllocation({ fields: [{ name: "", cardinality: 2, weight: 1 }] }), /non-empty name/)
+  assert.throws(() => planBitAllocation({ fields: [{ cardinality: 0, name: "a", weight: 1 }] }), /cardinality/)
+  assert.throws(() => planBitAllocation({ fields: [{ cardinality: 2, name: "", weight: 1 }] }), /non-empty name/)
   assert.throws(
-    () => planBitAllocation({ fields: [{ name: "a", cardinality: 2, weight: -1 }] }),
+    () => planBitAllocation({ fields: [{ cardinality: 2, name: "a", weight: -1 }] }),
     /weight/,
   )
   assert.throws(
-    () => planBitAllocation({ budget: 0, fields: [{ name: "a", cardinality: 2, weight: 1 }] }),
+    () => planBitAllocation({ budget: 0, fields: [{ cardinality: 2, name: "a", weight: 1 }] }),
     RangeError,
   )
 })
 
 test("the allocation is deterministic", () => {
   const fields = [
-    { name: "tenant", cardinality: 8, weight: 90, align: 1 as const },
-    { name: "seq", cardinality: 2 ** 24, weight: 4, align: 1 as const },
-    { name: "shard", cardinality: 5, weight: 30, align: 1 as const },
+    { align: 1 as const, cardinality: 8, name: "tenant", weight: 90 },
+    { align: 1 as const, cardinality: 2 ** 24, name: "seq", weight: 4 },
+    { align: 1 as const, cardinality: 5, name: "shard", weight: 30 },
   ]
   const a = planBitAllocation({ budget: 122, fields })
   const b = planBitAllocation({ budget: 122, fields })
@@ -371,17 +371,17 @@ test("the allocator is exactly optimal whenever all structure fits in the first 
   // allocation that never crosses bit 48 must attain the brute-force optimum.
   const random = mulberry32(4242)
   let checked = 0
-  for (let trial = 0; trial < 600; trial++) {
+  for (let trial = 0; trial < 600; trial += 1) {
     const count = 2 + Math.floor(random() * 4)
     const fields: SmallField[] = Array.from({ length: count }, (_, index) => ({
-      name: `f${index}`,
       cardinality: 1 + Math.floor(random() * 64),
+      name: `f${index}`,
       weight: Math.floor(random() * 100),
     }))
     const plan = planBitAllocation({ budget: 122, fields: fields.map((f) => ({ ...f, align: 1 })) })
-    if (!plan.feasible) continue
-    if (plan.structuredBits > 47) continue
-    checked++
+    if (!plan.feasible) {continue}
+    if (plan.structuredBits > 47) {continue}
+    checked += 1
     const best = Math.min(...permutations(fields).map((order) => weightedDepthOfOrder(order, 1)))
     assert.equal(
       plan.weightedDepth,
@@ -398,11 +398,11 @@ test("a specific fragmented instance shows the bounded reserved-bit deviation", 
   // bounded amount. The miss is the known limit of Smith's rule on a
   // fragmented timeline, not a regression.
   const fields: SmallField[] = [
-    { name: "a", cardinality: 2 ** 20, weight: 3 },
-    { name: "b", cardinality: 2 ** 12, weight: 50 },
-    { name: "c", cardinality: 2 ** 11, weight: 2 },
-    { name: "d", cardinality: 2 ** 8, weight: 30 },
-    { name: "e", cardinality: 2, weight: 7 },
+    { cardinality: 2 ** 20, name: "a", weight: 3 },
+    { cardinality: 2 ** 12, name: "b", weight: 50 },
+    { cardinality: 2 ** 11, name: "c", weight: 2 },
+    { cardinality: 2 ** 8, name: "d", weight: 30 },
+    { cardinality: 2, name: "e", weight: 7 },
   ]
   const plan = planBitAllocation({ budget: 122, fields: fields.map((f) => ({ ...f, align: 1 })) })
   assert.ok(plan.feasible)
@@ -415,16 +415,16 @@ test("a specific fragmented instance shows the bounded reserved-bit deviation", 
 test("the shipped role-rank order is never better than Smith on the weighted objective", () => {
   const random = mulberry32(99)
   let compared = 0
-  for (let trial = 0; trial < 300; trial++) {
+  for (let trial = 0; trial < 300; trial += 1) {
     const count = 3 + Math.floor(random() * 3)
     const fields: SmallField[] = Array.from({ length: count }, (_, index) => ({
-      name: `f${index}`,
       cardinality: 1 + Math.floor(random() * 4096),
+      name: `f${index}`,
       weight: Math.floor(random() * 100),
     }))
     const plan = planBitAllocation({ budget: 122, fields: fields.map((f) => ({ ...f, align: 1 })) })
-    if (!plan.feasible) continue
-    compared++
+    if (!plan.feasible) {continue}
+    compared += 1
     assert.ok(
       plan.weightedDepth <= plan.weightedDepthRankOrder,
       "the Smith order must never be worse than the rank order it replaces",

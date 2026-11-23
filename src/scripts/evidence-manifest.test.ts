@@ -13,28 +13,22 @@ import type {
 import type { GenerationPlan } from "../../dist/algo.js"
 
 const environment = {
+  arch: "x64",
+  platform: "win32",
   runtime: "bun",
   runtimeVersion: "1.4.2",
-  platform: "win32",
-  arch: "x64",
 }
 
 const plan = {
-  name: "compiled-direct-v8",
   entropySource: "web-crypto",
+  fieldSemantics: { shard: { constraints: ["allowed-set"], type: "shard" } },
+  name: "compiled-direct-v8",
   poolMode: "direct",
   repairMode: "canonical",
-  fieldSemantics: { shard: { type: "shard", constraints: ["allowed-set"] } },
 } satisfies GenerationPlan
 
 function baseInput(): EvidenceManifestInput {
   return {
-    implementationCommit: "abc123",
-    source: "export const x = 1\n",
-    compilerInput: { schema: "fixture", workload: { readWeight: 1, writeWeight: 1 } },
-    generationPlan: plan,
-    command: "bun run evidence:fixture",
-    environment,
     claims: [
       {
         id: "fixture-uniqueness",
@@ -46,6 +40,12 @@ function baseInput(): EvidenceManifestInput {
         artifacts: [{ path: "raw/uuids.txt", sha256: "a".repeat(64), bytes: 16 }],
       },
     ],
+    command: "bun run evidence:fixture",
+    compilerInput: { schema: "fixture", workload: { readWeight: 1, writeWeight: 1 } },
+    environment,
+    generationPlan: plan,
+    implementationCommit: "abc123",
+    source: "export const x = 1\n",
   }
 }
 
@@ -85,9 +85,9 @@ test("createEvidenceManifest fails with stable codes for missing required data",
 test("verifyEvidenceArtifacts reports verified, missing, and mismatch states", () => {
   const manifest = createEvidenceManifest(baseInput())
   const states = verifyEvidenceArtifacts(manifest, (artifactPath) => {
-    if (artifactPath === "raw/missing.txt") return { exists: false }
-    if (artifactPath === "raw/changed.txt") return { exists: true, bytes: 16, sha256: "b".repeat(64) }
-    return { exists: true, bytes: 16, sha256: "a".repeat(64) }
+    if (artifactPath === "raw/missing.txt") {return { exists: false }}
+    if (artifactPath === "raw/changed.txt") {return { exists: true, bytes: 16, sha256: "b".repeat(64) }}
+    return { bytes: 16, exists: true, sha256: "a".repeat(64) }
   })
   assert.deepEqual(states[0], { path: "raw/uuids.txt", status: "verified" })
 })

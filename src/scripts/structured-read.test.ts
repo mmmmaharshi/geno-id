@@ -33,18 +33,18 @@ function bytesToUuid(b: Uint8Array): string {
 
 test("readStructured returns each field's integer value from a crafted UUID", () => {
   const layout = completeLayout("one", [
-    { name: "x", start: 0, length: 16, type: "random" },
+    { length: 16, name: "x", start: 0, type: "random" },
   ])
   const bytes = new Uint8Array(16)
   bytes[0] = 0x12
   bytes[1] = 0x34
   const got = readStructured(bytesToUuid(bytes), layout)
-  assert.equal(got.x, 0x1234)
+  assert.equal(got.x, 0x12_34)
 })
 
 test("readStructured reads full >32-bit fields (regression guard for truncation)", () => {
   const layout = completeLayout("wide", [
-    { name: "big", start: 0, length: 40, type: "random" },
+    { length: 40, name: "big", start: 0, type: "random" },
   ])
   const bytes = new Uint8Array(16)
   bytes[0] = 0x01
@@ -54,7 +54,7 @@ test("readStructured reads full >32-bit fields (regression guard for truncation)
   bytes[4] = 0xef
   const got = readStructured(bytesToUuid(bytes), layout)
   // 0x0100ABCDEF = 4306226671; a 32-bit truncation would yield 0x00ABCDEF.
-  assert.equal(got.big, 0x0100abcdef)
+  assert.equal(got.big, 0x01_00_ab_cd_ef)
 })
 
 test("readStructured keys match field names and respect constraints on real UUIDs", () => {

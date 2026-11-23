@@ -39,11 +39,11 @@ function bitsFromUuidNs(uuid: string): string {
   // bits (positions 52..63 and 66..127) only.
   const b = uuidToBytes(uuid)
   let s = ""
-  for (let j = 0; j < 16; j++) s += b[j].toString(2).padStart(8, "0")
+  for (let j = 0; j < 16; j += 1) {s += b[j].toString(2).padStart(8, "0")}
   const chars = [...s]
   // keep only random tail: 52..63 and 66..127; drop 0..51 (timestamp) + 64..65 (variant)
-  for (let i = 0; i < 128; i++) {
-    if (i < 52 || (i >= 64 && i <= 65)) chars[i] = ""
+  for (let i = 0; i < 128; i += 1) {
+    if (i < 52 || (i >= 64 && i <= 65)) {chars[i] = ""}
   }
   return chars.join("")
 }
@@ -65,16 +65,16 @@ function main(): void {
   const N = 500_000
   let tsFail = 0
   let vioFail = 0
-  for (let t = 0; t < N; t++) {
+  for (let t = 0; t < N; t += 1) {
     const u = genPgUuidV8()
     const b = uuidToBytes(u)
     const version = (b[6] >> 4) & 0x0f
     const variant = (b[8] >> 6) & 0x03
-    if (version !== 0x4 || variant !== 0x2) vioFail++
+    if (version !== 0x4 || variant !== 0x2) {vioFail += 1}
     // round-trip timestamp
     const ts1 = extractPgUuidV8Timestamp(u)
     const ts2 = extractPgUuidV8Timestamp(genPgUuidV8(ts1))
-    if (ts1 !== ts2) tsFail++
+    if (ts1 !== ts2) {tsFail += 1}
   }
   console.log("\nComposition (pg_uuid_v8):")
   console.log(`  version/variant violations: ${vioFail}  (expected 0)`)
@@ -93,12 +93,12 @@ function main(): void {
   const nBits = bitsGeno.length
   const onesG = new Array<number>(nBits).fill(0)
   const onesP = new Array<number>(nBits).fill(0)
-  for (let i = 0; i < M; i++) {
+  for (let i = 0; i < M; i += 1) {
     const bg = uuidToRandomBits(genStructuredGenoID(DBKEY_LAYOUT), DBKEY_LAYOUT)
     const bp = bitsFromUuidNs(genPgUuidV8())
-    for (let j = 0; j < nBits; j++) {
-      if (bg[j] === "1") onesG[j]++
-      if (bp[j] === "1") onesP[j]++
+    for (let j = 0; j < nBits; j += 1) {
+      if (bg[j] === "1") {onesG[j] += 1}
+      if (bp[j] === "1") {onesP[j] += 1}
     }
   }
   const devG = Math.max(...onesG.map((x) => Math.abs(x / M - 0.5)))
@@ -113,7 +113,7 @@ function main(): void {
   const outG: string[] = []
   const outP: string[] = []
   const N_NIST = 1_000_000
-  for (let i = 0; i < N_NIST; i++) {
+  for (let i = 0; i < N_NIST; i += 1) {
     outG.push(uuidToRandomBits(genStructuredGenoID(DBKEY_LAYOUT), DBKEY_LAYOUT))
     outP.push(bitsFromUuidNs(genPgUuidV8()))
   }

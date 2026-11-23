@@ -97,12 +97,12 @@ async function makeMockBrowser(): Promise<MockBrowser> {
       _arg?: unknown,
       opts: { timeout?: number } = {},
     ): Promise<boolean> {
-      const timeout = opts.timeout || 30000
+      const timeout = opts.timeout || 30_000
       const start = Date.now()
       while (true) {
-        if (fn()) return true
+        if (fn()) {return true}
         if (Date.now() - start > timeout)
-          throw new Error("waitForFunction timed out")
+          {throw new Error("waitForFunction timed out")}
         await new Promise((r) => setTimeout(r, 10))
       }
     },

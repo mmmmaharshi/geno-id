@@ -29,8 +29,8 @@ const {
 }
 
 const N = 1000
-const SEED0 = 0xdeadbeef
-const SEED1 = 0x4f15f00d
+const SEED0 = 0xde_ad_be_ef
+const SEED1 = 0x4f_15_f0_0d
 const FIXED_TIME_MS = 1_700_000_000_000
 
 type Layout = unknown
@@ -41,9 +41,9 @@ function emit(layout: Layout, name: string, gen: (l: Layout) => string, label: s
   const origNow = Date.now
   Date.now = () => FIXED_TIME_MS
   const lines: string[] = []
-  for (let i = 0; i < N; i++) lines.push(gen(layout))
+  for (let i = 0; i < N; i += 1) {lines.push(gen(layout))}
   Date.now = origNow
-  const content = lines.join("\n") + "\n"
+  const content = `${lines.join("\n")  }\n`
   const dir = path.resolve(root, "golden")
   fs.mkdirSync(dir, { recursive: true })
   const filePath = path.resolve(dir, `${name}.txt`)
@@ -74,9 +74,9 @@ function emitCompiled(layout: Layout, name: string, label: string): void {
   const origNow = Date.now
   Date.now = () => FIXED_TIME_MS
   const lines: string[] = []
-  for (let i = 0; i < N; i++) lines.push(cfn())
+  for (let i = 0; i < N; i += 1) {lines.push(cfn())}
   Date.now = origNow
-  const content = lines.join("\n") + "\n"
+  const content = `${lines.join("\n")  }\n`
   const dir = path.resolve(root, "golden")
   fs.mkdirSync(dir, { recursive: true })
   const filePath = path.resolve(dir, `compiled-${name}.txt`)

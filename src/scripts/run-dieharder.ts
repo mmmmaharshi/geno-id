@@ -43,10 +43,10 @@ const CURATED_TESTS = [0, 2, 7, 8, 10, 15, 100, 102]
 const TRIALS = parseTrials(process.argv)
 
 function parseTrials(argv: string[]): number {
-  const i = argv.indexOf("--trials")
+  const i = argv.indexOf("trials -= 1")
   if (i !== -1 && argv[i + 1]) {
     const n = Number(argv[i + 1])
-    if (Number.isInteger(n) && n >= 1) return n
+    if (Number.isInteger(n) && n >= 1) {return n}
   }
   return 5
 }
@@ -67,12 +67,12 @@ function trialFileName(gen: string, k: number): string {
 
 async function ensureSamples(): Promise<void> {
   const missingTrials: number[] = []
-  for (let k = 0; k < TRIALS; k++) {
+  for (let k = 0; k < TRIALS; k += 1) {
     if (GENERATORS.some((g) => !fs.existsSync(trialFileName(g, k)))) {
       missingTrials.push(k)
     }
   }
-  if (missingTrials.length === 0) return
+  if (missingTrials.length === 0) {return}
   console.log(
     `Exporting ${missingTrials.length} trial(s) (${(TARGET_BITS / 1e6).toFixed(0)}M-bit samples each)...`,
   )
@@ -102,7 +102,7 @@ function rowsFromOutput(out: string): Result[] {
       const pval = parts.at(-2)!
       const name = parts[0]
       if (ASSESS_RE.test(assess) && !Number.isNaN(Number(pval))) {
-        rows.push({ name, pval, assess })
+        rows.push({ assess, name, pval })
       }
     }
   }
@@ -125,13 +125,13 @@ function runOneTest(
       { encoding: "utf-8", maxBuffer: 64 * 1024 * 1024 },
       (err, stdout) => {
         if (err) {
-          resolve({ t, rows: [{ name: `test ${t}`, pval: "n/a", assess: "SKIPPED" }] })
+          resolve({ rows: [{ name: `test ${t}`, pval: "n/a", assess: "SKIPPED" }], t })
           return
         }
         const r = rowsFromOutput(stdout)
         resolve({
-          t,
           rows: r.length > 0 ? r : [{ name: `test ${t}`, pval: "n/a", assess: "ERROR" }],
+          t,
         })
       },
     )
@@ -142,7 +142,7 @@ function runOneTest(
 // modal count and any FAILED trials so the result stays transparent.
 function aggregate(assessments: string[]): { assess: string; detail: string } {
   const counts = new Map<string, number>()
-  for (const a of assessments) counts.set(a, (counts.get(a) ?? 0) + 1)
+  for (const a of assessments) {counts.set(a, (counts.get(a) ?? 0) + 1)}
   const order = ["PASSED", "WEAK", "SKIPPED", "ERROR", "FAILED"]
   let best = assessments[0]
   let bestCount = -1
@@ -156,7 +156,7 @@ function aggregate(assessments: string[]): { assess: string; detail: string } {
   const n = assessments.length
   const failed = counts.get("FAILED") ?? 0
   let detail = `${bestCount}/${n}`
-  if (failed > 0 && best !== "FAILED") detail += ` (${failed} FAILED)`
+  if (failed > 0 && best !== "FAILED") {detail += ` (${failed} FAILED)`}
   return { assess: best, detail }
 }
 
@@ -187,7 +187,7 @@ async function main(): Promise<void> {
     // running up to MAX_CONCURRENCY-wide in parallel, results in input order.
     const jobs: [string, number, number][] = []
     for (const t of CURATED_TESTS) {
-      for (let k = 0; k < TRIALS; k++) jobs.push([g, t, k])
+      for (let k = 0; k < TRIALS; k += 1) {jobs.push([g, t, k])}
     }
     const done = await mapPool(jobs, ([gg, t, k]) => runOneTest(gg, t, k), MAX_CONCURRENCY)
 
@@ -195,24 +195,24 @@ async function main(): Promise<void> {
     const byTest = new Map<number, Result[][]>()
     for (const c of done) {
       const arr = byTest.get(c.t)
-      if (arr) arr.push(c.rows)
-      else byTest.set(c.t, [c.rows])
+      if (arr) {arr.push(c.rows)}
+      else {byTest.set(c.t, [c.rows])}
     }
 
     for (const t of CURATED_TESTS) {
       const rowsPerTrial = byTest.get(t) ?? []
       let maxRows = 0
-      for (const r of rowsPerTrial) if (r.length > maxRows) maxRows = r.length
-      for (let j = 0; j < maxRows; j++) {
+      for (const r of rowsPerTrial) {if (r.length > maxRows) maxRows = r.length}
+      for (let j = 0; j < maxRows; j += 1) {
         const subRows = rowsPerTrial.map((r) => r[j]).filter(Boolean) as Result[]
-        if (subRows.length === 0) continue
+        if (subRows.length === 0) {continue}
         const agg = aggregate(subRows.map((s) => s.assess))
-        if (agg.assess === "ERROR" || agg.assess === "SKIPPED") errors++
+        if (agg.assess === "ERROR" || agg.assess === "SKIPPED") {errors += 1}
         else if (/FAILED|REVERSED/i.test(agg.assess)) {
-          failed++
-          if (agg.assess === "FAILED") persistentFail++
-        } else if (/WEAK/i.test(agg.assess)) weak++
-        else passed++
+          failed += 1
+          if (agg.assess === "FAILED") {persistentFail += 1}
+        } else if (/WEAK/i.test(agg.assess)) {weak += 1}
+        else {passed += 1}
         md += `| ${g} | ${subRows[0].name} | ${subRows[0].pval} | ${agg.assess} | ${agg.detail} |\n`
       }
     }

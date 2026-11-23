@@ -30,13 +30,13 @@ export function holmBonferroni(entries: readonly PValueEntry[], alpha = 0.05): M
   const adjusted = sorted.map((entry, index) => {
     running = Math.max(running, Math.min(1, entry.p * (total - index)))
     const threshold = alpha / (total - index)
-    if (!stopped && entry.p > threshold) stopped = true
-    return { ...entry, adjusted: running, threshold, reject: !stopped }
+    if (!stopped && entry.p > threshold) {stopped = true}
+    return { ...entry, adjusted: running, reject: !stopped, threshold }
   })
   return {
-    method: "holm-bonferroni",
     alpha,
     entries: adjusted,
+    method: "holm-bonferroni",
     rejected: adjusted.filter((entry) => entry.reject).map((entry) => entry.name),
   }
 }
@@ -73,16 +73,16 @@ export function classifyRejectionCell(cell: RejectionCellInput): RejectionCellEv
   }
   const basis = cell.rejectionTrialsMeasured ? "measured" : "analytical"
   return {
-    k: cell.k,
     allowedSize: cell.allowedSize,
-    density: cell.density,
-    basis,
-    genoRepairsPerId: cell.genoRepairsPerId,
-    genoNsPerId: cell.genoNsPerId,
-    measuredTrialsPerId: basis === "measured" ? cell.rejectionTrialsPerId : null,
-    measuredNsPerId: basis === "measured" ? cell.rejectionNsPerId : null,
     analyticalExpectedTrialsPerId: basis === "analytical" ? cell.rejectionTrialsPerId : null,
+    basis,
+    density: cell.density,
     extrapolatedNsPerId: basis === "analytical" ? cell.genoNsPerId * cell.rejectionTrialsPerId : null,
+    genoNsPerId: cell.genoNsPerId,
+    genoRepairsPerId: cell.genoRepairsPerId,
+    k: cell.k,
+    measuredNsPerId: basis === "measured" ? cell.rejectionNsPerId : null,
+    measuredTrialsPerId: basis === "measured" ? cell.rejectionTrialsPerId : null,
     speedupVsGeno: cell.speedupVsGeno,
   }
 }
@@ -107,31 +107,31 @@ export function classifyExternalSuite(input: {
 }): ExternalSuiteResult {
   if (existsSync(input.archivedArtifact)) {
     return {
-      status: "external",
-      source: input.sourceLabel ?? input.archivedArtifact,
-      pValues: [],
       limitations: [...input.pinnedLimitations],
+      pValues: [],
+      source: input.sourceLabel ?? input.archivedArtifact,
+      status: "external",
     }
   }
   if (input.tool === null) {
     return {
-      status: "unavailable",
-      source: input.runner,
-      pValues: [],
       limitations: [
         ...input.pinnedLimitations,
         `${input.toolName ?? input.suite} is not installed; install it and rerun to convert this to measured`,
       ],
+      pValues: [],
+      source: input.runner,
+      status: "unavailable",
     }
   }
   return {
-    status: "unavailable",
-    source: input.runner,
-    pValues: [],
     limitations: [
       ...input.pinnedLimitations,
       `no archived output at ${input.archivedArtifact}; run ${input.runner} to produce it`,
     ],
+    pValues: [],
+    source: input.runner,
+    status: "unavailable",
   }
 }
 
@@ -173,17 +173,17 @@ export function buildSuiteEvidence(input: SuiteEvidenceInput): SuiteEvidence {
     throw new Error("external suite requires an artifact source")
   }
   return {
-    suite: input.suite,
-    status: input.status,
     generationPlan: input.generationPlan,
+    limitations,
+    multipleTesting:
+      input.pValues.length > 0 ? holmBonferroni(input.pValues, input.alpha ?? 0.05) : null,
+    pValues: input.pValues,
     sampleBits: input.sampleBits,
     seed: input.seed ?? null,
     seedReason: input.seedReason ?? null,
     source: input.source ?? null,
-    pValues: input.pValues,
-    multipleTesting:
-      input.pValues.length > 0 ? holmBonferroni(input.pValues, input.alpha ?? 0.05) : null,
-    limitations,
+    status: input.status,
+    suite: input.suite,
   }
 }
 
@@ -201,8 +201,8 @@ export interface LayoutBitField {
 export function freeMaskForLayout(fields: readonly LayoutBitField[]): number[] {
   const mask = new Array<number>(16).fill(0)
   for (const field of fields) {
-    if (field.type !== "random") continue
-    for (let offset = 0; offset < field.length; offset++) {
+    if (field.type !== "random") {continue}
+    for (let offset = 0; offset < field.length; offset += 1) {
       const position = field.start + offset
       const byte = position >> 3
       mask[byte] |= 1 << (7 - (position & 7))
@@ -216,12 +216,12 @@ export const SAMPLE_DEFINITIONS: Readonly<Record<"collision" | "uniformity" | "i
     ids: 2_000_000,
     seedPolicy: "web-crypto CSPRNG, unseeded; the pinned sample size is the recorded definition",
   },
-  uniformity: {
-    ids: 50_000,
-    seedPolicy: "web-crypto CSPRNG, unseeded; the pinned sample size is the recorded definition",
-  },
   in_house: {
     ids: 200_000,
     seedPolicy: "web-crypto CSPRNG, unseeded; the battery sample size is recorded per run",
+  },
+  uniformity: {
+    ids: 50_000,
+    seedPolicy: "web-crypto CSPRNG, unseeded; the pinned sample size is the recorded definition",
   },
 }

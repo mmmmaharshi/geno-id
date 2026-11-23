@@ -52,7 +52,7 @@ function resolveArtifact(spec: string, root: string): string[] {
   if (trimmed.includes("*")) {
     const dir = path.dirname(path.join(root, trimmed))
     const pattern = path.basename(trimmed)
-    if (!existsSync(dir)) return []
+    if (!existsSync(dir)) {return []}
     // A single `*` stands for any run of characters within one path segment.
     const [prefix, suffix] = pattern.split("*", 2)
     return readdirSync(dir)
@@ -72,8 +72,8 @@ export function verifyEvidenceTree(input: EvidenceTreeInput, root: string): Evid
       .map((s) => s.trim())
       .filter((s) => s.length > 0)
     for (const spec of specs) {
-      checked++
-      if (resolveArtifact(spec, root).length === 0) missing.push({ id, spec })
+      checked += 1
+      if (resolveArtifact(spec, root).length === 0) {missing.push({ id, spec })}
     }
   }
 
@@ -102,14 +102,14 @@ export function verifyEvidenceTree(input: EvidenceTreeInput, root: string): Evid
           ? (node as Record<string, unknown>)[key]
           : undefined
       }
-      if (typeof node === "number") actual = node
+      if (typeof node === "number") {actual = node}
     }
     const round = (n: number): number =>
       expectation.precision === undefined ? n : Number(n.toFixed(expectation.precision))
     if (actual === null || round(actual) !== round(expectation.value)) {
-      metricMismatches.push({ expectation, actual })
+      metricMismatches.push({ actual, expectation })
     }
   }
 
-  return { checked, missing, versionError, metricMismatches }
+  return { checked, metricMismatches, missing, versionError }
 }

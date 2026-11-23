@@ -32,12 +32,12 @@ if (!fs.existsSync(MANIFEST)) {
 const recorded = new Map<string, string>()
 for (const line of fs.readFileSync(MANIFEST, "utf-8").split("\n")) {
   const trimmed = line.trim()
-  if (trimmed.length === 0) continue
+  if (trimmed.length === 0) {continue}
   const match = /^([0-9a-f]{64})\s+(.+)$/.exec(trimmed)
-  if (!match) fail(`unreadable manifest line: "${trimmed}"`)
+  if (!match) {fail(`unreadable manifest line: "${trimmed}"`)}
   recorded.set(match[2], match[1])
 }
-if (recorded.size === 0) fail("the manifest records no vectors")
+if (recorded.size === 0) {fail("the manifest records no vectors")}
 
 const present = fs
   .readdirSync(goldenDir)
@@ -52,12 +52,12 @@ if (unrecorded.length > 0) {
 let checked = 0
 for (const [name, expected] of recorded) {
   const filePath = path.join(goldenDir, name)
-  if (!fs.existsSync(filePath)) fail(`missing vector file: ${name}`)
+  if (!fs.existsSync(filePath)) {fail(`missing vector file: ${name}`)}
   const actual = createHash("sha256").update(fs.readFileSync(filePath)).digest("hex")
   if (actual !== expected) {
     fail(`${name} does not match its recorded hash\n  expected ${expected}\n  actual   ${actual}`)
   }
-  checked++
+  checked += 1
 }
 
 console.log(`GOLDEN HASHES VERIFIED: ${checked} committed vectors match their recorded hashes.`)

@@ -49,10 +49,13 @@ for (const [label, gen] of GENERATORS) {
 
 test("Task D: detector catches real duplicates (sanity check)", () => {
   let t = 0
-  const fixed = () =>
-    t++ % 2 === 0
+  const fixed = () => {
+    const parity = t % 2 === 0
+    t += 1
+    return parity
       ? "00000000-0000-8000-8000-000000000000"
       : "11111111-1111-8000-8000-111111111111"
+  }
   const r = collisionTestScaled(fixed, 2000)
   assert.equal(r.collisions, 2000 - 2, "two unique values among 2000 inserts")
 })

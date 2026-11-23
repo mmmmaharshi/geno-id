@@ -46,31 +46,31 @@ test("genGenoID emits a valid RFC 9562 v8 UUID", () => {
 test("genGenoID produces no collisions across 100k samples", () => {
   const n = 100_000
   const seen = new Set<string>()
-  for (let i = 0; i < n; i++) seen.add(genGenoID())
+  for (let i = 0; i < n; i += 1) {seen.add(genGenoID())}
   assert.equal(seen.size, n)
 })
 
 test("completeLayout covers all 128 bits and leaves reserved v8 nibbles as gaps", () => {
   const layout: Layout = completeLayout("dbkey", [
-    { name: "timestamp", start: 0, length: 48, type: "timestamp-ms" },
-    { name: "shard", start: 52, length: 8, type: "shard", constraint: { allowed: [1, 2, 3, 4, 5] } },
-    { name: "counter", start: 66, length: 16, type: "counter", constraint: { monotonic: true } },
+    { length: 48, name: "timestamp", start: 0, type: "timestamp-ms" },
+    { constraint: { allowed: [1, 2, 3, 4, 5] }, length: 8, name: "shard", start: 52, type: "shard" },
+    { constraint: { monotonic: true }, length: 16, name: "counter", start: 66, type: "counter" },
   ])
   const covered = new Array<boolean>(128).fill(false)
   for (const f of layout.fields) {
-    for (let i = 0; i < f.length; i++) covered[f.start + i] = true
+    for (let i = 0; i < f.length; i += 1) {covered[f.start + i] = true}
   }
   // 128 bits minus the 6 reserved v8 nibble bits (48-51, 64-65) are covered.
   assert.equal(covered.filter(Boolean).length, 122)
-  for (const r of [48, 49, 50, 51, 64, 65]) assert.equal(covered[r], false)
+  for (const r of [48, 49, 50, 51, 64, 65]) {assert.equal(covered[r], false)}
   assert.ok(layout.fields.some((f) => f.type === "random"))
 })
 
 test("genStructuredGenoID is v8 and round-trips through readStructured", () => {
   const layout: Layout = completeLayout("dbkey", [
-    { name: "timestamp", start: 0, length: 48, type: "timestamp-ms" },
-    { name: "shard", start: 52, length: 8, type: "shard", constraint: { allowed: [1, 2, 3, 4, 5] } },
-    { name: "counter", start: 66, length: 16, type: "counter", constraint: { monotonic: true } },
+    { length: 48, name: "timestamp", start: 0, type: "timestamp-ms" },
+    { constraint: { allowed: [1, 2, 3, 4, 5] }, length: 8, name: "shard", start: 52, type: "shard" },
+    { constraint: { monotonic: true }, length: 16, name: "counter", start: 66, type: "counter" },
   ])
   const uuid = genStructuredGenoID(layout)
   assert.match(uuid, UUID_V8_RE)
@@ -85,7 +85,7 @@ test("genStructuredGenoID is v8 and round-trips through readStructured", () => {
 
 test("readStructured reads full >32-bit fields (truncation regression guard)", () => {
   const layout: Layout = completeLayout("wide", [
-    { name: "big", start: 0, length: 40, type: "random" },
+    { length: 40, name: "big", start: 0, type: "random" },
   ])
   const bytes = new Uint8Array(16)
   bytes[0] = 0x01
@@ -95,26 +95,26 @@ test("readStructured reads full >32-bit fields (truncation regression guard)", (
   bytes[4] = 0xef
   const got = readStructured(bytesToUuid(bytes), layout)
   // 0x0100ABCDEF = 4306226671; a 32-bit truncation would yield 0x00ABCDEF.
-  assert.equal(got.big, 0x0100abcdef)
+  assert.equal(got.big, 0x01_00_ab_cd_ef)
 })
 
 test("compileDatabaseLayout places locality fields first for offset-free schemas", () => {
   const input: LayoutCompilerInput = {
     schema: {
-      name: "dbkey",
       fields: [
         { name: "timestamp", length: 48, type: "timestamp-ms" },
         { name: "shard", length: 8, type: "shard", constraint: { allowed: [1, 2, 3, 4, 5] } },
         { name: "counter", length: 16, type: "counter", constraint: { monotonic: true } },
       ],
+      name: "dbkey",
     },
     workload: {
-      readWeight: 0.25,
-      writeWeight: 0.75,
       fields: [
         { name: "shard", role: "partition" },
         { name: "counter", role: "lookup" },
       ],
+      readWeight: 0.25,
+      writeWeight: 0.75,
     },
   }
   const result = compileDatabaseLayout(input)
@@ -124,7 +124,7 @@ test("compileDatabaseLayout places locality fields first for offset-free schemas
   assert.equal(byName.get("shard")?.start, 0)
   assert.equal(byName.get("counter")?.start, 8)
   const timestamp = byName.get("timestamp")
-  if (!timestamp) throw new Error("timestamp field missing from compiled layout")
+  if (!timestamp) {throw new Error("timestamp field missing from compiled layout")}
   assert.equal(timestamp.start % 8, 0)
   assert.ok(timestamp.start > 8)
 })
@@ -132,19 +132,19 @@ test("compileDatabaseLayout places locality fields first for offset-free schemas
 test("compileDatabaseLayout keeps explicit offsets hard while placing remaining fields", () => {
   const result = compileDatabaseLayout({
     schema: {
-      name: "mixed",
       fields: [
         { name: "tenant", start: 0, length: 8, type: "shard" },
         { name: "lookup", length: 8, type: "process" },
       ],
+      name: "mixed",
     },
     workload: {
-      readWeight: 1,
-      writeWeight: 1,
       fields: [
         { name: "tenant", role: "partition" },
         { name: "lookup", role: "lookup" },
       ],
+      readWeight: 1,
+      writeWeight: 1,
     },
   })
   const byName = new Map(result.layout.fields.map((field) => [field.name, field]))
@@ -153,19 +153,19 @@ test("compileDatabaseLayout keeps explicit offsets hard while placing remaining 
 })
 
 test("compileDatabaseLayout preserves wide fields and RFC 9562 markers", () => {
-  const allowed = [0x100000000, 0x100000001]
+  const allowed = [0x1_00_00_00_00, 0x1_00_00_00_01]
   const result = compileDatabaseLayout({
     schema: {
-      name: "wide",
       fields: [{ name: "trace", length: 40, type: "process", constraint: { allowed } }],
+      name: "wide",
     },
     workload: {
+      fields: [{ name: "trace", role: "lookup" }],
       readWeight: 1,
       writeWeight: 1,
-      fields: [{ name: "trace", role: "lookup" }],
     },
   })
-  for (let index = 0; index < 16; index++) {
+  for (let index = 0; index < 16; index += 1) {
     const uuid = genStructuredGenoID(result)
     const values = readStructured(uuid, result.layout)
     assert.match(uuid, UUID_V8_RE)
@@ -175,8 +175,8 @@ test("compileDatabaseLayout preserves wide fields and RFC 9562 markers", () => {
 
 test("compileDatabaseLayout rejects an empty workload field list", () => {
   const input = fromAny<LayoutCompilerInput, unknown>({
-    schema: { name: "key", fields: [{ name: "shard", start: 0, length: 8, type: "shard" }] },
-    workload: { readWeight: 1, writeWeight: 1, fields: [] },
+    schema: { fields: [{ name: "shard", start: 0, length: 8, type: "shard" }], name: "key" },
+    workload: { fields: [], readWeight: 1, writeWeight: 1 },
   })
 
   assert.throws(
@@ -192,7 +192,6 @@ test("compileDatabaseLayout rejects an empty workload field list", () => {
 test("compileDatabaseLayout returns a named, deterministic contract", () => {
   const input: LayoutCompilerInput = {
     schema: {
-      name: "dbkey",
       fields: [
         { name: "timestamp", start: 0, length: 48, type: "timestamp-ms" },
         {
@@ -204,14 +203,15 @@ test("compileDatabaseLayout returns a named, deterministic contract", () => {
         },
         { name: "counter", start: 66, length: 16, type: "counter", constraint: { monotonic: true } },
       ],
+      name: "dbkey",
     },
     workload: {
-      readWeight: 0.25,
-      writeWeight: 0.75,
       fields: [
         { name: "shard", role: "partition", selectivity: 0.8 },
         { name: "counter", role: "lookup", readWeight: 1, writeWeight: 1 },
       ],
+      readWeight: 0.25,
+      writeWeight: 0.75,
     },
   }
   const originalFields = JSON.stringify(input.schema.fields)
@@ -226,19 +226,19 @@ test("compileDatabaseLayout returns a named, deterministic contract", () => {
   assert.equal(result.generationPlan.poolMode, "direct")
   assert.equal(result.generationPlan.repairMode, "canonical")
   assert.deepEqual(result.repairPolicy, {
-    name: "canonical-v1",
     allowedSet: "index-modulo",
-    range: "clamp",
-    monotonic: "stateful",
     fixed: "deterministic",
+    monotonic: "stateful",
+    name: "canonical-v1",
+    range: "clamp",
   })
   assert.deepEqual(result.generationPlan.fieldSemantics.shard, {
-    type: "shard",
     constraints: ["allowed-set"],
+    type: "shard",
   })
   assert.deepEqual(result.generationPlan.fieldSemantics.counter, {
-    type: "counter",
     constraints: ["monotonic"],
+    type: "counter",
   })
   assert.equal(result.costReport.objective, "hard-constraints-first")
   assert.equal(result.costReport.structuredBits, 72)
@@ -252,13 +252,13 @@ test("compileDatabaseLayout returns a named, deterministic contract", () => {
 test("compiled database layouts remain consumable through the structured API", () => {
   const result = compileDatabaseLayout({
     schema: {
-      name: "shardonly",
       fields: [{ name: "shard", start: 0, length: 8, type: "shard", constraint: { allowed: [1, 2, 3, 4, 5] } }],
+      name: "shardonly",
     },
     workload: {
+      fields: [{ name: "shard", role: "partition" }],
       readWeight: 1,
       writeWeight: 1,
-      fields: [{ name: "shard", role: "partition" }],
     },
   })
   const uuid = genStructuredGenoID(result)
@@ -269,11 +269,11 @@ test("compiled database layouts remain consumable through the structured API", (
 
 test("compileDatabaseLayout rejects reserved schema bits with stable field errors", () => {
   const input: LayoutCompilerInput = {
-    schema: { name: "key", fields: [{ name: "version", start: 48, length: 1, type: "fixed", value: 1 }] },
+    schema: { fields: [{ name: "version", start: 48, length: 1, type: "fixed", value: 1 }], name: "key" },
     workload: {
+      fields: [{ name: "version", role: "lookup" }],
       readWeight: 1,
       writeWeight: 1,
-      fields: [{ name: "version", role: "lookup" }],
     },
   }
 
@@ -290,11 +290,11 @@ test("compileDatabaseLayout rejects reserved schema bits with stable field error
 
 test("compileDatabaseLayout rejects unknown workload fields with stable field errors", () => {
   const input: LayoutCompilerInput = {
-    schema: { name: "key", fields: [{ name: "shard", start: 0, length: 8, type: "shard" }] },
+    schema: { fields: [{ name: "shard", start: 0, length: 8, type: "shard" }], name: "key" },
     workload: {
+      fields: [{ name: "missing", role: "partition" }],
       readWeight: 1,
       writeWeight: 1,
-      fields: [{ name: "missing", role: "partition" }],
     },
   }
 
@@ -312,16 +312,16 @@ test("compileDatabaseLayout rejects unknown workload fields with stable field er
 test("compileDatabaseLayout rejects overlapping schema fields with stable errors", () => {
   const input: LayoutCompilerInput = {
     schema: {
-      name: "key",
       fields: [
         { name: "first", start: 0, length: 8, type: "shard" },
         { name: "second", start: 4, length: 8, type: "shard" },
       ],
+      name: "key",
     },
     workload: {
+      fields: [{ name: "first", role: "partition" }],
       readWeight: 1,
       writeWeight: 1,
-      fields: [{ name: "first", role: "partition" }],
     },
   }
 
@@ -338,10 +338,10 @@ test("compileDatabaseLayout rejects overlapping schema fields with stable errors
 
 test("compileDatabaseLayout requires workload weights", () => {
   const input = fromAny<LayoutCompilerInput, unknown>({
-    schema: { name: "key", fields: [{ name: "shard", start: 0, length: 8, type: "shard" }] },
+    schema: { fields: [{ name: "shard", start: 0, length: 8, type: "shard" }], name: "key" },
     workload: {
-      writeWeight: 1,
       fields: [{ name: "shard", role: "partition" }],
+      writeWeight: 1,
     },
   })
 
@@ -370,29 +370,29 @@ test("getStructuredGenerationMode names compiled and injected paths", () => {
 test("named generation modes preserve public field semantics", () => {
   const result = compileDatabaseLayout({
     schema: {
-      name: "modes",
       fields: [
         { name: "marker", length: 8, type: "fixed", value: 5 },
         { name: "shard", length: 8, type: "shard", constraint: { allowed: [1, 2, 3] } },
         { name: "counter", length: 16, type: "counter", constraint: { monotonic: true } },
         { name: "trace", length: 40, type: "process" },
       ],
+      name: "modes",
     },
     workload: {
-      readWeight: 1,
-      writeWeight: 1,
       fields: [
         { name: "marker", role: "lookup" },
         { name: "shard", role: "partition" },
         { name: "counter", role: "lookup" },
         { name: "trace", role: "cluster" },
       ],
+      readWeight: 1,
+      writeWeight: 1,
     },
   })
   const checkMode = (injected: boolean): void => {
     configureRandom(injected ? (buf) => buf.fill(7) : null)
     try {
-      for (let index = 0; index < 32; index++) {
+      for (let index = 0; index < 32; index += 1) {
         const values = readStructured(genStructuredGenoID(result), result.layout)
         assert.equal(values.marker, 5)
         assert.ok([1, 2, 3].includes(values.shard))

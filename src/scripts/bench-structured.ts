@@ -106,20 +106,20 @@ function e1(): E1Result {
   const N = 500_000
   let fail = 0
   let constraintFail = 0
-  for (let t = 0; t < N; t++) {
+  for (let t = 0; t < N; t += 1) {
     // Both parents fully structured, each independently generated — this is
     // exactly how genStructuredGenoID populates its pooled parents, so
     // field-boundary crossover always inherits a valid structured value.
     const A = genStructuredParent(layout, structIdx)
     const B = genStructuredParent(layout, structIdx)
-    const fieldSelect = (Math.random() * 65536) | 0
+    const fieldSelect = (Math.random() * 65_536) | 0
     const child = composeStructured(layout, A, B, fieldSelect)
     for (const [fi, f] of layout.fields.entries()) {
-      if (f.type === "random") continue
+      if (f.type === "random") {continue}
       const src = ((fieldSelect >> fi) & 1) ? A : B
-      if (getFieldValue(child, f) !== getFieldValue(src, f)) fail++
+      if (getFieldValue(child, f) !== getFieldValue(src, f)) {fail += 1}
       const v = getFieldValue(child, f)
-      if (f.constraint?.allowed && !f.constraint.allowed.includes(Number(v))) constraintFail++
+      if (f.constraint?.allowed && !f.constraint.allowed.includes(Number(v))) {constraintFail += 1}
     }
   }
   console.log(`  structured fields checked: ${N * structIdx.length}`)
@@ -127,9 +127,9 @@ function e1(): E1Result {
   console.log(`  constraint violations: ${constraintFail}  (expected 0)`)
   console.log(`  PASS=${fail === 0 && constraintFail === 0}`)
   return {
+    constraintViolations: constraintFail,
     fieldsChecked: N * structIdx.length,
     mismatches: fail,
-    constraintViolations: constraintFail,
     pass: fail === 0 && constraintFail === 0,
   }
 }
@@ -137,13 +137,13 @@ function e1(): E1Result {
 // ---------------- E2: Repair vs Rejection (RQ2) ----------------
 function makeConstraintLayout(k: number): V8Layout {
   const core: V8Field[] = []
-  for (let i = 0; i < k; i++) {
+  for (let i = 0; i < k; i += 1) {
     core.push({
+      constraint: { allowed: [0, 1, 2, 3] },
+      length: 8,
       name: `c${i}`,
       start: i * 8,
-      length: 8,
       type: "random",
-      constraint: { allowed: [0, 1, 2, 3] },
     })
   }
   return completeLayout(`k${k}`, core)
@@ -156,13 +156,13 @@ function e2(): E2Row[] {
   console.log("  k | GA repairs/UUID | rejection trials/UUID | GA ms/M | reject ms/M")
   const rows: E2Row[] = []
   const N_GA = 200_000
-  for (let k = 1; k <= 6; k++) {
+  for (let k = 1; k <= 6; k += 1) {
     const layout = makeConstraintLayout(k)
     const constrained = layout.fields.filter((f) => f.constraint?.allowed)
     // GA path: one CSPRNG fill + repair
     let totalRepairs = 0
     const gaStart = performance.now()
-    for (let i = 0; i < N_GA; i++) {
+    for (let i = 0; i < N_GA; i += 1) {
       const bytes = new Uint8Array(16)
       crypto.getRandomValues(bytes)
       forceVersionVariant(bytes)
@@ -176,11 +176,11 @@ function e2(): E2Row[] {
       const N_RJ = 5000
       let totalTrials = 0
       const rjStart = performance.now()
-      for (let i = 0; i < N_RJ; i++) {
+      for (let i = 0; i < N_RJ; i += 1) {
         let trials = 0
         let ok = false
         while (!ok) {
-          trials++
+          trials += 1
           const bytes = new Uint8Array(16)
           crypto.getRandomValues(bytes)
           forceVersionVariant(bytes)
@@ -197,17 +197,17 @@ function e2(): E2Row[] {
       rjMs = performance.now() - rjStart
       rjTrialsStr = (totalTrials / N_RJ).toFixed(1)
     } else {
-      rjTrialsStr = `64^${k} = ${Math.pow(64, k).toExponential(2)} (analytic)`
+      rjTrialsStr = `64^${k} = ${(64 ** k).toExponential(2)} (analytic)`
     }
     console.log(
       `  ${k} | ${(totalRepairs / N_GA).toFixed(3).padStart(14)} | ${rjTrialsStr.padStart(19)} | ${(gaMs).toFixed(0).padStart(8)} | ${(rjMs).toFixed(0).padStart(9)}`,
     )
     rows.push({
-      k,
-      gaRepairsPerUuid: totalRepairs / N_GA,
-      rejectionTrialsPerUuid: rjTrialsStr,
       gaMs,
+      gaRepairsPerUuid: totalRepairs / N_GA,
+      k,
       rejectMs: rjMs,
+      rejectionTrialsPerUuid: rjTrialsStr,
     })
   }
   return rows
@@ -228,23 +228,23 @@ function e3e4e5(): E345Result {
   // Uniformity on random-field bits (reuse the canonical bit extractor)
   const ones = new Array<number>(totalBits).fill(0)
   const M = 50_000
-  for (let i = 0; i < M; i++) {
+  for (let i = 0; i < M; i += 1) {
     const bits = uuidToRandomBits(genStructuredGenoID(layout), layout)
     let idx = 0
     for (const ch of bits) {
-      if (ch === "1") ones[idx]++
-      idx++
+      if (ch === "1") {ones[idx] += 1}
+      idx += 1
     }
   }
   const maxDev = Math.max(...ones.map((o) => Math.abs(o / M - 0.5)))
   console.log(`  uniformity: max |P(1)-0.5| over ${totalBits} random bits = ${maxDev.toFixed(4)} (PASS=${maxDev < 0.05})`)
   return {
+    birthdayBound50: birthdayBound50(totalBits).toExponential(2),
+    collisions: c,
     layout: layout.name,
     n: nColl,
-    collisions: c,
-    birthdayBound50: birthdayBound50(totalBits).toExponential(2),
-    uniformityMaxDev: maxDev,
     pass: maxDev < 0.05,
+    uniformityMaxDev: maxDev,
   }
 }
 
@@ -260,11 +260,11 @@ function e6(): E6Result {
   console.log(`  GenoID (base, v8):    ${rBase.opsPerSec.toFixed(0)} ops/sec  (${(rV4.opsPerSec / rBase.opsPerSec).toFixed(1)}x slower)`)
   console.log(`  GenoID-structured (${getStructuredGenerationMode()}): ${rGeno.opsPerSec.toFixed(0)} ops/sec  (${(rV4.opsPerSec / rGeno.opsPerSec).toFixed(1)}x slower vs v4, ${(rBase.opsPerSec / rGeno.opsPerSec).toFixed(1)}x vs base)`)
   return {
-    v4NativeOpsPerSec: rV4.opsPerSec,
     baseOpsPerSec: rBase.opsPerSec,
-    structuredOpsPerSec: rGeno.opsPerSec,
     mode: getStructuredGenerationMode(),
     slowerVsV4: rV4.opsPerSec / rGeno.opsPerSec,
+    structuredOpsPerSec: rGeno.opsPerSec,
+    v4NativeOpsPerSec: rV4.opsPerSec,
     vsBase: rBase.opsPerSec / rGeno.opsPerSec,
   }
 }
@@ -276,8 +276,8 @@ function e7(): E7Result {
   const nSync = 500_000
 
   // Warm both pools to isolated measurement
-  for (let i = 0; i < 2048; i++) genStructuredGenoID(layout)
-  for (let i = 0; i < 2048; i++) genStructuredGenoIDSingleParent(layout)
+  for (let i = 0; i < 2048; i += 1) {genStructuredGenoID(layout)}
+  for (let i = 0; i < 2048; i += 1) {genStructuredGenoIDSingleParent(layout)}
   const rOne = benchSync(() => genStructuredGenoIDSingleParent(layout), nSync)
   const rTwo = benchSync(() => genStructuredGenoID(layout), nSync)
   console.log(`  production (${getStructuredGenerationMode()}): ${rTwo.opsPerSec.toFixed(0)} ops/sec`)
@@ -297,12 +297,12 @@ function e7(): E7Result {
   const uniformityMaxDev: Record<string, number> = {}
   for (const [label, gen] of [["pooled single-parent", () => genStructuredGenoIDSingleParent(layout)] as const, ["production", () => genStructuredGenoID(layout)] as const]) {
     const ones = new Array<number>(totalBits).fill(0)
-    for (let i = 0; i < M; i++) {
+    for (let i = 0; i < M; i += 1) {
       const bits = uuidToRandomBits(gen(), layout)
       let idx = 0
       for (const ch of bits) {
-        if (ch === "1") ones[idx]++
-        idx++
+        if (ch === "1") {ones[idx] += 1}
+        idx += 1
       }
     }
     const maxDev = Math.max(...ones.map((o) => Math.abs(o / M - 0.5)))
@@ -321,14 +321,14 @@ function e7(): E7Result {
       .map(({ i }: { i: number }) => i)
     const N = 500_000
     let constraintFail = 0
-    for (let t = 0; t < N; t++) {
+    for (let t = 0; t < N; t += 1) {
       const hex = gen().replaceAll("-", "")
       const bytes = new Uint8Array(16)
-      for (let j = 0; j < 16; j++) bytes[j] = Number.parseInt(hex.slice(j * 2, j * 2 + 2), 16)
+      for (let j = 0; j < 16; j += 1) {bytes[j] = Number.parseInt(hex.slice(j * 2, j * 2 + 2), 16)}
       for (const fi of structIdx) {
         const f = layout.fields[fi]
         const v = Number(getFieldValue(bytes, f))
-        if (f.constraint?.allowed && !f.constraint.allowed.includes(v)) constraintFail++
+        if (f.constraint?.allowed && !f.constraint.allowed.includes(v)) {constraintFail += 1}
       }
     }
     compositionViolations[label] = constraintFail
@@ -338,16 +338,16 @@ function e7(): E7Result {
 
   console.log(`  verdict: pooled single-parent matches the named production path on collision/uniformity/composition guarantees; throughput ${(rOne.opsPerSec / rTwo.opsPerSec).toFixed(2)}x of production`)
   return {
-    productionOpsPerSec: rTwo.opsPerSec,
-    singleParentOpsPerSec: rOne.opsPerSec,
-    singleParentRatio: rOne.opsPerSec / rTwo.opsPerSec,
-    productionCollisions: cTwo,
-    singleParentCollisions: cOne,
-    singleParentUniformityMaxDev: singleParentMaxDev,
-    productionUniformityMaxDev: productionMaxDev,
     compositionChecks: layout.fields.filter((f) => f.type !== "random").length * 500_000,
     compositionViolations: totalViolations,
     pass: cTwo === 0 && cOne === 0 && totalViolations === 0,
+    productionCollisions: cTwo,
+    productionOpsPerSec: rTwo.opsPerSec,
+    productionUniformityMaxDev: productionMaxDev,
+    singleParentCollisions: cOne,
+    singleParentOpsPerSec: rOne.opsPerSec,
+    singleParentRatio: rOne.opsPerSec / rTwo.opsPerSec,
+    singleParentUniformityMaxDev: singleParentMaxDev,
   }
 }
 

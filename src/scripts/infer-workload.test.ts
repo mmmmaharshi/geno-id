@@ -21,23 +21,23 @@ const { inferWorkload } = algo as {
   }
 }
 
-const schema = { name: "exp", fields: [{ name: "tenant" }, { name: "region" }] }
+const schema = { fields: [{ name: "tenant" }, { name: "region" }], name: "exp" }
 
 function point(op: string, filters: Record<string, number>, matched = 10, scanned = 1000) {
-  return { op, kind: "point", filters, matched, scanned }
+  return { filters, kind: "point", matched, op, scanned }
 }
 
 test("inferWorkload recovers weights and roles from a skewed trace", () => {
   const trace = [
     ...Array.from({ length: 80 }, (_, i) => point("read", { tenant: (i % 8) + 1 })),
     ...Array.from({ length: 15 }, (_, i) => ({
-      op: "read",
-      kind: "range",
       filters: { region: (i % 4) + 1 },
+      kind: "range",
       matched: 250,
+      op: "read",
       scanned: 1000,
     })),
-    ...Array.from({ length: 5 }, () => ({ op: "write", kind: "scan", filters: {} })),
+    ...Array.from({ length: 5 }, () => ({ filters: {}, kind: "scan", op: "write" })),
   ]
   const inferred = inferWorkload(trace, schema)
   assert.equal(inferred.profile.readWeight, 95)
@@ -70,6 +70,6 @@ test("inferWorkload rejects filters on unknown fields", () => {
 })
 
 test("inferWorkload rejects garbage events", () => {
-  assert.throws(() => inferWorkload([{ op: "delete", kind: "point", filters: {} }], schema), /op/)
-  assert.throws(() => inferWorkload([{ op: "read", kind: "fetch", filters: {} }], schema), /kind/)
+  assert.throws(() => inferWorkload([{ filters: {}, kind: "point", op: "delete" }], schema), /op/)
+  assert.throws(() => inferWorkload([{ filters: {}, kind: "fetch", op: "read" }], schema), /kind/)
 })

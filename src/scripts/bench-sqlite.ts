@@ -19,13 +19,13 @@ const algo = (await import(
   completeLayout: (name: string, fields: V8Field[]) => V8Layout
 }
 
-export const DBKEY_LAYOUT: V8Layout = algo.DBKEY_LAYOUT
+export const {DBKEY_LAYOUT} = algo
 
 // Byte-aligned shard variant of DBKEY (shard at byte 7 instead of straddled bits 52-59).
 export const DBKEY_LAYOUT_OFF56: V8Layout = algo.completeLayout("dbkey-off56", [
-  { name: "timestamp", start: 0, length: 48, type: "timestamp-ms" },
-  { name: "shard", start: 56, length: 8, type: "shard", constraint: { allowed: [1, 2, 3, 4, 5] } },
-  { name: "counter", start: 66, length: 16, type: "counter", constraint: { monotonic: true } },
+  { length: 48, name: "timestamp", start: 0, type: "timestamp-ms" },
+  { constraint: { allowed: [1, 2, 3, 4, 5] }, length: 8, name: "shard", start: 56, type: "shard" },
+  { constraint: { monotonic: true }, length: 16, name: "counter", start: 66, type: "counter" },
 ])
 
 export interface SqliteResult {
@@ -54,7 +54,7 @@ export function benchSqlite(label: string, gen: () => string, n: number): Sqlite
     db.run("BEGIN")
     const stmt = db.prepare("INSERT INTO ids (id, val) VALUES (?, ?)")
     const end = Math.min(i + batch, n)
-    for (let j = i; j < end; j++) stmt.run(gen(), j)
+    for (let j = i; j < end; j += 1) {stmt.run(gen(), j)}
     db.run("COMMIT")
   }
   const elapsed = performance.now() - start
@@ -70,16 +70,16 @@ export function benchSqlite(label: string, gen: () => string, n: number): Sqlite
   db.close()
 
   return {
-    name: label,
-    n,
+    bytesPerRow: (pageCount * pageSize) / n,
+    freelistCount,
+    integrityOk,
     ms: elapsed,
+    n,
+    name: label,
     opsPerSec: n / (elapsed / 1000),
     pageCount,
-    freelistCount,
     pageSize,
     pagesPerRow: pageCount / n,
-    bytesPerRow: (pageCount * pageSize) / n,
-    integrityOk,
   }
 }
 
@@ -139,41 +139,41 @@ const byteAlignedShard = (bytes: Uint8Array): number => bytes[7]
 
 export const ARM_DEF: Record<CompositeKeyArm, CompositeKeyArmDef> = {
   composite: {
+    extractShard: straddledShard,
     layout: DBKEY_LAYOUT,
     rowKind: "shard-id",
     scanQuery: "SELECT val FROM ids WHERE shard = 3",
-    extractShard: straddledShard,
   },
   "composite-indexed": {
+    extractShard: straddledShard,
     layout: DBKEY_LAYOUT,
     rowKind: "shard-id",
     scanQuery: "SELECT val FROM ids WHERE shard = 3",
+  },
+  concatenated: {
     extractShard: straddledShard,
+    layout: DBKEY_LAYOUT,
+    rowKind: "text",
+    scanQuery: "SELECT val FROM ids WHERE id LIKE '3:%'",
   },
   embedded: {
+    extractShard: straddledShard,
     layout: DBKEY_LAYOUT,
     rowKind: "id",
     scanQuery:
       "SELECT val FROM ids WHERE (substr(id,7,1) & x'0f') = x'00' AND (substr(id,8,1) & x'f0') = x'30'",
-    extractShard: straddledShard,
   },
   embedded56: {
+    extractShard: byteAlignedShard,
     layout: DBKEY_LAYOUT_OFF56,
     rowKind: "id",
     scanQuery: "SELECT val FROM ids WHERE substr(id,8,1) = x'03'",
-    extractShard: byteAlignedShard,
-  },
-  concatenated: {
-    layout: DBKEY_LAYOUT,
-    rowKind: "text",
-    scanQuery: "SELECT val FROM ids WHERE id LIKE '3:%'",
-    extractShard: straddledShard,
   },
   "expression-index": {
+    extractShard: straddledShard,
     layout: DBKEY_LAYOUT,
     rowKind: "id",
     scanQuery: `SELECT val FROM ids WHERE ${expressionIndexShardPredicate(3)}`,
-    extractShard: straddledShard,
   },
 }
 
@@ -186,9 +186,9 @@ export const ARM_DDL: Record<CompositeKeyArm, string[]> = {
     "CREATE TABLE ids (shard INTEGER, id BLOB(16), val INTEGER, PRIMARY KEY (shard, id)) WITHOUT ROWID",
     "CREATE INDEX idx_id ON ids(id)",
   ],
+  concatenated: ["CREATE TABLE ids (id TEXT PRIMARY KEY, val INTEGER) WITHOUT ROWID"],
   embedded: ["CREATE TABLE ids (id BLOB(16) PRIMARY KEY, val INTEGER) WITHOUT ROWID"],
   embedded56: ["CREATE TABLE ids (id BLOB(16) PRIMARY KEY, val INTEGER) WITHOUT ROWID"],
-  concatenated: ["CREATE TABLE ids (id TEXT PRIMARY KEY, val INTEGER) WITHOUT ROWID"],
   "expression-index": [
     "CREATE TABLE ids (id BLOB(16) PRIMARY KEY, val INTEGER) WITHOUT ROWID",
     "CREATE INDEX idx_shard_expr ON ids((substr(hex(id),14,2)))",
@@ -198,9 +198,9 @@ export const ARM_DDL: Record<CompositeKeyArm, string[]> = {
 export const ARM_KEY_ENCODING: Record<CompositeKeyArm, "TEXT" | "BLOB(16)" | "INTEGER+BLOB(16)"> = {
   composite: "INTEGER+BLOB(16)",
   "composite-indexed": "INTEGER+BLOB(16)",
+  concatenated: "TEXT",
   embedded: "BLOB(16)",
   embedded56: "BLOB(16)",
-  concatenated: "TEXT",
   "expression-index": "BLOB(16)",
 }
 
@@ -208,13 +208,13 @@ export const ARM_KEY_ENCODING: Record<CompositeKeyArm, "TEXT" | "BLOB(16)" | "IN
 function pregenIds(arm: CompositeKeyArm, n: number): unknown[] {
   const ids: unknown[] = []
   const def = ARM_DEF[arm]
-  for (let i = 0; i < n; i++) {
+  for (let i = 0; i < n; i += 1) {
     const uuid = algo.genStructuredGenoID(def.layout)
     const bytes = uuidToBytes(uuid)
     const shard = def.extractShard(bytes)
-    if (def.rowKind === "shard-id") ids.push({ shard, id: bytes, val: i })
-    else if (def.rowKind === "id") ids.push({ id: bytes, val: i })
-    else ids.push({ id: `${shard}:${uuid}`, val: i })
+    if (def.rowKind === "shard-id") {ids.push({ shard, id: bytes, val: i })}
+    else if (def.rowKind === "id") {ids.push({ id: bytes, val: i })}
+    else {ids.push({ id: `${shard}:${uuid}`, val: i })}
   }
   return ids
 }
@@ -225,7 +225,7 @@ export function benchCompositeKeyArm(arm: CompositeKeyArm, n: number, ids: unkno
   const db = new Database(dbPath)
   db.run("PRAGMA synchronous = OFF; PRAGMA journal_mode = WAL; PRAGMA cache_size = -64000")
 
-  for (const ddl of ARM_DDL[arm]) db.run(ddl)
+  for (const ddl of ARM_DDL[arm]) {db.run(ddl)}
 
   const batch = 10_000
   const insertStart = performance.now()
@@ -239,12 +239,12 @@ export function benchCompositeKeyArm(arm: CompositeKeyArm, n: number, ids: unkno
     const end = Math.min(i + batch, n)
     const stmt = insertStmt as ReturnType<typeof db.prepare>
     if (compositeArm) {
-      for (let j = i; j < end; j++) {
+      for (let j = i; j < end; j += 1) {
         const row = ids[j] as { shard: number; id: Uint8Array; val: number }
         stmt.run(row.shard, row.id, row.val)
       }
     } else {
-      for (let j = i; j < end; j++) {
+      for (let j = i; j < end; j += 1) {
         const row = ids[j] as { id: unknown; val: number }
         stmt.run(row.id, row.val)
       }
@@ -257,11 +257,11 @@ export function benchCompositeKeyArm(arm: CompositeKeyArm, n: number, ids: unkno
   const sampleRows = db.query("SELECT id FROM ids ORDER BY random() LIMIT ?").all(lookupCount) as { id: unknown }[]
   const lookupStart = performance.now()
   const stmt = db.prepare("SELECT val FROM ids WHERE id = ?")
-  for (const row of sampleRows) stmt.get(row.id)
+  for (const row of sampleRows) {stmt.get(row.id)}
   const lookupElapsed = performance.now() - lookupStart
 
   // Range scan by shard. Embedded predicate reads the straddled shard (bytes 6 low nibble + 7 high nibble); byte 6 high nibble is the v8 version.
-  const scanQuery = ARM_DEF[arm].scanQuery
+  const {scanQuery} = ARM_DEF[arm]
   const scanStart = performance.now()
   db.query(scanQuery).all()
   const scanElapsed = performance.now() - scanStart
@@ -283,15 +283,15 @@ export function benchCompositeKeyArm(arm: CompositeKeyArm, n: number, ids: unkno
 
   return {
     arm,
-    n,
+    bytesPerRow: (pageCount * pageSize) / n,
+    freelistCount,
+    integrityOk: integrity === "ok",
     ms: insertElapsed,
+    n,
     opsPerSec: n / (insertElapsed / 1000),
     pageCount,
-    freelistCount,
     pageSize,
     pagesPerRow: pageCount / n,
-    bytesPerRow: (pageCount * pageSize) / n,
-    integrityOk: integrity === "ok",
     pointLookupUs: (lookupElapsed / lookupCount) * 1000,
     rangeScanMs: scanElapsed,
   }
@@ -303,7 +303,7 @@ export async function benchCompositeKeyRepeated(
   console.log(`  ${arm} n=${n}: generating ${n} IDs...`)
   const ids = pregenIds(arm, n)
   const results: CompositeKeyResult[] = []
-  for (let t = 0; t < trials; t++) {
+  for (let t = 0; t < trials; t += 1) {
     console.log(`  ${arm} n=${n}: trial ${t + 1}/${trials}`)
     results.push(benchCompositeKeyArm(arm, n, ids, lookupCount, t, trials))
   }
@@ -315,15 +315,15 @@ export async function benchCompositeKeyRepeated(
     const tTable: Record<number, number> = { 1: 12.706, 2: 4.303, 3: 3.182, 4: 2.776, 5: 2.571, 6: 2.447, 7: 2.365, 8: 2.306, 9: 2.262 }
     const tc = xs.length >= 30 ? 1.96 : (tTable[xs.length - 1] ?? 1.96)
     const margin = tc * se
-    return { mean: m, ci95: [m - margin, m + margin] }
+    return { ci95: [m - margin, m + margin], mean: m }
   }
   return {
+    bytesPerRow: results.reduce((a, r) => a + r.bytesPerRow, 0) / results.length,
+    ddl: ARM_DDL[arm].join("; "),
     insert: summarize(results.map((r) => r.opsPerSec)),
+    keyEncoding: ARM_KEY_ENCODING[arm],
     lookupUs: summarize(results.map((r) => r.pointLookupUs)),
     rangeScanMs: summarize(results.map((r) => r.rangeScanMs)),
-    bytesPerRow: results.reduce((a, r) => a + r.bytesPerRow, 0) / results.length,
-    keyEncoding: ARM_KEY_ENCODING[arm],
-    ddl: ARM_DDL[arm].join("; "),
     results,
   }
 }
@@ -400,7 +400,7 @@ if (import.meta.main) {
   // Diagnostic: confirm the expression-index arm seeks (not scans) on the shard predicate
   {
     const tmp = new Database(":memory:")
-    for (const ddl of ARM_DDL["expression-index"]) tmp.run(ddl)
+    for (const ddl of ARM_DDL["expression-index"]) {tmp.run(ddl)}
     const plan3 = tmp.query(`EXPLAIN QUERY PLAN SELECT val FROM ids WHERE ${expressionIndexShardPredicate(3)}`).all()
     console.log("  [diagnostic] expression-index shard-scan plan:", JSON.stringify(plan3))
     tmp.close()
@@ -413,7 +413,7 @@ if (import.meta.main) {
 
   console.log(`\nN=${n}, 10 trials:`)
   console.log(["Arm", "insert rows/s", "CI95", "bytes/row", "lookup µs", "CI95", "range ms", "CI95"].join("\t"))
-  for (let i = 0; i < configs.length; i++) {
+  for (let i = 0; i < configs.length; i += 1) {
     const r = allResults[i]
     const arm = configs[i][0]
     console.log([

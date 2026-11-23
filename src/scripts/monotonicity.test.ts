@@ -47,7 +47,7 @@ interface Pair {
 
 function pairOf(uuid: string): Pair {
   const b = uuidToBytes(uuid)
-  return { ts: Number(getFieldValue(b, tsField)), ctr: Number(getFieldValue(b, ctrField)) }
+  return { ctr: Number(getFieldValue(b, ctrField)), ts: Number(getFieldValue(b, tsField)) }
 }
 
 // Run `body` with Date.now replaced by `clock`, restoring the real
@@ -86,8 +86,8 @@ test("§6.2 compiled: counter increments strictly within a single tick", () => {
   const T = 1_700_000_000_000
   withClock(() => T, () => {
     let prev = -1
-    for (let i = 0; i < 200; i++) {
-      const ctr = pairOf(compiled.fn()).ctr
+    for (let i = 0; i < 200; i += 1) {
+      const {ctr} = pairOf(compiled.fn())
       assert.ok(ctr > prev, `counter regressed at call ${i}: ${prev} → ${ctr}`)
       prev = ctr
     }
@@ -98,8 +98,8 @@ test("§6.2 compiled: counter exhaustion freezes generation until the clock adva
   // 4-bit monotonic counter: exhausts after ≤16 UUIDs per tick, so a
   // stalling clock forces the freeze-and-wait loop on every boundary.
   const layout = completeLayout("mono4", [
-    { name: "ts", start: 0, length: 48, type: "timestamp-ms" },
-    { name: "ctr", start: 66, length: 4, type: "counter", constraint: { monotonic: true } },
+    { length: 48, name: "ts", start: 0, type: "timestamp-ms" },
+    { constraint: { monotonic: true }, length: 4, name: "ctr", start: 66, type: "counter" },
   ])
   const compiled = compileLayout(layout)
   const fTs = layout.fields.find((f) => f.name === "ts")!
@@ -109,17 +109,17 @@ test("§6.2 compiled: counter exhaustion freezes generation until the clock adva
   // Clock holds each tick for 64 reads, then advances one ms — the
   // freeze loop must spin until that happens, then generation
   // continues with a strictly larger timestamp.
-  withClock(() => T + ((reads++) >> 6), () => {
+  withClock(() => T + ((reads += 1) >> 6), () => {
     let prev: Pair | null = null
     let boundaries = 0
-    for (let i = 0; i < 2000; i++) {
+    for (let i = 0; i < 2000; i += 1) {
       const b = uuidToBytes(compiled.fn())
-      const pair = { ts: Number(getFieldValue(b, fTs)), ctr: Number(getFieldValue(b, fCtr)) }
+      const pair = { ctr: Number(getFieldValue(b, fCtr)), ts: Number(getFieldValue(b, fTs)) }
       if (prev) {
         if (pair.ts === prev.ts) {
           assert.ok(pair.ctr > prev.ctr, `counter regressed within tick ${prev.ts}: ${prev.ctr} → ${pair.ctr}`)
         } else {
-          boundaries++
+          boundaries += 1
           assert.ok(pair.ts > prev.ts, `timestamp regressed at boundary: ${prev.ts} → ${pair.ts}`)
           // A tick-boundary reseed draws from the 2^(len-1) reseed
           // range, so a 4-bit counter restarts below 8.
@@ -141,9 +141,9 @@ test("§6.2 production genStructuredGenoID: backwards clock cannot regress the s
   // A fresh layout name gets a fresh compiled closure, so this test
   // never inherits an exhausted counter from another suite.
   const layout = completeLayout("prod-clamp-probe", [
-    { name: "timestamp", start: 0, length: 48, type: "timestamp-ms" },
-    { name: "shard", start: 52, length: 8, type: "shard", constraint: { allowed: [1, 2, 3, 4, 5] } },
-    { name: "counter", start: 66, length: 16, type: "counter", constraint: { monotonic: true } },
+    { length: 48, name: "timestamp", start: 0, type: "timestamp-ms" },
+    { constraint: { allowed: [1, 2, 3, 4, 5] }, length: 8, name: "shard", start: 52, type: "shard" },
+    { constraint: { monotonic: true }, length: 16, name: "counter", start: 66, type: "counter" },
   ])
   const T = 1_700_000_000_000
   withClock(() => T, () => {
@@ -167,7 +167,7 @@ test("§6.2 single-parent: backwards clock clamps the timestamp and the counter 
   withClock(() => T, () => {
     const a = pairOf(genStructuredGenoIDSingleParent(DBKEY_LAYOUT))
     assert.equal(a.ts, T)
-    withClock(() => T - 5_000, () => {
+    withClock(() => T - 5000, () => {
       const b = pairOf(genStructuredGenoIDSingleParent(DBKEY_LAYOUT))
       assert.equal(b.ts, T, "backwards clock must not regress the timestamp")
       assert.ok(b.ctr > a.ctr, `counter must increment within a tick: ${a.ctr} → ${b.ctr}`)
@@ -180,8 +180,8 @@ test("§6.2 single-parent: counter increments across pool refill boundaries with
   const T = 1_700_000_000_000
   withClock(() => T, () => {
     let prev = -1
-    for (let i = 0; i < 2100; i++) {
-      const ctr = pairOf(genStructuredGenoIDSingleParent(DBKEY_LAYOUT)).ctr
+    for (let i = 0; i < 2100; i += 1) {
+      const {ctr} = pairOf(genStructuredGenoIDSingleParent(DBKEY_LAYOUT))
       assert.ok(ctr > prev, `counter regressed at call ${i} (pool size 1024, refill boundary at ${Math.floor(i / 1024)}): ${prev} → ${ctr}`)
       prev = ctr
     }

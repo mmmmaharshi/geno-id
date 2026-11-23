@@ -19,13 +19,13 @@ const FREE_MASK = [
 
 function uuidToFreeBits(uuid: string): string {
   let bits = ""
-  for (let i = 0; i < 16; i++) {
+  for (let i = 0; i < 16; i += 1) {
     const idx = HEX_STARTS[i]
     const hi = hexVal(uuid.codePointAt(idx)!)
     const lo = hexVal(uuid.codePointAt(idx + 1)!)
     const v = (hi << 4) | lo
     const free = v & FREE_MASK[i]
-    for (let b = 0; b < 8; b++) {
+    for (let b = 0; b < 8; b += 1) {
       if (FREE_MASK[i] & (1 << b)) {
         bits += (free >> b) & 1 ? "1" : "0"
       }
@@ -40,7 +40,7 @@ function mrByte(): number {
 
 function mrBytes(n: number): Uint8Array {
   const b = new Uint8Array(n)
-  for (let i = 0; i < n; i++) b[i] = mrByte()
+  for (let i = 0; i < n; i += 1) {b[i] = mrByte()}
   return b
 }
 
@@ -59,8 +59,8 @@ function genMrGenoid(): string {
   const cut = g[32] & 15
   const mutPos = g[33] & 15
   let j = 0
-  for (; j < cut; j++) _child[j] = g[j]
-  for (; j < 16; j++) _child[j] = g[16 + j]
+  for (; j < cut; j += 1) {_child[j] = g[j]}
+  for (; j < 16; j += 1) {_child[j] = g[16 + j]}
   _child[mutPos] ^= g[(mutPos + 1) & 15]
   _child[6] = (_child[6] & 0x0f) | 0x80
   _child[8] = (_child[8] & 0x3f) | 0x80
@@ -73,8 +73,8 @@ function genMrXonly(): string {
   const g = mrBytes(34)
   const cut = g[32] & 15
   let j = 0
-  for (; j < cut; j++) _childX[j] = g[j]
-  for (; j < 16; j++) _childX[j] = g[16 + j]
+  for (; j < cut; j += 1) {_childX[j] = g[j]}
+  for (; j < 16; j += 1) {_childX[j] = g[16 + j]}
   _childX[6] = (_childX[6] & 0x0f) | 0x80
   _childX[8] = (_childX[8] & 0x3f) | 0x80
   return toUuidString(_childX)
@@ -85,7 +85,7 @@ const _childM = new Uint8Array(16)
 function genMrMonly(): string {
   const g = mrBytes(34)
   const mutPos = g[33] & 15
-  for (let j = 0; j < 16; j++) _childM[j] = g[j]
+  for (let j = 0; j < 16; j += 1) {_childM[j] = g[j]}
   _childM[mutPos] ^= g[(mutPos + 1) & 15]
   _childM[6] = (_childM[6] & 0x0f) | 0x80
   _childM[8] = (_childM[8] & 0x3f) | 0x80
@@ -98,7 +98,7 @@ async function exportSamples(
   count: number,
 ): Promise<string> {
   const bits: string[] = new Array(count)
-  for (let i = 0; i < count; i++) {
+  for (let i = 0; i < count; i += 1) {
     bits[i] = uuidToFreeBits(fn())
   }
   const allBits = bits.join("")

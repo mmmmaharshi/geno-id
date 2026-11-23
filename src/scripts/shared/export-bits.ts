@@ -13,8 +13,8 @@ const algo = (await import(pathToFileURL(path.join(root, "dist", "algo.js")).hre
 const { toUuidString } = algo
 
 export function hexVal(c: number): number {
-  if (c >= 48 && c <= 57) return c - 48
-  if (c >= 97 && c <= 102) return c - 87
+  if (c >= 48 && c <= 57) {return c - 48}
+  if (c >= 97 && c <= 102) {return c - 87}
   return 0
 }
 

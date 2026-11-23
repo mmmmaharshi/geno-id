@@ -21,22 +21,22 @@ export function envLabel(e: EnvInfo): string {
     return `Node ${e.node.split(".")[0]} (${osName})`
   }
   let os = "Windows"
-  if (e.platform === "linux") os = "Ubuntu"
-  else if (e.platform === "darwin" || e.platform === "macos") os = "macOS"
-  else if (e.platform === "windows") os = "Windows"
+  if (e.platform === "linux") {os = "Ubuntu"}
+  else if (e.platform === "darwin" || e.platform === "macos") {os = "macOS"}
+  else if (e.platform === "windows") {os = "Windows"}
   return `${os} (Bun)`
 }
 
 function platformName(platform: string): string {
-  if (platform === "darwin") return "macOS"
-  if (platform === "win32" || platform === "windows") return "Windows"
+  if (platform === "darwin") {return "macOS"}
+  if (platform === "win32" || platform === "windows") {return "Windows"}
   return "Linux"
 }
 
 function platformRank(platform: string): number {
-  if (platform === "linux") return 0
-  if (platform === "darwin") return 1
-  if (platform === "win32" || platform === "windows") return 2
+  if (platform === "linux") {return 0}
+  if (platform === "darwin") {return 1}
+  if (platform === "win32" || platform === "windows") {return 2}
   return 9
 }
 
@@ -45,9 +45,9 @@ function rankEnv(e: EnvInfo): number {
     return 20 + platformRank(e.platform)
   }
   if (e.runtime === "bun") {
-    return { linux: 0, darwin: 1, win32: 2 }[e.platform] ?? 9
+    return { darwin: 1, linux: 0, win32: 2 }[e.platform] ?? 9
   }
-  return 10 + (parseInt(e.node, 10) - 20) * 3 + platformRank(e.platform)
+  return 10 + (Number.parseInt(e.node, 10) - 20) * 3 + platformRank(e.platform)
 }
 
 function mops(x: number): string {
@@ -56,11 +56,11 @@ function mops(x: number): string {
 
 function collectFiles(dir: string): string[] {
   const out: string[] = []
-  if (!fs.existsSync(dir)) return out
+  if (!fs.existsSync(dir)) {return out}
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const p = path.join(dir, entry.name)
-    if (entry.isDirectory()) out.push(...collectFiles(p))
-    else if (entry.name === "bench-ci-results.json") out.push(p)
+    if (entry.isDirectory()) {out.push(...collectFiles(p))}
+    else if (entry.name === "bench-ci-results.json") {out.push(p)}
   }
   return out
 }
@@ -77,14 +77,14 @@ export function renderConsolidated(results: CIBenchmarkResult[]): string {
   const benchByName = new Map<string, BenchEntry[]>()
   for (const r of sorted) {
     for (const b of r.benchmarks) {
-      if (!benchByName.has(b.name)) benchByName.set(b.name, [])
+      if (!benchByName.has(b.name)) {benchByName.set(b.name, [])}
       benchByName.get(b.name)!.push(b)
     }
   }
   const collByName = new Map<string, CollisionEntry[]>()
   for (const r of sorted) {
     for (const c of r.collisions) {
-      if (!collByName.has(c.name)) collByName.set(c.name, [])
+      if (!collByName.has(c.name)) {collByName.set(c.name, [])}
       collByName.get(c.name)!.push(c)
     }
   }
@@ -114,7 +114,7 @@ export function renderConsolidated(results: CIBenchmarkResult[]): string {
   if (allComparisons.length > 0) {
     const compByName = new Map<string, ComparisonEntry[]>()
     for (const c of allComparisons) {
-      if (!compByName.has(c.name)) compByName.set(c.name, [])
+      if (!compByName.has(c.name)) {compByName.set(c.name, [])}
       compByName.get(c.name)!.push(c)
     }
     md += "\n### Pairwise comparisons\n\n"
@@ -137,8 +137,8 @@ export function renderConsolidated(results: CIBenchmarkResult[]): string {
     "artifact (BCryptGenRandom per-call overhead, not batched), not a GenoID defect. " +
     "Native `crypto.randomUUID()` (v4) and the pooled GenoID CSPRNG are unaffected, " +
     "which confirms the bottleneck is per-call `getRandomValues`, not the algorithm.\n" +
-    "- **Node 22 GenoID V8 deopt:** `genoid-structured` reaches only 12--16% of " +
-    "`genoid-v8`'s rate on Node 22 (all three OSes), against 56--94% on Bun and Deno. " +
+    "- **Node 22 GenoID V8 deopt:** `genoid-structured` reaches only 12 -= 116% of " +
+    "`genoid-v8`'s rate on Node 22 (all three OSes), against 56 -= 194% on Bun and Deno. " +
     "Both draw from the same pool, so the cause is a V8-version-specific " +
     "deoptimisation in the field-extraction/repair loop, not CSPRNG access. " +
     "Deno runs a newer V8 without the regression.\n"

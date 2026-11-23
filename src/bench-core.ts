@@ -5,15 +5,15 @@ export interface BenchResult {
 }
 
 export function benchSync(fn: () => string, n: number): BenchResult {
-  if (n <= 0) return { n, elapsed: 0, opsPerSec: 0 }
+  if (n <= 0) {return { n, elapsed: 0, opsPerSec: 0 }}
   let sink = 0
   const start = performance.now()
-  for (let i = 0; i < n; i++) {
+  for (let i = 0; i < n; i += 1) {
     sink += fn().codePointAt(0) ?? 0
   }
   const elapsed = performance.now() - start
-  if (sink === -1) throw new Error("unreachable")
-  return { n, elapsed, opsPerSec: n / (elapsed / 1000) }
+  if (sink === -1) {throw new Error("unreachable")}
+  return { elapsed, n, opsPerSec: n / (elapsed / 1000) }
 }
 
 export async function benchAsyncBatched(
@@ -29,22 +29,22 @@ export async function benchAsyncBatched(
     done += b
   }
   const elapsed = performance.now() - start
-  return { n, elapsed, opsPerSec: n / (elapsed / 1000) }
+  return { elapsed, n, opsPerSec: n / (elapsed / 1000) }
 }
 
 export function birthdayBound50(entropyBits: number): number {
-  if (entropyBits <= 0) return 0
-  const N = Math.pow(2, entropyBits)
+  if (entropyBits <= 0) {return 0}
+  const N = 2 ** entropyBits
   return 1.1774 * Math.sqrt(N)
 }
 
 export function collisionTest(fn: () => string, n: number): number {
   const set = new Set<string>()
   let collisions = 0
-  for (let i = 0; i < n; i++) {
+  for (let i = 0; i < n; i += 1) {
     const v = fn()
-    if (set.has(v)) collisions++
-    else set.add(v)
+    if (set.has(v)) {collisions += 1}
+    else {set.add(v)}
   }
   return collisions
 }
@@ -67,8 +67,8 @@ export async function collisionTestAsync(
     const b = Math.min(batchSize, n - done)
     const batch = await Promise.all(Array.from({ length: b }, () => fn()))
     for (const v of batch) {
-      if (set.has(v)) collisions++
-      else set.add(v)
+      if (set.has(v)) {collisions += 1}
+      else {set.add(v)}
     }
     done += b
   }
@@ -112,7 +112,7 @@ export function benchRepeated(
   // Discard warmup pass(es): the first run pays JIT compilation (and any
   // lazy one-time allocation) which would inflate variance and bias the mean
   // low. Only the steady-state trials are summarized.
-  for (let i = 0; i < warmupTrials; i++) benchSync(fn, n)
+  for (let i = 0; i < warmupTrials; i += 1) {benchSync(fn, n)}
   const samples = Array.from({ length: trials }, () => benchSync(fn, n).opsPerSec)
   return summarize(samples, n, trials)
 }
@@ -124,7 +124,7 @@ export async function benchRepeatedAsync(
   batchSize = 1000,
 ): Promise<BenchStats> {
   const samples = []
-  for (let i = 0; i < trials; i++) {
+  for (let i = 0; i < trials; i += 1) {
     samples.push((await benchAsyncBatched(fn, n, batchSize)).opsPerSec)
   }
   return summarize(samples, n, trials)
@@ -141,30 +141,26 @@ function summarize(samples: number[], n: number, trials: number): BenchStats {
   const se = trials > 1 ? std / Math.sqrt(trials) : 0
   const margin = studentTCritical95(trials - 1) * se
   return {
-    n,
-    trials,
-    mean: m,
-    std,
-    cv,
-    min,
-    max,
     ci95: [m - margin, m + margin],
+    cv,
+    max,
+    mean: m,
+    min,
+    n,
     samples,
+    std,
+    trials,
   }
 }
 
 // Upper 0.025 quantile (two-tailed 95% CI critical value) for Student's t.
 // Exact for small integer degrees of freedom; normal approximation (1.96) beyond.
 const T_CRIT_95: Record<number, number> = {
-  1: 12.706, 2: 4.303, 3: 3.182, 4: 2.776, 5: 2.571, 6: 2.447,
-  7: 2.365, 8: 2.306, 9: 2.262, 10: 2.228, 11: 2.201, 12: 2.179,
-  13: 2.16, 14: 2.145, 15: 2.131, 16: 2.12, 17: 2.11, 18: 2.101,
-  19: 2.093, 20: 2.086, 21: 2.08, 22: 2.074, 23: 2.069, 24: 2.064,
-  25: 2.06, 26: 2.056, 27: 2.052, 28: 2.048, 29: 2.045,
+  1: 12.706, 10: 2.228, 11: 2.201, 12: 2.179, 13: 2.16, 14: 2.145, 15: 2.131, 16: 2.12, 17: 2.11, 18: 2.101, 19: 2.093, 2: 4.303, 20: 2.086, 21: 2.08, 22: 2.074, 23: 2.069, 24: 2.064, 25: 2.06, 26: 2.056, 27: 2.052, 28: 2.048, 29: 2.045, 3: 3.182, 4: 2.776, 5: 2.571, 6: 2.447, 7: 2.365, 8: 2.306, 9: 2.262,
 }
 
 function studentTCritical95(df: number): number {
-  if (df <= 0) return 0
-  if (df >= 30) return 1.96
+  if (df <= 0) {return 0}
+  if (df >= 30) {return 1.96}
   return T_CRIT_95[df] ?? 1.96
 }

@@ -19,7 +19,7 @@ const TARGET_BITS = 1_550_000
 
 function exportBits(label: string, fn: () => string, fixed: [number, number][]): void {
   let bits = ""
-  while (bits.length < TARGET_BITS) bits += extractRandomBits(fn(), fixed).join("")
+  while (bits.length < TARGET_BITS) {bits += extractRandomBits(fn(), fixed).join("")}
   const file = path.join(dist, `${label}.bits.txt`)
   writeFileSync(file, bits)
   console.log(`${label}: ${bits.length} bits -> ${file}`)

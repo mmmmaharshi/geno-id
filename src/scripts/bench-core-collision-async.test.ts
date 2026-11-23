@@ -10,7 +10,7 @@ import {
 // timeout. The batched form must return an identical duplicate count.
 const deterministic = (values: readonly string[]): (() => Promise<string>) => {
   let i = 0
-  return async () => values[i++ % values.length]
+  return async () => values[i += 1 % values.length]
 }
 
 const unique = (n: number): string[] =>
@@ -19,7 +19,7 @@ const unique = (n: number): string[] =>
 const withDuplicates = (values: readonly string[], copies: number): string[] => {
   const out: string[] = []
   for (const v of values) {
-    for (let c = 0; c < copies; c++) out.push(v)
+    for (let c = 0; c < copies; c += 1) {out.push(v)}
   }
   return out
 }
@@ -29,10 +29,10 @@ test("a batched async collision count matches a sequential reference", async () 
   const batched = await collisionTestAsync(deterministic(values), 500, 64)
   let sequential = 0
   const seen = new Set<string>()
-  for (let i = 0; i < 500; i++) {
+  for (let i = 0; i < 500; i += 1) {
     const v = values[i % values.length]
-    if (seen.has(v)) sequential++
-    else seen.add(v)
+    if (seen.has(v)) {sequential += 1}
+    else {seen.add(v)}
   }
   assert.equal(batched, sequential)
   assert.equal(batched, 450)
@@ -57,7 +57,7 @@ test("the batch size never exceeds the remaining sample count", async () => {
   const values = unique(10)
   let calls = 0
   const counting = async () => {
-    calls++
+    calls += 1
     return values[calls % values.length]
   }
   await collisionTestAsync(counting, 10, 4)
@@ -67,7 +67,7 @@ test("the batch size never exceeds the remaining sample count", async () => {
 test("benchAsyncBatched keeps its existing concurrent batching contract", async () => {
   let calls = 0
   const counting = async () => {
-    calls++
+    calls += 1
     return `v-${calls}`
   }
   const result = await benchAsyncBatched(counting, 25, 10)
@@ -89,11 +89,11 @@ test("the async path issues the whole batch concurrently, not one call at a time
   let inFlight = 0
   let maxInFlight = 0
   const track = async (): Promise<string> => {
-    inFlight++
-    if (inFlight > maxInFlight) maxInFlight = inFlight
+    inFlight += 1
+    if (inFlight > maxInFlight) {maxInFlight = inFlight}
     await Promise.resolve()
-    inFlight--
-    return values[next++ % values.length]
+    inFlight -= 1
+    return values[next += 1 % values.length]
   }
 
   await collisionTestAsync(track, 50, 25)

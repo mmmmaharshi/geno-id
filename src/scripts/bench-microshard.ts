@@ -44,35 +44,35 @@ const N = Number(process.env.MICRO_N ?? 200_000)
 const REPS = Math.max(1, Number(process.env.MICRO_REPS ?? 5))
 const LOOKUPS = Number(process.env.MICRO_LOOKUPS ?? 500)
 const OUT = process.env.MICRO_OUT ?? "results/microshard.json"
-const SEED = Number(process.env.MICRO_SEED ?? 0x9e3779b9) >>> 0
+const SEED = Number(process.env.MICRO_SEED ?? 0x9e_37_79_b9) >>> 0
 const BURST_N = Number(process.env.MICRO_BURST_N ?? 200_000)
 
 // ---- microshard-uuid bit mirror (verified against the pip package) ----
 // high_64: time_high[0,48) version[48,52)=0x8 time_low[52,58) shard_high[58,64)
 // low_64:  variant[64,66)=0x2 shard_low[66,92) random[92,128)
 function genMicroshard(shard: number, nowMicros?: number, rand36?: number): string {
-  if (!Number.isInteger(shard) || shard < 0 || shard > 0xffffffff) {
+  if (!Number.isInteger(shard) || shard < 0 || shard > 0xff_ff_ff_ff) {
     throw new RangeError(`microshard: shard out of 32-bit range: ${shard}`)
   }
   const micros = BigInt(nowMicros ?? Math.floor(Date.now() * 1000))
-  if (micros < 0n || micros > (1n << 54n) - 1n) throw new RangeError("microshard: timestamp out of 54-bit range")
+  if (micros < 0n || micros > (1n << 54n) - 1n) {throw new RangeError("microshard: timestamp out of 54-bit range")}
   let r: number
   if (rand36 === undefined) {
     const b = new Uint8Array(5)
     crypto.getRandomValues(b)
     r = Number((BigInt(b[0]) << 32n) | (BigInt(b[1]) << 24n) | (BigInt(b[2]) << 16n) | (BigInt(b[3]) << 8n) | BigInt(b[4])) % 2 ** 36
   } else {
-    if (!Number.isInteger(rand36) || rand36 < 0 || rand36 >= 2 ** 36) throw new RangeError("microshard: rand36 out of range")
+    if (!Number.isInteger(rand36) || rand36 < 0 || rand36 >= 2 ** 36) {throw new RangeError("microshard: rand36 out of range")}
     r = rand36
   }
-  const timeHigh = (micros >> 6n) & 0xffffffffffffn
+  const timeHigh = (micros >> 6n) & 0xff_ff_ff_ff_ff_ffn
   const timeLow = micros & 0x3fn
   const shardHigh = (BigInt(shard) >> 26n) & 0x3fn
   const high = (timeHigh << 16n) | (0x8n << 12n) | (timeLow << 6n) | shardHigh
-  const shardLow = BigInt(shard) & 0x3ffffffn
+  const shardLow = BigInt(shard) & 0x3_ff_ff_ffn
   const low = (0x2n << 62n) | (shardLow << 36n) | BigInt(r)
   const bytes = new Uint8Array(16)
-  for (let i = 0; i < 8; i++) {
+  for (let i = 0; i < 8; i += 1) {
     bytes[i] = Number((high >> BigInt(8 * (7 - i))) & 0xffn)
     bytes[8 + i] = Number((low >> BigInt(8 * (7 - i))) & 0xffn)
   }
@@ -86,13 +86,13 @@ function genMicroshard(shard: number, nowMicros?: number, rand36?: number): stri
 function extractMicroShard(bytes: Uint8Array): number {
   const shardHigh = bytes[7] & 0x3f
   const shardLow = ((bytes[8] & 0x3f) << 20) | (bytes[9] << 12) | (bytes[10] << 4) | ((bytes[11] >> 4) & 0x0f)
-  return (shardHigh * 0x4000000 + shardLow) >>> 0
+  return (shardHigh * 0x4_00_00_00 + shardLow) >>> 0
 }
 function tenantField(start: number) {
-  return { name: "tenant", start, length: 3, type: "shard", constraint: { allowed: [0, 1, 2, 3, 4, 5, 6, 7] } }
+  return { constraint: { allowed: [0, 1, 2, 3, 4, 5, 6, 7] }, length: 3, name: "tenant", start, type: "shard" }
 }
 function regionField(start: number) {
-  return { name: "region", start, length: 2, type: "shard", constraint: { allowed: [0, 1, 2, 3] } }
+  return { constraint: { allowed: [0, 1, 2, 3] }, length: 2, name: "region", start, type: "shard" }
 }
 const genoidLayout = completeLayout("microshard-exp-genoid", [tenantField(0), regionField(3)])
 
@@ -102,7 +102,7 @@ function xorshift(seed: number): () => number {
     s ^= s << 13
     s ^= s >>> 17
     s ^= s << 5
-    return (s >>> 0) / 0x1_0000_0000
+    return (s >>> 0) / 0x1_00_00_00_00
   }
 }
 
@@ -111,7 +111,7 @@ function buildTable(label: string, ids: Uint8Array[]): { db: Database; rowsPerSe
   db.run("CREATE TABLE ids (id BLOB(16) PRIMARY KEY) WITHOUT ROWID")
   const insert = db.prepare("INSERT INTO ids (id) VALUES (?)")
   const start = performance.now()
-  for (const bytes of ids) insert.run(bytes)
+  for (const bytes of ids) {insert.run(bytes)}
   const rowsPerSec = ids.length / ((performance.now() - start) / 1000)
   console.log(`  ${label}: ${rowsPerSec.toFixed(0)} rows/s (${ids.length} rows)`)
   return { db, rowsPerSec }
@@ -123,9 +123,9 @@ function buildTable(label: string, ids: Uint8Array[]): { db: Database; rowsPerSe
 // app, not in SQL).
 function benchGenoTenant(db: Database, tenants: number[]): number[] {
   const times: number[] = []
-  for (let r = 0; r < REPS; r++) {
+  for (let r = 0; r < REPS; r += 1) {
     const start = performance.now()
-    for (let i = 0; i < LOOKUPS; i++) {
+    for (let i = 0; i < LOOKUPS; i += 1) {
       const t = tenants[(r * LOOKUPS + i) % tenants.length]
       const lo = new Uint8Array(16)
       const hi = new Uint8Array(16).fill(0xff)
@@ -142,13 +142,13 @@ function benchMicroTenant(db: Database, probeValues: number[]): { times: number[
   const rows = db.query("SELECT id FROM ids").all() as { id: Uint8Array }[]
   const times: number[] = []
   let totalMatches = 0
-  for (let r = 0; r < REPS; r++) {
+  for (let r = 0; r < REPS; r += 1) {
     const start = performance.now()
-    for (let i = 0; i < LOOKUPS; i++) {
+    for (let i = 0; i < LOOKUPS; i += 1) {
       const t = probeValues[(r * LOOKUPS + i) % probeValues.length]
       let n = 0
       for (const row of rows) {
-        if (extractMicroShard(row.id as unknown as Uint8Array) === t) n++
+        if (extractMicroShard(row.id as unknown as Uint8Array) === t) {n += 1}
       }
       totalMatches += n
     }
@@ -161,9 +161,9 @@ function benchMicroTenant(db: Database, probeValues: number[]): { times: number[
 function benchPointLookup(db: Database, ids: Uint8Array[], count: number): number[] {
   const stmt = db.prepare("SELECT COUNT(*) AS n FROM ids WHERE id = ?")
   const times: number[] = []
-  for (let r = 0; r < REPS; r++) {
+  for (let r = 0; r < REPS; r += 1) {
     const start = performance.now()
-    for (let i = 0; i < count; i++) stmt.get(ids[(r * count + i) % ids.length])
+    for (let i = 0; i < count; i += 1) {stmt.get(ids[(r * count + i) % ids.length])}
     times.push(((performance.now() - start) / count) * 1000)
   }
   return times
@@ -173,7 +173,7 @@ const rand = xorshift(SEED)
 const SHARD = 3
 const genoidIds: Uint8Array[] = []
 const microIds: Uint8Array[] = []
-for (let i = 0; i < N; i++) {
+for (let i = 0; i < N; i += 1) {
   genoidIds.push(uuidToBytes(genStructuredGenoID(genoidLayout)))
   // Microshard shards cycle uniformly like GenoID tenants, so the prune
   // query selects the same 1/8 fraction on both arms. Random payloads come
@@ -184,7 +184,7 @@ for (let i = 0; i < N; i++) {
 // 1. throughput (same-shard tight loop)
 function benchThroughput(gen: () => string, n: number): number {
   const start = performance.now()
-  for (let i = 0; i < n; i++) gen()
+  for (let i = 0; i < n; i += 1) {gen()}
   return (n / ((performance.now() - start) / 1000))
 }
 const M = 100_000
@@ -210,10 +210,10 @@ if (microPrune.totalMatches !== expectedMatches) {
   throw new Error(`micro prune matched ${microPrune.totalMatches}, expected ${expectedMatches}`)
 }
 let bad = 0
-for (let i = 0; i < microIds.length; i++) {
-  if (extractMicroShard(microIds[i]) !== i % 8) bad++
+for (let i = 0; i < microIds.length; i += 1) {
+  if (extractMicroShard(microIds[i]) !== i % 8) {bad += 1}
 }
-if (bad > 0) throw new Error(`microshard extraction mismatch on ${bad} rows`)
+if (bad > 0) {throw new Error(`microshard extraction mismatch on ${bad} rows`)}
 console.log("  integrity: shard extraction + prune counts exact on both arms")
 
 // 2b. full-ID point lookups (parity check: both are single PK seeks)
@@ -226,17 +226,17 @@ const FROZEN = 1_700_000_000_000_000
 const BN = BURST_N
 const seenMicro = new Set<string>()
 let microDup = 0
-for (let i = 0; i < BN; i++) {
+for (let i = 0; i < BN; i += 1) {
   const id = genMicroshard(7, FROZEN)
-  if (seenMicro.has(id)) microDup++
-  else seenMicro.add(id)
+  if (seenMicro.has(id)) {microDup += 1}
+  else {seenMicro.add(id)}
 }
 const seenGeno = new Set<string>()
 let genoDup = 0
-for (let i = 0; i < BN; i++) {
+for (let i = 0; i < BN; i += 1) {
   const id = genStructuredGenoID(genoidLayout)
-  if (seenGeno.has(id)) genoDup++
-  else seenGeno.add(id)
+  if (seenGeno.has(id)) {genoDup += 1}
+  else {seenGeno.add(id)}
 }
 console.log(`  frozen-tick burst duplicates: microshard ${microDup}, genoid ${genoDup} (n=${BN})`)
 
@@ -244,25 +244,25 @@ genoidDb.close()
 microDb.close()
 
 const report = {
-  experiment: "microshard-head-to-head",
-  description: "Fixed v8 layout (54-bit micros + 32-bit shard + 36 random) vs GenoID tenant-first structured layout: throughput, tenant-prune latency on SQLite, frozen-tick burst collisions, insert throughput.",
   competitor: {
-    name: "microshard-uuid",
-    version: "1.0.0 (pip)",
     layout: "54-bit microsecond time + 32-bit shard + 36 random bits, RFC 9562 v8",
+    name: "microshard-uuid",
     randomBits: 36,
+    version: "1.0.0 (pip)",
   },
-  genoid: { layout: "tenant-first (3-bit tenant + 2-bit region)", randomBits: 117 },
-  throughputOpsPerSec: { genoid: Math.round(genoidOps), microshard: Math.round(microOps) },
-  insertRowsPerSec: { genoid: Math.round(genoidTable.rowsPerSec), microshard: Math.round(microTable.rowsPerSec) },
-  tenantPruneUs: { genoid: genoidStats, microshard: microStats },
-  pointLookupUs: { genoid: genoidPoint, microshard: microPoint },
-  frozenTickBurst: { n: BN, microshardDuplicates: microDup, genoidDuplicates: genoDup },
+  description: "Fixed v8 layout (54-bit micros + 32-bit shard + 36 random) vs GenoID tenant-first structured layout: throughput, tenant-prune latency on SQLite, frozen-tick burst collisions, insert throughput.",
   environment: {
+    generatedAt: new Date().toISOString(),
     os: `${os.platform()} ${os.release()} ${os.arch()}`,
     runtime: process.versions.bun ? `Bun ${process.versions.bun}` : `Node ${process.version}`,
-    generatedAt: new Date().toISOString(),
   },
+  experiment: "microshard-head-to-head",
+  frozenTickBurst: { genoidDuplicates: genoDup, microshardDuplicates: microDup, n: BN },
+  genoid: { layout: "tenant-first (3-bit tenant + 2-bit region)", randomBits: 117 },
+  insertRowsPerSec: { genoid: Math.round(genoidTable.rowsPerSec), microshard: Math.round(microTable.rowsPerSec) },
+  pointLookupUs: { genoid: genoidPoint, microshard: microPoint },
+  tenantPruneUs: { genoid: genoidStats, microshard: microStats },
+  throughputOpsPerSec: { genoid: Math.round(genoidOps), microshard: Math.round(microOps) },
 }
 
 mkdirSync(path.dirname(path.resolve(root, OUT)), { recursive: true })

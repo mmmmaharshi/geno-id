@@ -19,7 +19,7 @@ import { execFileSync } from "node:child_process"
 const SIZES = [16, 20, 24, 28, 32, 34]
 const TRIALS = 60
 // 8k UUIDs => ~1M payload bits each (matrix_rank ~0.78s/call, matches AGENTS.md 1.2M-bit scale)
-const N_PER_TRIAL = 8_000
+const N_PER_TRIAL = 8000
 
 // Single Python process: receives all trial bit-strings (one per line, no
 // newlines inside) and returns per-size FAIL counts. Runs serially in-process
@@ -64,13 +64,13 @@ function rawV8Bytes(): Uint8Array {
 // Single continuous bit string: 128 bits minus version(48..51)+variant(64..65).
 function trialBits(size: number): string {
   let out = ""
-  for (let i = 0; i < N_PER_TRIAL; i++) {
+  for (let i = 0; i < N_PER_TRIAL; i += 1) {
     const b = rawV8Bytes()
     let s = ""
     const lim = Math.min(size, 16)
-    for (let j = 0; j < lim; j++) s += b[j].toString(2).padStart(8, "0")
+    for (let j = 0; j < lim; j += 1) {s += b[j].toString(2).padStart(8, "0")}
     const chars = [...s]
-    for (const idx of [48, 49, 50, 51, 64, 65]) if (idx < chars.length) chars[idx] = ""
+    for (const idx of [48, 49, 50, 51, 64, 65]) {if (idx < chars.length) chars[idx] = ""}
     out += chars.join("")
   }
   return out
@@ -89,7 +89,7 @@ function main(): void {
   const payload: [number, string[]][] = []
   for (const size of SIZES) {
     const trials: string[] = []
-    for (let t = 0; t < TRIALS; t++) trials.push(trialBits(size))
+    for (let t = 0; t < TRIALS; t += 1) {trials.push(trialBits(size))}
     payload.push([size, trials])
   }
 
@@ -98,7 +98,7 @@ function main(): void {
 
   const out = execFileSync(
     "python3",
-    ["-u", driverPath, process.cwd() + "/scripts", payloadPath],
+    ["-u", driverPath, `${process.cwd()  }/scripts`, payloadPath],
     { encoding: "utf-8", maxBuffer: 1 << 30 },
   )
   const results = JSON.parse(out.trim().split("\n").pop() ?? "[]")

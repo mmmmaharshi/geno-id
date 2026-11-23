@@ -38,16 +38,16 @@ const genCompiled = compileLayout(DBKEY_LAYOUT as Parameters<typeof compileLayou
 function collectEnv(): EnvInfo {
   const isBun = (globalThis as { Bun?: unknown }).Bun !== undefined
   return {
-    runtime: isBun ? "bun" : "node",
+    arch: process.arch,
     bun: process.versions.bun ?? null,
+    commitSha: process.env.GITHUB_SHA ?? undefined,
+    cpuCount: os.cpus().length,
+    cpuModel: os.cpus()[0]?.model ?? "unknown",
     node: process.versions.node,
     platform: process.platform,
-    arch: process.arch,
-    cpuModel: os.cpus()[0]?.model ?? "unknown",
-    cpuCount: os.cpus().length,
-    totalMemoryMB: Math.round(os.totalmem() / (1024 * 1024)),
-    commitSha: process.env.GITHUB_SHA ?? undefined,
     runId: process.env.GITHUB_RUN_ID ?? undefined,
+    runtime: isBun ? "bun" : "node",
+    totalMemoryMB: Math.round(os.totalmem() / (1024 * 1024)),
   }
 }
 
@@ -74,36 +74,36 @@ const specs: [string, () => string][] = [
 ]
 
 function coll(name: string, fn: () => string): CollisionEntry {
-  return { name, n: nColl, collisions: collisionTest(fn, nColl) }
+  return { collisions: collisionTest(fn, nColl), n: nColl, name }
 }
 
 const env = collectEnv()
 
 // Pass 1: collect repeated-trial stats (with a warmup pass) for every generator.
 const statsByName = new Map<string, BenchStats>()
-for (const [name, fn] of specs) statsByName.set(name, benchRepeated(fn, nSync, TRIALS))
+for (const [name, fn] of specs) {statsByName.set(name, benchRepeated(fn, nSync, TRIALS))}
 
 // Pass 2: build entries, each carrying a Welch t-test p-value + Cohen's d
 // against the baseline, so the artifact states statistical distinguishability
 // rather than leaving it to eyeballed point estimates.
 const baseStats = statsByName.get(BASELINE)
-if (!baseStats) throw new Error(`baseline ${BASELINE} was not benchmarked`)
+if (!baseStats) {throw new Error(`baseline ${BASELINE} was not benchmarked`)}
 const benchmarks: BenchEntry[] = specs.map(([name]) => {
   const r = statsByName.get(name) as BenchStats
   const cmp = compareBench(r, baseStats)
   return {
+    ci95: [Math.round(r.ci95[0]), Math.round(r.ci95[1])],
+    cohensD: Number(cmp.d.toFixed(3)),
+    cv: Number(r.cv.toFixed(4)),
     name,
     opsPerSec: Math.round(r.mean),
-    usPerOp: Number((1_000_000 / r.mean).toFixed(4)),
-    ci95: [Math.round(r.ci95[0]), Math.round(r.ci95[1])],
-    std: Math.round(r.std),
-    cv: Number(r.cv.toFixed(4)),
-    trials: r.trials,
     samples: r.samples.map(Math.round),
+    std: Math.round(r.std),
+    trials: r.trials,
+    usPerOp: Number((1_000_000 / r.mean).toFixed(4)),
+    welchDf: Number(cmp.df.toPrecision(4)),
     welchP: Number(cmp.p.toPrecision(3)),
     welchT: Number(cmp.t.toPrecision(4)),
-    welchDf: Number(cmp.df.toPrecision(4)),
-    cohensD: Number(cmp.d.toFixed(3)),
   }
 })
 
@@ -118,15 +118,15 @@ const comparisons: ComparisonEntry[] = comparisonPairs.map(([name, a, b]) => {
   const sb = statsByName.get(b) as BenchStats
   const cmp = compareBench(sa, sb)
   return {
-    name,
     a,
     b,
-    ratio: Number((sa.mean / sb.mean).toFixed(4)),
-    welchP: Number(cmp.p.toPrecision(3)),
-    welchT: Number(cmp.t.toPrecision(4)),
-    welchDf: Number(cmp.df.toPrecision(4)),
     cohensD: Number(cmp.d.toFixed(3)),
     faster: sa.mean >= sb.mean ? a : b,
+    name,
+    ratio: Number((sa.mean / sb.mean).toFixed(4)),
+    welchDf: Number(cmp.df.toPrecision(4)),
+    welchP: Number(cmp.p.toPrecision(3)),
+    welchT: Number(cmp.t.toPrecision(4)),
   }
 })
 
@@ -148,7 +148,7 @@ const collisions: CollisionEntry[] = [
   coll("ksuid", genKsuid),
 ]
 
-const output: CIBenchmarkResult = { environment: env, baselineName: BASELINE, benchmarks, collisions, comparisons }
+const output: CIBenchmarkResult = { baselineName: BASELINE, benchmarks, collisions, comparisons, environment: env }
 
 console.log("=== GenoID CI benchmark ===")
 console.log("Environment:", JSON.stringify(env, null, 2))

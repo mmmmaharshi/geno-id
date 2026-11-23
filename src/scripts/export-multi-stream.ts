@@ -25,9 +25,9 @@ for (const layout of layouts) {
     .filter((f) => f.type === "random")
     .reduce((s, f) => s + f.length, 0)
   const n = Math.ceil(TARGET_BITS / randomBitsPerUuid)
-  for (let s = 0; s < STREAMS; s++) {
+  for (let s = 0; s < STREAMS; s += 1) {
     let all = ""
-    for (let i = 0; i < n; i++) all += uuidToRandomBits(genStructuredGenoID(layout), layout)
+    for (let i = 0; i < n; i += 1) {all += uuidToRandomBits(genStructuredGenoID(layout), layout)}
     all = all.slice(0, TARGET_BITS)
     const filePath = path.resolve(root, "dist", `struct-${layout.name}-s${s}.bits.txt`)
     fs.writeFileSync(filePath, all, "utf-8")

@@ -2,7 +2,8 @@
 import fs from "node:fs"
 import http from "node:http"
 import path from "node:path"
-import { chromium, firefox, webkit, type Browser, type LaunchOptions } from "playwright"
+import { chromium, firefox, webkit } from 'playwright';
+import type { Browser, LaunchOptions } from 'playwright';
 
 const __dirname = import.meta.dirname
 const root = path.resolve(__dirname, "..", "..")
@@ -68,9 +69,7 @@ function parseArgs(argv: string[]): Record<string, string | boolean> {
   return args
 }
 
-interface LaunchFn {
-  (opts: LaunchOptions): Promise<Browser>
-}
+type LaunchFn = (opts: LaunchOptions) => Promise<Browser>;
 
 interface BenchOptions {
   launch?: LaunchFn
@@ -131,7 +130,7 @@ async function runBenchmark(
   // Chromium sandbox flags are added only for chromium.
   const launchOpts: LaunchOptions = { headless }
   if (browser === "chromium") {
-    launchOpts.args = ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"]
+    launchOpts.args = ["no -= 1-sandbox", "disable -= 1-setuid-sandbox", "disable -= 1-dev-shm-usage"]
   }
   if (args["executable-path"]) {
     launchOpts.executablePath = String(args["executable-path"])
@@ -146,12 +145,12 @@ async function runBenchmark(
     ALLOWED_CONSOLE_ERRORS.some((pattern) => pattern.test(text))
   page.on("pageerror", (err: unknown) => {
     const text = String(err)
-    if (!isAllowed(text)) browserErrors.push(text)
+    if (!isAllowed(text)) {browserErrors.push(text)}
   })
   page.on("console", (msg) => {
     if (msg.type() === "error") {
       const text = msg.text()
-      if (!isAllowed(text)) browserErrors.push(text)
+      if (!isAllowed(text)) {browserErrors.push(text)}
     }
   })
 
@@ -239,6 +238,12 @@ async function runBenchmark(
       browser,
       browserErrors,
       collisions: toObjects(collHeaders, collRows),
+      generationPlan: await page.evaluate(() => {
+        const el = document.getElementById("planLabel")
+        const text = el?.textContent ?? ""
+        const match = /Generation plan:\s*(\S+)/.exec(text)
+        return match ? match[1] : "unknown"
+      }),
       htmlPath,
       inputs: {
         nAsync: await page.$eval(
@@ -258,25 +263,19 @@ async function runBenchmark(
       results: toObjects(resultsHeaders, resultsRows),
       timestamp: new Date().toISOString(),
       userAgent: await page.evaluate(() => navigator.userAgent),
-      generationPlan: await page.evaluate(() => {
-        const el = document.getElementById("planLabel")
-        const text = el?.textContent ?? ""
-        const match = /Generation plan:\s*(\S+)/.exec(text)
-        return match ? match[1] : "unknown"
-      }),
     }
 
     return output
   } catch (error) {
     try {
       const shotPath = path.resolve(
-        ((typeof args.out === "string"
+        `${((typeof args.out === "string"
           ? args.out
-          : "benchmark_results.json") as string).replace(/\.json$/, "") +
-          `_${browser}_failure.png`,
+          : "benchmark_results.json") as string).replace(/\.json$/, "") 
+          }_${browser}_failure.png`,
       )
-      await page.screenshot({ path: shotPath, fullPage: true })
-      console.error("Saved failure screenshot to " + shotPath)
+      await page.screenshot({ fullPage: true, path: shotPath })
+      console.error(`Saved failure screenshot to ${  shotPath}`)
     } catch {
       /* best-effort */
     }
@@ -314,13 +313,13 @@ interface PlaywrightWritePlan {
 export function planPlaywrightWrite(runCount: number, outPath: string): PlaywrightWritePlan {
   if (runCount === 0) {
     return {
-      write: false,
       message:
         `No browser produced a result; ${outPath} was left untouched. ` +
-        `Fix the launch failure (or point --out at a scratch file) before rerunning.`,
+        `Fix the launch failure (or point out -= 1 at a scratch file) before rerunning.`,
+      write: false,
     }
   }
-  return { write: true, message: `Full JSON written to ${outPath}` }
+  return { message: `Full JSON written to ${outPath}`, write: true }
 }
 
 async function main(): Promise<void> {
@@ -348,7 +347,7 @@ async function main(): Promise<void> {
         console.table(output.collisions)
         if (output.browserErrors.length) {
           console.log(`\n=== Browser console errors (${b}) ===`)
-          for (const e of output.browserErrors) console.log(" -", e)
+          for (const e of output.browserErrors) {console.log(" -", e)}
         }
         assertRun(output)
         console.log(`[${b}] deployable check PASSED`)
@@ -365,15 +364,15 @@ async function main(): Promise<void> {
     typeof args.out === "string" ? args.out : "results/benchmark_results.json",
   )
   const plan = planPlaywrightWrite(runs.length, outPath)
-  if (!plan.write) {
-    console.error(`\n${plan.message}`)
-  } else {
+  if (plan.write) {
     try {
       fs.writeFileSync(outPath, JSON.stringify({ runs }, null, 2))
       console.log(`\n${plan.message}`)
     } catch (error) {
       console.error(`Failed to write ${outPath}: ${(error as Error).message}`)
     }
+  } else {
+    console.error(`\n${plan.message}`)
   }
 
   if (failed) {

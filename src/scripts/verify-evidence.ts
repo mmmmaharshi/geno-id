@@ -35,7 +35,7 @@ function fail(message: string): never {
   process.exit(1)
 }
 
-if (!existsSync(MANIFEST)) fail(`missing ${path.relative(root, MANIFEST)}`)
+if (!existsSync(MANIFEST)) {fail(`missing ${path.relative(root, MANIFEST)}`)}
 const manifest = JSON.parse(readFileSync(MANIFEST, "utf-8")) as Manifest
 const pkg = JSON.parse(readFileSync(path.join(root, "package.json"), "utf-8")) as {
   version: string
@@ -43,16 +43,16 @@ const pkg = JSON.parse(readFileSync(path.join(root, "package.json"), "utf-8")) a
 
 const result = verifyEvidenceTree(
   {
-    package_version: manifest.package_version,
-    packageVersionFromPackage: pkg.version,
-    releaseIdentityVersion: manifest.notes.release_identity.package_version,
     artifacts: manifest.artifacts,
     metrics: manifest.metrics,
+    packageVersionFromPackage: pkg.version,
+    package_version: manifest.package_version,
+    releaseIdentityVersion: manifest.notes.release_identity.package_version,
   },
   root,
 )
 
-if (result.versionError) fail(result.versionError)
+if (result.versionError) {fail(result.versionError)}
 for (const entry of result.missing) {
   console.error(`  MISSING ${entry.id}: ${entry.spec}`)
 }

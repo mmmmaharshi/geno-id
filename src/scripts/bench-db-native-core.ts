@@ -26,8 +26,8 @@ export function enginesWithResults(results: Record<string, unknown>): EngineName
 }
 
 export const SERVER_ENV: Record<EngineName, string> = {
-  postgresql: "PG_HOST / PG_PORT / PG_USER / PG_PASSWORD / PG_DB",
   "mysql-innodb": "MYSQL_HOST / MYSQL_PORT / MYSQL_USER / MYSQL_PASSWORD / MYSQL_DB",
+  postgresql: "PG_HOST / PG_PORT / PG_USER / PG_PASSWORD / PG_DB",
 }
 
 export function serverTarget(
@@ -56,18 +56,18 @@ export interface Percentiles {
 }
 
 export function percentiles(values: readonly number[]): Percentiles {
-  if (values.length === 0) return { p50: 0, p95: 0, p99: 0, max: 0, samples: 0 }
+  if (values.length === 0) {return { p50: 0, p95: 0, p99: 0, max: 0, samples: 0 }}
   const sorted = values.toSorted((left, right) => left - right)
   const at = (quantile: number): number => sorted.at(Math.min(sorted.length - 1, Math.floor(quantile * sorted.length))) ?? 0
-  return { p50: at(0.5), p95: at(0.95), p99: at(0.99), max: sorted.at(-1) ?? 0, samples: sorted.length }
+  return { max: sorted.at(-1) ?? 0, p50: at(0.5), p95: at(0.95), p99: at(0.99), samples: sorted.length }
 }
 
 export function tenantFor(distribution: Distribution, index: number, random: () => number): number {
-  if (distribution === "uniform") return 1 + (index % 1000)
+  if (distribution === "uniform") {return 1 + (index % 1000)}
   if (distribution === "hot-tenant") {
     return index % 10 === 0 ? 1 + Math.floor(random() * 3) : 4 + (index % 996)
   }
-  return index % 10_000 < 8_000 ? 1 : 2 + (index % 7)
+  return index % 10_000 < 8000 ? 1 : 2 + (index % 7)
 }
 
 export interface EngineResult {
@@ -96,13 +96,13 @@ export class NativeResultError extends Error {
 }
 
 export function validateNativeResult(result: EngineResult): void {
-  if (!ENGINES.includes(result.engine)) throw new NativeResultError("unknown-engine", `unknown engine ${result.engine}`)
-  if (!result.serverVersion) throw new NativeResultError("missing-server-version", "server version is required")
+  if (!ENGINES.includes(result.engine)) {throw new NativeResultError("unknown-engine", `unknown engine ${result.engine}`)}
+  if (!result.serverVersion) {throw new NativeResultError("missing-server-version", "server version is required")}
   if (Object.keys(result.serverConfig).length === 0) {
     throw new NativeResultError("missing-server-config", "server configuration is required")
   }
-  if (result.reps < 5) throw new NativeResultError("insufficient-reps", `primary cells need at least 5 reps, got ${result.reps}`)
-  if (result.rows <= 0) throw new NativeResultError("missing-rows", "row count is required")
+  if (result.reps < 5) {throw new NativeResultError("insufficient-reps", `primary cells need at least 5 reps, got ${result.reps}`)}
+  if (result.rows <= 0) {throw new NativeResultError("missing-rows", "row count is required")}
   for (const workload of WORKLOADS) {
     if (!result.workloads.includes(workload)) {
       throw new NativeResultError("missing-workload", `workload ${workload} is missing`)
@@ -113,11 +113,11 @@ export function validateNativeResult(result: EngineResult): void {
       throw new NativeResultError("missing-distribution", `distribution ${distribution} is missing`)
     }
   }
-  if (Object.keys(result.arms).length === 0) throw new NativeResultError("missing-arms", "no key arms were measured")
+  if (Object.keys(result.arms).length === 0) {throw new NativeResultError("missing-arms", "no key arms were measured")}
   for (const arm of Object.keys(result.arms)) {
     const cell = result.arms[arm] as { reps?: number; insert?: Percentiles; pointLookup?: Percentiles; rangeScan?: unknown; update?: Percentiles; delete?: Percentiles; maintenance?: Percentiles; concurrentWriters?: number } | undefined
-    if (!cell) throw new NativeResultError("missing-arm", `arm ${arm} is empty`)
-    if ((cell.reps ?? 0) < 5) throw new NativeResultError("insufficient-reps", `arm ${arm} has ${cell.reps ?? 0} reps`)
+    if (!cell) {throw new NativeResultError("missing-arm", `arm ${arm} is empty`)}
+    if ((cell.reps ?? 0) < 5) {throw new NativeResultError("insufficient-reps", `arm ${arm} has ${cell.reps ?? 0} reps`)}
     for (const metric of ["insert", "pointLookup", "update", "delete", "maintenance"] as const) {
       const value = cell[metric]
       if (!value || value.samples === 0) {

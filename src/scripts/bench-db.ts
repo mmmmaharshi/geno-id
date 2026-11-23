@@ -52,19 +52,19 @@ const { genPgUuidV8, genUlidV8 } = (await import(
 // (Trades some time-insert-locality for query pruning — a choice fixed-layout
 // schemes cannot make; that trade-off is itself a result worth reporting.)
 const SHARDFIRST_LAYOUT = algo.completeLayout("shardfirst", [
-  { name: "shard", start: 0, length: 8, type: "shard", constraint: { allowed: [1, 2, 3, 4, 5] } },
+  { constraint: { allowed: [1, 2, 3, 4, 5] }, length: 8, name: "shard", start: 0, type: "shard" },
   // 40-bit timestamp (bits 8–47) stops before the reserved v8 version nibble
   // at bits 48–51; ~34-year ms range, ample for ordering within a shard.
-  { name: "timestamp", start: 8, length: 40, type: "timestamp-ms" },
-  { name: "counter", start: 66, length: 16, type: "counter", constraint: { monotonic: true } },
+  { length: 40, name: "timestamp", start: 8, type: "timestamp-ms" },
+  { constraint: { monotonic: true }, length: 16, name: "counter", start: 66, type: "counter" },
 ])
 
 // 16-byte big-endian sequential counter — the ideal-locality lower bound.
 let _seq = 0
 function seqKey(): Uint8Array {
   const b = new Uint8Array(16)
-  let x = ++_seq
-  for (let j = 15; j >= 8; j--) {
+  let x = _seq += 1
+  for (let j = 15; j >= 8; j -= 1) {
     b[j] = x & 0xff
     x = Math.floor(x / 256)
   }
@@ -73,14 +73,14 @@ function seqKey(): Uint8Array {
 
 interface Arm { name: string; key: () => Uint8Array }
 const ARMS: Arm[] = [
-  { name: "bigint_seq", key: seqKey },
-  { name: "uuid_v4", key: () => algo.uuidToBytes(algo.genV4Native()) },
-  { name: "uuid_v7", key: () => algo.uuidToBytes(algo.genV7()) },
-  { name: "pg_uuid_v8", key: () => algo.uuidToBytes(genPgUuidV8()) },
-  { name: "ulid_v8", key: () => algo.uuidToBytes(genUlidV8()) },
-  { name: "genoid_v8", key: () => algo.uuidToBytes(algo.genGenoID()) },
-  { name: "genoid_structured", key: () => algo.uuidToBytes(algo.genStructuredGenoID(algo.DBKEY_LAYOUT)) },
-  { name: "genoid_shardfirst", key: () => algo.uuidToBytes(algo.genStructuredGenoID(SHARDFIRST_LAYOUT)) },
+  { key: seqKey, name: "bigint_seq" },
+  { key: () => algo.uuidToBytes(algo.genV4Native()), name: "uuid_v4" },
+  { key: () => algo.uuidToBytes(algo.genV7()), name: "uuid_v7" },
+  { key: () => algo.uuidToBytes(genPgUuidV8()), name: "pg_uuid_v8" },
+  { key: () => algo.uuidToBytes(genUlidV8()), name: "ulid_v8" },
+  { key: () => algo.uuidToBytes(algo.genGenoID()), name: "genoid_v8" },
+  { key: () => algo.uuidToBytes(algo.genStructuredGenoID(algo.DBKEY_LAYOUT)), name: "genoid_structured" },
+  { key: () => algo.uuidToBytes(algo.genStructuredGenoID(SHARDFIRST_LAYOUT)), name: "genoid_shardfirst" },
 ]
 
 // --- CLI -------------------------------------------------------------------
@@ -107,11 +107,11 @@ const T95: Record<number, number> = { 1: 12.706, 2: 4.303, 3: 3.182, 4: 2.776, 5
 function meanCI(xs: number[]): { mean: number; ci95: [number, number] } {
   const n = xs.length
   const m = xs.reduce((a, b) => a + b, 0) / n
-  if (n < 2) return { mean: m, ci95: [m, m] }
+  if (n < 2) {return { mean: m, ci95: [m, m] }}
   const sd = Math.sqrt(xs.reduce((a, x) => a + (x - m) ** 2, 0) / (n - 1))
   const t = n - 1 >= 30 ? 1.96 : (T95[n - 1] ?? 1.96)
   const margin = (t * sd) / Math.sqrt(n)
-  return { mean: m, ci95: [m - margin, m + margin] }
+  return { ci95: [m - margin, m + margin], mean: m }
 }
 
 export interface MetricStats {
@@ -128,7 +128,7 @@ export function shardRangeKeys(shard: number): { lo: Uint8Array; hi: Uint8Array 
   const hi = new Uint8Array(16)
   lo[0] = shard
   hi[0] = shard + 1
-  return { lo, hi }
+  return { hi, lo }
 }
 
 // --- one arm, one run ------------------------------------------------------
@@ -159,7 +159,7 @@ function runArm(arm: Arm, mode: string, dir: string): ArmRun {
 
   const rng = mulberry32(42)
   const payload = new Uint8Array(BLOB_BYTES)
-  for (let i = 0; i < BLOB_BYTES; i++) payload[i] = (rng() * 256) | 0
+  for (let i = 0; i < BLOB_BYTES; i += 1) {payload[i] = (rng() * 256) | 0}
 
   const series: { atRows: number; rowsPerSec: number }[] = []
   const sampleKeys: Uint8Array[] = []
@@ -170,11 +170,11 @@ function runArm(arm: Arm, mode: string, dir: string): ArmRun {
   let lastN = 0
 
   db.exec("BEGIN")
-  for (let i = 0; i < ROWS; i++) {
+  for (let i = 0; i < ROWS; i += 1) {
     const id = arm.key()
     const tenant = (rng() * 5 | 0) + 1
     insert.run(id, tenant, i, payload)
-    if (i % sampleStride === 0 && sampleKeys.length < 5000) sampleKeys.push(id)
+    if (i % sampleStride === 0 && sampleKeys.length < 5000) {sampleKeys.push(id)}
     if ((i + 1) % BATCH === 0) { db.exec("COMMIT"); db.exec("BEGIN") }
     if ((i + 1) % SAMPLE_EVERY === 0) {
       const now = process.hrtime.bigint()
@@ -191,11 +191,11 @@ function runArm(arm: Arm, mode: string, dir: string): ArmRun {
   const freePages = (db.query("PRAGMA freelist_count").get() as { freelist_count: number }).freelist_count
 
   const out: ArmRun = {
-    insertTotalRowsPerSec: Math.round(total),
-    insertSeries: series,
-    pageCount,
-    pageBytes: pageCount * pageSize,
     freePages,
+    insertSeries: series,
+    insertTotalRowsPerSec: Math.round(total),
+    pageBytes: pageCount * pageSize,
+    pageCount,
     pagesPerRow: Number((pageCount / ROWS).toFixed(4)),
     sampleKeys,
   }
@@ -242,19 +242,19 @@ function readExperiments(dir: string, reps: number): {
     const samples: Uint8Array[] = []
     const stride = Math.max(1, Math.floor(ROWS / 5000))
     db.exec("BEGIN")
-    for (let i = 0; i < ROWS; i++) {
+    for (let i = 0; i < ROWS; i += 1) {
       const id = arm.key()
       insert.run(id, (rng() * 5 | 0) + 1, i, payload)
-      if (i % stride === 0 && samples.length < 5000) samples.push(id)
+      if (i % stride === 0 && samples.length < 5000) {samples.push(id)}
       if ((i + 1) % 10_000 === 0) { db.exec("COMMIT"); db.exec("BEGIN") }
     }
     db.exec("COMMIT")
     // point lookup: repeated probe set, mean ± 95% CI
     const q = db.prepare("SELECT tenant FROM t WHERE id = ?")
     const pointSamples: number[] = []
-    for (let rep = 0; rep < reps; rep++) {
+    for (let rep = 0; rep < reps; rep += 1) {
       const t0 = process.hrtime.bigint()
-      for (const k of samples) q.get(k)
+      for (const k of samples) {q.get(k)}
       pointSamples.push(Number((Number(process.hrtime.bigint() - t0) / 1e3) / samples.length))
     }
     pointLookup[armName] = aggregateReps(pointSamples)
@@ -268,7 +268,7 @@ function readExperiments(dir: string, reps: number): {
   // GenoID shard-first: PK range scan, no index, 0 extra bytes.
   const gdb = built.genoid_shardfirst
   const rangeSamples: number[] = []
-  for (let rep = 0; rep < reps; rep++) {
+  for (let rep = 0; rep < reps; rep += 1) {
     const s = process.hrtime.bigint()
     gdb.query("SELECT count(*) c FROM t WHERE id >= ? AND id < ?").get(lo, hi)
     rangeSamples.push(Number(process.hrtime.bigint() - s) / 1e6)
@@ -281,7 +281,7 @@ function readExperiments(dir: string, reps: number): {
   const bdb = built.uuid_v7
   const pagesBefore = (bdb.query("PRAGMA page_count").get() as { page_count: number }).page_count
   const noIdxSamples: number[] = []
-  for (let rep = 0; rep < reps; rep++) {
+  for (let rep = 0; rep < reps; rep += 1) {
     const s = process.hrtime.bigint()
     bdb.query("SELECT count(*) c FROM t WHERE tenant = ?").get(K)
     noIdxSamples.push(Number(process.hrtime.bigint() - s) / 1e6)
@@ -291,29 +291,29 @@ function readExperiments(dir: string, reps: number): {
   const pagesAfter = (bdb.query("PRAGMA page_count").get() as { page_count: number }).page_count
   const pageSize = (bdb.query("PRAGMA page_size").get() as { page_size: number }).page_size
   const idxSamples: number[] = []
-  for (let rep = 0; rep < reps; rep++) {
+  for (let rep = 0; rep < reps; rep += 1) {
     const s = process.hrtime.bigint()
     bdb.query("SELECT count(*) c FROM t WHERE tenant = ?").get(K)
     idxSamples.push(Number(process.hrtime.bigint() - s) / 1e6)
   }
   const baselineIndexed = aggregateReps(idxSamples)
 
-  for (const db of Object.values(built)) db.close()
-  try { for (const f of fs.readdirSync(dir)) if (f.startsWith("read-")) fs.rmSync(path.join(dir, f), { force: true }) } catch {
+  for (const db of Object.values(built)) {db.close()}
+  try { for (const f of fs.readdirSync(dir)) {if (f.startsWith("read-")) fs.rmSync(path.join(dir, f), { force: true })} } catch {
     /* ignore */
   }
 
   return {
     pointLookup,
     shard: {
-      genoidRangeMs: genoidRange,
-      baselineNoIndexMs: baselineNoIndex,
-      baselineIndexedMs: baselineIndexed,
       baselineExtraIndexBytes: (pagesAfter - pagesBefore) * pageSize,
+      baselineIndexedMs: baselineIndexed,
+      baselineNoIndexMs: baselineNoIndex,
       genoidExtraIndexBytes: 0,
+      genoidRangeMs: genoidRange,
       matched,
-      total,
       reps,
+      total,
     },
   }
 }
@@ -333,13 +333,13 @@ function loadForWriteAmp(arm: Arm, dir: string, withIndex: boolean, rows: number
   db.exec(`PRAGMA page_size=4096; PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL; PRAGMA cache_size=${-CACHE_MB * 1024};`)
   db.exec(ddl("clustered"))
   // maintained on every insert
-  if (withIndex) db.exec("CREATE INDEX IF NOT EXISTS idx_tenant ON t(tenant)")
+  if (withIndex) {db.exec("CREATE INDEX IF NOT EXISTS idx_tenant ON t(tenant)")}
   const insert = db.prepare("INSERT OR IGNORE INTO t (id, tenant, ts, payload) VALUES (?, ?, ?, ?)")
   const rng = mulberry32(42)
   const payload = new Uint8Array(BLOB_BYTES)
   const t0 = process.hrtime.bigint()
   db.exec("BEGIN")
-  for (let i = 0; i < rows; i++) {
+  for (let i = 0; i < rows; i += 1) {
     insert.run(arm.key(), (rng() * 5 | 0) + 1, i, payload)
     if ((i + 1) % 10_000 === 0) { db.exec("COMMIT"); db.exec("BEGIN") }
   }
@@ -351,7 +351,7 @@ function loadForWriteAmp(arm: Arm, dir: string, withIndex: boolean, rows: number
   try { fs.rmSync(file, { force: true }); fs.rmSync(`${file}-wal`, { force: true }); fs.rmSync(`${file}-shm`, { force: true }) } catch {
     /* ignore */
   }
-  return { rowsPerSec, pageBytes: pc * ps }
+  return { pageBytes: pc * ps, rowsPerSec }
 }
 
 // --- driver ----------------------------------------------------------------
@@ -362,12 +362,12 @@ if (import.meta.main) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "genoid-db-"))
 
   const result: Record<string, unknown> = {
+    config: { blobBytes: BLOB_BYTES, cacheMb: CACHE_MB, readReps: READ_REPS, rows: ROWS, runs: RUNS, sampleEvery: SAMPLE_EVERY },
     engine: "bun:sqlite",
-    sqliteVersion: (new Database(":memory:").query("SELECT sqlite_version() v").get() as { v: string }).v,
-    hardware: { platform: os.platform(), arch: os.arch(), cpu: os.cpus()[0]?.model, cores: os.cpus().length, memMB: Math.round(os.totalmem() / 1048576) },
-    config: { rows: ROWS, runs: RUNS, sampleEvery: SAMPLE_EVERY, cacheMb: CACHE_MB, blobBytes: BLOB_BYTES, readReps: READ_REPS },
-    note: "Relative index-locality benchmark. Headline = insert throughput (SQLite repacks pages, so on-disk size diverges less than production InnoDB). Anchor: uuid_v4 -> uuid_v7 insert speedup reproduces the published ULID result. Partition differentiator is STORAGE + WRITE-AMPLIFICATION, not read latency: GenoID answers a partition query from the PK with zero index (a range scan, slower than an indexed probe), while non-structured keys must carry a secondary index — paying its insert tax and storage (see writeAmplification). Read metrics are mean ± 95% CI over readReps repeated probe sets.",
+    hardware: { arch: os.arch(), cores: os.cpus().length, cpu: os.cpus()[0]?.model, memMB: Math.round(os.totalmem() / 1048576), platform: os.platform() },
     modes: {},
+    note: "Relative index-locality benchmark. Headline = insert throughput (SQLite repacks pages, so on-disk size diverges less than production InnoDB). Anchor: uuid_v4 -> uuid_v7 insert speedup reproduces the published ULID result. Partition differentiator is STORAGE + WRITE-AMPLIFICATION, not read latency: GenoID answers a partition query from the PK with zero index (a range scan, slower than an indexed probe), while non-structured keys must carry a secondary index — paying its insert tax and storage (see writeAmplification). Read metrics are mean ± 95% CI over readReps repeated probe sets.",
+    sqliteVersion: (new Database(":memory:").query("SELECT sqlite_version() v").get() as { v: string }).v,
   }
 
   console.log(`=== GenoID DB benchmark (bun:sqlite) — ${ROWS} rows × ${RUNS} runs ===`)
@@ -377,15 +377,15 @@ if (import.meta.main) {
     for (const arm of ARMS) {
       _seq = 0
       const runs: ArmRun[] = []
-      for (let r = 0; r < RUNS; r++) { _seq = 0; runs.push(runArm(arm, mode, dir)) }
+      for (let r = 0; r < RUNS; r += 1) { _seq = 0; runs.push(runArm(arm, mode, dir)) }
       const tp = meanCI(runs.map((r) => r.insertTotalRowsPerSec))
       const last = runs.at(-1)!
       perArm[arm.name] = {
-        insertTotalRowsPerSec: { mean: Math.round(tp.mean), ci95: tp.ci95.map(Math.round) },
-        pageBytes: last.pageBytes,
-        pagesPerRow: last.pagesPerRow,
         freePages: last.freePages,
         insertSeries: last.insertSeries,
+        insertTotalRowsPerSec: { ci95: tp.ci95.map(Math.round), mean: Math.round(tp.mean) },
+        pageBytes: last.pageBytes,
+        pagesPerRow: last.pagesPerRow,
       }
       console.log(`  ${arm.name.padEnd(18)} ${Math.round(tp.mean).toString().padStart(9)}  CI[${Math.round(tp.ci95[0])}–${Math.round(tp.ci95[1])}]  ${last.pagesPerRow} pg/row`)
     }
@@ -414,18 +414,18 @@ if (import.meta.main) {
   _seq = 0; const gsNoIdx = loadForWriteAmp(gsArm, dir, false, waRows)
   const taxPct = Number((100 * (v7NoIdx.rowsPerSec - v7Idx.rowsPerSec) / v7NoIdx.rowsPerSec).toFixed(1))
   result.writeAmplification = {
-    rows: waRows,
     baselineNoIndexRowsPerSec: v7NoIdx.rowsPerSec,
     baselineWithIndexRowsPerSec: v7Idx.rowsPerSec,
-    insertTaxPct: taxPct,
-    indexBytes: v7Idx.pageBytes - v7NoIdx.pageBytes,
-    genoidRowsPerSec: gsNoIdx.rowsPerSec,
     genoidIndexBytes: 0,
+    genoidRowsPerSec: gsNoIdx.rowsPerSec,
+    indexBytes: v7Idx.pageBytes - v7NoIdx.pageBytes,
+    insertTaxPct: taxPct,
+    rows: waRows,
   }
   console.log(`  uuid_v7  no-index ${v7NoIdx.rowsPerSec} → +tenant-index ${v7Idx.rowsPerSec} rows/s  (insert tax ${taxPct}%, +${((v7Idx.pageBytes - v7NoIdx.pageBytes) / 1024).toFixed(0)}KB storage)`)
   console.log(`  genoid_shardfirst ${gsNoIdx.rowsPerSec} rows/s  (0 index — partition lives in the PK, no tax)`)
 
-  try { fs.rmSync(dir, { recursive: true, force: true }) } catch {
+  try { fs.rmSync(dir, { force: true, recursive: true }) } catch {
     /* ignore */
   }
   const outPath = path.resolve(root, OUT)

@@ -25,7 +25,7 @@ import path from "node:path"
 import { webcrypto } from "node:crypto"
 import { pathToFileURL } from "node:url"
 
-if (!globalThis.crypto) (globalThis as { crypto?: unknown }).crypto = webcrypto
+if (!globalThis.crypto) {(globalThis as { crypto?: unknown }).crypto = webcrypto}
 
 const root = path.resolve(import.meta.dirname, "..", "..")
 const algo = (await import(pathToFileURL(path.resolve(root, "dist/algo.js")).href)) as {
@@ -36,13 +36,13 @@ const algo = (await import(pathToFileURL(path.resolve(root, "dist/algo.js")).hre
 
 function makeLayout(k: number, allowed: number[]): { layout: unknown; fields: unknown[] } {
   const fields = Array.from({ length: k }, (_, i) => ({
+    constraint: { allowed },
+    length: 8,
     name: `f${i}`,
     start: i * 8,
-    length: 8,
     type: "random",
-    constraint: { allowed },
   }))
-  return { layout: algo.completeLayout(`rej_k${k}_m${allowed.length}`, fields), fields }
+  return { fields, layout: algo.completeLayout(`rej_k${k}_m${allowed.length}`, fields) }
 }
 
 const FIELD_SPACE = 256
@@ -60,7 +60,7 @@ const _pool = new Uint8Array(1 << 16)
 let _pi = _pool.length
 function rndByte(): number {
   if (_pi >= _pool.length) { crypto.getRandomValues(_pool); _pi = 0 }
-  return _pool[_pi++]
+  return _pool[_pi += 1]
 }
 
 function genoNsPerId(layout: unknown, samples: number): { nsPerId: number; repairsPerId: number } {
@@ -69,7 +69,7 @@ function genoNsPerId(layout: unknown, samples: number): { nsPerId: number; repai
   algo.repairConstraints(layout, buf)
   let repairs = 0
   const t0 = process.hrtime.bigint()
-  for (let i = 0; i < samples; i++) {
+  for (let i = 0; i < samples; i += 1) {
     crypto.getRandomValues(buf)
     repairs += algo.repairConstraints(layout, buf)
   }
@@ -79,25 +79,25 @@ function genoNsPerId(layout: unknown, samples: number): { nsPerId: number; repai
 
 function rejectNsPerId(allowedSet: Set<number>, k: number, samples: number, capTrials: number): { nsPerId: number; trialsPerId: number } | null {
   // warmup: generate up to 100 trials (no cap) outside timing
-  for (let w = 0; w < WARMUP_ITERS; w++) {
+  for (let w = 0; w < WARMUP_ITERS; w += 1) {
     let ok = true
-    for (let i = 0; i < k; i++) {
+    for (let i = 0; i < k; i += 1) {
       if (!allowedSet.has(rndByte())) { ok = false; break }
     }
-    if (ok) break
+    if (ok) {break}
   }
   let totalTrials = 0
   const t0 = process.hrtime.bigint()
-  for (let s = 0; s < samples; s++) {
+  for (let s = 0; s < samples; s += 1) {
     let trials = 0
     for (;;) {
-      trials++
+      trials += 1
       let ok = true
-      for (let i = 0; i < k; i++) {
+      for (let i = 0; i < k; i += 1) {
         if (!allowedSet.has(rndByte())) { ok = false; break }
       }
-      if (ok) break
-      if (trials >= capTrials) return null
+      if (ok) {break}
+      if (trials >= capTrials) {return null}
     }
     totalTrials += trials
   }
@@ -121,11 +121,11 @@ interface Cell {
 interface CellConfig { k: number; allowedSize: number }
 const allConfigs: CellConfig[] = []
 for (const k of K_VALUES)
-  for (const size of ALLOWED_SIZES)
-    allConfigs.push({ k, allowedSize: size })
+  {for (const size of ALLOWED_SIZES)
+    allConfigs.push({ k, allowedSize: size })}
 
 // Fisher-Yates shuffle
-for (let i = allConfigs.length - 1; i > 0; i--) {
+for (let i = allConfigs.length - 1; i > 0; i -= 1) {
   const j = Math.floor(Math.random() * (i + 1));
   [allConfigs[i], allConfigs[j]] = [allConfigs[j], allConfigs[i]]
 }
@@ -149,13 +149,7 @@ for (const { k, allowedSize } of allConfigs) {
   }
 
   cells.push({
-    k, allowedSize, density,
-    genoRepairsPerId: Number(geno.repairsPerId.toFixed(3)),
-    genoNsPerId: Number(geno.nsPerId.toFixed(1)),
-    rejectionTrialsPerId: Number(trialsPerId.toPrecision(4)),
-    rejectionTrialsMeasured: measured,
-    rejectionNsPerId: rejNs === null ? null : Number(rejNs.toFixed(1)),
-    speedupVsGeno: Number((trialsPerId / Math.max(1, geno.repairsPerId)).toPrecision(4)),
+    allowedSize, density, genoNsPerId: Number(geno.nsPerId.toFixed(1)), genoRepairsPerId: Number(geno.repairsPerId.toFixed(3)), k, rejectionNsPerId: rejNs === null ? null : Number(rejNs.toFixed(1)), rejectionTrialsMeasured: measured, rejectionTrialsPerId: Number(trialsPerId.toPrecision(4)), speedupVsGeno: Number((trialsPerId / Math.max(1, geno.repairsPerId)).toPrecision(4)),
   })
 }
 
@@ -174,9 +168,9 @@ console.log(`Rejection trials per ID follow (1/d)^k; measured values agree with 
 const outDir = path.resolve(root, "results")
 fs.mkdirSync(outDir, { recursive: true })
 const sorted = cells.toSorted((a, b) => a.k - b.k || b.density - a.density)
-fs.writeFileSync(path.join(outDir, "rejection-sweep.json"), JSON.stringify({ fieldSpace: FIELD_SPACE, idsPerCell: IDS, cells: sorted }, null, 2))
+fs.writeFileSync(path.join(outDir, "rejection-sweep.json"), JSON.stringify({ cells: sorted, fieldSpace: FIELD_SPACE, idsPerCell: IDS }, null, 2))
 const csv = ["k,allowed_size,density,geno_ns_per_id,geno_repairs_per_id,rejection_trials_per_id,rejection_measured,rejection_ns_per_id,speedup_vs_geno"]
-for (const c of sorted) csv.push(`${c.k},${c.allowedSize},${c.density},${c.genoNsPerId},${c.genoRepairsPerId},${c.rejectionTrialsPerId},${c.rejectionTrialsMeasured},${c.rejectionNsPerId ?? ""},${c.speedupVsGeno}`)
+for (const c of sorted) {csv.push(`${c.k},${c.allowedSize},${c.density},${c.genoNsPerId},${c.genoRepairsPerId},${c.rejectionTrialsPerId},${c.rejectionTrialsMeasured},${c.rejectionNsPerId ?? ""},${c.speedupVsGeno}`)}
 fs.writeFileSync(path.join(outDir, "rejection-sweep.csv"), csv.join("\n"))
 console.log(`Wrote results/rejection-sweep.json and results/rejection-sweep.csv (${sorted.length} cells)`)
 

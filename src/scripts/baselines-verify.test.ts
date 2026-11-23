@@ -14,7 +14,7 @@ import {
 // Fixed constant mirrored from baselines.ts (verification oracle only).
 const KSUID_EPOCH = 1_400_000_000
 const SF_EPOCH = 1_288_834_974_657n
-const PG_KEY_48 = 0x9e3779b97f4an & 0xffffffffffffn
+const PG_KEY_48 = 0x9e_37_79_b9_7f_4an & 0xff_ff_ff_ff_ff_ffn
 const CROCKFORD = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
 
 // Replace the CSPRNG with a deterministic, reproducible fill so generated
@@ -24,7 +24,7 @@ function withRandom(pattern: number[], fn: () => void): void {
   const c = fromAny<{ getRandomValues: (a: Uint8Array) => Uint8Array }, unknown>(globalThis.crypto)
   const orig = c.getRandomValues
   c.getRandomValues = (arr: Uint8Array) => {
-    for (let i = 0; i < arr.length; i++) arr[i] = pattern[i % pattern.length]!
+    for (let i = 0; i < arr.length; i += 1) {arr[i] = pattern[i % pattern.length]!}
     return arr
   }
   try {
@@ -36,13 +36,13 @@ function withRandom(pattern: number[], fn: () => void): void {
 
 function bytesToTimestamp(b: Uint8Array, n = 6): number {
   let ts = 0n
-  for (let i = 0; i < n; i++) ts = (ts << 8n) | BigInt(b[i]!)
+  for (let i = 0; i < n; i += 1) {ts = (ts << 8n) | BigInt(b[i]!)}
   return Number(ts)
 }
 
 function decodeUlidTimestamp(ulid: string): number {
   let ts = 0n
-  for (let i = 0; i < 10; i++) ts = (ts << 5n) | BigInt(CROCKFORD.indexOf(ulid[i]!))
+  for (let i = 0; i < 10; i += 1) {ts = (ts << 5n) | BigInt(CROCKFORD.indexOf(ulid[i]!))}
   return Number(ts)
 }
 
@@ -51,11 +51,11 @@ function ksuidDecode(s: string): Uint8Array {
   let num = 0n
   for (const ch of s) {
     const d = BASE62.indexOf(ch)
-    if (d === -1) throw new Error(`ksuid char ${ch} not in base62 alphabet`)
+    if (d === -1) {throw new Error(`ksuid char ${ch} not in base62 alphabet`)}
     num = num * 62n + BigInt(d)
   }
   const payload = new Uint8Array(20)
-  for (let i = 19; i >= 0; i--) {
+  for (let i = 19; i >= 0; i -= 1) {
     payload[i] = Number(num & 0xffn)
     num >>= 8n
   }
@@ -77,10 +77,10 @@ test("genUlid embeds 48-bit ms timestamp and the injected random bytes (round-tr
     assert.equal(decodeUlidTimestamp(s), t)
     // random portion must equal the injected 10 bytes, encoded big-endian.
     let r = 0n
-    for (let i = 0; i < 10; i++) r = (r << 8n) | BigInt(pattern[i]!)
+    for (let i = 0; i < 10; i += 1) {r = (r << 8n) | BigInt(pattern[i]!)}
     let decoded = 0n
-    for (let i = 10; i < 26; i++)
-      decoded = (decoded << 5n) | BigInt(CROCKFORD.indexOf(s[i]!))
+    for (let i = 10; i < 26; i += 1)
+      {decoded = (decoded << 5n) | BigInt(CROCKFORD.indexOf(s[i]!))}
     assert.equal(decoded, r)
   })
 })
@@ -117,7 +117,7 @@ test("genKsuid round-trips timestamp + random payload via base62 decode", () => 
     const tsField =
       (payload[0]! << 24) | (payload[1]! << 16) | (payload[2]! << 8) | payload[3]!
     assert.equal(tsField, nowSec - KSUID_EPOCH)
-    for (let i = 0; i < 16; i++) assert.equal(payload[4 + i]!, pattern[i]!)
+    for (let i = 0; i < 16; i += 1) {assert.equal(payload[4 + i]!, pattern[i]!)}
   })
 })
 
@@ -127,9 +127,9 @@ test("genSnowflake embeds 41-bit ts + worker and increments sequence monotonical
   const id1 = BigInt(genSnowflake(worker, t))
   const id2 = BigInt(genSnowflake(worker, t))
   assert.equal(Number(id1 >> 22n), t - Number(SF_EPOCH))
-  assert.equal(Number((id1 >> 12n) & 0x3ffn), Number(worker))
-  const seq1 = Number(id1 & 0xfffn)
-  const seq2 = Number(id2 & 0xfffn)
-  assert.equal(seq2, (seq1 + 1) & 0xfff)
+  assert.equal(Number((id1 >> 12n) & 0x3_ffn), Number(worker))
+  const seq1 = Number(id1 & 0xf_ffn)
+  const seq2 = Number(id2 & 0xf_ffn)
+  assert.equal(seq2, (seq1 + 1) & 0xf_ff)
 })
 

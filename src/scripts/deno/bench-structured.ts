@@ -41,7 +41,7 @@ function e1(): void {
   const N = 500_000
   let fail = 0
   let constraintFail = 0
-  for (let t = 0; t < N; t++) {
+  for (let t = 0; t < N; t += 1) {
     // Both parents fully structured, each independently generated — this is
     // exactly how genStructuredGenoID populates its pooled parents, so
     // field-boundary crossover always inherits a valid structured value.
@@ -52,9 +52,9 @@ function e1(): void {
     for (const [fi, f] of layout.fields.entries()) {
       if (f.type === "random") continue
       const src = ((fs >> fi) & 1) ? A : B
-      if (getFieldValue(child, f) !== getFieldValue(src, f)) fail++
+      if (getFieldValue(child, f) !== getFieldValue(src, f)) fail += 1
       const v = getFieldValue(child, f)
-      if (f.constraint?.allowed && !f.constraint.allowed.includes(Number(v))) constraintFail++
+      if (f.constraint?.allowed && !f.constraint.allowed.includes(Number(v))) constraintFail += 1
     }
   }
   console.log(`  structured fields checked: ${N * structIdx.length}`)
@@ -66,7 +66,7 @@ function e1(): void {
 // ---------------- E2: Repair vs Rejection (RQ2) ----------------
 function makeConstraintLayout(k: number): V8Layout {
   const core: V8Field[] = []
-  for (let i = 0; i < k; i++) {
+  for (let i = 0; i < k; i += 1) {
     core.push({
       name: `c${i}`,
       start: i * 8,
@@ -84,13 +84,13 @@ function e2(): void {
   console.log("  analytic rejection trials/UUID = 64^k  (GA repairs/UUID ~= k, O(k*8) ops)")
   console.log("  k | GA repairs/UUID | rejection trials/UUID | GA ms/M | reject ms/M")
   const N_GA = 200_000
-  for (let k = 1; k <= 6; k++) {
+  for (let k = 1; k <= 6; k += 1) {
     const layout = makeConstraintLayout(k)
     const constrained = layout.fields.filter((f) => f.constraint?.allowed)
     // GA path: one CSPRNG fill + repair
     let totalRepairs = 0
     const gaStart = performance.now()
-    for (let i = 0; i < N_GA; i++) {
+    for (let i = 0; i < N_GA; i += 1) {
       const bytes = new Uint8Array(16)
       crypto.getRandomValues(bytes)
       forceVersionVariant(bytes)
@@ -104,11 +104,11 @@ function e2(): void {
       const N_RJ = 5000
       let totalTrials = 0
       const rjStart = performance.now()
-      for (let i = 0; i < N_RJ; i++) {
+      for (let i = 0; i < N_RJ; i += 1) {
         let trials = 0
         let ok = false
         while (!ok) {
-          trials++
+          trials += 1
           const bytes = new Uint8Array(16)
           crypto.getRandomValues(bytes)
           forceVersionVariant(bytes)
@@ -148,12 +148,12 @@ function e3e4e5(): void {
   // Uniformity on random-field bits (reuse the canonical bit extractor)
   const ones = new Array<number>(totalBits).fill(0)
   const M = 50_000
-  for (let i = 0; i < M; i++) {
+  for (let i = 0; i < M; i += 1) {
     const bits = uuidToRandomBits(genStructuredGenoID(layout), layout)
     let idx = 0
     for (const ch of bits) {
-      if (ch === "1") ones[idx]++
-      idx++
+      if (ch === "1") ones[idx] += 1
+      idx += 1
     }
   }
   const maxDev = Math.max(...ones.map((o) => Math.abs(o / M - 0.5)))

@@ -27,7 +27,7 @@ export function bytesToUuid(b: Uint8Array): string {
 export function uuidToBytes(uuid: string): Uint8Array {
   const h = uuid.replaceAll("-", "")
   const b = new Uint8Array(16)
-  for (let j = 0; j < 16; j++) b[j] = Number.parseInt(h.slice(j * 2, j * 2 + 2), 16)
+  for (let j = 0; j < 16; j += 1) {b[j] = Number.parseInt(h.slice(j * 2, j * 2 + 2), 16)}
   return b
 }
 
@@ -43,15 +43,15 @@ function forceV8(b: Uint8Array): void {
 // ---------------------------------------------------------------------------
 
 // fixed 48-bit XOR key (baseline)
-const PG_KEY_48 = 0x9e3779b97f4an & 0xffffffffffffn
+const PG_KEY_48 = 0x9e_37_79_b9_7f_4an & 0xff_ff_ff_ff_ff_ffn
 
 export function genPgUuidV8(nowUs: bigint = BigInt(Date.now()) * 1000n): string {
   // 48-bit microsecond field (wraps past ~1979 epoch)
-  const ts = nowUs & 0xffffffffffffn
+  const ts = nowUs & 0xff_ff_ff_ff_ff_ffn
 
   const enc = ts ^ PG_KEY_48
   const b = randomBytes(16)
-  for (let i = 0; i < 6; i++) b[i] = Number((enc >> BigInt(8 * (5 - i))) & 0xffn)
+  for (let i = 0; i < 6; i += 1) {b[i] = Number((enc >> BigInt(8 * (5 - i))) & 0xffn)}
   // version 4
   b[6] = (b[6] & 0x0f) | 0x40
   // RFC 9562 variant
@@ -62,8 +62,8 @@ export function genPgUuidV8(nowUs: bigint = BigInt(Date.now()) * 1000n): string 
 export function extractPgUuidV8Timestamp(uuid: string): bigint {
   const b = uuidToBytes(uuid)
   let enc = 0n
-  for (let i = 0; i < 6; i++) enc = (enc << 8n) | BigInt(b[i])
-  return (enc ^ PG_KEY_48) & 0xffffffffffffn
+  for (let i = 0; i < 6; i += 1) {enc = (enc << 8n) | BigInt(b[i])}
+  return (enc ^ PG_KEY_48) & 0xff_ff_ff_ff_ff_ffn
 }
 
 // ---------------------------------------------------------------------------
@@ -77,15 +77,15 @@ export function genUlid(nowMs: number = Date.now()): string {
   const ts = BigInt(nowMs)
   const tsChars = new Array<string>(10)
   let t = ts
-  for (let i = 9; i >= 0; i--) {
+  for (let i = 9; i >= 0; i -= 1) {
     tsChars[i] = CROCKFORD[Number(t & 31n)]
     t >>= 5n
   }
   const rnd = randomBytes(10)
   let r = 0n
-  for (const x of rnd) r = (r << 8n) | BigInt(x)
+  for (const x of rnd) {r = (r << 8n) | BigInt(x)}
   const rndChars = new Array<string>(16)
-  for (let i = 15; i >= 0; i--) {
+  for (let i = 15; i >= 0; i -= 1) {
     rndChars[i] = CROCKFORD[Number(r & 31n)]
     r >>= 5n
   }
@@ -95,7 +95,7 @@ export function genUlid(nowMs: number = Date.now()): string {
 export function genUlidV8(nowMs: number = Date.now()): string {
   const b = randomBytes(16)
   const ts = BigInt(nowMs)
-  for (let i = 0; i < 6; i++) b[i] = Number((ts >> BigInt(8 * (5 - i))) & 0xffn)
+  for (let i = 0; i < 6; i += 1) {b[i] = Number((ts >> BigInt(8 * (5 - i))) & 0xffn)}
   forceV8(b)
   return bytesToUuid(b)
 }
@@ -107,17 +107,17 @@ export function genUlidV8(nowMs: number = Date.now()): string {
 
 const BASE62 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 // 2014-05-13T00:00:00Z
-const KSUID_EPOCH = 1400000000
+const KSUID_EPOCH = 1_400_000_000
 
 export function genKsuid(nowSec: number = Math.floor(Date.now() / 1000)): string {
   const ts = BigInt(nowSec - KSUID_EPOCH)
   const payload = new Uint8Array(20)
-  for (let i = 0; i < 4; i++) payload[i] = Number((ts >> BigInt(8 * (3 - i))) & 0xffn)
+  for (let i = 0; i < 4; i += 1) {payload[i] = Number((ts >> BigInt(8 * (3 - i))) & 0xffn)}
   payload.set(randomBytes(16), 4)
   let num = 0n
-  for (const x of payload) num = (num << 8n) | BigInt(x)
+  for (const x of payload) {num = (num << 8n) | BigInt(x)}
   const chars = new Array<string>(27)
-  for (let i = 26; i >= 0; i--) {
+  for (let i = 26; i >= 0; i -= 1) {
     chars[i] = BASE62[Number(num % 62n)]
     num /= 62n
   }
@@ -131,7 +131,7 @@ export function genKsuid(nowSec: number = Math.floor(Date.now() / 1000)): string
 
 let sfSeq = 0n
 // Twitter snowflake epoch (ms)
-const SF_EPOCH = 1288834974657n
+const SF_EPOCH = 1_288_834_974_657n
 
 export function genSnowflake(
   workerId = 1n,
@@ -139,8 +139,8 @@ export function genSnowflake(
   epoch: bigint = SF_EPOCH,
 ): string {
   const ts = BigInt(nowMs) - epoch
-  const id = (ts << 22n) | ((workerId & 0x3ffn) << 12n) | (sfSeq & 0xfffn)
-  sfSeq = (sfSeq + 1n) & 0xfffn
+  const id = (ts << 22n) | ((workerId & 0x3_ffn) << 12n) | (sfSeq & 0xf_ffn)
+  sfSeq = (sfSeq + 1n) & 0xf_ffn
   return id.toString()
 }
 
@@ -151,8 +151,8 @@ export function genSnowflake(
 export function extractRandomBits(uuid: string, fixed: [number, number][]): number[] {
   const b = uuidToBytes(uuid)
   const bits: number[] = []
-  for (let i = 0; i < 128; i++) {
-    if (fixed.some(([s, e]) => i >= s && i < e)) continue
+  for (let i = 0; i < 128; i += 1) {
+    if (fixed.some(([s, e]) => i >= s && i < e)) {continue}
     const byte = b[i >> 3]
     const bit = 7 - (i & 7)
     bits.push((byte >> bit) & 1)

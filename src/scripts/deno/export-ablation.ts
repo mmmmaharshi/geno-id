@@ -12,13 +12,13 @@ const FREE_MASK = [
 
 function uuidToFreeBits(uuid: string): string {
   let bits = ""
-  for (let i = 0; i < 16; i++) {
+  for (let i = 0; i < 16; i += 1) {
     const idx = HEX_STARTS[i]
     const hi = hexVal(uuid.codePointAt(idx)!)
     const lo = hexVal(uuid.codePointAt(idx + 1)!)
     const v = (hi << 4) | lo
     const free = v & FREE_MASK[i]
-    for (let b = 0; b < 8; b++) {
+    for (let b = 0; b < 8; b += 1) {
       if (FREE_MASK[i] & (1 << b)) {
         bits += (free >> b) & 1 ? "1" : "0"
       }
@@ -43,8 +43,8 @@ const HEX16_VIEW: string[] = Array.from({ length: 65536 })
 {
   const probe = new Uint8Array(2)
   const probeView = new Uint16Array(probe.buffer)
-  for (let hi = 0; hi < 256; hi++) {
-    for (let lo = 0; lo < 256; lo++) {
+  for (let hi = 0; hi < 256; hi += 1) {
+    for (let lo = 0; lo < 256; lo += 1) {
       probe[0] = hi
       probe[1] = lo
       HEX16_VIEW[probeView[0]] =
@@ -56,13 +56,13 @@ function genFull(): string {
   if (_idx >= POOL) {
     const t = HEX16_VIEW, g = _pool
     crypto.getRandomValues(g)
-    for (let i = 0; i < POOL; i++) {
+    for (let i = 0; i < POOL; i += 1) {
       const off = i * ENTRY
       const cut = g[off + 32] & 15
       const mutPos = g[off + 33] & 15
       let j = 0
-      for (; j < cut; j++) _child[j] = g[off + j]
-      for (; j < 16; j++) _child[j] = g[off + 16 + j]
+      for (; j < cut; j += 1) _child[j] = g[off + j]
+      for (; j < 16; j += 1) _child[j] = g[off + 16 + j]
       _child[mutPos] ^= g[off + ((mutPos + 1) & 15)]
       _child[6] = (_child[6] & 0x0f) | 0x80
       _child[8] = (_child[8] & 0x3f) | 0x80
@@ -76,7 +76,7 @@ function genFull(): string {
     }
     _idx = 0
   }
-  return _strs[_idx++]
+  return _strs[_idx += 1]
 }
 
 // 3. crossover-only: 34B, crossover, NO mutation
@@ -89,12 +89,12 @@ function genCrossoverOnly(): string {
   if (_idxX >= POOL) {
     const t = HEX16_VIEW, g = _poolX
     crypto.getRandomValues(g)
-    for (let i = 0; i < POOL; i++) {
+    for (let i = 0; i < POOL; i += 1) {
       const off = i * ENTRY
       const cut = g[off + 32] & 15
       let j = 0
-      for (; j < cut; j++) _childX[j] = g[off + j]
-      for (; j < 16; j++) _childX[j] = g[off + 16 + j]
+      for (; j < cut; j += 1) _childX[j] = g[off + j]
+      for (; j < 16; j += 1) _childX[j] = g[off + 16 + j]
       _childX[6] = (_childX[6] & 0x0f) | 0x80
       _childX[8] = (_childX[8] & 0x3f) | 0x80
       const v = _childX16
@@ -107,7 +107,7 @@ function genCrossoverOnly(): string {
     }
     _idxX = 0
   }
-  return _strsX[_idxX++]
+  return _strsX[_idxX += 1]
 }
 
 // 4. mutation-only: 34B, NO crossover (always all from parent A), mutation
@@ -120,11 +120,11 @@ function genMutationOnly(): string {
   if (_idxM >= POOL) {
     const t = HEX16_VIEW, g = _poolM
     crypto.getRandomValues(g)
-    for (let i = 0; i < POOL; i++) {
+    for (let i = 0; i < POOL; i += 1) {
       const off = i * ENTRY
       const mutPos = g[off + 33] & 15
       let j = 0
-      for (; j < 16; j++) _childM[j] = g[off + j]
+      for (; j < 16; j += 1) _childM[j] = g[off + j]
       _childM[mutPos] ^= g[off + ((mutPos + 1) & 15)]
       _childM[6] = (_childM[6] & 0x0f) | 0x80
       _childM[8] = (_childM[8] & 0x3f) | 0x80
@@ -138,7 +138,7 @@ function genMutationOnly(): string {
     }
     _idxM = 0
   }
-  return _strsM[_idxM++]
+  return _strsM[_idxM += 1]
 }
 
 // ---- Export ----
@@ -149,7 +149,7 @@ async function exportSamples(
   count: number,
 ): Promise<string> {
   const bits: string[] = new Array(count)
-  for (let i = 0; i < count; i++) {
+  for (let i = 0; i < count; i += 1) {
     bits[i] = uuidToFreeBits(fn())
   }
   const allBits = bits.join("")

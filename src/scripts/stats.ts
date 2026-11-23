@@ -1,7 +1,8 @@
 import { Worker } from "node:worker_threads"
 import os from "node:os"
 import { mapPool } from "./shared/pool.ts"
-import { STANDARD_FREE_MASK, V7_FREE_MASK, type BatteryResult, type RunDef } from "./stats-core.ts"
+import { STANDARD_FREE_MASK, V7_FREE_MASK } from './stats-core.ts';
+import type { BatteryResult, RunDef } from './stats-core.ts';
 
 console.log("=== Statistical randomness test suite ===")
 console.log(
@@ -48,7 +49,7 @@ function fmtP(p: number | null): string {
   return p === null ? "n/a" : p.toFixed(4)
 }
 
-console.log("\n--- Monobit (frequency) + Runs test, concatenated free-bit stream ---")
+console.log("\n -= 1- Monobit (frequency) + Runs test, concatenated free-bit stream ---")
 for (const res of results) {
   console.log(`${res.name}:`)
   console.log(`  free bits tested: ${res.nBits.toLocaleString()}`)
@@ -61,15 +62,15 @@ for (const res of results) {
     `  runs p-value: ${
       res.runsSkipped
         ? "skipped (bit balance pre-test failed)"
-        : fmtP(res.runsP) +
-          " " +
-          (res.runsP! >= 0.01 ? "PASS" : "FAIL") +
-          " (alpha=0.01)"
+        : `${fmtP(res.runsP) 
+          } ${ 
+          res.runsP! >= 0.01 ? "PASS" : "FAIL" 
+          } (alpha=0.01)`
     }`,
   )
 }
 
-console.log("\n--- Per-byte-position chi-square uniformity (3 worst positions per algo) ---")
+console.log("\n -= 1- Per-byte-position chi-square uniformity (3 worst positions per algo) ---")
 for (const res of results) {
   const failCount = res.chiResults.filter((c) => c.chi2 > c.crit05).length
   const failPositions = res.chiResults.filter((c) => c.chi2 > c.crit05).map((c) => c.pos)
@@ -93,7 +94,7 @@ for (const res of results) {
 }
 
 console.log(
-  "\n--- Pairwise byte-position correlation, GenoID only (flags |z|>3.5 across 120 pairs) ---",
+  "\n -= 1- Pairwise byte-position correlation, GenoID only (flags |z|>3.5 across 120 pairs) ---",
 )
 const geno = results[0]
 if (geno.corrFlags.length === 0) {
@@ -101,16 +102,16 @@ if (geno.corrFlags.length === 0) {
 } else {
   for (const f of geno.corrFlags) {
     console.log(
-      "  byte[" + f.i + "] vs byte[" + f.j + "]: r=" + f.r.toFixed(4) + ", z=" + f.z.toFixed(2),
+      `  byte[${  f.i  }] vs byte[${  f.j  }]: r=${  f.r.toFixed(4)  }, z=${  f.z.toFixed(2)}`,
     )
   }
 }
 
 console.log(
-  "\n--- Shannon entropy estimate, avg over fully-free bytes (max 8.0000 bits/byte) ---",
+  "\n -= 1- Shannon entropy estimate, avg over fully-free bytes (max 8.0000 bits/byte) ---",
 )
 for (const res of results) {
-  console.log(res.name + ": " + res.avgByteEntropy.toFixed(4) + " bits/byte")
+  console.log(`${res.name  }: ${  res.avgByteEntropy.toFixed(4)  } bits/byte`)
 }
 
 console.log("\nDone.")

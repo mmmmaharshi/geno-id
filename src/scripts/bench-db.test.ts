@@ -35,7 +35,7 @@ test("shardRangeKeys: half-open [shard, shard+1) 16-byte prefix range", () => {
   assert.equal(hi.length, 16)
   assert.equal(lo[0], 3)
   assert.equal(hi[0], 4)
-  for (let i = 1; i < 16; i++) {
+  for (let i = 1; i < 16; i += 1) {
     assert.equal(lo[i], 0, `lo[${i}] must be 0`)
     assert.equal(hi[i], 0, `hi[${i}] must be 0`)
   }

@@ -16,7 +16,7 @@ const e = r.environment
 let md = "## GenoID CI benchmark\n\n"
 md += `**Environment:** ${e.runtime} ${e.bun ?? e.node} | ${e.platform}/${e.arch} | ${e.cpuModel} (${e.cpuCount} cpus) | ${e.totalMemoryMB} MB\n\n`
 md += "| Algorithm | ops/sec | us/op | CV | CI95[low] | CI95[high] |\n|---|---:|---:|---:|---:|---:|\n"
-for (const b of r.benchmarks) md += `| ${b.name} | ${b.opsPerSec} | ${b.usPerOp} | ${b.cv} | ${b.ci95[0]} | ${b.ci95[1]} |\n`
+for (const b of r.benchmarks) {md += `| ${b.name} | ${b.opsPerSec} | ${b.usPerOp} | ${b.cv} | ${b.ci95[0]} | ${b.ci95[1]} |\n`}
 
 if (r.comparisons && r.comparisons.length > 0) {
   md += "\n### Pairwise comparisons\n\n"
@@ -28,7 +28,7 @@ if (r.comparisons && r.comparisons.length > 0) {
 
 md += "\n| Algorithm | n | collisions | PASS |\n|---|---:|---:|---|\n"
 for (const c of r.collisions)
-  md += `| ${c.name} | ${c.n} | ${c.collisions} | ${c.collisions === 0 ? "PASS" : "FAIL"} |\n`
+  {md += `| ${c.name} | ${c.n} | ${c.collisions} | ${c.collisions === 0 ? "PASS" : "FAIL"} |\n`}
 
 // Always keep a copy in dist/ so it can be inspected as an artifact.
 try {

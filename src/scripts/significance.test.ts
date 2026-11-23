@@ -17,15 +17,15 @@ function stats(samples: number[]): BenchStats {
       : 0
   const std = Math.sqrt(v)
   return {
-    n: 1000,
-    trials: samples.length,
-    mean,
-    std,
-    cv: mean > 0 ? std / mean : 0,
-    min: Math.min(...samples),
-    max: Math.max(...samples),
     ci95: [mean - std, mean + std],
+    cv: mean > 0 ? std / mean : 0,
+    max: Math.max(...samples),
+    mean,
+    min: Math.min(...samples),
+    n: 1000,
     samples,
+    std,
+    trials: samples.length,
   }
 }
 

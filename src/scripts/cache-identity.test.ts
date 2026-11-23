@@ -26,7 +26,7 @@ const { completeLayout, genStructuredGenoID, readStructured, resetSeededState } 
 }
 
 function tagLayout(value: number) {
-  return completeLayout("dup", [{ name: "tag", start: 0, length: 8, type: "fixed", value }])
+  return completeLayout("dup", [{ length: 8, name: "tag", start: 0, type: "fixed", value }])
 }
 
 test("same-named structurally different layouts fail closed at the public-generator seam", () => {
@@ -47,11 +47,11 @@ test("identical re-declaration under the same name still generates", () => {
 })
 
 test("same-named differing layouts do not share validation", () => {
-  const good = completeLayout("vld", [{ name: "tag", start: 0, length: 8, type: "fixed", value: 1 }])
+  const good = completeLayout("vld", [{ length: 8, name: "tag", start: 0, type: "fixed", value: 1 }])
   genStructuredGenoID(good)
   // Invalid structure (length<=0) under the same name must throw, never
   // silently reuse the cached validation of the good layout.
-  const bad = { name: "vld", fields: [{ name: "bad", start: 0, length: 0, type: "random" }] }
+  const bad = { fields: [{ name: "bad", start: 0, length: 0, type: "random" }], name: "vld" }
   assert.throws(() => genStructuredGenoID(bad), /vld/)
 })
 

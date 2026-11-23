@@ -23,7 +23,7 @@ interface V8Layout {
 
 const __dirname = import.meta.dirname!
 const root = path.resolve(__dirname, "..", "..")
-const algoPath = `file://${path.join(root, "dist", "algo.js").replace(/\\/g, "/")}`
+const algoPath = `file://${path.join(root, "dist", "algo.js").replaceAll(/\\/g, "/")}`
 
 const algo = (await import(algoPath)) as {
   genStructuredGenoID: (l: V8Layout) => string
@@ -38,17 +38,17 @@ const N = Number(process.argv[2] ?? 100_000_000)
 
 const HEX_LOWER = "0123456789abcdef"
 const NIBBLE = new Int8Array(128).fill(-1)
-for (let i = 0; i < 16; i++) {
+for (let i = 0; i < 16; i += 1) {
   NIBBLE[HEX_LOWER.codePointAt(i)!] = i
   NIBBLE[HEX_LOWER.toUpperCase().codePointAt(i)!] = i
 }
 
 // Canonical UUID string index for hex-character ordinal j (0..31), skipping dashes.
 function hexIndex(j: number): number {
-  if (j < 8) return j
-  if (j < 12) return j + 1
-  if (j < 16) return j + 2
-  if (j < 20) return j + 3
+  if (j < 8) {return j}
+  if (j < 12) {return j + 1}
+  if (j < 16) {return j + 2}
+  if (j < 20) {return j + 3}
   return j + 4
 }
 
@@ -66,11 +66,11 @@ function planField(field: V8Field): Segment[] {
   const segs: Segment[] = []
   const j0 = field.start >> 2
   const j1 = (field.start + field.length - 1) >> 2
-  for (let j = j0; j <= j1; j++) {    const lo = Math.max(field.start, j * 4) - field.start
+  for (let j = j0; j <= j1; j += 1) {    const lo = Math.max(field.start, j * 4) - field.start
     const hi = Math.min(field.start + field.length - 1, j * 4 + 3) - field.start
     const bits = hi - lo + 1
     const shift = 3 - (hi + field.start - j * 4)
-    segs.push({ charIndex: hexIndex(j), mask: (2 ** bits - 1) << shift, shift, bits })
+    segs.push({ bits, charIndex: hexIndex(j), mask: (2 ** bits - 1) << shift, shift })
   }
   return segs
 }
@@ -144,16 +144,16 @@ function runLayout(layout: V8Layout): { fields: FieldReport[]; elapsedMs: number
   const counters = new Map<string, Map<number, number>>()
   for (const f of constrained) {
     const m = new Map<number, number>()
-    for (const v of f.constraint!.allowed!) m.set(v, 0)
+    for (const v of f.constraint!.allowed!) {m.set(v, 0)}
     counters.set(f.name, m)
   }
   const outOfSet = new Map<string, number>()
-  for (const f of constrained) outOfSet.set(f.name, 0)
+  for (const f of constrained) {outOfSet.set(f.name, 0)}
 
   // The string reader must agree with the shipped byte-level reader before the
   // long run, otherwise the histogram measures the extractor, not the generator.
   for (const { field, segs } of plans) {
-    for (let i = 0; i < 512; i++) {
+    for (let i = 0; i < 512; i += 1) {
       const u = algo.genStructuredGenoID(layout)
       const viaString = readField(u, segs)
       const viaBytes = Number(algo.getFieldValue(algo.uuidToBytes(u), field))
@@ -164,13 +164,13 @@ function runLayout(layout: V8Layout): { fields: FieldReport[]; elapsedMs: number
   }
 
   const t0 = performance.now()
-  for (let i = 0; i < N; i++) {
+  for (let i = 0; i < N; i += 1) {
     const u = algo.genStructuredGenoID(layout)
     for (const { field, segs } of plans) {
       const v = readField(u, segs)
       const m = counters.get(field.name)!
-      if (m.has(v)) m.set(v, m.get(v)! + 1)
-      else outOfSet.set(field.name, outOfSet.get(field.name)! + 1)
+      if (m.has(v)) {m.set(v, m.get(v)! + 1)}
+      else {outOfSet.set(field.name, outOfSet.get(field.name)! + 1)}
     }
   }
   const elapsedMs = performance.now() - t0
@@ -188,33 +188,33 @@ function runLayout(layout: V8Layout): { fields: FieldReport[]; elapsedMs: number
       const predictedPp = (predicted / T) * 100
       const sd = samplingSdPp(predicted / T, N)
       return {
-        value: v,
+        abs_dev_pp: Number(Math.abs(observedPp - predictedPp).toFixed(6)),
         count,
-        predicted_preimages: predicted,
-        predicted_preimages_guarded_path: predictedGuarded === predicted ? undefined : predictedGuarded,
         observed_pp: Number(observedPp.toFixed(6)),
         predicted_pp: Number(predictedPp.toFixed(6)),
-        abs_dev_pp: Number(Math.abs(observedPp - predictedPp).toFixed(6)),
+        predicted_preimages: predicted,
+        predicted_preimages_guarded_path: predictedGuarded === predicted ? undefined : predictedGuarded,
         sampling_sd_pp: Number(sd.toFixed(6)),
+        value: v,
         z: Number(((observedPp - predictedPp) / sd).toFixed(3)),
       }
     })
     const residues = new Set(allowed.map((a) => a % allowed.length))
     return {
-      field: f.name,
-      bit_start: f.start,
-      bit_length: f.length,
       allowed,
-      repair_operator: `v in A ? v : A[v mod ${allowed.length}]  (A=[${allowed.join(",")}], ell=${f.length})`,
-      exact_uniform: T % allowed.length === 0 && residues.size === allowed.length,
+      bit_length: f.length,
+      bit_start: f.start,
       counts: rows,
-      out_of_allowed_set: outOfSet.get(f.name) ?? 0,
+      exact_uniform: T % allowed.length === 0 && residues.size === allowed.length,
+      field: f.name,
       max_abs_dev_pp: Math.max(...rows.map((r) => r.abs_dev_pp)),
       max_abs_z: Math.max(...rows.map((r) => Math.abs(r.z))),
+      out_of_allowed_set: outOfSet.get(f.name) ?? 0,
+      repair_operator: `v in A ? v : A[v mod ${allowed.length}]  (A=[${allowed.join(",")}], ell=${f.length})`,
     }
   })
 
-  return { fields, elapsedMs }
+  return { elapsedMs, fields }
 }
 
 
@@ -222,9 +222,9 @@ function runLayout(layout: V8Layout): { fields: FieldReport[]; elapsedMs: number
 function envInfo(): Record<string, string> {
   const cpu = os.cpus()[0]?.model ?? "unknown"
   return {
-    os: `${os.platform()} ${os.release()} ${os.arch()}`,
     cpu_model: cpu,
     logical_cores: String(os.cpus().length),
+    os: `${os.platform()} ${os.release()} ${os.arch()}`,
     runtime: runtimeVersion(),
   }
 }
@@ -236,26 +236,26 @@ const generationsPerLayout: Record<string, unknown> = {}
 const started = performance.now()
 const perLayout = layouts.map((l) => {
   const { fields, elapsedMs } = runLayout(l)
-  generationsPerLayout[l.name] = { fields, elapsed_ms: Math.round(elapsedMs * 100) / 100 }
+  generationsPerLayout[l.name] = { elapsed_ms: Math.round(elapsedMs * 100) / 100, fields }
   return l.name
 })
 const totalMs = performance.now() - started
 
 const report = {
-  experiment: "shard-histogram-100m",
   description:
     "Per-field value histogram for declared admissible-set layouts, measured through the shipped genStructuredGenoID() production path",
   draws_per_layout: N,
-  structured_generation_mode: mode,
+  elapsed_ms_total: Math.round(totalMs * 100) / 100,
+  environment: { ...envInfo(), commit_sha: gitSha(root), generated_at: new Date().toISOString() },
+  exact_uniformity_condition:
+    "the admissible set is a complete residue system mod |A| and |A| divides 2^ell; then every admissible value has exactly 2^ell/|A| preimages and the repaired distribution is uniform",
+  experiment: "shard-histogram-100m",
   layouts: perLayout,
+  per_layout: generationsPerLayout,
   repair_operator: "index-modulo: v in A ? v : A[v mod |A|]",
   sampling_model:
     "binomial; sampling SD = 100 * sqrt(p(1-p)/n) in percentage points, reported per cell",
-  exact_uniformity_condition:
-    "the admissible set is a complete residue system mod |A| and |A| divides 2^ell; then every admissible value has exactly 2^ell/|A| preimages and the repaired distribution is uniform",
-  environment: { ...envInfo(), commit_sha: gitSha(root), generated_at: new Date().toISOString() },
-  elapsed_ms_total: Math.round(totalMs * 100) / 100,
-  per_layout: generationsPerLayout,
+  structured_generation_mode: mode,
 }
 
 mkdirSync("results", { recursive: true })

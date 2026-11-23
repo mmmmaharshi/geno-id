@@ -6,65 +6,65 @@ import type { CIBenchmarkResult, EnvInfo } from "./ci-result.ts"
 
 function makeResult(env: Partial<EnvInfo>, ops: number): CIBenchmarkResult {
   const full: EnvInfo = {
-    runtime: "bun",
+    arch: "x64",
     bun: "1.3.0",
+    cpuCount: 8,
+    cpuModel: "test",
     node: "",
     platform: "linux",
-    arch: "x64",
-    cpuModel: "test",
-    cpuCount: 8,
+    runtime: "bun",
     totalMemoryMB: 16000,
     ...env,
   }
   return {
-    environment: full,
     benchmarks: [{ name: "v4", opsPerSec: ops, usPerOp: 0, ci95: [ops, ops], std: 0, cv: 0, trials: 10, samples: [ops] }],
     collisions: [{ name: "v4", n: 1000000, collisions: 0 }],
+    environment: full,
   }
 }
 
 test("envLabel labels bun environments by OS", () => {
-  assert.equal(envLabel(fromPartial({ runtime: "bun", platform: "linux", bun: "1" })), "Ubuntu (Bun)")
-  assert.equal(envLabel(fromPartial({ runtime: "bun", platform: "darwin", bun: "1" })), "macOS (Bun)")
-  assert.equal(envLabel(fromPartial({ runtime: "bun", platform: "win32", bun: "1" })), "Windows (Bun)")
+  assert.equal(envLabel(fromPartial({ bun: "1", platform: "linux", runtime: "bun" })), "Ubuntu (Bun)")
+  assert.equal(envLabel(fromPartial({ bun: "1", platform: "darwin", runtime: "bun" })), "macOS (Bun)")
+  assert.equal(envLabel(fromPartial({ bun: "1", platform: "win32", runtime: "bun" })), "Windows (Bun)")
 })
 
 
 test("envLabel labels deno environments distinctly", () => {
   assert.equal(
-    envLabel(fromPartial({ runtime: "deno", node: "deno-2.9.3", platform: "linux" })),
+    envLabel(fromPartial({ node: "deno-2.9.3", platform: "linux", runtime: "deno" })),
     "Deno 2.9.3 (Linux)",
   )
   assert.equal(
-    envLabel(fromPartial({ runtime: "deno", node: "deno-2.9.3", platform: "darwin" })),
+    envLabel(fromPartial({ node: "deno-2.9.3", platform: "darwin", runtime: "deno" })),
     "Deno 2.9.3 (macOS)",
   )
   // Deno reports `windows` (not `win32` like Node/Bun) on Windows.
   assert.equal(
-    envLabel(fromPartial({ runtime: "deno", node: "deno-2.9.3", platform: "windows" })),
+    envLabel(fromPartial({ node: "deno-2.9.3", platform: "windows", runtime: "deno" })),
     "Deno 2.9.3 (Windows)",
   )
 })
 
 test("envLabel labels node environments by real OS, not hardcoded Linux", () => {
   assert.equal(
-    envLabel(fromPartial({ runtime: "node", node: "22", platform: "linux" })),
+    envLabel(fromPartial({ node: "22", platform: "linux", runtime: "node" })),
     "Node 22 (Linux)",
   )
   assert.equal(
-    envLabel(fromPartial({ runtime: "node", node: "22", platform: "darwin" })),
+    envLabel(fromPartial({ node: "22", platform: "darwin", runtime: "node" })),
     "Node 22 (macOS)",
   )
   assert.equal(
-    envLabel(fromPartial({ runtime: "node", node: "22", platform: "win32" })),
+    envLabel(fromPartial({ node: "22", platform: "win32", runtime: "node" })),
     "Node 22 (Windows)",
   )
 })
 
 test("renderConsolidated renders a header and one column per environment", () => {
   const md = renderConsolidated([
-    makeResult({ runtime: "node", node: "22", bun: null, platform: "linux" }, 12_500_000),
-    makeResult({ runtime: "bun", bun: "1", platform: "linux" }, 11_192_453),
+    makeResult({ bun: null, node: "22", platform: "linux", runtime: "node" }, 12_500_000),
+    makeResult({ bun: "1", platform: "linux", runtime: "bun" }, 11_192_453),
   ])
   assert.match(md, /## GenoID CI benchmark — consolidated/)
   assert.match(md, /Ubuntu \(Bun\)/)
@@ -76,10 +76,10 @@ test("renderConsolidated renders a header and one column per environment", () =>
 
 test("renderConsolidated orders columns bun-first then node by version", () => {
   const md = renderConsolidated([
-    makeResult({ runtime: "node", node: "23", bun: null, platform: "linux" }, 1),
-    makeResult({ runtime: "node", node: "20", bun: null, platform: "linux" }, 1),
-    makeResult({ runtime: "bun", bun: "1", platform: "darwin" }, 1),
-    makeResult({ runtime: "bun", bun: "1", platform: "linux" }, 1),
+    makeResult({ bun: null, node: "23", platform: "linux", runtime: "node" }, 1),
+    makeResult({ bun: null, node: "20", platform: "linux", runtime: "node" }, 1),
+    makeResult({ bun: "1", platform: "darwin", runtime: "bun" }, 1),
+    makeResult({ bun: "1", platform: "linux", runtime: "bun" }, 1),
   ])
   const idxUbuntu = md.indexOf("Ubuntu (Bun)")
   const idxMacos = md.indexOf("macOS (Bun)")
@@ -92,9 +92,9 @@ test("renderConsolidated orders columns bun-first then node by version", () => {
 
 test("renderConsolidated orders node columns by OS within a version", () => {
   const md = renderConsolidated([
-    makeResult({ runtime: "node", node: "22", bun: null, platform: "win32" }, 1),
-    makeResult({ runtime: "node", node: "22", bun: null, platform: "darwin" }, 1),
-    makeResult({ runtime: "node", node: "22", bun: null, platform: "linux" }, 1),
+    makeResult({ bun: null, node: "22", platform: "win32", runtime: "node" }, 1),
+    makeResult({ bun: null, node: "22", platform: "darwin", runtime: "node" }, 1),
+    makeResult({ bun: null, node: "22", platform: "linux", runtime: "node" }, 1),
   ])
   const idxLinux = md.indexOf("Node 22 (Linux)")
   const idxMacos = md.indexOf("Node 22 (macOS)")
@@ -105,9 +105,9 @@ test("renderConsolidated orders node columns by OS within a version", () => {
 
 test("renderConsolidated orders deno columns by OS", () => {
   const md = renderConsolidated([
-    makeResult({ runtime: "deno", node: "deno-2.9.3", platform: "win32" }, 1),
-    makeResult({ runtime: "deno", node: "deno-2.9.3", platform: "darwin" }, 1),
-    makeResult({ runtime: "deno", node: "deno-2.9.3", platform: "linux" }, 1),
+    makeResult({ node: "deno-2.9.3", platform: "win32", runtime: "deno" }, 1),
+    makeResult({ node: "deno-2.9.3", platform: "darwin", runtime: "deno" }, 1),
+    makeResult({ node: "deno-2.9.3", platform: "linux", runtime: "deno" }, 1),
   ])
   const idxLinux = md.indexOf("Deno 2.9.3 (Linux)")
   const idxMacos = md.indexOf("Deno 2.9.3 (macOS)")
@@ -118,9 +118,9 @@ test("renderConsolidated orders deno columns by OS", () => {
 
 test("renderConsolidated orders deno columns by OS using deno's 'windows' platform value", () => {
   const md = renderConsolidated([
-    makeResult({ runtime: "deno", node: "deno-2.9.3", platform: "windows" }, 1),
-    makeResult({ runtime: "deno", node: "deno-2.9.3", platform: "darwin" }, 1),
-    makeResult({ runtime: "deno", node: "deno-2.9.3", platform: "linux" }, 1),
+    makeResult({ node: "deno-2.9.3", platform: "windows", runtime: "deno" }, 1),
+    makeResult({ node: "deno-2.9.3", platform: "darwin", runtime: "deno" }, 1),
+    makeResult({ node: "deno-2.9.3", platform: "linux", runtime: "deno" }, 1),
   ])
   const idxLinux = md.indexOf("Deno 2.9.3 (Linux)")
   const idxMacos = md.indexOf("Deno 2.9.3 (macOS)")

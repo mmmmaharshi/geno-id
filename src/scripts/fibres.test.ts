@@ -51,7 +51,7 @@ function isExactlyUniformCompiled(allowed: number[], ell: number): boolean {
 // both m | 2^ℓ and exactly one admissible value per residue class.
 function isExactlyUniformGuarded(allowed: number[], ell: number): boolean {
   const m = allowed.length
-  if (!isExactlyUniformCompiled(allowed, ell)) return false
+  if (!isExactlyUniformCompiled(allowed, ell)) {return false}
   return new Set(allowed.map((v) => v % m)).size === m
 }
 
@@ -82,7 +82,7 @@ function observedFibreMultiplicities(
   const field = layout.fields.find((f) => f.name === fieldName)
   assert.ok(field, `layout has no field ${fieldName}`)
   const counts = new Map<number, number>(allowed.map((v) => [v, 0]))
-  for (let i = 0; i < draws; i++) {
+  for (let i = 0; i < draws; i += 1) {
     const v = Number(getFieldValue(uuidToBytes(gen()), field))
     const c = counts.get(v)
     counts.set(v, (c ?? 0) + 1)
@@ -106,7 +106,7 @@ function assertProfile(label: string, observed: number[], predicted: number[], d
   const scale = draws / 2 ** ell
   const observedScaled = observed.map((c) => c / scale)
   let worst = 0
-  for (let k = 0; k < observedScaled.length; k++) worst = Math.max(worst, Math.abs(observedScaled[k] - predicted[k]))
+  for (let k = 0; k < observedScaled.length; k += 1) {worst = Math.max(worst, Math.abs(observedScaled[k] - predicted[k]))}
   assert.ok(
     worst <= 1,
     `${label}: observed fibre profile [${observedScaled.map((c) => c.toFixed(2)).join(", ")}] != predicted [${predicted.join(", ")}] (max deviation ${worst.toFixed(2)} cells)`,
@@ -136,7 +136,7 @@ test("fibre theorem: dbkey shard predicted profile is (52,51,51,51,51) with valu
   // Value 1 sits at index 0, whose residue class is the heavy one
   // because 256 mod 5 = 1.
   assert.equal(fibreSize(0, 5, 8), 52)
-  for (const i of [1, 2, 3, 4]) assert.equal(fibreSize(i, 5, 8), 51)
+  for (const i of [1, 2, 3, 4]) {assert.equal(fibreSize(i, 5, 8), 51)}
   assert.equal(fibreSize(0, 5, 8) + 4 * fibreSize(1, 5, 8), 256, "fibres must partition the 256 raw values")
 })
 
@@ -195,7 +195,7 @@ test("fibre theorem: compiled and pooled paths agree on contiguous sets and diff
 // stays 50/50.
 test("fibre theorem: pooled path emits 75/25 on allowed=[0,2] where the compiled path stays uniform", { timeout: DRAWS_TIMEOUT }, () => {
   const layout = completeLayout("fibre-counterexample", [
-    { name: "f", start: 0, length: 2, type: "shard", constraint: { allowed: [0, 2] } },
+    { constraint: { allowed: [0, 2] }, length: 2, name: "f", start: 0, type: "shard" },
   ])
   const N = 400_000
   // allowed=[0,2]: the guarded pool keeps 0 for itself (1 preimage of 4)
@@ -203,11 +203,11 @@ test("fibre theorem: pooled path emits 75/25 on allowed=[0,2] where the compiled
   const tally = (gen: () => string) => {
     let heavy = 0
     let light = 0
-    for (let i = 0; i < N; i++) {
+    for (let i = 0; i < N; i += 1) {
       const v = Number(getFieldValue(uuidToBytes(gen()), layout.fields[0]))
-      if (v === 2) heavy++
-      else if (v === 0) light++
-      else assert.fail(`value ${v} outside the declared admissible set`)
+      if (v === 2) {heavy += 1}
+      else if (v === 0) {light += 1}
+      else {assert.fail(`value ${v} outside the declared admissible set`)}
     }
     return heavy / light
   }

@@ -47,13 +47,13 @@ export function maxzAnalysis(zScores: number[], alpha = 0.05): MaxzResult {
   const sidakCritical = inverseNormalCdf(1 - (1 - (1 - alpha) ** (1 / m)) / 2)
   const bonferroniP = Math.min(1, m * 2 * (1 - normalCdf(maxAbsZ)))
   return {
+    bonferroniCritical,
+    bonferroniP,
     cells: m,
     maxAbsZ,
-    bonferroniCritical,
     sidakCritical,
     significantBonferroni: maxAbsZ > bonferroniCritical,
     significantSidak: maxAbsZ > sidakCritical,
-    bonferroniP,
   }
 }
 
@@ -81,7 +81,7 @@ export function analyzeHistogram(histogramPath = path.join(root, "results", "sha
     for (const f of entry.fields) {
       const zs = f.counts.map((c) => c.z)
       allZ.push(...zs)
-      perField.push({ layout, field: f.field, cells: zs.length, maxAbsZ: Math.max(...zs.map(Math.abs)), zs })
+      perField.push({ cells: zs.length, field: f.field, layout, maxAbsZ: Math.max(...zs.map(Math.abs)), zs })
     }
   }
 
@@ -95,7 +95,7 @@ export function analyzeHistogram(histogramPath = path.join(root, "results", "sha
     alphaFamilyWise: 0.05,
     ...result,
     verdict: result.significantBonferroni || result.significantSidak ? "deviation" : "consistent with sampling noise",
-    perField: perField.map(({ layout, field, cells, maxAbsZ }) => ({ layout, field, cells, maxAbsZ })),
+    perField: perField.map(({ layout, field, cells, maxAbsZ }) => ({ cells, field, layout, maxAbsZ })),
   }
 }
 

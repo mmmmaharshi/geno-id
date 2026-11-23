@@ -53,7 +53,7 @@ class BitWriter {
       const bitIdx = 7 - (this.bitPos & 7)
       this.buf[byteIdx] |= 1 << bitIdx
     }
-    this.bitPos++
+    this.bitPos += 1
   }
   // Trim to a whole number of bytes actually written.
   finish(): Uint8Array {
@@ -62,14 +62,14 @@ class BitWriter {
 }
 
 function writeUuidFreeBits(uuid: string, w: BitWriter): void {
-  for (let i = 0; i < 16; i++) {
+  for (let i = 0; i < 16; i += 1) {
     const idx = HEX_STARTS[i]
     const hi = hexVal(uuid.codePointAt(idx)!)
     const lo = hexVal(uuid.codePointAt(idx + 1)!)
     const v = (hi << 4) | lo
     const mask = STANDARD_FREE_MASK[i]
-    for (let b = 7; b >= 0; b--) {
-      if (mask & (1 << b)) w.write((v >> b) & 1)
+    for (let b = 7; b >= 0; b -= 1) {
+      if (mask & (1 << b)) {w.write((v >> b) & 1)}
     }
   }
 }
@@ -84,7 +84,7 @@ async function exportFlat(
   const bitsPerUuid = 122
   const n = Math.ceil(targetBits / bitsPerUuid)
   const w = new BitWriter(n * bitsPerUuid)
-  for (let i = 0; i < n; i++) writeUuidFreeBits(fn(), w)
+  for (let i = 0; i < n; i += 1) {writeUuidFreeBits(fn(), w)}
   const packed = w.finish()
   const filePath = path.resolve(root, "dist", `${label}${suffix}.dieharder.bin`)
   fs.writeFileSync(filePath, packed)
@@ -104,9 +104,9 @@ async function exportStructured(
     .reduce((s, f) => s + f.length, 0)
   const n = Math.ceil(targetBits / randomBitsPerUuid)
   const w = new BitWriter(n * randomBitsPerUuid)
-  for (let i = 0; i < n; i++) {
+  for (let i = 0; i < n; i += 1) {
     const bits = uuidToRandomBits(genStructuredGenoID(layout), layout)
-    for (let j = 0; j < bits.length; j++) w.write(bits.codePointAt(j)! - 48)
+    for (let j = 0; j < bits.length; j += 1) {w.write(bits.codePointAt(j)! - 48)}
   }
   const packed = w.finish()
   const filePath = path.resolve(root, "dist", `${label}${suffix}.dieharder.bin`)

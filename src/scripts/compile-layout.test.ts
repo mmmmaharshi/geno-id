@@ -66,7 +66,7 @@ test("compileLayout dbkey: timestamp field is recent", () => {
 
 test("compileLayout dbkey: shard constraint [1..5] enforced", () => {
   const compiled = compileLayout(DBKEY_LAYOUT)
-  for (let i = 0; i < 200; i++) {
+  for (let i = 0; i < 200; i += 1) {
     const uuid = compiled.fn()
     const b = uuidToBytes(uuid)
     const shardField = DBKEY_LAYOUT.fields.find((f) => f.name === "shard")!
@@ -79,7 +79,7 @@ test("compileLayout multitenant: tenant [1..8] + region [1..4] enforced", () => 
   const compiled = compileLayout(MULTITENANT_LAYOUT)
   const tField = MULTITENANT_LAYOUT.fields.find((f) => f.name === "tenant")!
   const rField = MULTITENANT_LAYOUT.fields.find((f) => f.name === "region")!
-  for (let i = 0; i < 200; i++) {
+  for (let i = 0; i < 200; i += 1) {
     const uuid = compiled.fn()
     const b = uuidToBytes(uuid)
     const tenant = Number(getFieldValue(b, tField))
@@ -92,7 +92,7 @@ test("compileLayout multitenant: tenant [1..8] + region [1..4] enforced", () => 
 test("compileLayout eventsourcing: stream is non-zero", () => {
   const compiled = compileLayout(EVENTSOURCING_LAYOUT)
   const sField = EVENTSOURCING_LAYOUT.fields.find((f) => f.name === "stream")!
-  for (let i = 0; i < 100; i++) {
+  for (let i = 0; i < 100; i += 1) {
     const uuid = compiled.fn()
     const b = uuidToBytes(uuid)
     const stream = Number(getFieldValue(b, sField))
@@ -104,12 +104,12 @@ test("compileLayout dbkey: counter monotonicity within generation batch", () => 
   const compiled = compileLayout(DBKEY_LAYOUT)
   const ctrField = DBKEY_LAYOUT.fields.find((f) => f.name === "counter")!
   let prev = -1
-  for (let i = 0; i < 500; i++) {
+  for (let i = 0; i < 500; i += 1) {
     const uuid = compiled.fn()
     const b = uuidToBytes(uuid)
     const ctr = Number(getFieldValue(b, ctrField))
     assert.ok(
-      ctr > prev || (ctr === 0 && prev === 0xffff),
+      ctr > prev || (ctr === 0 && prev === 0xff_ff),
       `counter regressed: ${prev} → ${ctr} at call ${i}`,
     )
     prev = ctr
@@ -140,7 +140,7 @@ test("compileLayout bytes identical to interpreted when using same CSPRNG draw",
   // Compiled path: inject deterministic cr.getRandomValues
   const injectedCr = {
     getRandomValues(buf: Uint8Array) {
-      for (let i = 0; i < buf.length; i++) buf[i] = deterministicBytes[i]
+      for (let i = 0; i < buf.length; i += 1) {buf[i] = deterministicBytes[i]}
     },
   }
 
@@ -178,7 +178,7 @@ test("compileLayout bytes identical to interpreted when using same CSPRNG draw",
     (deterministicBytes[8] & 0x3f) * 1024 +
     deterministicBytes[9] * 4 +
     (deterministicBytes[10] >>> 6)
-  assert.equal(ctr, rawCtr % 32768)
+  assert.equal(ctr, rawCtr % 32_768)
 
   Date.now = origNow
 })
@@ -196,7 +196,7 @@ test("compileLayout source exports valid JS", () => {
       `${name}: missing version nibble in source`,
     )
     assert.ok(
-      compiled.source.length < 20000,
+      compiled.source.length < 20_000,
       `${name}: source too long (${compiled.source.length})`,
     )
   }
@@ -223,7 +223,7 @@ test("compileLayout deterministic: same seed produces same output", () => {
   interface Run { cfn: () => string }
 
   function makeRun(): Run {
-    const seededFill = createSeededRandom(0xdead, 0xbeef)
+    const seededFill = createSeededRandom(0xde_ad, 0xbe_ef)
     const cr = {
       getRandomValues(buf: Uint8Array) {
         seededFill(buf)
@@ -244,11 +244,11 @@ test("compileLayout deterministic: same seed produces same output", () => {
   // concurrent calls may differ by a ms, so we compare only shape + constraints.
   const wallStart = Date.now();
   const idsA: string[] = []
-  for (let i = 0; i < 100; i++) idsA.push(runA.cfn())
+  for (let i = 0; i < 100; i += 1) {idsA.push(runA.cfn())}
 
   // Verify format + constraints on run A
   const shardField = layout.fields.find((f) => f.name === "shard")!
-  for (let i = 0; i < 100; i++) {
+  for (let i = 0; i < 100; i += 1) {
     const uuid = idsA[i]
     assert.match(uuid, /^[0-9a-f]{8}-[0-9a-f]{4}-8[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/)
     const b = uuidToBytes(uuid)
@@ -259,7 +259,7 @@ test("compileLayout deterministic: same seed produces same output", () => {
   // Run B is identical to A above (same seed). Since Date.now() is NOT frozen,
   // but both runs execute sequentially and each UUID takes <1µs, the timestamp
   // of corresponding UUIDs should match (sub-µs precision, same ms).
-  for (let i = 0; i < 100; i++) {
+  for (let i = 0; i < 100; i += 1) {
     const uuidB = runB.cfn()
     const uuidA = idsA[i]
 
@@ -291,7 +291,7 @@ test("compileLayout deterministic: same seed produces same output", () => {
     // Random bits — depends only on CSPRNG, must match
     // Skip bytes 0-5 (timestamp field — may differ by 1ms)
     // Compare bytes that are not version/variant nibbles
-    for (let bi = 6; bi < 16; bi++) {
+    for (let bi = 6; bi < 16; bi += 1) {
       if (bi === 6) {
         // Version nibble — only low 4 bits are random
         assert.equal(bA[bi] & 0x0f, bB[bi] & 0x0f, `byte ${bi} mismatch at index ${i}`)

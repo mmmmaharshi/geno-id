@@ -53,21 +53,14 @@ for (const arm of ARMS) {
 }
 const elapsedMs = performance.now() - started
 
-const embedded = summaries.embedded
-const embedded56 = summaries.embedded56
-const composite = summaries.composite
+const {embedded} = summaries
+const {embedded56} = summaries
+const {composite} = summaries
 const compositeIndexed = summaries["composite-indexed"]
-const concatenated = summaries.concatenated
+const {concatenated} = summaries
 const expressionIndex = summaries["expression-index"]
 
 const report = {
-  experiment: "db-sqlite-composite",
-  description:
-    "Six-arm SQLite composite-key comparison under WITHOUT ROWID clustered storage; the only variable is where the shard field resides",
-  engine: "sqlite",
-  rows: N,
-  trials: TRIALS,
-  lookupsPerTrial: LOOKUPS,
   arms: Object.fromEntries(
     Object.entries(summaries).map(([arm, s]) => [
       arm,
@@ -91,30 +84,37 @@ const report = {
       },
     ]),
   ),
-  queryPlans: queryPlans(),
   derived: {
-    secondary_index_storage_ratio: compositeIndexed.bytesPerRow / embedded.bytesPerRow,
-    secondary_index_insert_ratio: compositeIndexed.insert.mean / embedded.insert.mean,
-    secondary_index_lookup_ratio: compositeIndexed.lookupUs.mean / embedded.lookupUs.mean,
-    concatenated_storage_ratio: concatenated.bytesPerRow / embedded.bytesPerRow,
-    concatenated_insert_ratio: concatenated.insert.mean / embedded.insert.mean,
-    embedded_off56_lookup_ratio: embedded56.lookupUs.mean / embedded.lookupUs.mean,
     composite_insert_ratio_vs_embedded: composite.insert.mean / embedded.insert.mean,
     composite_shard_scan_ratio_vs_embedded: composite.rangeScanMs.mean / embedded.rangeScanMs.mean,
-    expression_index_storage_ratio: expressionIndex.bytesPerRow / embedded.bytesPerRow,
+    concatenated_insert_ratio: concatenated.insert.mean / embedded.insert.mean,
+    concatenated_storage_ratio: concatenated.bytesPerRow / embedded.bytesPerRow,
+    embedded_off56_lookup_ratio: embedded56.lookupUs.mean / embedded.lookupUs.mean,
     expression_index_insert_ratio: expressionIndex.insert.mean / embedded.insert.mean,
     expression_index_lookup_ratio: expressionIndex.lookupUs.mean / embedded.lookupUs.mean,
     expression_index_shard_scan_ratio_vs_embedded: expressionIndex.rangeScanMs.mean / embedded.rangeScanMs.mean,
+    expression_index_storage_ratio: expressionIndex.bytesPerRow / embedded.bytesPerRow,
+    secondary_index_insert_ratio: compositeIndexed.insert.mean / embedded.insert.mean,
+    secondary_index_lookup_ratio: compositeIndexed.lookupUs.mean / embedded.lookupUs.mean,
+    secondary_index_storage_ratio: compositeIndexed.bytesPerRow / embedded.bytesPerRow,
   },
-  environment: {
-    os: `${os.platform()} ${os.release()} ${os.arch()}`,
-    cpuModel: os.cpus()[0]?.model ?? "unknown",
-    logicalCores: os.cpus().length,
-    runtime: runtimeVersion(),
-    commitSha: gitSha(root),
-    generatedAt: new Date().toISOString(),
-  },
+  description:
+    "Six-arm SQLite composite-key comparison under WITHOUT ROWID clustered storage; the only variable is where the shard field resides",
   elapsedMsTotal: Math.round(elapsedMs * 100) / 100,
+  engine: "sqlite",
+  environment: {
+    commitSha: gitSha(root),
+    cpuModel: os.cpus()[0]?.model ?? "unknown",
+    generatedAt: new Date().toISOString(),
+    logicalCores: os.cpus().length,
+    os: `${os.platform()} ${os.release()} ${os.arch()}`,
+    runtime: runtimeVersion(),
+  },
+  experiment: "db-sqlite-composite",
+  lookupsPerTrial: LOOKUPS,
+  queryPlans: queryPlans(),
+  rows: N,
+  trials: TRIALS,
 }
 
 mkdirSync(path.dirname(path.resolve(root, OUT)), { recursive: true })

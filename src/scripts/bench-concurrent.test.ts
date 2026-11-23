@@ -12,7 +12,7 @@ import { test } from "node:test"
 import { runConcurrent } from "./bench-concurrent.ts"
 
 test("Task B: zero cross-worker collisions (plain genoid)", async () => {
-  const res = await runConcurrent({ mode: "genoid", workers: 3, perWorker: 50_000 })
+  const res = await runConcurrent({ mode: "genoid", perWorker: 50_000, workers: 3 })
   assert.equal(res.total, res.workers * res.perWorker)
   assert.equal(res.collisions, 0)
   assert.equal(res.unique, res.total)
@@ -21,8 +21,8 @@ test("Task B: zero cross-worker collisions (plain genoid)", async () => {
 test("Task B: zero collisions and zero constraint violations (structured)", async () => {
   const res = await runConcurrent({
     mode: "genoid-structured",
-    workers: 4,
     perWorker: 50_000,
+    workers: 4,
   })
   assert.equal(res.collisions, 0)
   assert.equal(res.unique, res.total)

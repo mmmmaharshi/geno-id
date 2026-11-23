@@ -38,14 +38,14 @@ test("holmBonferroni adjusts p-values and reports rejections", () => {
 
 test("classifyRejectionCell keeps measured and analytical values separate", () => {
   const measured = classifyRejectionCell({
-    k: 1,
     allowedSize: 128,
     density: 0.5,
-    genoRepairsPerId: 1,
     genoNsPerId: 120,
-    rejectionTrialsPerId: 2.1,
-    rejectionTrialsMeasured: true,
+    genoRepairsPerId: 1,
+    k: 1,
     rejectionNsPerId: 260,
+    rejectionTrialsMeasured: true,
+    rejectionTrialsPerId: 2.1,
     speedupVsGeno: 2.1,
   })
 
@@ -56,14 +56,14 @@ test("classifyRejectionCell keeps measured and analytical values separate", () =
   assert.equal(measured.extrapolatedNsPerId, null)
 
   const analytical = classifyRejectionCell({
-    k: 6,
     allowedSize: 4,
     density: 0.00390625,
-    genoRepairsPerId: 6,
     genoNsPerId: 700,
-    rejectionTrialsPerId: 2.815e14,
-    rejectionTrialsMeasured: false,
+    genoRepairsPerId: 6,
+    k: 6,
     rejectionNsPerId: null,
+    rejectionTrialsMeasured: false,
+    rejectionTrialsPerId: 2.815e14,
     speedupVsGeno: 4.7e13,
   })
 
@@ -81,14 +81,14 @@ test("classifyRejectionCell rejects an analytical cell that reports wall-clock t
   assert.throws(
     () =>
       classifyRejectionCell({
-        k: 6,
         allowedSize: 2,
         density: 0.015625,
-        genoRepairsPerId: 6,
         genoNsPerId: 700,
-        rejectionTrialsPerId: 4.096e6,
-        rejectionTrialsMeasured: false,
+        genoRepairsPerId: 6,
+        k: 6,
         rejectionNsPerId: 1234,
+        rejectionTrialsMeasured: false,
+        rejectionTrialsPerId: 4.096e6,
         speedupVsGeno: 100,
       }),
     /analytical cell cannot report measured runtime/,
@@ -99,11 +99,11 @@ test("buildSuiteEvidence requires p-values for measured suites", () => {
   assert.throws(
     () =>
       buildSuiteEvidence({
-        suite: "in-house",
-        status: "measured",
         generationPlan: "compiled-direct-v8",
-        sampleBits: 0,
         pValues: [],
+        sampleBits: 0,
+        status: "measured",
+        suite: "in-house",
       }),
     /measured suite requires sample bits and p-values/,
   )
@@ -111,12 +111,12 @@ test("buildSuiteEvidence requires p-values for measured suites", () => {
 
 test("buildSuiteEvidence records unavailable suites as limited results", () => {
   const suite = buildSuiteEvidence({
-    suite: "practrand",
-    status: "unavailable",
     generationPlan: null,
-    sampleBits: null,
-    pValues: [],
     limitations: ["practrand is not installed on this machine"],
+    pValues: [],
+    sampleBits: null,
+    status: "unavailable",
+    suite: "practrand",
   })
 
   assert.equal(suite.status, "unavailable")
@@ -128,11 +128,11 @@ test("buildSuiteEvidence requires a limitation for an unavailable suite", () => 
   assert.throws(
     () =>
       buildSuiteEvidence({
-        suite: "testu01",
-        status: "unavailable",
         generationPlan: null,
-        sampleBits: null,
         pValues: [],
+        sampleBits: null,
+        status: "unavailable",
+        suite: "testu01",
       }),
     /unavailable suite requires a limitation/,
   )
@@ -160,9 +160,9 @@ test("holmBonferroni stops at the first failure and rejects no later hypothesis"
 
 test("freeMaskForLayout marks only random payload bits as free", () => {
   const mask = freeMaskForLayout([
-    { start: 0, length: 8, type: "random" },
-    { start: 8, length: 8, type: "counter" },
-    { start: 16, length: 4, type: "random" },
+    { length: 8, start: 0, type: "random" },
+    { length: 8, start: 8, type: "counter" },
+    { length: 4, start: 16, type: "random" },
   ])
 
   assert.equal(mask[0], 0xff)
@@ -183,11 +183,11 @@ test("SAMPLE_DEFINITIONS pins collision, uniformity, and battery sample sizes", 
 
 test("classifyExternalSuite reports a missing archive as unavailable, not external", () => {
   const result = classifyExternalSuite({
-    suite: "practrand",
     archivedArtifact: "results/statistics/practrand.txt",
-    runner: "src/scripts/run-practrand.ts",
-    tool: "practrand",
     pinnedLimitations: ["modern suite"],
+    runner: "src/scripts/run-practrand.ts",
+    suite: "practrand",
+    tool: "practrand",
   })
 
   assert.equal(result.status, "unavailable")
@@ -197,12 +197,12 @@ test("classifyExternalSuite reports a missing archive as unavailable, not extern
 
 test("classifyExternalSuite names the missing tool instead of printing null", () => {
   const result = classifyExternalSuite({
-    suite: "practrand",
     archivedArtifact: "results/statistics/practrand.txt",
+    pinnedLimitations: [],
     runner: "src/scripts/run-practrand.ts",
+    suite: "practrand",
     tool: null,
     toolName: "practrand",
-    pinnedLimitations: [],
   })
 
   assert.equal(result.status, "unavailable")
@@ -218,12 +218,12 @@ test("classifyExternalSuite names the missing tool instead of printing null", ()
 
 test("classifyExternalSuite reports a repo-relative source, not a machine-specific path", () => {
   const result = classifyExternalSuite({
-    suite: "dieharder",
     archivedArtifact: path.join(root, "results", "dieharder-results.md"),
-    sourceLabel: "results/dieharder-results.md",
-    runner: "src/scripts/run-dieharder.ts",
-    tool: "dieharder",
     pinnedLimitations: [],
+    runner: "src/scripts/run-dieharder.ts",
+    sourceLabel: "results/dieharder-results.md",
+    suite: "dieharder",
+    tool: "dieharder",
   })
 
   assert.equal(result.status, "external")

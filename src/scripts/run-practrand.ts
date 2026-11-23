@@ -18,7 +18,7 @@ const OUT = path.resolve(root, "results", "statistics", "practrand.txt")
 
 function arg(name: string, fallback: number): number {
   const hit = process.argv.find((entry) => entry.startsWith(`--${name}=`))
-  if (!hit) return fallback
+  if (!hit) {return fallback}
   const n = Number(hit.slice(name.length + 3))
   return Number.isInteger(n) && n > 0 ? n : fallback
 }
@@ -56,7 +56,7 @@ function sampleFile(gen: string): string {
 
 async function ensureSamples(): Promise<void> {
   const missing = GENERATORS.filter((g) => !fs.existsSync(sampleFile(g)))
-  if (missing.length === 0) return
+  if (missing.length === 0) {return}
   console.log(`Exporting ${missing.length} sample(s) at ${(TARGET_BITS / 1e6).toFixed(0)}M bits each...`)
   const { runExport } = await import("./dieharder-common.ts")
   await runExport(TARGET_BITS)
@@ -93,7 +93,7 @@ async function main(): Promise<void> {
       // A run whose output yields no rows means the tool's output did not
       // match the expected format. Counting that as a pass would be a false
       // clean result, so it is recorded as an empty run and fails the script.
-      emptyRuns++
+      emptyRuns += 1
       out += `| ${gen} | (no parsable results) | — | — | UNPARSED |\n`
       continue
     }

@@ -19,13 +19,13 @@ const FREE_MASK = [
 
 function uuidToFreeBits(uuid: string): string {
   let bits = ""
-  for (let i = 0; i < 16; i++) {
+  for (let i = 0; i < 16; i += 1) {
     const idx = HEX_STARTS[i]
     const hi = hexVal(uuid.codePointAt(idx)!)
     const lo = hexVal(uuid.codePointAt(idx + 1)!)
     const v = (hi << 4) | lo
     const free = v & FREE_MASK[i]
-    for (let b = 0; b < 8; b++) {
+    for (let b = 0; b < 8; b += 1) {
       if (FREE_MASK[i] & (1 << b)) {
         bits += (free >> b) & 1 ? "1" : "0"
       }
@@ -45,8 +45,8 @@ function gaProcess(parents: Uint8Array): string {
   const mutPos = parents[33] & 15
   const child = new Uint8Array(16)
   let j = 0
-  for (; j < cut; j++) child[j] = parents[j]
-  for (; j < 16; j++) child[j] = parents[16 + j]
+  for (; j < cut; j += 1) {child[j] = parents[j]}
+  for (; j < 16; j += 1) {child[j] = parents[16 + j]}
   child[mutPos] ^= parents[(mutPos + 1) & 15]
   return v8Format(child)
 }
@@ -56,10 +56,10 @@ function gaProcess(parents: Uint8Array): string {
 // 1. Biased bytes: P(1) = 0.3
 function biasedBytes(n: number): Uint8Array {
   const b = new Uint8Array(n)
-  for (let i = 0; i < n; i++) {
+  for (let i = 0; i < n; i += 1) {
     let v = 0
-    for (let j = 0; j < 8; j++) {
-      if (Math.random() < 0.3) v |= 1 << j
+    for (let j = 0; j < 8; j += 1) {
+      if (Math.random() < 0.3) {v |= 1 << j}
     }
     b[i] = v
   }
@@ -73,7 +73,7 @@ function genBiasedGA(): string { return gaProcess(biasedBytes(34)) }
 function correlBytes(n: number): Uint8Array {
   const b = new Uint8Array(n)
   b[0] = Math.floor(Math.random() * 256)
-  for (let i = 1; i < n; i++) b[i] = b[i - 1] ^ 0xAA
+  for (let i = 1; i < n; i += 1) {b[i] = b[i - 1] ^ 0xAA}
   return b
 }
 
@@ -83,7 +83,7 @@ function genCorrelGA(): string { return gaProcess(correlBytes(34)) }
 // 3. Range-restricted: bytes 0–127 (MSB always 0)
 function restrictedBytes(n: number): Uint8Array {
   const b = new Uint8Array(n)
-  for (let i = 0; i < n; i++) b[i] = Math.floor(Math.random() * 128)
+  for (let i = 0; i < n; i += 1) {b[i] = Math.floor(Math.random() * 128)}
   return b
 }
 
@@ -94,7 +94,7 @@ function genRestrictedGA(): string { return gaProcess(restrictedBytes(34)) }
 const PATTERN = [0x12, 0x34, 0x56, 0x78]
 function periodicBytes(n: number): Uint8Array {
   const b = new Uint8Array(n)
-  for (let i = 0; i < n; i++) {
+  for (let i = 0; i < n; i += 1) {
     const rand = Math.floor(Math.random() * 256)
     b[i] = rand ^ PATTERN[i % 4]
   }
@@ -108,8 +108,8 @@ function genPeriodicGA(): string { return gaProcess(periodicBytes(34)) }
 let lcgState = 42
 function lcgBytes(n: number): Uint8Array {
   const b = new Uint8Array(n)
-  for (let i = 0; i < n; i++) {
-    lcgState = (lcgState * 1103515245 + 12345) >>> 0
+  for (let i = 0; i < n; i += 1) {
+    lcgState = (lcgState * 1_103_515_245 + 12_345) >>> 0
     b[i] = (lcgState >> 16) & 0xff
   }
   return b
@@ -136,34 +136,34 @@ interface SourceDef {
 
 const sources: SourceDef[] = [
   {
+    description: "P(1)=0.3 biased bytes",
+    ga: genBiasedGA,
     label: "biased",
     raw: genBiasedRaw,
-    ga: genBiasedGA,
-    description: "P(1)=0.3 biased bytes",
   },
   {
+    description: "byte XOR chain correlation",
+    ga: genCorrelGA,
     label: "correl",
     raw: genCorrelRaw,
-    ga: genCorrelGA,
-    description: "byte XOR chain correlation",
   },
   {
+    description: "bytes 0-127 only",
+    ga: genRestrictedGA,
     label: "restricted",
     raw: genRestrictedRaw,
-    ga: genRestrictedGA,
-    description: "bytes 0-127 only",
   },
   {
+    description: "XOR with 4-byte repeating pattern",
+    ga: genPeriodicGA,
     label: "periodic",
     raw: genPeriodicRaw,
-    ga: genPeriodicGA,
-    description: "XOR with 4-byte repeating pattern",
   },
   {
+    description: "truncated LCG (glibc rand)",
+    ga: genLCGGA,
     label: "lcg",
     raw: genLCGRaw,
-    ga: genLCGGA,
-    description: "truncated LCG (glibc rand)",
   },
 ]
 
@@ -175,7 +175,7 @@ async function exportSamples(
   count: number,
 ): Promise<string> {
   const bits: string[] = new Array(count)
-  for (let i = 0; i < count; i++) {
+  for (let i = 0; i < count; i += 1) {
     bits[i] = uuidToFreeBits(fn())
   }
   const allBits = bits.join("")

@@ -26,14 +26,14 @@ for (const rel of files) {
   const seen = new Set<string>()
   for (const m of text.matchAll(PATTERN)) {
     const ref = m[1].replace(/:\d+$/, "").replace(/[.,:;)]+$/, "")
-    if (seen.has(ref) || ref.includes("*") || ref.endsWith("/")) continue
+    if (seen.has(ref) || ref.includes("*") || ref.endsWith("/")) {continue}
     seen.add(ref)
     const abs = path.join(root, ref)
     if (!fs.existsSync(abs)) {
       console.error(`missing: ${ref} (cited in ${rel})`)
-      missing++
+      missing += 1
     }
   }
 }
-if (missing > 0) throw new Error(`${missing} cited path(s) do not exist`)
+if (missing > 0) {throw new Error(`${missing} cited path(s) do not exist`)}
 console.log("all cited paths exist")

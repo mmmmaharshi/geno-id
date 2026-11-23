@@ -29,16 +29,16 @@ export function parsePractrandOutput(output: string): PractRandRow[] {
   const rows: PractRandRow[] = []
   for (const line of output.split("\n")) {
     const match = ROW_RE.exec(line)
-    if (!match) continue
+    if (!match) {continue}
     const p = Number(match[2])
     const assessedP = Number(match[3])
-    if (!Number.isFinite(p) || !Number.isFinite(assessedP)) continue
-    if (p < 0 || p > 1 || assessedP < 0 || assessedP > 1) continue
+    if (!Number.isFinite(p) || !Number.isFinite(assessedP)) {continue}
+    if (p < 0 || p > 1 || assessedP < 0 || assessedP > 1) {continue}
     const verdict = VERDICT_RE.exec(match[4] ?? "")
     rows.push({
+      assessedP,
       name: match[1].trim(),
       p,
-      assessedP,
       verdict: verdict ? verdict[1] : null,
     })
   }
@@ -59,9 +59,9 @@ export function countVerdicts(rows: readonly PractRandRow[]): {
   let failed = 0
   let unassessed = 0
   for (const row of rows) {
-    if (row.verdict === null) unassessed++
-    else if (/unusual|failed/i.test(row.verdict)) failed++
-    else passed++
+    if (row.verdict === null) {unassessed += 1}
+    else if (/unusual|failed/i.test(row.verdict)) {failed += 1}
+    else {passed += 1}
   }
-  return { passed, failed, unassessed }
+  return { failed, passed, unassessed }
 }

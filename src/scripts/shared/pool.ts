@@ -11,8 +11,8 @@ export async function mapPool<T, R>(
   let cursor = 0
   const worker = async (): Promise<void> => {
     for (;;) {
-      const i = cursor++
-      if (i >= items.length) break
+      const i = cursor += 1
+      if (i >= items.length) {break}
       out[i] = await fn(items[i], i)
     }
   }

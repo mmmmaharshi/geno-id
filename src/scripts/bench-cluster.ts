@@ -51,10 +51,10 @@ function mean(xs: number[]): number {
 
 function versionedLayout(name: string, generation: number, allowed: number[]): V8Layout {
   return algo.completeLayout(name, [
-    { name: "timestamp", start: 0, length: 48, type: "timestamp-ms" },
-    { name: "shard", start: 52, length: 8, type: "shard", constraint: { allowed } },
-    { name: "gen", start: 60, length: 4, type: "fixed", value: generation },
-    { name: "counter", start: 66, length: 16, type: "counter", constraint: { monotonic: true } },
+    { length: 48, name: "timestamp", start: 0, type: "timestamp-ms" },
+    { constraint: { allowed }, length: 8, name: "shard", start: 52, type: "shard" },
+    { length: 4, name: "gen", start: 60, type: "fixed", value: generation },
+    { constraint: { monotonic: true }, length: 16, name: "counter", start: 66, type: "counter" },
   ])
 }
 
@@ -97,14 +97,14 @@ function openShard(shard: number): Database {
 }
 
 const shards = new Map<number, Database>()
-for (const shard of V2_SHARDS) shards.set(shard, openShard(shard))
+for (const shard of V2_SHARDS) {shards.set(shard, openShard(shard))}
 
 const rows: { uuid: string; bytes: Uint8Array; shard: number; val: number }[] = []
 console.log(`generating ${ROWS} v1 identifiers across ${V1_SHARDS.length} shards`)
-for (let i = 0; i < ROWS; i++) {
+for (let i = 0; i < ROWS; i += 1) {
   const uuid = algo.genStructuredGenoID(v1)
   const bytes = algo.uuidToBytes(uuid)
-  rows.push({ uuid, bytes, shard: straddledShard(bytes), val: i })
+  rows.push({ bytes, shard: straddledShard(bytes), uuid, val: i })
 }
 
 const insertStart = performance.now()
@@ -113,7 +113,7 @@ for (const shard of V1_SHARDS) {
   const insert = db.prepare("INSERT INTO ids (id, val) VALUES (?, ?)")
   db.run("BEGIN")
   for (const row of rows) {
-    if (row.shard !== shard) continue
+    if (row.shard !== shard) {continue}
     insert.run(row.bytes, row.val)
   }
   db.run("COMMIT")
@@ -122,7 +122,7 @@ const insertMs = performance.now() - insertStart
 
 const scanPerTrial: number[][] = []
 const sweepPerTrial: number[] = []
-for (let t = 0; t < TRIALS; t++) {
+for (let t = 0; t < TRIALS; t += 1) {
   const times: number[] = []
   for (const shard of V1_SHARDS) {
     const db = shards.get(shard)!
@@ -155,18 +155,18 @@ const reshardStart = performance.now()
 let done = 0
 while (done < MIGRATE_ROWS) {
   const batchEnd = Math.min(done + 10_000, MIGRATE_ROWS)
-  for (const shard of V2_SHARDS) shards.get(shard)!.run("BEGIN")
-  for (let i = done; i < batchEnd; i++) {
+  for (const shard of V2_SHARDS) {shards.get(shard)!.run("BEGIN")}
+  for (let i = done; i < batchEnd; i += 1) {
     const source = rows[i]
     const target = MIGRATION_TARGETS[i % MIGRATION_TARGETS.length]
     const bytes = algo.composeStructured(v2, source.bytes, donors.get(target)!, selectFromV1)
     const uuid = algo.toUuidString(bytes)
     shards.get(target)!.prepare("INSERT INTO ids (id, val) VALUES (?, ?)").run(bytes, source.val)
     shards.get(source.shard)!.prepare("DELETE FROM ids WHERE id = ?").run(source.bytes)
-    migrated.push({ uuid, bytes, shard: target, val: source.val })
+    migrated.push({ bytes, shard: target, uuid, val: source.val })
     migratedFlags[i] = 1
   }
-  for (const shard of V2_SHARDS) shards.get(shard)!.run("COMMIT")
+  for (const shard of V2_SHARDS) {shards.get(shard)!.run("COMMIT")}
   done = batchEnd
 }
 const reshardMs = performance.now() - reshardStart
@@ -175,12 +175,12 @@ let dualReadCalls = 0
 let singleReadCalls = 0
 
 function dualRead(uuid: string): { generation: number; shard: number } {
-  dualReadCalls++
+  dualReadCalls += 1
   const v1Fields = algo.readStructured(uuid, v1)
   if (v1Fields.gen === 1 && v1Allowed.has(v1Fields.shard)) {
     return { generation: 1, shard: v1Fields.shard }
   }
-  dualReadCalls++
+  dualReadCalls += 1
   const v2Fields = algo.readStructured(uuid, v2)
   if (v2Fields.gen === 2 && v2Allowed.has(v2Fields.shard)) {
     return { generation: 2, shard: v2Fields.shard }
@@ -189,20 +189,20 @@ function dualRead(uuid: string): { generation: number; shard: number } {
 }
 
 function singleRead(uuid: string, generation: number): { generation: number; shard: number } {
-  singleReadCalls++
+  singleReadCalls += 1
   const fields = algo.readStructured(uuid, generation === 1 ? v1 : v2)
   return { generation, shard: fields.shard }
 }
 
 const cohort: { uuid: string; generation: number }[] = []
-for (let i = MIGRATE_ROWS, n = 0; n < PROBES; i++) {
+for (let i = MIGRATE_ROWS, n = 0; n < PROBES; i += 1) {
   if (migratedFlags[i] === 0) {
-    cohort.push({ uuid: rows[i].uuid, generation: 1 })
-    n++
+    cohort.push({ generation: 1, uuid: rows[i].uuid })
+    n += 1
   }
 }
-for (let i = 0; i < PROBES; i++) {
-  cohort.push({ uuid: migrated[i].uuid, generation: 2 })
+for (let i = 0; i < PROBES; i += 1) {
+  cohort.push({ generation: 2, uuid: migrated[i].uuid })
 }
 
 const dualSamples: number[] = []
@@ -215,7 +215,7 @@ for (const { uuid, generation } of cohort) {
   dualChecksum += dualRead(uuid).shard
   singleChecksum += singleRead(uuid, generation).shard
 }
-for (let t = 0; t < TRIALS; t++) {
+for (let t = 0; t < TRIALS; t += 1) {
   if (t === 0) {
     for (const { uuid, generation } of cohort) {
       const got = dualRead(uuid)
@@ -225,19 +225,19 @@ for (let t = 0; t < TRIALS; t++) {
       if (got.shard !== algo.readStructured(uuid, v2).shard) {
         throw new Error("cluster: dual read resolved the wrong shard")
       }
-      if (got.generation === 2) v2Resolved++
-      else v1Resolved++
+      if (got.generation === 2) {v2Resolved += 1}
+      else {v1Resolved += 1}
     }
   }
   let sink = 0
   const dualStart = performance.now()
-  for (const { uuid } of cohort) sink += dualRead(uuid).shard
+  for (const { uuid } of cohort) {sink += dualRead(uuid).shard}
   dualSamples.push(((performance.now() - dualStart) * 1000) / cohort.length)
   dualChecksum += sink
 
   sink = 0
   const singleStart = performance.now()
-  for (const { uuid, generation } of cohort) sink += singleRead(uuid, generation).shard
+  for (const { uuid, generation } of cohort) {sink += singleRead(uuid, generation).shard}
   singleSamples.push(((performance.now() - singleStart) * 1000) / cohort.length)
   singleChecksum += sink
 }
@@ -259,110 +259,110 @@ if (postCounts["6"] === 0 || postCounts["7"] === 0 || postCounts["8"] === 0) {
 }
 
 const report = {
-  experiment: "cluster-shard-scan-reshard",
-  description:
-    "Small local multi-shard experiment: in-process SQLite shard files on one host, not a distributed service and not production-scale evidence",
   deployment: {
-    kind: "in-process SQLite files on one host",
-    nodes: 1,
-    shardCountBefore: V1_SHARDS.length,
-    shardCountAfter: V2_SHARDS.length,
-    rows: ROWS,
-    trials: TRIALS,
-    probesPerGeneration: PROBES,
-    readSamplesPerArm: PROBES * 2 * TRIALS,
-    migratedRows: MIGRATE_ROWS,
-    perShardRowsBefore: Math.floor(ROWS / V1_SHARDS.length),
     host: {
-      os: `${os.platform()} ${os.release()} ${os.arch()}`,
-      cpuModel: os.cpus()[0]?.model ?? "unknown",
-      logicalCores: os.cpus().length,
-      runtime: runtimeVersion(),
       commitSha: gitSha(root),
+      cpuModel: os.cpus()[0]?.model ?? "unknown",
       generatedAt: new Date().toISOString(),
+      logicalCores: os.cpus().length,
+      os: `${os.platform()} ${os.release()} ${os.arch()}`,
+      runtime: runtimeVersion(),
     },
+    kind: "in-process SQLite files on one host",
     limits: [
       "Single host with in-process SQLite files; no network dispatch, replication, consensus, or cross-node clock skew",
       "Shard-major scan reads one shard file in full; the comparator is one frozen single-index shard scan at the same row count, not a hosted multi-node baseline",
       "Reshard rewrites the shard and generation fields for a bounded cohort; no online traffic, backpressure, or rollback is modelled",
       "Small local cluster; these numbers are not production-scale evidence",
     ],
+    migratedRows: MIGRATE_ROWS,
+    nodes: 1,
+    perShardRowsBefore: Math.floor(ROWS / V1_SHARDS.length),
+    probesPerGeneration: PROBES,
+    readSamplesPerArm: PROBES * 2 * TRIALS,
+    rows: ROWS,
+    shardCountAfter: V2_SHARDS.length,
+    shardCountBefore: V1_SHARDS.length,
+    trials: TRIALS,
   },
+  derived: {
+    dual_read_overhead_ratio: round2(dualMeanUs / singleMeanUs),
+    shard_major_scan_ratio_vs_single_index: round2(referenceRawMs / scanMeanMs),
+    v2_resolved_fraction: round2(v2Resolved / (v1Resolved + v2Resolved)),
+  },
+  description:
+    "Small local multi-shard experiment: in-process SQLite shard files on one host, not a distributed service and not production-scale evidence",
+  experiment: "cluster-shard-scan-reshard",
   layouts: {
+    migrationTargets: MIGRATION_TARGETS,
     v1: {
-      name: v1.name,
-      generation: 1,
-      shardField: { start: 52, length: 8 },
       allowedShards: V1_SHARDS,
+      generation: 1,
+      name: v1.name,
+      shardField: { length: 8, start: 52 },
     },
     v2: {
-      name: v2.name,
-      generation: 2,
-      shardField: { start: 52, length: 8 },
       allowedShards: V2_SHARDS,
+      generation: 2,
+      name: v2.name,
+      shardField: { length: 8, start: 52 },
     },
-    versionField: { start: 60, length: 4 },
-    migrationTargets: MIGRATION_TARGETS,
+    versionField: { length: 4, start: 60 },
   },
   load: {
     elapsedMs: round2(insertMs),
     rowsPerSec: Math.round(ROWS / (insertMs / 1000)),
   },
+  reshard: {
+    dualRead: {
+      checksum: dualChecksum,
+      meanUs: dualMeanUs,
+      readStructuredCalls: dualReadCalls,
+      readsPerTrial: cohort.length,
+      samplesUs: dualSamples,
+      trials: dualSamples.length,
+      v1Resolved,
+      v2Resolved,
+    },
+    elapsedMs: round2(reshardMs),
+    integrityOk,
+    postShardRowCounts: postCounts,
+    rowsMigrated: migrated.length,
+    rowsPerSec: Math.round(migrated.length / (reshardMs / 1000)),
+    singleRead: {
+      checksum: singleChecksum,
+      meanUs: singleMeanUs,
+      readStructuredCalls: singleReadCalls,
+      readsPerTrial: cohort.length,
+      samplesUs: singleSamples,
+      trials: singleSamples.length,
+    },
+  },
   scan: {
     ddl: "CREATE TABLE ids (id BLOB(16) PRIMARY KEY, val INTEGER) WITHOUT ROWID",
-    shardMajorQuery: "SELECT val FROM ids",
     reference: {
-      path: REFERENCE_PATH,
       arm: "embedded",
-      rows: reference.rows,
+      path: REFERENCE_PATH,
       rawShardRangeScanMs: referenceRawMs,
+      rows: reference.rows,
       shardRangeScanMs: round2(referenceRawMs),
     },
     shardMajor: {
-      perTrialMs: scanPerTrial,
-      meanMs: scanMeanMs,
       fullSweepMeanMs: sweepMeanMs,
       fullSweepPerTrialMs: sweepPerTrial,
+      meanMs: scanMeanMs,
+      perTrialMs: scanPerTrial,
       samples: scanSamples.length,
     },
-  },
-  reshard: {
-    rowsMigrated: migrated.length,
-    elapsedMs: round2(reshardMs),
-    rowsPerSec: Math.round(migrated.length / (reshardMs / 1000)),
-    postShardRowCounts: postCounts,
-    integrityOk,
-    dualRead: {
-      trials: dualSamples.length,
-      readsPerTrial: cohort.length,
-      meanUs: dualMeanUs,
-      samplesUs: dualSamples,
-      readStructuredCalls: dualReadCalls,
-      v1Resolved,
-      v2Resolved,
-      checksum: dualChecksum,
-    },
-    singleRead: {
-      trials: singleSamples.length,
-      readsPerTrial: cohort.length,
-      meanUs: singleMeanUs,
-      samplesUs: singleSamples,
-      readStructuredCalls: singleReadCalls,
-      checksum: singleChecksum,
-    },
-  },
-  derived: {
-    shard_major_scan_ratio_vs_single_index: round2(referenceRawMs / scanMeanMs),
-    dual_read_overhead_ratio: round2(dualMeanUs / singleMeanUs),
-    v2_resolved_fraction: round2(v2Resolved / (v1Resolved + v2Resolved)),
+    shardMajorQuery: "SELECT val FROM ids",
   },
 }
 
-if (!integrityOk) throw new Error("cluster: SQLite integrity check failed")
+if (!integrityOk) {throw new Error("cluster: SQLite integrity check failed")}
 mkdirSync(path.dirname(path.resolve(root, OUT)), { recursive: true })
 writeFileSync(path.resolve(root, OUT), `${JSON.stringify(report, null, 2)}\n`)
 try {
-  rmSync(tmpDir, { recursive: true, force: true })
+  rmSync(tmpDir, { force: true, recursive: true })
 } catch {
   console.log(`left temporary shard files at ${tmpDir}`)
 }

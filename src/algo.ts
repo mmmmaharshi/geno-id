@@ -17,10 +17,10 @@ let _wordTable: string[] | null = null
 let _leanFootprint = false
 
 export function wordTable(): string[] | null {
-  if (_leanFootprint) return null
+  if (_leanFootprint) {return null}
   if (_wordTable === null) {
-    const w = new Array<string>(65536)
-    for (let i = 0; i < 65536; i++) w[i] = HEX8[i >> 8] + HEX8[i & 0xff]
+    const w = new Array<string>(65_536)
+    for (let i = 0; i < 65_536; i += 1) {w[i] = HEX8[i >> 8] + HEX8[i & 0xff]}
     _wordTable = w
   }
   return _wordTable
@@ -46,34 +46,34 @@ export function configureFootprint(mode: "fast" | "lean"): void {
 }
 
 export function toUuidString(b: Uint8Array): string {
-  if (b.length < 16) throw new Error(`toUuidString: expected 16 bytes, got ${b.length}`)
+  if (b.length < 16) {throw new Error(`toUuidString: expected 16 bytes, got ${b.length}`)}
   return formatUuidBytes(b, wordTable(), HEX8)
 }
 
 function formatUuidBytes(b: Uint8Array, w: string[] | null, t: string[], o = 0): string {
   if (w) {
     return (
-      w[(b[o] << 8) | b[o + 1]] + w[(b[o + 2] << 8) | b[o + 3]] +
-      "-" +
-      w[(b[o + 4] << 8) | b[o + 5]] +
-      "-" +
-      w[(b[o + 6] << 8) | b[o + 7]] +
-      "-" +
-      w[(b[o + 8] << 8) | b[o + 9]] +
-      "-" +
-      w[(b[o + 10] << 8) | b[o + 11]] + w[(b[o + 12] << 8) | b[o + 13]] + w[(b[o + 14] << 8) | b[o + 15]]
+      `${w[(b[o] << 8) | b[o + 1]] + w[(b[o + 2] << 8) | b[o + 3]] 
+      }-${ 
+      w[(b[o + 4] << 8) | b[o + 5]] 
+      }-${ 
+      w[(b[o + 6] << 8) | b[o + 7]] 
+      }-${ 
+      w[(b[o + 8] << 8) | b[o + 9]] 
+      }-${ 
+      w[(b[o + 10] << 8) | b[o + 11]]  }${w[(b[o + 12] << 8) | b[o + 13]]  }${w[(b[o + 14] << 8) | b[o + 15]]}`
     )
   }
   return (
-    t[b[o]] + t[b[o + 1]] + t[b[o + 2]] + t[b[o + 3]] +
-    "-" +
-    t[b[o + 4]] + t[b[o + 5]] +
-    "-" +
-    t[b[o + 6]] + t[b[o + 7]] +
-    "-" +
-    t[b[o + 8]] + t[b[o + 9]] +
-    "-" +
-    t[b[o + 10]] + t[b[o + 11]] + t[b[o + 12]] + t[b[o + 13]] + t[b[o + 14]] + t[b[o + 15]]
+    `${t[b[o]] + t[b[o + 1]] + t[b[o + 2]] + t[b[o + 3]] 
+    }-${ 
+    t[b[o + 4]]  }${t[b[o + 5]] 
+    }-${ 
+    t[b[o + 6]]  }${t[b[o + 7]] 
+    }-${ 
+    t[b[o + 8]]  }${t[b[o + 9]] 
+    }-${ 
+    t[b[o + 10]]  }${t[b[o + 11]]  }${t[b[o + 12]]  }${t[b[o + 13]]  }${t[b[o + 14]]  }${t[b[o + 15]]}`
   )
 }
 
@@ -147,10 +147,10 @@ export function createSeededRandom(seed0: number, seed1: number): RandomFill {
       t ^= s0 >>> 26
       s0 = s1
       s1 = t
-      buf[off++] = s1 & 0xff
-      if (off < buf.length) buf[off++] = (s1 >>> 8) & 0xff
-      if (off < buf.length) buf[off++] = (s1 >>> 16) & 0xff
-      if (off < buf.length) buf[off++] = (s1 >>> 24) & 0xff
+      buf[off += 1] = s1 & 0xff
+      if (off < buf.length) {buf[off += 1] = (s1 >>> 8) & 0xff}
+      if (off < buf.length) {buf[off += 1] = (s1 >>> 16) & 0xff}
+      if (off < buf.length) {buf[off += 1] = (s1 >>> 24) & 0xff}
     }
   }
 }
@@ -164,7 +164,7 @@ export function createSeededRandom(seed0: number, seed1: number): RandomFill {
  *
  * @example
  * // Embedded host bridge (bytes supplied by the platform RNG)
- * configureRandom((buf) => { for (let i = 0; i < buf.length; i++) buf[i] = platformRandomByte() })
+ * configureRandom((buf) => { for (let i = 0; i < buf.length; i += 1) buf[i] = platformRandomByte() })
  */
 export function configureRandom(fn: RandomFill | null): void {
   if (fn === null) {
@@ -197,7 +197,7 @@ export function genV7(): string {
 }
 
 export function genMathRandom(): string {
-  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replaceAll(
     /[xy]/g,
     (c: string) => {
       const r = Math.trunc(Math.random() * 16)
@@ -240,13 +240,13 @@ const _child = new Uint8Array(16)
 function refillGenoPool(): void {
   const t = HEX8, w = wordTable(), g = _genoPool, e = GENO_ENTRY_BYTES
   fillRandom(g)
-  for (let i = 0; i < _genoPoolN; i++) {
+  for (let i = 0; i < _genoPoolN; i += 1) {
     const off = i * e
     const cut = g[off + 32] & 15
     const mutPos = g[off + 33] & 15
     let j = 0
-    for (; j < cut; j++) _child[j] = g[off + j]
-    for (; j < 16; j++) _child[j] = g[off + 16 + j]
+    for (; j < cut; j += 1) {_child[j] = g[off + j]}
+    for (; j < 16; j += 1) {_child[j] = g[off + 16 + j]}
     _child[mutPos] ^= g[off + ((mutPos + 1) & 15)]
     _child[6] = (_child[6] & 0x0f) | 0x80
     _child[8] = (_child[8] & 0x3f) | 0x80
@@ -260,13 +260,13 @@ function refillGenoPool(): void {
 // Guarded: on a host without Web Crypto this would throw at import; there we
 // defer the first fill to the first genGenoID() (after configureRandom()), so
 // _genoIdx stays at _genoPoolN and the next call refills.
-if (_hasWebCrypto) refillGenoPool()
+if (_hasWebCrypto) {refillGenoPool()}
 
 export function genGenoID(): string {
   if (_genoIdx >= _genoPoolN) {
     refillGenoPool()
   }
-  return _genoStrs[_genoIdx++]
+  return _genoStrs[_genoIdx += 1]
 }
 
 // ---------- Structured RFC 9562 v8 composition framework ----------
@@ -418,8 +418,8 @@ const DEFAULT_COLLISION_TARGET = 1e-2
 /** Distinct values a field can hold, or null when the domain is the whole width. */
 function fieldDomainSize(field: V8Field): number | null {
   const c = field.constraint
-  if (c?.allowed && c.allowed.length > 0) return c.allowed.length
-  if (c?.min !== undefined && c?.max !== undefined) return c.max - c.min + 1
+  if (c?.allowed && c.allowed.length > 0) {return c.allowed.length}
+  if (c?.min !== undefined && c?.max !== undefined) {return c.max - c.min + 1}
   return null
 }
 
@@ -449,42 +449,42 @@ function validateLayoutStructure(
   const names = new Set<string>()
   for (const field of fields) {
     if (names.has(field.name)) {
-      return { message: `layout ${layoutName}: field ${field.name} is declared more than once`, field: field.name }
+      return { field: field.name, message: `layout ${layoutName}: field ${field.name} is declared more than once` }
     }
     names.add(field.name)
     if (!Number.isInteger(field.start) || !Number.isInteger(field.length) || field.start < 0) {
-      return { message: `layout ${layoutName}: field ${field.name} has invalid bounds`, field: field.name }
+      return { field: field.name, message: `layout ${layoutName}: field ${field.name} has invalid bounds` }
     }
     if (field.length <= 0) {
-      return { message: `layout ${layoutName}: field ${field.name} length<=0`, field: field.name }
+      return { field: field.name, message: `layout ${layoutName}: field ${field.name} length<=0` }
     }
     if (field.start + field.length > 128) {
-      return { message: `layout ${layoutName}: field ${field.name} out of range`, field: field.name }
+      return { field: field.name, message: `layout ${layoutName}: field ${field.name} out of range` }
     }
     if (field.type !== "random" && field.length > MAX_FIELD_BITS) {
       return {
-        message: `layout ${layoutName}: structured field ${field.name} length ${field.length} > ${MAX_FIELD_BITS}`,
         field: field.name,
+        message: `layout ${layoutName}: structured field ${field.name} length ${field.length} > ${MAX_FIELD_BITS}`,
       }
     }
-    for (let index = 0; index < field.length; index++) {
+    for (let index = 0; index < field.length; index += 1) {
       const bit = field.start + index
       if (NIBBLE_BITS.has(bit)) {
         return {
-          message: `layout ${layoutName}: field ${field.name} overlaps reserved v8 nibble bit ${bit}`,
           field: field.name,
+          message: `layout ${layoutName}: field ${field.name} overlaps reserved v8 nibble bit ${bit}`,
         }
       }
       if (covered[bit]) {
-        return { message: `layout ${layoutName}: field ${field.name} overlaps another field`, field: field.name }
+        return { field: field.name, message: `layout ${layoutName}: field ${field.name} overlaps another field` }
       }
       covered[bit] = true
     }
   }
-  if (!requireComplete) return undefined
-  for (let index = 0; index < 128; index++) {
+  if (!requireComplete) {return undefined}
+  for (let index = 0; index < 128; index += 1) {
     if (!covered[index] && !NIBBLE_BITS.has(index)) {
-      return { message: `layout ${layoutName}: bit ${index} not covered by any field`, field: `bit.${index}` }
+      return { field: `bit.${index}`, message: `layout ${layoutName}: bit ${index} not covered by any field` }
     }
   }
   return undefined
@@ -492,13 +492,13 @@ function validateLayoutStructure(
 
 export function validateLayout(layout: V8Layout): void {
   const failure = validateLayoutStructure(layout.fields, layout.name, true)
-  if (failure) throw new Error(failure.message)
+  if (failure) {throw new Error(failure.message)}
 }
 
 export function getFieldValue(bytes: Uint8Array, f: V8Field): bigint {
-  if (f.start + f.length > 128) throw new Error(`getFieldValue: field ${f.name} exceeds 128-bit UUID`)
+  if (f.start + f.length > 128) {throw new Error(`getFieldValue: field ${f.name} exceeds 128-bit UUID`)}
   let v = 0n
-  for (let i = 0; i < f.length; i++) {
+  for (let i = 0; i < f.length; i += 1) {
     const pos = f.start + i
     const bitIdx = 7 - (pos & 7)
     v = (v << 1n) | BigInt((bytes[pos >> 3] >> bitIdx) & 1)
@@ -519,18 +519,18 @@ const _fieldWritePlans = new WeakMap<V8Field, WritePlanEntry[]>()
 function computeWritePlan(f: V8Field): WritePlanEntry[] {
   const s = f.start, l = f.length, e = s + l
   const entries: WritePlanEntry[] = []
-  for (let b = s >> 3; b < (e + 7) >> 3; b++) {
+  for (let b = s >> 3; b < (e + 7) >> 3; b += 1) {
     const first = Math.max(s, b << 3)
     const last = Math.min(e - 1, (b << 3) | 7)
     const n = last - first + 1
     const bit2 = 7 - (last & 7)
     const writeMask = ((1 << n) - 1) << bit2
     entries.push({
+      bitOffset: bit2,
       byte: b,
       clearMask: ~writeMask & 0xff,
-      writeMask,
       divisor: 2 ** (e - 1 - last),
-      bitOffset: bit2,
+      writeMask,
     })
   }
   return entries
@@ -538,14 +538,14 @@ function computeWritePlan(f: V8Field): WritePlanEntry[] {
 
 export function getFieldWritePlan(f: V8Field): WritePlanEntry[] {
   let p = _fieldWritePlans.get(f)
-  if (p) return p
+  if (p) {return p}
   p = computeWritePlan(f)
   _fieldWritePlans.set(f, p)
   return p
 }
 
 function writeFieldValue(bytes: Uint8Array, f: V8Field, value: number): void {
-  if (f.start + f.length > 128) throw new Error(`writeFieldValue: field ${f.name} exceeds 128-bit UUID`)
+  if (f.start + f.length > 128) {throw new Error(`writeFieldValue: field ${f.name} exceeds 128-bit UUID`)}
   const plan = getFieldWritePlan(f)
   for (const e of plan) {
     bytes[e.byte] = (bytes[e.byte] & e.clearMask) | ((Math.floor(value / e.divisor) << e.bitOffset) & e.writeMask)
@@ -560,7 +560,7 @@ export function copyField(
   src: Uint8Array,
   f: V8Field,
 ): void {
-  if (f.start + f.length > 128) throw new Error(`copyField: field ${f.name} exceeds 128-bit UUID`)
+  if (f.start + f.length > 128) {throw new Error(`copyField: field ${f.name} exceeds 128-bit UUID`)}
   const end = f.start + f.length
   const startByte = f.start >> 3
   const endByte = (end + 7) >> 3
@@ -570,22 +570,22 @@ export function copyField(
   // Leading partial byte
   if (leadBits !== 0) {
     const count = Math.min(8 - leadBits, f.length)
-    for (let i = 0; i < count; i++) {
+    for (let i = 0; i < count; i += 1) {
       const pos = f.start + i
       const bit = (src[pos >> 3] >> (7 - (pos & 7))) & 1
       const dByte = pos >> 3
       const dBit = 7 - (pos & 7)
-      if (bit) dst[dByte] |= 1 << dBit
-      else dst[dByte] &= ~(1 << dBit)
+      if (bit) {dst[dByte] |= 1 << dBit}
+      else {dst[dByte] &= ~(1 << dBit)}
     }
   }
 
   // Bulk-copy full middle bytes
-  const midStart = startByte + (leadBits !== 0 ? 1 : 0)
-  const midEnd = endByte - (trailBits !== 0 ? 1 : 0)
+  const midStart = startByte + (leadBits === 0 ? 0 : 1)
+  const midEnd = endByte - (trailBits === 0 ? 0 : 1)
   if (midEnd > midStart) {
     if (dst.buffer === src.buffer && dst.byteOffset !== src.byteOffset) {
-      for (let i = midStart; i < midEnd; i++) dst[i] = src[i]
+      for (let i = midStart; i < midEnd; i += 1) {dst[i] = src[i]}
     } else {
       dst.set(src.subarray(midStart, midEnd), midStart)
     }
@@ -594,19 +594,19 @@ export function copyField(
   // Trailing partial byte
   if (trailBits !== 0) {
     const startBitInField = f.length - trailBits
-    for (let i = startBitInField; i < f.length; i++) {
+    for (let i = startBitInField; i < f.length; i += 1) {
       const pos = f.start + i
       const bit = (src[pos >> 3] >> (7 - (pos & 7))) & 1
       const dByte = pos >> 3
       const dBit = 7 - (pos & 7)
-      if (bit) dst[dByte] |= 1 << dBit
-      else dst[dByte] &= ~(1 << dBit)
+      if (bit) {dst[dByte] |= 1 << dBit}
+      else {dst[dByte] &= ~(1 << dBit)}
     }
   }
 }
 
 export function forceVersionVariant(bytes: Uint8Array): void {
-  if (bytes.length < 9) throw new Error(`forceVersionVariant: expected ≥9 bytes, got ${bytes.length}`)
+  if (bytes.length < 9) {throw new Error(`forceVersionVariant: expected ≥9 bytes, got ${bytes.length}`)}
   bytes[6] = (bytes[6] & 0x0f) | 0x80
   bytes[8] = (bytes[8] & 0x3f) | 0x80
 }
@@ -622,18 +622,18 @@ interface ByteMask {
 const _fieldByteMasks = new WeakMap<V8Field, ByteMask[]>()
 function fieldByteMasks(f: V8Field): ByteMask[] {
   let m = _fieldByteMasks.get(f)
-  if (m) return m
+  if (m) {return m}
   m = []
-  const start = f.start
+  const {start} = f
   const end = f.start + f.length
   const endByte = (end + 7) >> 3
-  for (let b = start >> 3; b < endByte; b++) {
+  for (let b = start >> 3; b < endByte; b += 1) {
     let mask = 0
-    for (let bit = 0; bit < 8; bit++) {
+    for (let bit = 0; bit < 8; bit += 1) {
       const pos = b * 8 + bit
-      if (pos >= start && pos < end) mask |= 1 << (7 - bit)
+      if (pos >= start && pos < end) {mask |= 1 << (7 - bit)}
     }
-    if (mask) m.push({ byte: b, mask })
+    if (mask) {m.push({ byte: b, mask })}
   }
   _fieldByteMasks.set(f, m)
   return m
@@ -645,7 +645,7 @@ export function uuidToBytes(uuid: string): Uint8Array {
     throw new Error(`uuidToBytes: invalid UUID hex string "${uuid}"`)
   }
   const b = new Uint8Array(16)
-  for (let j = 0; j < 16; j++) b[j] = Number.parseInt(h.slice(j * 2, j * 2 + 2), 16)
+  for (let j = 0; j < 16; j += 1) {b[j] = Number.parseInt(h.slice(j * 2, j * 2 + 2), 16)}
   return b
 }
 
@@ -656,8 +656,8 @@ export function uuidToRandomBits(uuid: string, layout: V8Layout): string {
   const b = uuidToBytes(uuid)
   let bits = ""
   for (const f of layout.fields) {
-    if (f.type !== "random") continue
-    for (let bit = 0; bit < f.length; bit++) {
+    if (f.type !== "random") {continue}
+    for (let bit = 0; bit < f.length; bit += 1) {
       const pos = f.start + bit
       bits += ((b[pos >> 3] >> (7 - (pos & 7))) & 1).toString()
     }
@@ -686,27 +686,27 @@ export function readStructured(uuid: string, layout: V8Layout): Record<string, n
 export function completeLayout(name: string, fields: V8Field[]): V8Layout {
   const covered = new Array<boolean>(128).fill(false)
   for (const f of fields) {
-    for (let i = 0; i < f.length; i++) covered[f.start + i] = true
+    for (let i = 0; i < f.length; i += 1) {covered[f.start + i] = true}
   }
-  for (const i of NIBBLE_BITS) covered[i] = true
+  for (const i of NIBBLE_BITS) {covered[i] = true}
   const out: V8Field[] = [...fields]
   const usedNames = new Set(fields.map((field) => field.name))
   let i = 0
   while (i < 128) {
     if (covered[i]) {
-      i++
+      i += 1
       continue
     }
     let j = i
-    while (j < 128 && !covered[j]) j++
+    while (j < 128 && !covered[j]) {j += 1}
     let generatedName = `rand_${i}`
     let suffix = 0
-    while (usedNames.has(generatedName)) generatedName = `rand_${i}_${suffix++}`
+    while (usedNames.has(generatedName)) {generatedName = `rand_${i}_${suffix += 1}`}
     usedNames.add(generatedName)
-    out.push({ name: generatedName, start: i, length: j - i, type: "random" })
+    out.push({ length: j - i, name: generatedName, start: i, type: "random" })
     i = j
   }
-  return { name, fields: out }
+  return { fields: out, name }
 }
 
 function validateSchema(schema: LayoutSchema): void {
@@ -781,12 +781,12 @@ function assertNonnegative(
 
 function constraintKinds(field: V8Field): ConstraintKind[] {
   const constraints: ConstraintKind[] = []
-  if (field.constraint?.allowed !== undefined) constraints.push("allowed-set")
+  if (field.constraint?.allowed !== undefined) {constraints.push("allowed-set")}
   if (field.constraint?.min !== undefined || field.constraint?.max !== undefined) {
     constraints.push("range")
   }
-  if (field.constraint?.monotonic === true) constraints.push("monotonic")
-  if (field.type === "fixed") constraints.push("fixed")
+  if (field.constraint?.monotonic === true) {constraints.push("monotonic")}
+  if (field.type === "fixed") {constraints.push("fixed")}
   return constraints
 }
 
@@ -845,8 +845,8 @@ export function inferWorkload(
         path,
       )
     }
-    if (event.op === "read") reads++
-    else writes++
+    if (event.op === "read") {reads += 1}
+    else {writes += 1}
     const filters: Record<string, string | number> = event.filters ?? {}
     for (const [name, value] of Object.entries(filters)) {
       if (!schemaFields.has(name)) {
@@ -857,9 +857,9 @@ export function inferWorkload(
         )
       }
       weights[name] = (weights[name] ?? 0) + 1
-      if (event.kind === "range") ranged.add(name)
-      else if (event.kind === "point") pointed.add(name)
-      if (!distinct[name]) distinct[name] = new Set()
+      if (event.kind === "range") {ranged.add(name)}
+      else if (event.kind === "point") {pointed.add(name)}
+      if (!distinct[name]) {distinct[name] = new Set()}
       distinct[name].add(value)
       if (event.matched !== undefined && event.scanned !== undefined) {
         if (event.matched < 0 || event.scanned <= 0 || event.matched > event.scanned) {
@@ -879,8 +879,8 @@ export function inferWorkload(
   }
   const fields: WorkloadFieldProfile[] = schema.fields.map((field) => {
     let role: WorkloadFieldProfile["role"] = "cluster"
-    if (ranged.has(field.name)) role = "partition"
-    else if (pointed.has(field.name)) role = "lookup"
+    if (ranged.has(field.name)) {role = "partition"}
+    else if (pointed.has(field.name)) {role = "lookup"}
     const profile: WorkloadFieldProfile = { name: field.name, role }
     if (scanned[field.name] !== undefined && scanned[field.name] > 0) {
       profile.selectivity = matched[field.name] / scanned[field.name]
@@ -892,7 +892,7 @@ export function inferWorkload(
     cardinalities[field.name] = distinct[field.name]?.size ?? 1
     weights[field.name] ??= 0
   }
-  return { profile: { readWeight: reads, writeWeight: writes, fields }, weights, cardinalities }
+  return { cardinalities, profile: { fields, readWeight: reads, writeWeight: writes }, weights }
 }
 
 function placeSchemaFields(
@@ -914,24 +914,24 @@ function placeSchemaFields(
         throw new LayoutCompilerError("invalid-schema", `${path}.start is outside the 128-bit UUID`, `${path}.start`)
       }
       starts[index] = field.start
-      for (let bit = field.start; bit < field.start + field.length; bit++) usedBits.add(bit)
+      for (let bit = field.start; bit < field.start + field.length; bit += 1) {usedBits.add(bit)}
     }
   }
   const roles = new Map(profiles.map((profile) => [profile.name, profile.role]))
   const roleRank = (role: WorkloadFieldRole | undefined): number => {
-    if (role === "partition" || role === "cluster") return 0
-    if (role === "lookup") return 1
+    if (role === "partition" || role === "cluster") {return 0}
+    if (role === "lookup") {return 1}
     return 2
   }
   const autoFields = fields
     .map((field, index) => ({ field, index, rank: roleRank(roles.get(field.name)) }))
     .filter((entry) => entry.field.start === undefined)
-  for (let index = 1; index < autoFields.length; index++) {
+  for (let index = 1; index < autoFields.length; index += 1) {
     const entry = autoFields[index]
     let position = index - 1
     while (position >= 0 && (autoFields[position].rank > entry.rank || (autoFields[position].rank === entry.rank && autoFields[position].index > entry.index))) {
       autoFields[position + 1] = autoFields[position]
-      position--
+      position -= 1
     }
     autoFields[position + 1] = entry
   }
@@ -939,21 +939,21 @@ function placeSchemaFields(
     let start = 0
     while (start < 128) {
       let conflict = false
-      for (let index = 0; index < entry.field.length; index++) {
+      for (let index = 0; index < entry.field.length; index += 1) {
         const bit = start + index
         if (bit >= 128 || NIBBLE_BITS.has(bit) || usedBits.has(bit)) {
           conflict = true
           break
         }
       }
-      if (!conflict) break
+      if (!conflict) {break}
       start += 8
     }
     if (start + entry.field.length > 128) {
       throw new LayoutCompilerError("invalid-schema", `field ${entry.field.name} does not fit in the UUID`, `schema.fields[${entry.index}]`)
     }
     starts[entry.index] = start
-    for (let index = 0; index < entry.field.length; index++) usedBits.add(start + index)
+    for (let index = 0; index < entry.field.length; index += 1) {usedBits.add(start + index)}
   }
   return fields.map((field, index) => {
     const start = starts[index]
@@ -1051,19 +1051,19 @@ export function compileDatabaseLayout(input: LayoutCompilerInput): DatabaseLayou
   const structuredBits = new Set<number>()
   const widthFloors: { field: string; declaredBits: number; floor: number; domain: number }[] = []
   for (const field of layout.fields) {
-    fieldSemantics[field.name] = { type: field.type, constraints: constraintKinds(field) }
+    fieldSemantics[field.name] = { constraints: constraintKinds(field), type: field.type }
     if (field.type !== "random") {
-      for (let bit = field.start; bit < field.start + field.length; bit++) {
+      for (let bit = field.start; bit < field.start + field.length; bit += 1) {
         structuredBits.add(bit)
       }
     }
     const domain = fieldDomainSize(field)
     if (domain !== null && field.type !== "random") {
       widthFloors.push({
-        field: field.name,
         declaredBits: field.length,
-        floor: minBitsForCardinality(domain),
         domain,
+        field: field.name,
+        floor: minBitsForCardinality(domain),
       })
     }
   }
@@ -1074,39 +1074,39 @@ export function compileDatabaseLayout(input: LayoutCompilerInput): DatabaseLayou
   const requiredRandomBits = minRandomBitsForCollisionBudget(volumeTarget, tau)
 
   return {
-    layout,
-    repairPolicy: {
-      name: "canonical-v1",
-      allowedSet: "index-modulo",
-      range: "clamp",
-      monotonic: "stateful",
-      fixed: "deterministic",
-    },
-    generationPlan: {
-      name: "compiled-direct-v8",
-      entropySource: "web-crypto",
-      poolMode: "direct",
-      repairMode: "canonical",
-      fieldSemantics,
-    },
     costReport: {
-      objective: "hard-constraints-first",
-      structuredBits: structuredBits.size,
-      randomBits: 128 - NIBBLE_BITS.size - structuredBits.size,
-      requiredRandomBits,
-      collisionTarget: tau,
       collisionProbabilityAtVolume: collisionProbabilityUpperBound(
         volumeTarget,
         128 - NIBBLE_BITS.size - structuredBits.size,
       ),
-      widthFloorsMet,
+      collisionTarget: tau,
       constrainedFields: layout.fields.filter((field) => constraintKinds(field).length > 0).length,
       localityFields: workload.fields.filter(
         (field) => field.role === "partition" || field.role === "cluster",
       ).length,
       lookupFields: workload.fields.filter((field) => field.role === "lookup").length,
+      objective: "hard-constraints-first",
+      randomBits: 128 - NIBBLE_BITS.size - structuredBits.size,
       readWeight: workload.readWeight,
+      requiredRandomBits,
+      structuredBits: structuredBits.size,
+      widthFloorsMet,
       writeWeight: workload.writeWeight,
+    },
+    generationPlan: {
+      entropySource: "web-crypto",
+      fieldSemantics,
+      name: "compiled-direct-v8",
+      poolMode: "direct",
+      repairMode: "canonical",
+    },
+    layout,
+    repairPolicy: {
+      allowedSet: "index-modulo",
+      fixed: "deterministic",
+      monotonic: "stateful",
+      name: "canonical-v1",
+      range: "clamp",
     },
   }
 }
@@ -1128,9 +1128,9 @@ export function compileDatabaseLayout(input: LayoutCompilerInput): DatabaseLayou
 export type LocalityClass = "partition" | "cluster" | "lookup" | "opaque"
 
 function localityRank(locality: LocalityClass | undefined): number {
-  if (locality === "partition") return 0
-  if (locality === "cluster") return 1
-  if (locality === "lookup") return 2
+  if (locality === "partition") {return 0}
+  if (locality === "cluster") {return 1}
+  if (locality === "lookup") {return 2}
   return 3
 }
 
@@ -1193,7 +1193,7 @@ export function minBitsForCardinality(cardinality: number): number {
 
 /** Upper bound on P(at least one collision) for n ids drawn from 2^r values. */
 export function collisionProbabilityUpperBound(n: number, randomBits: number): number {
-  if (n <= 1) return 0
+  if (n <= 1) {return 0}
   const exponent = (n * (n - 1)) / (2 * 2 ** (randomBits + 1))
   return 1 - Math.exp(-exponent)
 }
@@ -1211,14 +1211,14 @@ export function minRandomBitsForCollisionBudget(volume: number, target: number):
   }
   const closed = Math.log2((volume * (volume - 1)) / (4 * -Math.log(1 - target)))
   let r = Math.max(0, Math.ceil(closed))
-  while (collisionProbabilityUpperBound(volume, r) > target) r++
-  while (r > 0 && collisionProbabilityUpperBound(volume, r - 1) <= target) r--
+  while (collisionProbabilityUpperBound(volume, r) > target) {r += 1}
+  while (r > 0 && collisionProbabilityUpperBound(volume, r - 1) <= target) {r -= 1}
   return r
 }
 
 function fits(offset: number, bits: number, used: Set<number>): boolean {
-  for (let b = offset; b < offset + bits; b++) {
-    if (NIBBLE_BITS.has(b) || b >= 128 || used.has(b)) return false
+  for (let b = offset; b < offset + bits; b += 1) {
+    if (NIBBLE_BITS.has(b) || b >= 128 || used.has(b)) {return false}
   }
   return true
 }
@@ -1226,12 +1226,12 @@ function fits(offset: number, bits: number, used: Set<number>): boolean {
 /** Stable sort by a comparator, matching the insertion sort the planner already uses. */
 function sortBy<T>(items: readonly T[], compare: (a: T, b: T) => number): T[] {
   const out = [...items]
-  for (let index = 1; index < out.length; index++) {
+  for (let index = 1; index < out.length; index += 1) {
     const entry = out[index]
     let position = index - 1
     while (position >= 0 && compare(out[position], entry) > 0) {
       out[position + 1] = out[position]
-      position--
+      position -= 1
     }
     out[position + 1] = entry
   }
@@ -1243,7 +1243,7 @@ function byLocalityRank(fields: readonly BitAllocationField[]): BitAllocationFie
   return sortBy(fields, (a, b) => {
     const ra = localityRank(a.locality)
     const rb = localityRank(b.locality)
-    if (ra !== rb) return ra - rb
+    if (ra !== rb) {return ra - rb}
     return minBitsForCardinality(b.cardinality) - minBitsForCardinality(a.cardinality)
   })
 }
@@ -1272,22 +1272,22 @@ function pack(
     if (offset === -1 || !fits(offset, bits, used) || offset + bits > 128) {
       throw new RangeError(`field ${field.name} does not fit in the UUID`)
     }
-    for (let b = offset; b < offset + bits; b++) used.add(b)
+    for (let b = offset; b < offset + bits; b += 1) {used.add(b)}
     placed.push({ field, offset })
   }
   const filler: { offset: number; bits: number }[] = []
   let cursor = 0
   while (cursor < 128) {
     if (used.has(cursor) || NIBBLE_BITS.has(cursor)) {
-      cursor++
+      cursor += 1
       continue
     }
     let end = cursor
-    while (end < 128 && !used.has(end) && !NIBBLE_BITS.has(end)) end++
-    if (end - cursor > 0) filler.push({ offset: cursor, bits: end - cursor })
+    while (end < 128 && !used.has(end) && !NIBBLE_BITS.has(end)) {end += 1}
+    if (end - cursor > 0) {filler.push({ offset: cursor, bits: end - cursor })}
     cursor = end
   }
-  return { placed, filler, used }
+  return { filler, placed, used }
 }
 
 function depthOf(order: readonly { field: BitAllocationField; offset: number }[]): number {
@@ -1331,34 +1331,34 @@ export function planBitAllocation(input: BitAllocationInput): BitAllocationPlan 
 
   if (totalFloor > budget) {
     return {
+      algorithm: "smith-rule",
+      feasible: false,
       fields: [],
       filler: [],
-      structuredBits: totalFloor,
       randomBits: 0,
-      requiredRandomBits: required,
-      feasible: false,
       reason:
         `structured floors total ${totalFloor} bits against a ${budget}-bit budget; ` +
         `reduce cardinalities or drop ${totalFloor - budget} bits of declared structure`,
+      requiredRandomBits: required,
+      structuredBits: totalFloor,
       weightedDepth: Number.POSITIVE_INFINITY,
       weightedDepthRankOrder: Number.POSITIVE_INFINITY,
-      algorithm: "smith-rule",
     }
   }
   if (totalFloor + required > budget) {
     return {
+      algorithm: "smith-rule",
+      feasible: false,
       fields: [],
       filler: [],
-      structuredBits: totalFloor,
       randomBits: 0,
-      requiredRandomBits: required,
-      feasible: false,
       reason:
         `the collision budget needs ${required} random bits but only ${budget - totalFloor} remain ` +
         `after ${totalFloor} bits of declared structure`,
+      requiredRandomBits: required,
+      structuredBits: totalFloor,
       weightedDepth: Number.POSITIVE_INFINITY,
       weightedDepthRankOrder: Number.POSITIVE_INFINITY,
-      algorithm: "smith-rule",
     }
   }
 
@@ -1367,10 +1367,10 @@ export function planBitAllocation(input: BitAllocationInput): BitAllocationPlan 
   const smith = sortBy(input.fields, (a, b) => {
     const pa = a.weight / minBitsForCardinality(a.cardinality)
     const pb = b.weight / minBitsForCardinality(b.cardinality)
-    if (pb !== pa) return pb - pa
+    if (pb !== pa) {return pb - pa}
     const ra = localityRank(a.locality)
     const rb = localityRank(b.locality)
-    if (ra !== rb) return ra - rb
+    if (ra !== rb) {return ra - rb}
     return a.name.localeCompare(b.name)
   })
   const leading = smith.filter((f) => f.leading === true)
@@ -1386,32 +1386,32 @@ export function planBitAllocation(input: BitAllocationInput): BitAllocationPlan 
     ranked = pack(byLocalityRank(input.fields))
   } catch (error) {
     return {
+      algorithm: "smith-rule",
+      feasible: false,
       fields: [],
       filler: [],
-      structuredBits: totalFloor,
       randomBits: 0,
-      requiredRandomBits: required,
-      feasible: false,
       reason: (error as Error).message,
+      requiredRandomBits: required,
+      structuredBits: totalFloor,
       weightedDepth: Number.POSITIVE_INFINITY,
       weightedDepthRankOrder: Number.POSITIVE_INFINITY,
-      algorithm: "smith-rule",
     }
   }
 
   const allocated: AllocatedField[] = placed.map((entry) => {
     const minBits = minBitsForCardinality(entry.field.cardinality)
     return {
-      name: entry.field.name,
-      cardinality: entry.field.cardinality,
-      weight: entry.field.weight,
-      locality: entry.field.locality ?? "opaque",
       align: entry.field.align ?? 8,
-      minBits,
       bits: minBits,
+      cardinality: entry.field.cardinality,
+      locality: entry.field.locality ?? "opaque",
+      minBits,
+      name: entry.field.name,
       offset: entry.offset,
-      slackBits: 0,
       priority: entry.field.weight / minBits,
+      slackBits: 0,
+      weight: entry.field.weight,
     }
   })
 
@@ -1419,15 +1419,15 @@ export function planBitAllocation(input: BitAllocationInput): BitAllocationPlan 
   const randomBits = filler.reduce((sum, run) => sum + run.bits, 0)
 
   return {
+    algorithm: "smith-rule",
+    feasible: true,
     fields: allocated,
     filler,
-    structuredBits,
     randomBits,
     requiredRandomBits: required,
-    feasible: true,
+    structuredBits,
     weightedDepth: depthOf(placed),
     weightedDepthRankOrder: depthOf(ranked.placed),
-    algorithm: "smith-rule",
   }
 }
 
@@ -1529,7 +1529,7 @@ function currentTick(layout: V8Layout): number {
   const now = Date.now()
   const structureKey = assertLayoutIdentity(layout)
   const last = _layoutTick.get(structureKey)
-  if (last !== undefined && now < last) return last
+  if (last !== undefined && now < last) {return last}
   _layoutTick.set(structureKey, now)
   return now
 }
@@ -1556,9 +1556,9 @@ function applyStructuredFields(
   _rng?: Rng,
   now?: number,
 ): void {
-  const fields = layout.fields
+  const {fields} = layout
   for (const f of fields) {
-    if (f.type === "fixed") writeFieldValue(bytes, f, f.value ?? 0)
+    if (f.type === "fixed") {writeFieldValue(bytes, f, f.value ?? 0)}
     else if (f.type === "timestamp-ms" || f.type === "timestamp-us") {
       writeFieldValue(bytes, f, structuredValue(layout, f, _rng ?? (() => 0), now))
     }
@@ -1630,9 +1630,9 @@ export function rangeClampMass(ell: number, min: number, max: number): {
   const lo = Math.max(0, min)
   const hi = Math.min(space - 1, max)
   return {
-    pMin: (lo + 1) / space,
-    pMax: (space - hi) / space,
     pInterior: 1 / space,
+    pMax: (space - hi) / space,
+    pMin: (lo + 1) / space,
     pinned: (lo + (space - 1 - hi)) / space,
   }
 }
@@ -1649,7 +1649,7 @@ export function repairConstraints(layout: V8Layout, bytes: Uint8Array): number {
   let repairs = 0
   for (const f of layout.fields) {
     const c = f.constraint
-    if (!c) continue
+    if (!c) {continue}
     let v = Number(getFieldValue(bytes, f))
     let changed = false
     if (c.allowed && c.allowed.length > 0 && !c.allowed.includes(v)) {
@@ -1660,7 +1660,7 @@ export function repairConstraints(layout: V8Layout, bytes: Uint8Array): number {
     if (c.max !== undefined && v > c.max) { v = c.max; changed = true }
     if (changed) {
       writeFieldValue(bytes, f, v)
-      repairs++
+      repairs += 1
     }
   }
   return repairs
@@ -1684,10 +1684,10 @@ function refillSingleParentPool(layout: V8Layout): void {
   } else {
     pool = new Uint8Array(STRUCT_ENTRY * size)
     strs = new Array<string>(size)
-    _spPool.set(structureKey, { pool, strs, idx: 0, size })
+    _spPool.set(structureKey, { idx: 0, pool, size, strs })
   }
   fillRandom(pool)
-  for (let n = 0; n < size; n++) {
+  for (let n = 0; n < size; n += 1) {
     const off = n * STRUCT_ENTRY
     const buf = pool.subarray(off, off + 16)
     // RFC 9562 §6.2: resolve this entry's tick once. The same
@@ -1702,8 +1702,8 @@ function refillSingleParentPool(layout: V8Layout): void {
       _layoutTick.set(structureKey, now)
     }
     for (const f of layout.fields) {
-      if (!f.constraint?.monotonic) continue
-      const key = structureKey + ":" + f.name
+      if (!f.constraint?.monotonic) {continue}
+      const key = `${structureKey  }:${  f.name}`
       const reseedRange = 2 ** (f.length - 1)
       const maxCtr = 2 ** f.length - 1
       let ctr = _poolMonoTick.get(key)
@@ -1742,7 +1742,7 @@ export function genStructuredGenoIDSingleParent(layout: V8Layout): string {
     refillSingleParentPool(layout)
     p = _spPool.get(structureKey)!
   }
-  return p.strs[p.idx++]
+  return p.strs[p.idx += 1]
 }
 
 // Cache for compiled structured generators (per layout structure).
@@ -1763,7 +1763,7 @@ export function genStructuredGenoID(input: V8Layout | DatabaseLayoutCompilation)
   if (getStructuredGenerationMode() === "compiled-direct-v8") {
     const structureKey = layoutStructureKey(layout)
     const fn = _compiledGenCache.get(structureKey)
-    if (fn) return fn()
+    if (fn) {return fn()}
     try {
       const compiled = compileLayout(layout, 256)
       _compiledGenCache.set(structureKey, compiled.fn)
@@ -1830,7 +1830,7 @@ export function getPoolConfig(): { simplePoolSize: number; structuredPoolSize: n
 
 function pickFromAllowed(allowed: number[], byte: number): number {
   const n = allowed.length
-  if (n === 1) return allowed[0]
+  if (n === 1) {return allowed[0]}
   return allowed[byte % n]
 }
 
@@ -1846,7 +1846,7 @@ export interface CompiledLayout {
 function genFieldReadExpr(f: V8Field, buf = "b"): string {
   const bm = fieldByteMasks(f)
   const parts: { expr: string; nbits: number }[] = []
-  for (let i = bm.length - 1; i >= 0; i--) {
+  for (let i = bm.length - 1; i >= 0; i -= 1) {
     const mk = bm[i]
     const byteStart = mk.byte * 8
     const fieldEnd = f.start + f.length - 1
@@ -1854,12 +1854,12 @@ function genFieldReadExpr(f: V8Field, buf = "b"): string {
     const nbits = fEnd - Math.max(f.start, byteStart) + 1
     const rshift = 7 - (fEnd & 7)
     let expr = `(${buf}[${mk.byte}]&${mk.mask})`
-    if (rshift > 0) expr = `(${expr}>>>${rshift})`
+    if (rshift > 0) {expr = `(${expr}>>>${rshift})`}
     parts.push({ expr, nbits })
   }
-  if (parts.length === 0) return "0"
+  if (parts.length === 0) {return "0"}
   let result = parts.at(-1)!.expr
-  for (let i = parts.length - 2; i >= 0; i--) {
+  for (let i = parts.length - 2; i >= 0; i -= 1) {
     const factor = 1 << parts[i].nbits
     result = `((${result})*${factor}+(${parts[i].expr}))`
   }
@@ -1867,27 +1867,27 @@ function genFieldReadExpr(f: V8Field, buf = "b"): string {
 }
 
 function genValueExpr(f: V8Field, mod: number, bm: ByteMask[], raw?: boolean, buf = "b", batchNow = false): string {
-   const pow2 = mod > 0 && (mod & (mod - 1)) === 0 && mod <= 0x7FFFFFFF
+   const pow2 = mod > 0 && (mod & (mod - 1)) === 0 && mod <= 0x7F_FF_FF_FF
    const ts = batchNow ? "_now" : "Date.now()"
   switch (f.type) {
     case "timestamp-ms": {
-      if (raw) return `now%${mod}`
+      if (raw) {return `now%${mod}`}
       return pow2 ? `${ts}&${mod - 1}` : `${ts}%${mod}`
     }
     case "timestamp-us": {
-      if (raw) return `(now*1000)%${mod}`
+      if (raw) {return `(now*1000)%${mod}`}
       return pow2 ? `(${ts}*1000)&${mod - 1}` : `(${ts}*1000)%${mod}`
     }
     case "counter": {
-      if (raw) return `ctr%${mod}`
-      return pow2 ? `(++_ctr)&${mod - 1}` : `(++_ctr)%${mod}`
+      if (raw) {return `ctr%${mod}`}
+      return pow2 ? `(_ctr += 1)&${mod - 1}` : `(_ctr += 1)%${mod}`
     }
     case "shard":
     case "node":
     case "process": {
       const a = f.constraint?.allowed
       if (a && a.length > 0) {
-        if (a.length === 1) return `${a[0]}`
+        if (a.length === 1) {return `${a[0]}`}
         const rndByte = bm.length > 0 ? bm.at(-1)!.byte : 15
         return `[${a.join(",")}][${buf}[${rndByte}]%${a.length}]`
       }
@@ -1928,7 +1928,7 @@ function genLayoutSource(layout: V8Layout, raw: boolean, poolSize = 0): string {
     const mod = fieldMod(f)
     const c = f.constraint
 
-    return { f, wp, bm, mod, c }
+    return { bm, c, f, mod, wp }
   })
 
   const lines: string[] = []
@@ -1951,27 +1951,22 @@ function genLayoutSource(layout: V8Layout, raw: boolean, poolSize = 0): string {
     )
 
   if (raw) {
-    lines.push("const _last={};")
-    lines.push("return function(b,now,ctr){")
+    lines.push("const _last={};", "return function(b,now,ctr){")
   } else if (poolSize > 0) {
     lines.push("let _ctr=0;")
-    if (needsTick) lines.push("let _tick=0;const _mctr={};")
+    if (needsTick) {lines.push("let _tick=0;const _mctr={};")}
     const hasMono = fieldMeta.some((m) => m.f.constraint?.monotonic)
-    if (hasMono) lines.push("const _last={};")
-    lines.push(`const _bp=new Uint8Array(${poolSize * 16});`)
-    lines.push(`const _p=new Array(${poolSize});`)
-    lines.push(`let _pi=${poolSize};`)
-    lines.push("return function(){")
-    lines.push(`if(_pi>=${poolSize}){`)
-    lines.push("cr.getRandomValues(_bp);")
-    lines.push(`for(_pi=0;_pi<${poolSize};_pi++){const _o=_pi*16;`)
+    if (hasMono) {lines.push("const _last={};")}
+    lines.push(`const _bp=new Uint8Array(${poolSize * 16});`, `const _p=new Array(${poolSize});`)
+    lines.push(`let _pi=${poolSize};`, "return function(){")
+    lines.push(`if(_pi>=${poolSize}){`, "cr.getRandomValues(_bp);")
+    lines.push(`for(_pi=0;_pi<${poolSize};_pi += 1){const _o=_pi*16;`)
   } else {
     lines.push("const b=new Uint8Array(16);let _ctr=0;")
-    if (needsTick) lines.push("let _tick=0;const _mctr={};")
+    if (needsTick) {lines.push("let _tick=0;const _mctr={};")}
     const hasMono = fieldMeta.some((m) => m.f.constraint?.monotonic)
-    if (hasMono) lines.push("const _last={};")
-    lines.push("return function(){")
-    lines.push("cr.getRandomValues(b);")
+    if (hasMono) {lines.push("const _last={};")}
+    lines.push("return function(){", "cr.getRandomValues(b);")
   }
 
   const emitFieldBlock = (target: string[]) => {
@@ -1984,8 +1979,8 @@ function genLayoutSource(layout: V8Layout, raw: boolean, poolSize = 0): string {
     if (needsTick) {
       target.push("let _now=Date.now();")
       for (const m of fieldMeta) {
-        const f = m.f
-        if (f.type !== "counter" || f.constraint?.monotonic !== true) continue
+        const {f} = m
+        if (f.type !== "counter" || f.constraint?.monotonic !== true) {continue}
         const reseedMask = 2 ** (f.length - 1) - 1
         const maxCtr = 2 ** f.length - 1
         target.push(
@@ -2000,11 +1995,11 @@ function genLayoutSource(layout: V8Layout, raw: boolean, poolSize = 0): string {
     }
     for (const m of fieldMeta) {
       const { f, wp, bm, mod, c } = m
-      if (f.type === "random") continue
+      if (f.type === "random") {continue}
 
       // oxlint-disable-next-line branches-sharing-code
       if (f.type === "shard" || f.type === "node" || f.type === "process") {
-        if (!c || (!c.allowed && c.min === undefined && c.max === undefined && !c.monotonic)) continue
+        if (!c || (!c.allowed && c.min === undefined && c.max === undefined && !c.monotonic)) {continue}
         const rx = genFieldReadExpr(f)
         target.push("{")
         if (c.allowed && c.allowed.length > 0) {
@@ -2012,8 +2007,8 @@ function genLayoutSource(layout: V8Layout, raw: boolean, poolSize = 0): string {
         } else {
           target.push(`let rv=${rx};`)
         }
-        if (c.min !== undefined) target.push(`if(rv<${c.min})rv=${c.min};`)
-        if (c.max !== undefined) target.push(`if(rv>${c.max})rv=${c.max};`)
+        if (c.min !== undefined) {target.push(`if(rv<${c.min})rv=${c.min};`)}
+        if (c.max !== undefined) {target.push(`if(rv>${c.max})rv=${c.max};`)}
         if (c.monotonic) {
           target.push(
             `{const lk="${f.name}";const lv=_last[lk];if(lv!==undefined&&rv<lv){rv=lv;}_last[lk]=rv;}`,
@@ -2038,8 +2033,8 @@ function genLayoutSource(layout: V8Layout, raw: boolean, poolSize = 0): string {
         let varName = "v"
         if (c && (c.min !== undefined || c.max !== undefined || (c.monotonic && !monoCounter))) {
           target.push(`let rv=${vx};`)
-          if (c.min !== undefined) target.push(`if(rv<${c.min})rv=${c.min};`)
-          if (c.max !== undefined) target.push(`if(rv>${c.max})rv=${c.max};`)
+          if (c.min !== undefined) {target.push(`if(rv<${c.min})rv=${c.min};`)}
+          if (c.max !== undefined) {target.push(`if(rv>${c.max})rv=${c.max};`)}
           if (c.monotonic && !monoCounter) {
             target.push(
               `{const lk="${f.name}";const lv=_last[lk];if(lv!==undefined&&rv<lv){rv=lv;}_last[lk]=rv;}`,
@@ -2059,16 +2054,13 @@ function genLayoutSource(layout: V8Layout, raw: boolean, poolSize = 0): string {
   // oxlint-disable-next-line branches-sharing-code
   if (raw || poolSize === 0) {
     emitFieldBlock(lines)
-    lines.push(`return ${COMPILED_FMT_EXPR};`)
-    lines.push("};")
+    lines.push(`return ${COMPILED_FMT_EXPR};`, "};")
   } else {
     // Pooled: emit field + format into fieldLines, then substitute b[ → b[_o+
     emitFieldBlock(fieldLines)
     const poolfy = (s: string) => s.replaceAll("b[", "_bp[_o+")
-    lines.push(...fieldLines.map((l) => "  " + poolfy(l)))
-    lines.push(`  _p[_pi]=${poolfy(COMPILED_FMT_EXPR)};`)
-    lines.push("}_pi=0;}")
-    lines.push("return _p[_pi++];")
+    lines.push(...fieldLines.map((l) => `  ${  poolfy(l)}`), `  _p[_pi]=${poolfy(COMPILED_FMT_EXPR)};`)
+    lines.push("}_pi=0;}", "return _p[_pi += 1];")
     lines.push("};")
   }
 
@@ -2094,7 +2086,7 @@ export function compileLayout(layout: V8Layout, poolSize = 0): CompiledLayout {
     // fn stays as throw wrapper
   }
 
-  return { source, fn }
+  return { fn, source }
 }
 
 export interface CompiledRawLayout {
@@ -2120,7 +2112,7 @@ export function compileRawLayout(layout: V8Layout): CompiledRawLayout {
     // fn stays as throw wrapper
   }
 
-  return { source, fn }
+  return { fn, source }
 }
 
 const _interpretLast = new Map<string, number>()
@@ -2136,13 +2128,13 @@ export function interpretRawLayout(
   if (raw) {
     let i = 0
     for (const v of raw) {
-      if (i >= 16) break
-      b[i++] = v
+      if (i >= 16) {break}
+      b[i += 1] = v
     }
   }
 
   for (const f of layout.fields) {
-    if (f.type === "random") continue
+    if (f.type === "random") {continue}
     const c = f.constraint
     let rv: number
 
@@ -2173,12 +2165,12 @@ export function interpretRawLayout(
     }
 
     if (c) {
-      if (c.min !== undefined && rv < c.min) rv = c.min
-      if (c.max !== undefined && rv > c.max) rv = c.max
+      if (c.min !== undefined && rv < c.min) {rv = c.min}
+      if (c.max !== undefined && rv > c.max) {rv = c.max}
       if (c.monotonic) {
-        const key = structureKey + ":" + f.name
+        const key = `${structureKey  }:${  f.name}`
         const lv = _interpretLast.get(key)
-        if (lv !== undefined && rv < lv) rv = lv
+        if (lv !== undefined && rv < lv) {rv = lv}
         _interpretLast.set(key, rv)
       }
     }
@@ -2203,21 +2195,21 @@ export function interpretRawLayout(
 
 /** 48-bit timestamp + 8-bit shard (1-5) + 16-bit monotonic counter. */
 export const DBKEY_LAYOUT: V8Layout = completeLayout("dbkey", [
-  { name: "timestamp", start: 0, length: 48, type: "timestamp-ms" },
-  { name: "shard", start: 52, length: 8, type: "shard", constraint: { allowed: [1, 2, 3, 4, 5] } },
-  { name: "counter", start: 66, length: 16, type: "counter", constraint: { monotonic: true } },
+  { length: 48, name: "timestamp", start: 0, type: "timestamp-ms" },
+  { constraint: { allowed: [1, 2, 3, 4, 5] }, length: 8, name: "shard", start: 52, type: "shard" },
+  { constraint: { monotonic: true }, length: 16, name: "counter", start: 66, type: "counter" },
 ])
 
 /** 12-bit tenant (1-8) + 8-bit region (1-4). */
 export const MULTITENANT_LAYOUT: V8Layout = completeLayout("multitenant", [
-  { name: "tenant", start: 0, length: 12, type: "shard", constraint: { allowed: [1, 2, 3, 4, 5, 6, 7, 8] } },
-  { name: "region", start: 52, length: 8, type: "shard", constraint: { allowed: [1, 2, 3, 4] } },
+  { constraint: { allowed: [1, 2, 3, 4, 5, 6, 7, 8] }, length: 12, name: "tenant", start: 0, type: "shard" },
+  { constraint: { allowed: [1, 2, 3, 4] }, length: 8, name: "region", start: 52, type: "shard" },
 ])
 
 /** 16-bit stream node + 24-bit monotonic sequence. */
 export const EVENTSOURCING_LAYOUT: V8Layout = completeLayout("eventsourcing", [
-  { name: "stream", start: 0, length: 16, type: "node" },
-  { name: "seq", start: 66, length: 24, type: "counter", constraint: { monotonic: true } },
+  { length: 16, name: "stream", start: 0, type: "node" },
+  { constraint: { monotonic: true }, length: 24, name: "seq", start: 66, type: "counter" },
 ])
 
 /**
@@ -2229,7 +2221,7 @@ export const EVENTSOURCING_LAYOUT: V8Layout = completeLayout("eventsourcing", [
  * composition time, carrying no entropy at all).
  */
 export const CONFORMANCE_LAYOUT: V8Layout = completeLayout("conformance", [
-  { name: "window", start: 0, length: 12, type: "shard", constraint: { min: 100, max: 4999 } },
-  { name: "kind", start: 12, length: 4, type: "fixed", value: 9 },
-  { name: "wide", start: 66, length: 40, type: "random" },
+  { constraint: { max: 4999, min: 100 }, length: 12, name: "window", start: 0, type: "shard" },
+  { length: 4, name: "kind", start: 12, type: "fixed", value: 9 },
+  { length: 40, name: "wide", start: 66, type: "random" },
 ])

@@ -36,13 +36,13 @@ const algo = (await import(
 }
 
 // Canonical dbkey layout, shared from the core module (single source of truth).
-export const DBKEY_LAYOUT: V8Layout = algo.DBKEY_LAYOUT
+export const {DBKEY_LAYOUT} = algo
 
 const MASK64 = (1n << 64n) - 1n
 
 // Parse a UUID string into its 128-bit value as two 64-bit halves.
 export function uuidToKey(uuid: string): { hi: bigint; lo: bigint } {
-  const hex = uuid.length === 36 ? uuid.replace(/-/g, "") : uuid
+  const hex = uuid.length === 36 ? uuid.replaceAll(/-/g, "") : uuid
   const v = BigInt(`0x${hex}`)
   return { hi: (v >> 64n) & MASK64, lo: v & MASK64 }
 }
@@ -75,7 +75,7 @@ class Uuid128Set {
   add(hi: bigint, lo: bigint): boolean {
     let idx = Number((hi ^ (lo << 1n)) & BigInt(this.mask))
     while (this.occ[idx] === 1) {
-      if (this.keysHi[idx] === hi && this.keysLo[idx] === lo) return true
+      if (this.keysHi[idx] === hi && this.keysLo[idx] === lo) {return true}
       idx = (idx + 1) & this.mask
     }
     this.occ[idx] = 1
@@ -104,29 +104,29 @@ export function collisionTestScaled(
   const set = new Uuid128Set(n)
   let collisions = 0
   const start = performance.now()
-  for (let i = 0; i < n; i++) {
+  for (let i = 0; i < n; i += 1) {
     const { hi, lo } = uuidToKey(gen())
-    if (set.add(hi, lo)) collisions++
+    if (set.add(hi, lo)) {collisions += 1}
   }
   const elapsed = performance.now() - start
   const tableMB = (set.capacity * 8 * 2 + set.capacity) / (1024 * 1024)
   return {
-    name: label,
-    n,
     collisions,
+    method: "open-addressing 128-bit hash set",
     ms: elapsed,
+    n,
+    name: label,
     opsPerSec: n / (elapsed / 1000),
     tableMB,
-    method: "open-addressing 128-bit hash set",
   }
 }
 
 const MODES: Record<string, () => string> = {
-  "v4-native": algo.genV4Native,
-  "genoid-v8": algo.genGenoID,
-  "v7": algo.genV7,
   "genoid-structured": () => algo.genStructuredGenoID(DBKEY_LAYOUT),
+  "genoid-v8": algo.genGenoID,
   "ulid-v8": genUlidV8,
+  "v4-native": algo.genV4Native,
+  "v7": algo.genV7,
 }
 
 interface WorkerData {
@@ -146,9 +146,9 @@ if (!isMainThread) {
   const gen = MODES[mode]
   const set = new Uuid128Set(n)
   let collisions = 0
-  for (let i = 0; i < n; i++) {
+  for (let i = 0; i < n; i += 1) {
     const { hi, lo } = uuidToKey(gen())
-    if (set.add(hi, lo)) collisions++
+    if (set.add(hi, lo)) {collisions += 1}
   }
   const tableMB = (set.capacity * 8 * 2 + set.capacity) / (1024 * 1024)
   // oxlint-disable-next-line unicorn/require-post-message-target-origin
@@ -175,7 +175,7 @@ export async function collisionTestScaledParallel(
         w.on("message", resolve)
         w.on("error", reject)
         w.on("exit", (code) => {
-          if (code !== 0) reject(new Error(`worker exited with code ${code}`))
+          if (code !== 0) {reject(new Error(`worker exited with code ${code}`))}
         })
       })
     }),
@@ -184,13 +184,13 @@ export async function collisionTestScaledParallel(
   const collisions = results.reduce((a, r) => a + r.collisions, 0)
   const tableMB = Math.max(...results.map((r) => r.tableMB))
   return {
-    name: opts.label ?? mode,
-    n,
     collisions,
+    method: `open-addressing 128-bit hash set (${workers} workers)`,
     ms: elapsed,
+    n,
+    name: opts.label ?? mode,
     opsPerSec: n / (elapsed / 1000),
     tableMB,
-    method: `open-addressing 128-bit hash set (${workers} workers)`,
   }
 }
 
@@ -213,7 +213,7 @@ if (import.meta.main) {
       ? collisionTestScaled(MODES[mode], n, label)
       : await collisionTestScaledParallel(mode, n, { label })
     const verdict = r.collisions === 0 ? "PASS" : "FAIL"
-    if (r.collisions !== 0) allZero = false
+    if (r.collisions !== 0) {allZero = false}
     console.log(
       [
         r.name,
@@ -229,5 +229,5 @@ if (import.meta.main) {
   console.log(
     `\n${allZero ? "PASS" : "FAIL"}: all generators reported 0 collisions at N=${n.toLocaleString()}.`,
   )
-  if (!allZero) process.exit(1)
+  if (!allZero) {process.exit(1)}
 }

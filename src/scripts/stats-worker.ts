@@ -3,7 +3,8 @@
 import { parentPort, workerData } from "node:worker_threads"
 import { pathToFileURL } from "node:url"
 import path from "node:path"
-import { runBattery, type RunDef } from "./stats-core.ts"
+import { runBattery } from './stats-core.ts';
+import type { RunDef } from './stats-core.ts';
 
 const root = path.resolve(import.meta.dirname, "..", "..")
 const algo = (await import(pathToFileURL(path.resolve(root, "dist/algo.js")).href)) as {
@@ -16,10 +17,10 @@ const algo = (await import(pathToFileURL(path.resolve(root, "dist/algo.js")).hre
 
 const FUNCS = {
   genoid: algo.genGenoID,
+  hash: algo.genHashUUID,
+  mr: algo.genMathRandom,
   v4: algo.genV4Native,
   v7: algo.genV7,
-  mr: algo.genMathRandom,
-  hash: algo.genHashUUID,
 } as const
 
 const { id, label, mask, n } = workerData as RunDef

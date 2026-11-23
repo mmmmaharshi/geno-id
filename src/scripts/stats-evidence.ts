@@ -49,7 +49,7 @@ function batteryPValues(battery: {
   chiResults: { pos: number; p: number }[]
 }): PValueEntry[] {
   const entries: PValueEntry[] = [{ name: "monobit", p: battery.monobitP }]
-  if (battery.runsP !== null) entries.push({ name: "runs", p: battery.runsP })
+  if (battery.runsP !== null) {entries.push({ name: "runs", p: battery.runsP })}
   for (const chi of battery.chiResults) {
     entries.push({ name: `chi-square-byte-${chi.pos}`, p: chi.p })
   }
@@ -67,38 +67,38 @@ const toolOnPath = (tool: string): boolean => {
 
 const externalSuites = [
   {
-    suite: "nist-sp800-22" as const,
     archivedArtifact: "results/nist-sp800-22-results.json",
-    runner: "src/scripts/nist-bridge.py",
-    tool: null,
-    toolName: "python3",
     pinnedLimitations: [
       "SP 800-22 is withdrawn and is not sufficient evidence of cryptographic security",
     ],
+    runner: "src/scripts/nist-bridge.py",
+    suite: "nist-sp800-22" as const,
+    tool: null,
+    toolName: "python3",
   },
   {
-    suite: "dieharder" as const,
     archivedArtifact: "results/dieharder-results.md",
+    pinnedLimitations: ["curated subset, not the full dieharder battery"],
     runner: "src/scripts/run-dieharder.ts",
+    suite: "dieharder" as const,
     tool: toolOnPath("dieharder") ? "dieharder" : null,
     toolName: "dieharder",
-    pinnedLimitations: ["curated subset, not the full dieharder battery"],
   },
   {
-    suite: "practrand" as const,
     archivedArtifact: "results/statistics/practrand.txt",
+    pinnedLimitations: ["modern suite, included as required by the evidence policy"],
     runner: "src/scripts/run-practrand.ts",
+    suite: "practrand" as const,
     tool: toolOnPath("practrand") ? "practrand" : null,
     toolName: "practrand",
-    pinnedLimitations: ["modern suite, included as required by the evidence policy"],
   },
   {
-    suite: "testu01" as const,
     archivedArtifact: "results/statistics/testu01.txt",
+    pinnedLimitations: ["modern suite, included as required by the evidence policy"],
     runner: "src/scripts/run-testu01.sh",
+    suite: "testu01" as const,
     tool: toolOnPath("TestU01") ? "TestU01" : null,
     toolName: "TestU01",
-    pinnedLimitations: ["modern suite, included as required by the evidence policy"],
   },
 ].map((entry) => {
   const resolved = classifyExternalSuite({
@@ -107,31 +107,31 @@ const externalSuites = [
     sourceLabel: entry.archivedArtifact,
   })
   return buildSuiteEvidence({
-    suite: entry.suite,
-    status: resolved.status,
     generationPlan: mode,
+    limitations: resolved.limitations,
+    pValues: resolved.pValues,
     sampleBits: null,
     seed: null,
     seedReason: CSPRNG_SEED_REASON,
     source: resolved.source ?? undefined,
-    pValues: resolved.pValues,
-    limitations: resolved.limitations,
+    status: resolved.status,
+    suite: entry.suite,
   })
 })
 
 const suites: SuiteEvidence[] = [
   buildSuiteEvidence({
-    suite: "in-house",
-    status: "measured",
     generationPlan: mode,
-    sampleBits: structured.nBits,
-    seed: null,
-    seedReason: CSPRNG_SEED_REASON,
-    pValues: batteryPValues(structured),
     limitations: [
       "monobit, runs, per-position chi-square, and correlation only",
       "does not test computational unpredictability",
     ],
+    pValues: batteryPValues(structured),
+    sampleBits: structured.nBits,
+    seed: null,
+    seedReason: CSPRNG_SEED_REASON,
+    status: "measured",
+    suite: "in-house",
   }),
   ...externalSuites,
 ]
@@ -148,34 +148,34 @@ if (!Array.isArray(sweep.cells) || sweep.cells.length === 0) {
 const rejectionCells = sweep.cells.map((cell) => classifyRejectionCell(cell))
 
 const commit = execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf-8" }).trim()
-const workingTree = execFileSync("git", ["status", "--porcelain"], { cwd: root, encoding: "utf-8" })
+const workingTree = execFileSync("git", ["status", "porcelain -= 1"], { cwd: root, encoding: "utf-8" })
   .split("\n")
   .filter((line) => line.length > 0)
 
 const evidence = {
   command: "bun run stats:evidence",
-  implementationCommit: commit,
-  workingTreeDirty: workingTree.length > 0,
-  generationPlan: mode,
+  comparisons: {
+    v4: { monobitP: v4.monobitP, nBits: v4.nBits, runsP: v4.runsP },
+    v7: { monobitP: v7.monobitP, nBits: v7.nBits, runsP: v7.runsP },
+  },
   environment: {
+    arch: process.arch,
+    platform: process.platform,
     runtime: process.versions.bun === undefined ? "node" : "bun",
     runtimeVersion: process.versions.bun ?? process.versions.node,
-    platform: process.platform,
-    arch: process.arch,
   },
-  sampleDefinitions: SAMPLE_DEFINITIONS,
-  comparisons: {
-    v4: { nBits: v4.nBits, monobitP: v4.monobitP, runsP: v4.runsP },
-    v7: { nBits: v7.nBits, monobitP: v7.monobitP, runsP: v7.runsP },
-  },
-  suites,
+  generationPlan: mode,
+  implementationCommit: commit,
   rejection: {
+    analyticalCells: rejectionCells.filter((cell) => cell.basis === "analytical").length,
+    cells: rejectionCells,
     fieldSpace: sweep.fieldSpace,
     idsPerCell: sweep.idsPerCell,
     measuredCells: rejectionCells.filter((cell) => cell.basis === "measured").length,
-    analyticalCells: rejectionCells.filter((cell) => cell.basis === "analytical").length,
-    cells: rejectionCells,
   },
+  sampleDefinitions: SAMPLE_DEFINITIONS,
+  suites,
+  workingTreeDirty: workingTree.length > 0,
 }
 
 mkdirSync(path.dirname(outPath), { recursive: true })

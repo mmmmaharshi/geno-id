@@ -24,9 +24,9 @@ function fill(seed0: number, seed1: number, n: number): Uint8Array {
 }
 
 test("seeded RNG: same seed produces identical bytes (golden-vector contract)", () => {
-  assert.deepEqual(fill(0xdead, 0xbeef, 4096), fill(0xdead, 0xbeef, 4096))
+  assert.deepEqual(fill(0xde_ad, 0xbe_ef, 4096), fill(0xde_ad, 0xbe_ef, 4096))
 })
 
 test("seeded RNG: different seeds produce different bytes", () => {
-  assert.notDeepEqual(fill(0xdead, 0xbeef, 256), fill(0xbeef, 0xdead, 256))
+  assert.notDeepEqual(fill(0xde_ad, 0xbe_ef, 256), fill(0xbe_ef, 0xde_ad, 256))
 })

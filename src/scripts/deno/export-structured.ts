@@ -24,7 +24,7 @@ for (const layout of layouts) {
     .reduce((s, f) => s + f.length, 0)
   const n = Math.ceil(TARGET_BITS / randomBitsPerUuid)
   let all = ""
-  for (let i = 0; i < n; i++) all += uuidToRandomBits(genStructuredGenoID(layout), layout)
+  for (let i = 0; i < n; i += 1) all += uuidToRandomBits(genStructuredGenoID(layout), layout)
   all = all.slice(0, TARGET_BITS)
   const file = await writeBitsFile(`struct-${layout.name}.bits.txt`, all)
   console.log(

@@ -45,23 +45,23 @@ const baselines = (await import(
 )) as Record<string, any>
 
 const SHARDFIRST = algo.completeLayout("shardfirst", [
-  { name: "shard", start: 0, length: 8, type: "shard", constraint: { allowed: [1, 2, 3, 4, 5] } },
-  { name: "ts", start: 8, length: 40, type: "timestamp-ms" },
-  { name: "counter", start: 66, length: 16, type: "counter", constraint: { monotonic: true } },
+  { constraint: { allowed: [1, 2, 3, 4, 5] }, length: 8, name: "shard", start: 0, type: "shard" },
+  { length: 40, name: "ts", start: 8, type: "timestamp-ms" },
+  { constraint: { monotonic: true }, length: 16, name: "counter", start: 66, type: "counter" },
 ])
 
 const ARMS: Record<string, () => string> = {
-  uuid_v4: algo.genV4Native,
-  uuid_v7: algo.genV7,
+  genoid_shardfirst: () => algo.genStructuredGenoID(SHARDFIRST),
+  genoid_structured: () => algo.genStructuredGenoID(algo.DBKEY_LAYOUT),
+  genoid_v8: algo.genGenoID,
   pg_uuid_v8: baselines.genPgUuidV8,
   ulid_v8: baselines.genUlidV8,
-  genoid_v8: algo.genGenoID,
-  genoid_structured: () => algo.genStructuredGenoID(algo.DBKEY_LAYOUT),
-  genoid_shardfirst: () => algo.genStructuredGenoID(SHARDFIRST),
+  uuid_v4: algo.genV4Native,
+  uuid_v7: algo.genV7,
 }
 
 
-const hex = (uuid: string): string => uuid.replace(/-/g, "")
+const hex = (uuid: string): string => uuid.replaceAll(/-/g, "")
 const now = () => performance.now()
 
 interface Cell {
@@ -97,60 +97,24 @@ interface Engine {
 
 const payloadHex = (random: () => number): string => {
   const bytes = Buffer.alloc(BLOB_BYTES)
-  for (let i = 0; i < BLOB_BYTES; i++) bytes[i] = Math.floor(random() * 256)
+  for (let i = 0; i < BLOB_BYTES; i += 1) {bytes[i] = Math.floor(random() * 256)}
   return bytes.toString("hex")
 }
 
 async function postgres(): Promise<Engine> {
   const connect = () =>
     new Client({
+      database: process.env.PG_DB ?? "genoid",
       host: process.env.PG_HOST ?? "localhost",
+      password: process.env.PG_PASSWORD ?? "password",
       port: Number(process.env.PG_PORT ?? 5432),
       user: process.env.PG_USER ?? "genoid",
-      password: process.env.PG_PASSWORD ?? "password",
-      database: process.env.PG_DB ?? "genoid",
     })
   const client = await connect()
   await client.connect()
   return {
-    name: "postgresql",
-    async fresh() {
-      await client.query("DROP TABLE IF EXISTS t")
-      await client.query("CREATE TABLE t (id bytea PRIMARY KEY, tenant int, payload bytea)")
-    },
-    async insertBatch(ids, tenants, payload) {
-      const values = ids.map((id, i) => `('\\x${id}'::bytea, ${tenants[i]}, '${payload}'::bytea)`)
-      await client.query(`INSERT INTO t (id, tenant, payload) VALUES ${values.join(",")}`)
-    },
-    async count() {
-      const res = await client.query<{ n: number }>("SELECT count(*)::int AS n FROM t")
-      return res.rows[0]?.n ?? 0
-    },
-    async lookups(ids, probes) {
-      let hits = 0
-      for (let i = 0; i < probes; i++) {
-        const res = await client.query(`SELECT 1 FROM t WHERE id = '\\x${ids[i % ids.length]}'::bytea`)
-        if (res.rowCount) hits++
-      }
-      return hits
-    },
-    async rangeScan(limit) {
-      const res = await client.query<{ n: number }>(
-        "SELECT count(*)::int AS n FROM t WHERE id >= '\\x00'::bytea AND id < '\\xff'::bytea",
-      )
-      return Math.min(limit, res.rows[0]?.n ?? 0)
-    },
-    async update(limit) {
-      await client.query(
-        `UPDATE t SET payload = decode(md5(random()::text), 'hex') WHERE ctid IN (SELECT ctid FROM t LIMIT ${limit})`,
-      )
-    },
-    async remove(limit) {
-      const res = await client.query(`DELETE FROM t WHERE ctid IN (SELECT ctid FROM t LIMIT ${limit})`)
-      return res.rowCount ?? 0
-    },
-    async maintenance() {
-      await client.query("VACUUM ANALYZE t")
+    async close() {
+      await client.end()
     },
     async concurrentWriters(perWriter) {
       const conns = await Promise.all(
@@ -164,7 +128,7 @@ async function postgres(): Promise<Engine> {
       try {
         await Promise.all(
           conns.map(async (conn, writer) => {
-            for (let i = 0; i < perWriter; i++) {
+            for (let i = 0; i < perWriter; i += 1) {
               const id = Buffer.alloc(16)
               id.writeUInt32BE(writer + 1, 0)
               id.writeUInt32BE(random() * 0xffffffff, 4)
@@ -183,20 +147,13 @@ async function postgres(): Promise<Engine> {
       }
       return perWriter * WRITERS
     },
-    async plan() {
-      const res = await client.query("EXPLAIN (ANALYZE, BUFFERS) SELECT 1 FROM t WHERE id = '\\x00'::bytea")
-      return res.rows.map((row: object) => String(Object.values(row)[0])).join("\n")
+    async count() {
+      const res = await client.query<{ n: number }>("SELECT count(*)::int AS n FROM t")
+      return res.rows[0]?.n ?? 0
     },
-    async storage() {
-      const res = await client.query<{ heap: number; idx: number; total: number }>(
-        "SELECT pg_table_size('t') AS heap, pg_indexes_size('t') AS idx, pg_total_relation_size('t') AS total",
-      )
-      const row = res.rows[0] ?? { heap: 0, idx: 0, total: 0 }
-      return { tableBytes: row.heap, indexBytes: row.idx, totalBytes: row.total }
-    },
-    async walBytes() {
-      const res = await client.query<{ written: string }>("SELECT pg_stat_wal.wal_bytes AS written FROM pg_stat_wal")
-      return res.rows[0] ? Number(res.rows[0].written) : null
+    async fresh() {
+      await client.query("DROP TABLE IF EXISTS t")
+      await client.query("CREATE TABLE t (id bytea PRIMARY KEY, tenant int, payload bytea)")
     },
     async identity() {
       const version = await client.query<{ v: string }>("SELECT version() AS v")
@@ -208,8 +165,51 @@ async function postgres(): Promise<Engine> {
         serverConfig: Object.fromEntries(settings.rows.map((row) => [row.name, row.setting])),
       }
     },
-    async close() {
-      await client.end()
+    async insertBatch(ids, tenants, payload) {
+      const values = ids.map((id, i) => `('\\x${id}'::bytea, ${tenants[i]}, '${payload}'::bytea)`)
+      await client.query(`INSERT INTO t (id, tenant, payload) VALUES ${values.join(",")}`)
+    },
+    async lookups(ids, probes) {
+      let hits = 0
+      for (let i = 0; i < probes; i += 1) {
+        const res = await client.query(`SELECT 1 FROM t WHERE id = '\\x${ids[i % ids.length]}'::bytea`)
+        if (res.rowCount) hits += 1
+      }
+      return hits
+    },
+    async maintenance() {
+      await client.query("VACUUM ANALYZE t")
+    },
+    name: "postgresql",
+    async plan() {
+      const res = await client.query("EXPLAIN (ANALYZE, BUFFERS) SELECT 1 FROM t WHERE id = '\\x00'::bytea")
+      return res.rows.map((row: object) => String(Object.values(row)[0])).join("\n")
+    },
+    async rangeScan(limit) {
+      const res = await client.query<{ n: number }>(
+        "SELECT count(*)::int AS n FROM t WHERE id >= '\\x00'::bytea AND id < '\\xff'::bytea",
+      )
+      return Math.min(limit, res.rows[0]?.n ?? 0)
+    },
+    async remove(limit) {
+      const res = await client.query(`DELETE FROM t WHERE ctid IN (SELECT ctid FROM t LIMIT ${limit})`)
+      return res.rowCount ?? 0
+    },
+    async storage() {
+      const res = await client.query<{ heap: number; idx: number; total: number }>(
+        "SELECT pg_table_size('t') AS heap, pg_indexes_size('t') AS idx, pg_total_relation_size('t') AS total",
+      )
+      const row = res.rows[0] ?? { heap: 0, idx: 0, total: 0 }
+      return { tableBytes: row.heap, indexBytes: row.idx, totalBytes: row.total }
+    },
+    async update(limit) {
+      await client.query(
+        `UPDATE t SET payload = decode(md5(random()::text), 'hex') WHERE ctid IN (SELECT ctid FROM t LIMIT ${limit})`,
+      )
+    },
+    async walBytes() {
+      const res = await client.query<{ written: string }>("SELECT pg_stat_wal.wal_bytes AS written FROM pg_stat_wal")
+      return res.rows[0] ? Number(res.rows[0].written) : null
     },
   }
 }
@@ -217,53 +217,16 @@ async function postgres(): Promise<Engine> {
 async function mysqlInnoDB(): Promise<Engine> {
   const connect = () =>
     mysql.createConnection({
+      database: process.env.MYSQL_DB ?? "genoid",
       host: process.env.MYSQL_HOST ?? "localhost",
+      password: process.env.MYSQL_PASSWORD ?? "password",
       port: Number(process.env.MYSQL_PORT ?? 3306),
       user: process.env.MYSQL_USER ?? "root",
-      password: process.env.MYSQL_PASSWORD ?? "password",
-      database: process.env.MYSQL_DB ?? "genoid",
     })
   const client = await connect()
   return {
-    name: "mysql-innodb",
-    async fresh() {
-      await client.query("DROP TABLE IF EXISTS t")
-      await client.query("CREATE TABLE t (id BINARY(16) PRIMARY KEY, tenant INT, payload BLOB) ENGINE=InnoDB")
-    },
-    async insertBatch(ids, tenants, payload) {
-      const values = ids.map((id, i) => `(UNHEX('${id}'), ${tenants[i]}, UNHEX('${payload}'))`)
-      await client.query(`INSERT INTO t (id, tenant, payload) VALUES ${values.join(",")}`)
-    },
-    async count() {
-      const [rows] = await client.query<(RowDataPacket & { n: number })[]>("SELECT COUNT(*) AS n FROM t")
-      return rows[0]?.n ?? 0
-    },
-    async lookups(ids, probes) {
-      let hits = 0
-      for (let i = 0; i < probes; i++) {
-        const [rows] = await client.query<RowDataPacket[]>("SELECT id FROM t WHERE id = ?", [
-          Buffer.from(ids[i % ids.length], "hex"),
-        ])
-        if (rows.length) hits++
-      }
-      return hits
-    },
-    async rangeScan(limit) {
-      const [rows] = await client.query<(RowDataPacket & { n: number })[]>(
-        "SELECT COUNT(*) AS n FROM t WHERE id >= ?",
-        [Buffer.alloc(16)],
-      )
-      return Math.min(limit, rows[0]?.n ?? 0)
-    },
-    async update(limit) {
-      await client.query("UPDATE t SET payload = payload LIMIT ?", [limit])
-    },
-    async remove(limit) {
-      const [result] = await client.query("DELETE FROM t LIMIT ?", [limit])
-      return (result as { affectedRows?: number }).affectedRows ?? 0
-    },
-    async maintenance() {
-      await client.query("OPTIMIZE TABLE t")
+    async close() {
+      await client.end()
     },
     async concurrentWriters(perWriter) {
       const pool = mysql.createPool({
@@ -278,7 +241,7 @@ async function mysqlInnoDB(): Promise<Engine> {
       try {
         await Promise.all(
           Array.from({ length: WRITERS }, async (_, writer) => {
-            for (let i = 0; i < perWriter; i++) {
+            for (let i = 0; i < perWriter; i += 1) {
               const id = Buffer.alloc(16)
               id.writeUInt32BE(writer + 1, 0)
               id.writeUInt32BE(Math.floor(random() * 0xffffffff), 4)
@@ -297,28 +260,13 @@ async function mysqlInnoDB(): Promise<Engine> {
       }
       return perWriter * WRITERS
     },
-    async plan() {
-      const [rows] = await client.query<RowDataPacket[]>("EXPLAIN FORMAT=JSON SELECT id FROM t WHERE id = ?", [
-        Buffer.alloc(16),
-      ])
-      return JSON.stringify(rows[0] ?? {})
+    async count() {
+      const [rows] = await client.query<(RowDataPacket & { n: number })[]>("SELECT COUNT(*) AS n FROM t")
+      return rows[0]?.n ?? 0
     },
-    async storage() {
-      const [rows] = await client.query<(RowDataPacket & { data: number; idx: number })[]>(
-        "SELECT data_length AS data, index_length AS idx FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 't'",
-      )
-      const row = rows[0]
-      return {
-        tableBytes: Number(row?.data ?? 0),
-        indexBytes: Number(row?.idx ?? 0),
-        totalBytes: Number(row?.data ?? 0) + Number(row?.idx ?? 0),
-      }
-    },
-    async walBytes() {
-      const [rows] = await client.query<(RowDataPacket & { written: number })[]>(
-        "SELECT VARIABLE_VALUE AS written FROM performance_schema.global_status WHERE VARIABLE_NAME = 'Innodb_os_log_written'",
-      )
-      return rows[0] ? Number(rows[0].written) : null
+    async fresh() {
+      await client.query("DROP TABLE IF EXISTS t")
+      await client.query("CREATE TABLE t (id BINARY(16) PRIMARY KEY, tenant INT, payload BLOB) ENGINE=InnoDB")
     },
     async identity() {
       const [version] = await client.query<(RowDataPacket & { v: string })[]>("SELECT VERSION() AS v")
@@ -337,8 +285,60 @@ async function mysqlInnoDB(): Promise<Engine> {
         },
       }
     },
-    async close() {
-      await client.end()
+    async insertBatch(ids, tenants, payload) {
+      const values = ids.map((id, i) => `(UNHEX('${id}'), ${tenants[i]}, UNHEX('${payload}'))`)
+      await client.query(`INSERT INTO t (id, tenant, payload) VALUES ${values.join(",")}`)
+    },
+    async lookups(ids, probes) {
+      let hits = 0
+      for (let i = 0; i < probes; i += 1) {
+        const [rows] = await client.query<RowDataPacket[]>("SELECT id FROM t WHERE id = ?", [
+          Buffer.from(ids[i % ids.length], "hex"),
+        ])
+        if (rows.length) hits += 1
+      }
+      return hits
+    },
+    async maintenance() {
+      await client.query("OPTIMIZE TABLE t")
+    },
+    name: "mysql-innodb",
+    async plan() {
+      const [rows] = await client.query<RowDataPacket[]>("EXPLAIN FORMAT=JSON SELECT id FROM t WHERE id = ?", [
+        Buffer.alloc(16),
+      ])
+      return JSON.stringify(rows[0] ?? {})
+    },
+    async rangeScan(limit) {
+      const [rows] = await client.query<(RowDataPacket & { n: number })[]>(
+        "SELECT COUNT(*) AS n FROM t WHERE id >= ?",
+        [Buffer.alloc(16)],
+      )
+      return Math.min(limit, rows[0]?.n ?? 0)
+    },
+    async remove(limit) {
+      const [result] = await client.query("DELETE FROM t LIMIT ?", [limit])
+      return (result as { affectedRows?: number }).affectedRows ?? 0
+    },
+    async storage() {
+      const [rows] = await client.query<(RowDataPacket & { data: number; idx: number })[]>(
+        "SELECT data_length AS data, index_length AS idx FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 't'",
+      )
+      const row = rows[0]
+      return {
+        tableBytes: Number(row?.data ?? 0),
+        indexBytes: Number(row?.idx ?? 0),
+        totalBytes: Number(row?.data ?? 0) + Number(row?.idx ?? 0),
+      }
+    },
+    async update(limit) {
+      await client.query("UPDATE t SET payload = payload LIMIT ?", [limit])
+    },
+    async walBytes() {
+      const [rows] = await client.query<(RowDataPacket & { written: number })[]>(
+        "SELECT VARIABLE_VALUE AS written FROM performance_schema.global_status WHERE VARIABLE_NAME = 'Innodb_os_log_written'",
+      )
+      return rows[0] ? Number(rows[0].written) : null
     },
   }
 }
@@ -358,14 +358,14 @@ async function runEngine(engine: Engine): Promise<EngineResult> {
   const arms: Record<string, Aggregate> = {}
   for (const arm of Object.keys(ARMS)) {
     arms[arm] = {
-      reps: 0,
+      concurrent: 0,
+      delete: [],
       insert: [],
+      maintenance: [],
       pointLookup: [],
       rangeScan: [],
+      reps: 0,
       update: [],
-      delete: [],
-      maintenance: [],
-      concurrent: 0,
     }
   }
   const queryPlans: Record<string, string> = {}
@@ -375,7 +375,7 @@ async function runEngine(engine: Engine): Promise<EngineResult> {
   for (const distribution of DISTRIBUTIONS) {
     for (const arm of Object.keys(ARMS)) {
       const acc = arms[arm]
-      for (let rep = 0; rep < REPS; rep++) {
+      for (let rep = 0; rep < REPS; rep += 1) {
         const random = mulberry32(1000 + rep)
         const ids: string[] = []
         await engine.fresh()
@@ -385,11 +385,11 @@ async function runEngine(engine: Engine): Promise<EngineResult> {
           const size = Math.min(BATCH, ROWS - base)
           const batchIds: string[] = []
           const tenants: number[] = []
-          for (let i = 0; i < size; i++) {
+          for (let i = 0; i < size; i += 1) {
             const id = hex(ARMS[arm]())
             batchIds.push(id)
             tenants.push(tenantFor(distribution, base + i, random))
-            if (base + i < PROBES) ids.push(id)
+            if (base + i < PROBES) {ids.push(id)}
           }
           await engine.insertBatch(batchIds, tenants, payloadHex(random))
         }
@@ -436,31 +436,22 @@ async function runEngine(engine: Engine): Promise<EngineResult> {
   for (const [arm, acc] of Object.entries(arms)) {
     const insert = percentiles(acc.insert)
     cells[arm] = {
-      reps: acc.reps / DISTRIBUTIONS.length,
+      concurrentWriters: acc.concurrent / DISTRIBUTIONS.length,
+      delete: percentiles(acc.delete),
       insert,
+      maintenance: percentiles(acc.maintenance),
       pointLookup: percentiles(acc.pointLookup),
       rangeScan: percentiles(acc.rangeScan),
-      update: percentiles(acc.update),
-      delete: percentiles(acc.delete),
-      maintenance: percentiles(acc.maintenance),
-      concurrentWriters: acc.concurrent / DISTRIBUTIONS.length,
+      reps: acc.reps / DISTRIBUTIONS.length,
       rowsPerSec: insert.p50,
+      update: percentiles(acc.update),
     }
   }
 
   return {
-    engine: engine.name,
-    serverVersion: identity.serverVersion,
-    serverConfig: identity.serverConfig,
-    rows: ROWS,
-    reps: REPS,
     arms: cells,
-    workloads: [...WORKLOADS],
     distributions: [...DISTRIBUTIONS],
-    queryPlans,
-    storage,
-    walBytes:
-      walBefore === null || walAfter === null ? null : Math.max(0, walAfter - walBefore),
+    engine: engine.name,
     maintenance: {
       cells: Object.keys(cells).length,
       totalSamples: Object.values(cells).reduce(
@@ -468,11 +459,20 @@ async function runEngine(engine: Engine): Promise<EngineResult> {
         0,
       ),
     },
+    queryPlans,
+    reps: REPS,
+    rows: ROWS,
+    serverConfig: identity.serverConfig,
+    serverVersion: identity.serverVersion,
+    storage,
+    walBytes:
+      walBefore === null || walAfter === null ? null : Math.max(0, walAfter - walBefore),
+    workloads: [...WORKLOADS],
   }
 }
 
 const commit = (): string => {
-  if (process.env.GENOID_COMMIT) return process.env.GENOID_COMMIT
+  if (process.env.GENOID_COMMIT) {return process.env.GENOID_COMMIT}
   try {
     return execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf-8" }).trim()
   } catch {
@@ -481,19 +481,19 @@ const commit = (): string => {
 }
 
 const out: Record<string, unknown> = {
+  config: { batch: BATCH, blobBytes: BLOB_BYTES, probes: PROBES, reps: REPS, rows: ROWS, writers: WRITERS },
   generatedAt: new Date().toISOString(),
-  implementationCommit: commit(),
-  hardware: {
-    platform: process.platform,
-    arch: process.arch,
-    cpu: process.env.PROCESSOR_IDENTIFIER ?? "unknown",
-    cores: process.env.NUMBER_OF_PROCESSORS ?? "unknown",
-  },
-  config: { rows: ROWS, reps: REPS, probes: PROBES, batch: BATCH, writers: WRITERS, blobBytes: BLOB_BYTES },
   generationModes: { structured: algo.getStructuredGenerationMode() },
+  hardware: {
+    arch: process.arch,
+    cores: process.env.NUMBER_OF_PROCESSORS ?? "unknown",
+    cpu: process.env.PROCESSOR_IDENTIFIER ?? "unknown",
+    platform: process.platform,
+  },
+  implementationCommit: commit(),
 }
 
-const MODE_ALIASES: Record<string, EngineName> = { pg: "postgresql", mysql: "mysql-innodb" }
+const MODE_ALIASES: Record<string, EngineName> = { mysql: "mysql-innodb", pg: "postgresql" }
 const targets: EngineName[] =
   MODE === "both" ? [...ENGINES] : [MODE_ALIASES[MODE] ?? (MODE as EngineName)]
 
