@@ -43,7 +43,7 @@ export function wordTable(): string[] | null {
   if (_leanFootprint) {return null}
   if (_wordTable === null) {
     const w = Array.from<string>({ length: 65_536 })
-    for (let i = 0; i < 65_536; i += 1) {w[i] = HEX8[i >> 8] + HEX8[i & 0xff]}
+    for (let i = 0; i < 65_536; i += 1) {w[i] = HEX8[Math.trunc(i / 256)] + HEX8[i % 256]}
     _wordTable = w
   }
   return _wordTable
@@ -164,16 +164,16 @@ export function createSeededRandom(seed0: number, seed1: number): RandomFill {
     let off = 0
     while (off < buf.length) {
       let t = s1
-      t ^= t << 23
-      t ^= t >>> 17
+      t = xor32(t, shiftLeft(t, 23))
+      t = xor32(t, shiftRightUnsigned(t, 17))
       t ^= s0
-      t ^= s0 >>> 26
+      t = xor32(t, shiftRightUnsigned(s0, 26))
       s0 = s1
       s1 = t
-      buf[off += 1] = s1 & 0xff
-      if (off < buf.length) {buf[off += 1] = (s1 >>> 8) & 0xff}
-      if (off < buf.length) {buf[off += 1] = (s1 >>> 16) & 0xff}
-      if (off < buf.length) {buf[off += 1] = (s1 >>> 24) & 0xff}
+      buf[off += 1] = s1 % 256
+      if (off < buf.length) {buf[off += 1] = shiftRightUnsigned(s1, 8) % 256}
+      if (off < buf.length) {buf[off += 1] = shiftRightUnsigned(s1, 16) % 256}
+      if (off < buf.length) {buf[off += 1] = shiftRightUnsigned(s1, 24) % 256}
     }
   }
 }
@@ -207,15 +207,15 @@ export function genV7(): string {
   fillRandom(_v7Rnd)
   const ts = Date.now()
   const bytes = _v7Bytes
-  bytes[0] = (ts / 2 ** 40) & 0xff
-  bytes[1] = (ts / 2 ** 32) & 0xff
-  bytes[2] = (ts / 2 ** 24) & 0xff
-  bytes[3] = (ts / 2 ** 16) & 0xff
-  bytes[4] = (ts / 2 ** 8) & 0xff
-  bytes[5] = ts & 0xff
+  bytes[0] = Math.trunc(ts / 2 ** 40) % 256
+  bytes[1] = Math.trunc(ts / 2 ** 32) % 256
+  bytes[2] = Math.trunc(ts / 2 ** 24) % 256
+  bytes[3] = Math.trunc(ts / 2 ** 16) % 256
+  bytes[4] = Math.trunc(ts / 2 ** 8) % 256
+  bytes[5] = ts % 256
   bytes.set(_v7Rnd, 6)
-  bytes[6] = (bytes[6] & 0x0f) | 0x70
-  bytes[8] = (bytes[8] & 0x3f) | 0x80
+  bytes[6] = or32(and32(bytes[6], 0x0f), 0x70)
+  bytes[8] = or32(and32(bytes[8], 0x3f), 0x80)
   return toUuidString(bytes)
 }
 
@@ -224,7 +224,7 @@ export function genMathRandom(): string {
     /[xy]/gu,
     (c: string) => {
       const r = Math.trunc(Math.random() * 16)
-      const v = c === "x" ? r : (r & 0x3) | 0x8
+      const v = c === "x" ? r : or32(and32(r, 0x3), 0x8)
       return v.toString(16)
     },
   )
@@ -240,8 +240,8 @@ export async function genHashUUID(): Promise<string> {
     throw new Error(`genHashUUID: SubtleCrypto unavailable — ${(error as Error).message}`, { cause: error })
   }
   const bytes = new Uint8Array(digest).slice(0, 16)
-  bytes[6] = (bytes[6] & 0x0f) | 0x50
-  bytes[8] = (bytes[8] & 0x3f) | 0x80
+  bytes[6] = or32(and32(bytes[6], 0x0f), 0x50)
+  bytes[8] = or32(and32(bytes[8], 0x3f), 0x80)
   return toUuidString(bytes)
 }
 
@@ -265,14 +265,14 @@ function refillGenoPool(): void {
   fillRandom(g)
   for (let i = 0; i < _genoPoolN; i += 1) {
     const off = i * e
-    const cut = g[off + 32] & 15
-    const mutPos = g[off + 33] & 15
+    const cut = g[off + 32] % 16
+    const mutPos = g[off + 33] % 16
     let j = 0
     for (; j < cut; j += 1) {_child[j] = g[off + j]}
     for (; j < 16; j += 1) {_child[j] = g[off + 16 + j]}
-    _child[mutPos] ^= g[off + ((mutPos + 1) & 15)]
-    _child[6] = (_child[6] & 0x0f) | 0x80
-    _child[8] = (_child[8] & 0x3f) | 0x80
+    _child[mutPos] = xor32(_child[mutPos], g[off + ((mutPos + 1) % 16)])
+    _child[6] = or32(and32(_child[6], 0x0f), 0x80)
+    _child[8] = or32(and32(_child[8], 0x3f), 0x80)
     const c = _child
     _genoStrs[i] = formatUuidBytes(c, w, t)
   }
@@ -632,7 +632,7 @@ export function copyField(
 export function forceVersionVariant(bytes: Uint8Array): void {
   if (bytes.length < 9) {throw new Error(`forceVersionVariant: expected ≥9 bytes, got ${bytes.length}`)}
   bytes[6] = (bytes[6] & 0x0f) | 0x80
-  bytes[8] = (bytes[8] & 0x3f) | 0x80
+  bytes[8] = or32(and32(bytes[8], 0x3f), 0x80)
 }
 
 // Precomputed per-byte masks for a field (cached per V8Field). Each entry says
@@ -1702,8 +1702,7 @@ function refillSingleParentPool(layout: V8Layout): void {
   let pool: Uint8Array<ArrayBuffer>
   let strs: string[]
   if (entry && entry.pool.length >= STRUCT_ENTRY * size) {
-    ({ pool } = entry)
-    ({ strs } = entry)
+    ({ pool, strs } = entry)
     strs.length = size
   } else {
     pool = new Uint8Array(STRUCT_ENTRY * size)
