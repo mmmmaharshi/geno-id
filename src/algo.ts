@@ -8,69 +8,24 @@ export const HEX8: string[] = Array.from({ length: 256 }, (_, i) =>
   i.toString(16).padStart(2, "0"),
 )
 
-// Integer bit-op replacements for the lint-clean build (no-bitwise rule). These
-// mirror src/scripts/shared/int32.ts so the core stays self-contained.
+// Integer bit-op replacements for the lint-clean build (no-bitwise rule).
 const UINT32_RANGE = 4_294_967_296
 const INT32_HALF_RANGE = 2_147_483_648
 const BITS_PER_BYTE = 8
 const BYTE_TABLE_SIZE = 65_536
 const BYTE_VALUE_RANGE = 256
-
-function toUint32(x: number): number {
-  const m = Math.trunc(x) % UINT32_RANGE
-  return m < 0 ? m + UINT32_RANGE : m
-}
-function toInt32(x: number): number {
-  const u = toUint32(x)
-  return u >= INT32_HALF_RANGE ? u - UINT32_RANGE : u
-}
+function toUint32(x: number): number { const m = Math.trunc(x) % UINT32_RANGE; return m < 0 ? m + UINT32_RANGE : m }
+function toInt32(x: number): number { const u = toUint32(x); return u >= INT32_HALF_RANGE ? u - UINT32_RANGE : u }
 function shiftRightUnsigned(x: number, n: number): number { return Math.trunc(toUint32(x) / 2 ** n) }
 function shiftLeft(x: number, n: number): number { return toInt32((toUint32(x) % 2 ** (32 - n)) * 2 ** n) }
-
-function xorBytes(a: number, b: number): number {
-  let p = 1, r = 0, x = a, y = b
-  for (let i = 0; i < BITS_PER_BYTE; i += 1) {
-    if (x % 2 !== y % 2) { r += p }
-    x = Math.trunc(x / 2); y = Math.trunc(y / 2); p *= 2
-  }
-  return r
-}
-function andBytes(a: number, b: number): number {
-  let p = 1, r = 0, x = a, y = b
-  for (let i = 0; i < BITS_PER_BYTE; i += 1) {
-    if (x % 2 === 1 && y % 2 === 1) { r += p }
-    x = Math.trunc(x / 2); y = Math.trunc(y / 2); p *= 2
-  }
-  return r
-}
-function buildByteTable(combine: (a: number, b: number) => number): Uint8Array {
-  const t = new Uint8Array(BYTE_TABLE_SIZE)
-  for (let i = 0; i < BYTE_TABLE_SIZE; i += 1) {
-    t[i] = combine(Math.trunc(i / BYTE_VALUE_RANGE), i % BYTE_VALUE_RANGE)
-  }
-  return t
-}
+function xorBytes(a: number, b: number): number { let p = 1, r = 0, x = a, y = b; for (let i = 0; i < BITS_PER_BYTE; i += 1) { if (x % 2 !== y % 2) { r += p } x = Math.trunc(x / 2); y = Math.trunc(y / 2); p *= 2 } return r }
+function andBytes(a: number, b: number): number { let p = 1, r = 0, x = a, y = b; for (let i = 0; i < BITS_PER_BYTE; i += 1) { if (x % 2 === 1 && y % 2 === 1) { r += p } x = Math.trunc(x / 2); y = Math.trunc(y / 2); p *= 2 } return r }
+function buildByteTable(combine: (a: number, b: number) => number): Uint8Array { const t = new Uint8Array(BYTE_TABLE_SIZE); for (let i = 0; i < BYTE_TABLE_SIZE; i += 1) { t[i] = combine(Math.trunc(i / BYTE_VALUE_RANGE), i % BYTE_VALUE_RANGE) } return t }
 const XOR_TABLE = buildByteTable(xorBytes)
 const AND_TABLE = buildByteTable(andBytes)
 function tableByteAt(u: number, k: number): number { return Math.trunc(u / BYTE_VALUE_RANGE ** k) % BYTE_VALUE_RANGE }
-export function xor32(a: number, b: number): number {
-  const ua = toUint32(a), ub = toUint32(b)
-  return toInt32(
-    XOR_TABLE[(ua % BYTE_VALUE_RANGE) * BYTE_VALUE_RANGE + (ub % BYTE_VALUE_RANGE)]
-      + XOR_TABLE[tableByteAt(ua, 1) * BYTE_VALUE_RANGE + tableByteAt(ub, 1)] * BYTE_VALUE_RANGE
-      + XOR_TABLE[tableByteAt(ua, 2) * BYTE_VALUE_RANGE + tableByteAt(ub, 2)] * 65_536
-      + XOR_TABLE[tableByteAt(ua, 3) * BYTE_VALUE_RANGE + tableByteAt(ub, 3)] * 16_777_216,
-  )
-}
-export function and32(a: number, b: number): number {
-  const ua = toUint32(a), ub = toUint32(b)
-  return toInt32(
-    AND_TABLE[(ua % BYTE_VALUE_RANGE) * BYTE_VALUE_RANGE + (ub % BYTE_VALUE_RANGE)]
-      + AND_TABLE[tableByteAt(ua, 1) * BYTE_VALUE_RANGE + tableByteAt(ub, 1)] * BYTE_VALUE_RANGE
-      + AND_TABLE[tableByteAt(ua, 2) * BYTE_VALUE_RANGE + tableByteAt(ub, 2)] * 65_536
-      + AND_TABLE[tableByteAt(ua, 3) * BYTE_VALUE_RANGE + tableByteAt(ub, 3)] * 16_777_216,
-  )
-}
+export function xor32(a: number, b: number): number { const ua = toUint32(a), ub = toUint32(b); return toInt32(XOR_TABLE[(ua % BYTE_VALUE_RANGE) * BYTE_VALUE_RANGE + (ub % BYTE_VALUE_RANGE)] + XOR_TABLE[tableByteAt(ua, 1) * BYTE_VALUE_RANGE + tableByteAt(ub, 1)] * BYTE_VALUE_RANGE + XOR_TABLE[tableByteAt(ua, 2) * BYTE_VALUE_RANGE + tableByteAt(ub, 2)] * 65_536 + XOR_TABLE[tableByteAt(ua, 3) * BYTE_VALUE_RANGE + tableByteAt(ub, 3)] * 16_777_216) }
+export function and32(a: number, b: number): number { const ua = toUint32(a), ub = toUint32(b); return toInt32(AND_TABLE[(ua % BYTE_VALUE_RANGE) * BYTE_VALUE_RANGE + (ub % BYTE_VALUE_RANGE)] + AND_TABLE[tableByteAt(ua, 1) * BYTE_VALUE_RANGE + tableByteAt(ub, 1)] * BYTE_VALUE_RANGE + AND_TABLE[tableByteAt(ua, 2) * BYTE_VALUE_RANGE + tableByteAt(ub, 2)] * 65_536 + AND_TABLE[tableByteAt(ua, 3) * BYTE_VALUE_RANGE + tableByteAt(ub, 3)] * 16_777_216) }
 export function or32(a: number, b: number): number { return toInt32(toUint32(xor32(a, b)) + toUint32(and32(a, b))) }
 function xorByte(a: number, b: number): number { return XOR_TABLE[a * BYTE_VALUE_RANGE + b] }
 function andByte(a: number, b: number): number { return AND_TABLE[a * BYTE_VALUE_RANGE + b] }
