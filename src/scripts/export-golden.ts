@@ -68,7 +68,7 @@ function emitCompiled(layout: Layout, name: string, label: string): void {
   const factory = new Function("h", "w", "cr", compiled.source) as (
     h: string[],
     w: string[] | null,
-    cr: { getRandomValues(buf: Uint8Array): void },
+    cr: { getRandomValues: (buf: Uint8Array) => void },
   ) => () => string
   const cfn = factory(algo.HEX8, algo.wordTable(), cr)
   const origNow = Date.now

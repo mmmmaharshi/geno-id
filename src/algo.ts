@@ -2099,9 +2099,9 @@ export function compileLayout(layout: V8Layout, poolSize = 0): CompiledLayout {
     const factory = new Function("h", "w", "cr", source) as (
       h: string[],
       w: string[] | null,
-      cr: { getRandomValues(b: Uint8Array): void },
+      cr: { getRandomValues: (b: Uint8Array) => void },
     ) => () => string
-    fn = factory(HEX8, wordTable(), globalThis.crypto as { getRandomValues(b: Uint8Array): void })
+    fn = factory(HEX8, wordTable(), globalThis.crypto as { getRandomValues: (b: Uint8Array) => void })
   } catch {
     // fn stays as throw wrapper
   }

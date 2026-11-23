@@ -149,7 +149,7 @@ test("compileLayout bytes identical to interpreted when using same CSPRNG draw",
   const factory = new Function("h", "w", "cr", compiledSrc) as (
     h: string[],
     w: string[] | null,
-    cr: { getRandomValues(buf: Uint8Array): void },
+    cr: { getRandomValues: (buf: Uint8Array) => void },
   ) => () => string
   const cfn = factory(HEX8, algoWordTable(), injectedCr)
 
@@ -208,7 +208,7 @@ test("compileLayout fn throws usably when no crypto", () => {
   const factory = new Function("h", "w", "cr", compiled.source) as (
     h: string[],
     w: string[] | null,
-    cr: { getRandomValues(buf: Uint8Array): void },
+    cr: { getRandomValues: (buf: Uint8Array) => void },
   ) => () => string
   const cfn = factory(HEX8, algoWordTable(), badCrypto)
   // Must fail closed (TypeError on the missing crypto), never silently emit IDs.
@@ -232,7 +232,7 @@ test("compileLayout deterministic: same seed produces same output", () => {
     const factory = new Function("h", "w", "cr", compiled.source) as (
       h: string[],
       w: string[] | null,
-      cr: { getRandomValues(buf: Uint8Array): void },
+      cr: { getRandomValues: (buf: Uint8Array) => void },
     ) => () => string
     return { cfn: factory(HEX8, algoWordTable(), cr) }
   }

@@ -156,10 +156,10 @@ for (const e of ENGINES) {
 // same PK range queries; only the DDL, placeholders, and count type differ.
 interface BenchDb {
   readonly engine: string
-  createIdsTable(): Promise<void>
-  insertIds(ids: Uint8Array[]): Promise<number>
-  countRanges(ranges: [number, number][]): Promise<number>
-  close(): Promise<void>
+  createIdsTable: () => Promise<void>
+  insertIds: (ids: Uint8Array[]) => Promise<number>
+  countRanges: (ranges: [number, number][]) => Promise<number>
+  close: () => Promise<void>
 }
 
 function rangeBounds(range: [number, number]): [Uint8Array, Uint8Array] {
