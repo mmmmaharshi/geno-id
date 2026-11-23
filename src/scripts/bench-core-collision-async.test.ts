@@ -10,7 +10,8 @@ import {
 // timeout. The batched form must return an identical duplicate count.
 const deterministic = (values: readonly string[]): (() => Promise<string>) => {
   let i = 0
-  return async () => values[i += 1 % values.length]
+  i += 1 % values.length
+  return async () => values[i]
 }
 
 const unique = (n: number): string[] =>
@@ -93,7 +94,8 @@ test("the async path issues the whole batch concurrently, not one call at a time
     if (inFlight > maxInFlight) {maxInFlight = inFlight}
     await Promise.resolve()
     inFlight -= 1
-    return values[next += 1 % values.length]
+    next += 1 % values.length
+    return values[next]
   }
 
   await collisionTestAsync(track, 50, 25)

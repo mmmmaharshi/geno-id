@@ -60,7 +60,8 @@ const _pool = new Uint8Array(1 << 16)
 let _pi = _pool.length
 function rndByte(): number {
   if (_pi >= _pool.length) { crypto.getRandomValues(_pool); _pi = 0 }
-  return _pool[_pi += 1]
+  _pi += 1
+  return _pool[_pi]
 }
 
 function genoNsPerId(layout: unknown, samples: number): { nsPerId: number; repairsPerId: number } {

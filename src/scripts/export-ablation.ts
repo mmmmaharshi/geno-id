@@ -78,7 +78,8 @@ function genFull(): string {
     }
     _idx = 0
   }
-  return _strs[_idx += 1]
+  _idx += 1
+  return _strs[_idx]
 }
 
 // 3. crossover-only: 34B, crossover, NO mutation
@@ -109,7 +110,8 @@ function genCrossoverOnly(): string {
     }
     _idxX = 0
   }
-  return _strsX[_idxX += 1]
+  _idxX += 1
+  return _strsX[_idxX]
 }
 
 // 4. mutation-only: 34B, NO crossover (always all from parent A), mutation
@@ -140,7 +142,8 @@ function genMutationOnly(): string {
     }
     _idxM = 0
   }
-  return _strsM[_idxM += 1]
+  _idxM += 1
+  return _strsM[_idxM]
 }
 
 // ---- Export ----

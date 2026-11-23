@@ -289,7 +289,8 @@ export function genGenoID(): string {
   if (_genoIdx >= _genoPoolN) {
     refillGenoPool()
   }
-  return _genoStrs[_genoIdx += 1]
+  _genoIdx += 1
+  return _genoStrs[_genoIdx]
 }
 
 // ---------- Structured RFC 9562 v8 composition framework ----------
@@ -1765,7 +1766,8 @@ export function genStructuredGenoIDSingleParent(layout: V8Layout): string {
     refillSingleParentPool(layout)
     p = _spPool.get(structureKey)!
   }
-  return p.strs[p.idx += 1]
+  p.idx += 1
+  return p.strs[p.idx]
 }
 
 // Cache for compiled structured generators (per layout structure).

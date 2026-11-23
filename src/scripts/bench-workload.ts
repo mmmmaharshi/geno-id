@@ -204,7 +204,7 @@ function makePgDb(): BenchDb {
     },
     async countRanges(ranges: [number, number][]): Promise<number> {
       let i = 0
-      const terms = ranges.map(() => `(id >= $${i += 1} AND id <= $${i += 1})`).join(" OR ")
+      const terms = ranges.map(() => { i += 1; const lo = i; i += 1; const hi = i; return `(id >= ${lo} AND id <= ${hi})` }).join(" OR ")
       const params: Uint8Array[] = []
       for (const r of ranges) {params.push(...rangeBounds(r))}
       const result = await db.query(`SELECT COUNT(*) AS n FROM ids WHERE ${terms}`, params)
