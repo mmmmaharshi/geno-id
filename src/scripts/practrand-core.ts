@@ -23,7 +23,7 @@ export interface PractRandRow {
 
 const ROW_RE = /^\s*(.+?)\s*:\s*([0-9]*\.?[0-9]+(?:[eE][+-]?\d+)?)\s*\(\s*([0-9]*\.?[0-9]+(?:[eE][+-]?\d+)?)\s*\)\s*(.*)$/u
 
-const VERDICT_RE = /\[(unusual|very unusual|extremely unusual|FAILED|failed|PASSED|passed)\]/u
+const VERDICT_RE = /\[(?<verdict>unusual|very unusual|extremely unusual|FAILED|failed|PASSED|passed)\]/u
 
 export function parsePractrandOutput(output: string): PractRandRow[] {
   const rows: PractRandRow[] = []
