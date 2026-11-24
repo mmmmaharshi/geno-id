@@ -17,6 +17,8 @@ const __dirname = import.meta.dirname
 
 const root = path.resolve(__dirname, "..", "..")
 
+const DEFAULT_TIMEOUT_MS = 600_000
+
 const MIME: Record<string, string> = {
   ".css": "text/css",
 
@@ -246,7 +248,7 @@ const runBenchmark = async (
     throw new Error(`HTML file not found: ${htmlPath}`)
   }
 
-  let timeout = 300_000
+  let timeout = DEFAULT_TIMEOUT_MS
 
   if (typeof args.timeout === "string") {
     timeout = Math.trunc(Number(args.timeout))

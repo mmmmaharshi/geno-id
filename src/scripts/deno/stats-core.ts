@@ -183,9 +183,7 @@ export async function runBattery(
   const bytes = new Uint8Array(16)
 
   for (let s = 0; s < n; s += 1) {
-    const uuid: string = isAsync
-      ? await fn() as Promise<string>
-      : fn() as string
+    const uuid = await fn()
 
     hexToBytes(uuid, bytes)
 

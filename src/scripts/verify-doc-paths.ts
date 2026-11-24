@@ -45,7 +45,9 @@ for (const rel of files) {
   for (const m of text.matchAll(PATTERN)) {
     const ref = m[1].replace(/:\d+$/u, "").replace(/[.,:;)]+$/u, "")
 
-    if (seen.has(ref) || ref.includes("*") || ref.endsWith("/")) {
+    const skip = seen.has(ref) || ref.includes("*") || ref.endsWith("/")
+
+    if (!skip) {
       seen.add(ref)
 
       const abs = path.join(root, ref)
