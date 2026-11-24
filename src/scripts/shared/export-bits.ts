@@ -1,17 +1,12 @@
-import { andBits, orBits } from "../../shared/bitwise.ts"
-// Shared NIST bit-stream export helpers: hex decoding plus the raw-v8
-
-// Generator (CSPRNG bytes in v8 format, no GA). Previously copied into every
-
-// Src/scripts/export-*.ts and src/scripts/dieharder-common.ts; this module is the
-
-// Single home. Side-effect free apart from reading dist/algo.js like every
-
-// Other export script.
-
 import path from "node:path"
-
+// Shared NIST bit-stream export helpers: hex decoding plus the raw-v8
+// Generator (CSPRNG bytes in v8 format, no GA). Previously copied into every
+// Src/scripts/export-*.ts and src/scripts/dieharder-common.ts; this module is the
+// Single home. Side-effect free apart from reading dist/algo.js like every
+// Other export script.
 import { pathToFileURL } from "node:url"
+
+import { andBits, orBits } from "../../shared/bitwise.ts"
 
 const root = path.resolve(import.meta.dirname, "..", "..", "..")
 
@@ -40,9 +35,9 @@ export const genRawV8 = (): string => {
 
   crypto.getRandomValues(bytes)
 
-  bytes[6] = orBits(andBits(bytes[6], 0x0F), 0x80)
+  bytes[6] = orBits(andBits(bytes[6], 0x0f), 0x80)
 
-  bytes[8] = orBits(andBits(bytes[8], 0x3F), 0x80)
+  bytes[8] = orBits(andBits(bytes[8], 0x3f), 0x80)
 
   return toUuidString(bytes)
 }

@@ -1,3 +1,9 @@
+import { Database } from "bun:sqlite"
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import os from "node:os"
+import path from "node:path"
+import { pathToFileURL } from "node:url"
+
 import type { V8Field, V8Layout } from "../../dist/algo.js"
 import {
   andBits,
@@ -5,22 +11,9 @@ import {
   shiftLeftBits,
   shiftRightBits,
 } from "../shared/bitwise.ts"
-
-import { gitSha, runtimeVersion } from "./shared/cli-utils.ts"
-
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
-
-import { Database } from "bun:sqlite"
-
 import { need } from "../shared/need.ts"
-
+import { gitSha, runtimeVersion } from "./shared/cli-utils.ts"
 import { nullValue } from "./shared/runtime-values.ts"
-
-import os from "node:os"
-
-import path from "node:path"
-
-import { pathToFileURL } from "node:url"
 
 // Small local multi-shard experiment. Shards are in-process SQLite files on one
 
@@ -48,12 +41,12 @@ const algo = (await import(
 
     b: Readonly<Uint8Array>,
 
-    select: number,
+    select: number
   ) => Uint8Array
 
   readStructured: (
     uuid: string,
-    layout: Readonly<V8Layout>,
+    layout: Readonly<V8Layout>
   ) => Record<string, number>
 
   uuidToBytes: (uuid: string) => Uint8Array
@@ -70,7 +63,7 @@ const PROBES = Math.max(1, Number(process.env.CLUSTER_PROBES ?? 200))
 const MIGRATE_ROWS = Math.max(
   1,
 
-  Number(process.env.CLUSTER_MIGRATE ?? Math.floor(ROWS / 5)),
+  Number(process.env.CLUSTER_MIGRATE ?? Math.floor(ROWS / 5))
 )
 
 const OUT = process.env.CLUSTER_OUT ?? "results/cluster-experiment.json"
@@ -90,7 +83,7 @@ const mean = (xs: number[]): number => xs.reduce((a, b) => a + b, 0) / xs.length
 const versionedLayout = (
   name: string,
   generation: number,
-  allowed: number[],
+  allowed: number[]
 ): V8Layout =>
   algo.completeLayout(name, [
     { length: 48, name: "timestamp", start: 0, type: "timestamp-ms" },
@@ -130,8 +123,8 @@ const selectFromV1 = ((): number => {
       mask,
       shiftLeftBits(
         1,
-        v2.fields.findIndex((f) => f.name === name),
-      ),
+        v2.fields.findIndex((f) => f.name === name)
+      )
     )
   }
 
@@ -139,10 +132,10 @@ const selectFromV1 = ((): number => {
 })()
 
 const straddledShard = (bytes: Uint8Array): number =>
-  orBits(shiftLeftBits(andBits(bytes[6], 0x0F), 4), shiftRightBits(bytes[7], 4))
+  orBits(shiftLeftBits(andBits(bytes[6], 0x0f), 4), shiftRightBits(bytes[7], 4))
 
 const reference = JSON.parse(
-  readFileSync(path.resolve(root, REFERENCE_PATH), "utf8"),
+  readFileSync(path.resolve(root, REFERENCE_PATH), "utf8")
 ) as {
   rows: number
 
@@ -151,7 +144,7 @@ const reference = JSON.parse(
 
 if (reference.rows !== ROWS) {
   throw new Error(
-    `cluster: reference rows ${reference.rows} != CLUSTER_ROWS ${ROWS}`,
+    `cluster: reference rows ${reference.rows} != CLUSTER_ROWS ${ROWS}`
   )
 }
 
@@ -169,11 +162,11 @@ const openShard = (shard: number): Database => {
   const db = new Database(path.join(tmpDir, `shard-${shard}.db`))
 
   db.run(
-    "PRAGMA synchronous = OFF; PRAGMA journal_mode = WAL; PRAGMA cache_size = -64000",
+    "PRAGMA synchronous = OFF; PRAGMA journal_mode = WAL; PRAGMA cache_size = -64000"
   )
 
   db.run(
-    "CREATE TABLE ids (id BLOB(16) PRIMARY KEY, val INTEGER) WITHOUT ROWID",
+    "CREATE TABLE ids (id BLOB(16) PRIMARY KEY, val INTEGER) WITHOUT ROWID"
   )
 
   return db
@@ -185,10 +178,11 @@ for (const shard of V2_SHARDS) {
   shards.set(shard, openShard(shard))
 }
 
-const rows: { uuid: string; bytes: Uint8Array; shard: number; val: number }[] = []
+const rows: { uuid: string; bytes: Uint8Array; shard: number; val: number }[] =
+  []
 
 console.log(
-  `generating ${ROWS} v1 identifiers across ${V1_SHARDS.length} shards`,
+  `generating ${ROWS} v1 identifiers across ${V1_SHARDS.length} shards`
 )
 
 for (let i = 0; i < ROWS; i += 1) {
@@ -248,7 +242,7 @@ const scanMeanMs = round2(mean(scanSamples))
 const sweepMeanMs = round2(mean(sweepPerTrial))
 
 console.log(
-  `resharding ${MIGRATE_ROWS} rows from v1 shards to v2 shards ${MIGRATION_TARGETS.join(",")}`,
+  `resharding ${MIGRATE_ROWS} rows from v1 shards to v2 shards ${MIGRATION_TARGETS.join(",")}`
 )
 
 const donors = new Map<number, Uint8Array>()
@@ -265,8 +259,12 @@ for (const target of MIGRATION_TARGETS) {
   }
 }
 
-const migrated: { uuid: string; bytes: Uint8Array; shard: number; val: number }[] =
-  []
+const migrated: {
+  uuid: string
+  bytes: Uint8Array
+  shard: number
+  val: number
+}[] = []
 
 const migratedFlags = new Uint8Array(ROWS)
 
@@ -290,7 +288,7 @@ while (done < MIGRATE_ROWS) {
       v2,
       source.bytes,
       need(donors.get(target)),
-      selectFromV1,
+      selectFromV1
     )
 
     const uuid = algo.toUuidString(bytes)
@@ -341,7 +339,10 @@ const dualRead = (uuid: string): { generation: number; shard: number } => {
   throw new Error("cluster: dual read found no versioned layout for identifier")
 }
 
-const singleRead = (uuid: string, generation: number): {
+const singleRead = (
+  uuid: string,
+  generation: number
+): {
   generation: number
   shard: number
 } => {
@@ -447,13 +448,15 @@ let integrityOk = true
 for (const shard of V2_SHARDS) {
   const db = need(shards.get(shard))
 
-  postCounts[String(shard)] = (db
-    .query("SELECT COUNT(*) AS n FROM ids")
-    .get() as { n: number }).n
+  postCounts[String(shard)] = (
+    db.query("SELECT COUNT(*) AS n FROM ids").get() as { n: number }
+  ).n
 
-  const integrity = (db.query("PRAGMA integrity_check").get() as {
-    integrity_check: string
-  }).integrity_check
+  const integrity = (
+    db.query("PRAGMA integrity_check").get() as {
+      integrity_check: string
+    }
+  ).integrity_check
 
   integrityOk &&= integrity === "ok"
 
@@ -658,7 +661,7 @@ mkdirSync(path.dirname(path.resolve(root, OUT)), { recursive: true })
 
 writeFileSync(
   path.resolve(root, OUT),
-  `${JSON.stringify(report, nullValue, 2)}\n`,
+  `${JSON.stringify(report, nullValue, 2)}\n`
 )
 
 try {
@@ -670,15 +673,15 @@ try {
 console.log(`\n=== Local multi-shard result ===`)
 
 console.log(
-  `shard-major scan: ${scanMeanMs} ms vs single index ${report.scan.reference.shardRangeScanMs} ms (${report.derived.shard_major_scan_ratio_vs_single_index}x)`,
+  `shard-major scan: ${scanMeanMs} ms vs single index ${report.scan.reference.shardRangeScanMs} ms (${report.derived.shard_major_scan_ratio_vs_single_index}x)`
 )
 
 console.log(
-  `reshard: ${report.reshard.rowsPerSec} rows/s over ${migrated.length} rows`,
+  `reshard: ${report.reshard.rowsPerSec} rows/s over ${migrated.length} rows`
 )
 
 console.log(
-  `dual read: ${dualMeanUs} us vs single layout ${singleMeanUs} us (${report.derived.dual_read_overhead_ratio}x)`,
+  `dual read: ${dualMeanUs} us vs single layout ${singleMeanUs} us (${report.derived.dual_read_overhead_ratio}x)`
 )
 
 console.log(`wrote ${OUT}`)

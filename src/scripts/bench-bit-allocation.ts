@@ -1,14 +1,10 @@
-import { gitSha, mulberry32 } from "./shared/cli-utils.ts"
-
 import { mkdirSync, writeFileSync } from "node:fs"
-
-import { nullValue } from "./shared/runtime-values.ts"
-
 import os from "node:os"
-
 import path from "node:path"
-
 import { pathToFileURL } from "node:url"
+
+import { gitSha, mulberry32 } from "./shared/cli-utils.ts"
+import { nullValue } from "./shared/runtime-values.ts"
 
 // Bit-allocation experiment (RQ-A).
 
@@ -58,7 +54,7 @@ const algo = (await import(
       collisionTarget?: number
 
       minRandomBits?: number
-    }>,
+    }>
   ) => {
     fields: {
       name: string
@@ -181,7 +177,10 @@ interface TrialRecord {
   gapVsRank: number
 }
 
-const runOptimalitySweep = (trials: number, seed: number): {
+const runOptimalitySweep = (
+  trials: number,
+  seed: number
+): {
   records: TrialRecord[]
 
   bruteForceAgreement: number
@@ -217,7 +216,7 @@ const runOptimalitySweep = (trials: number, seed: number): {
 
     const structuredBits = fields.reduce(
       (sum, f) => sum + minBitsForCardinality(f.cardinality),
-      0,
+      0
     )
 
     if (structuredBits <= 118) {
@@ -234,7 +233,7 @@ const runOptimalitySweep = (trials: number, seed: number): {
 
       if (plan.feasible) {
         const brute = Math.min(
-          ...permutations(fields).map((order) => weightedDepthOfOrder(order)),
+          ...permutations(fields).map((order) => weightedDepthOfOrder(order))
         )
 
         const gap =
@@ -296,8 +295,8 @@ const runOptimalitySweep = (trials: number, seed: number): {
 
     suboptimalRelativeExcess: suboptimal.map((r) =>
       Number(
-        ((r.smithDepth - r.bruteForceDepth) / r.bruteForceDepth).toFixed(6),
-      ),
+        ((r.smithDepth - r.bruteForceDepth) / r.bruteForceDepth).toFixed(6)
+      )
     ),
 
     suboptimalStructuredBitsRange: structuredBitsRange,
@@ -374,8 +373,8 @@ const runFrontier = (): FrontierPoint[] => {
       collisionProbabilityAt2M: Number(
         collisionProbabilityUpperBound(
           2_000_000,
-          plan.randomBits,
-        ).toExponential(3),
+          plan.randomBits
+        ).toExponential(3)
       ),
 
       randomBits: plan.randomBits,
@@ -417,7 +416,7 @@ const shippedDbkey = (): Record<string, unknown> => {
   return {
     collisionProbabilityAt2M: collisionProbabilityUpperBound(
       2_000_000,
-      plan.randomBits,
+      plan.randomBits
     ),
 
     depthHeadroomVsRankOrder: plan.weightedDepthRankOrder - plan.weightedDepth,
@@ -433,7 +432,7 @@ const shippedDbkey = (): Record<string, unknown> => {
 
     requiredRandomBitsFor2MAt1Percent: minRandomBitsForCollisionBudget(
       2_000_000,
-      0.01,
+      0.01
     ),
 
     structuredBits: plan.structuredBits,
@@ -565,23 +564,23 @@ mkdirSync(path.dirname(path.resolve(root, "results", "x")), { recursive: true })
 
 writeFileSync(
   path.resolve(root, "results", "bit-allocation.json"),
-  `${JSON.stringify(report, nullValue, 2)}\n`,
+  `${JSON.stringify(report, nullValue, 2)}\n`
 )
 
 console.log("\n=== E-A1: optimality vs brute force ===")
 
 console.log(
-  `instances: ${optimality.records.length}, brute-force agreement: ${(optimality.bruteForceAgreement * 100).toFixed(1)}%`,
+  `instances: ${optimality.records.length}, brute-force agreement: ${(optimality.bruteForceAgreement * 100).toFixed(1)}%`
 )
 
 console.log(
-  `role-rank order worse on ${optimality.rankWorseCount} of ${optimality.records.length} instances, median gap ${(optimality.medianGapVsRank * 100).toFixed(2)}%, max ${(optimality.maxGapVsRank * 100).toFixed(2)}%`,
+  `role-rank order worse on ${optimality.rankWorseCount} of ${optimality.records.length} instances, median gap ${(optimality.medianGapVsRank * 100).toFixed(2)}%, max ${(optimality.maxGapVsRank * 100).toFixed(2)}%`
 )
 
 console.log("\n=== E-A2: entropy-locality frontier ===")
 
 console.log(
-  ["structured", "random", "weightedDepth", "P(collision)@2M"].join("\t"),
+  ["structured", "random", "weightedDepth", "P(collision)@2M"].join("\t")
 )
 
 for (const point of frontier) {
@@ -591,7 +590,7 @@ for (const point of frontier) {
       point.randomBits,
       point.weightedDepth,
       point.collisionProbabilityAt2M,
-    ].join("\t"),
+    ].join("\t")
   )
 }
 
@@ -600,5 +599,5 @@ console.log("\n=== E-A3: shipped dbkey layout ===")
 console.log(JSON.stringify(dbkey, nullValue, 1))
 
 console.log(
-  `\nwrote results/bit-allocation.json (${(report.elapsedMsTotal / 1000).toFixed(1)}s)`,
+  `\nwrote results/bit-allocation.json (${(report.elapsedMsTotal / 1000).toFixed(1)}s)`
 )

@@ -1,10 +1,8 @@
 import fs from "node:fs"
+import path from "node:path"
+import { pathToFileURL } from "node:url"
 
 import { nullValue } from "./shared/runtime-values.ts"
-
-import path from "node:path"
-
-import { pathToFileURL } from "node:url"
 
 const __dirname = import.meta.dirname
 
@@ -54,9 +52,9 @@ const {
 
 const N = 1000
 
-const SEED0 = 0xDE_AD_BE_EF
+const SEED0 = 0xde_ad_be_ef
 
-const SEED1 = 0x4F_15_F0_0D
+const SEED1 = 0x4f_15_f0_0d
 
 const FIXED_TIME_MS = 1_700_000_000_000
 
@@ -66,7 +64,7 @@ const emit = (
   layout: Layout,
   name: string,
   gen: (l: Layout) => string,
-  label: string,
+  label: string
 ): void => {
   resetSeededState()
 
@@ -153,28 +151,28 @@ emit(
   DBKEY_LAYOUT,
   "dbkey-single-parent",
   genStructuredGenoIDSingleParent,
-  "dbkey (single-parent)",
+  "dbkey (single-parent)"
 )
 
 emit(
   MULTITENANT_LAYOUT,
   "multitenant-single-parent",
   genStructuredGenoIDSingleParent,
-  "multitenant (single-parent)",
+  "multitenant (single-parent)"
 )
 
 emit(
   EVENTSOURCING_LAYOUT,
   "eventsourcing-single-parent",
   genStructuredGenoIDSingleParent,
-  "eventsourcing (single-parent)",
+  "eventsourcing (single-parent)"
 )
 
 emit(
   CONFORMANCE_LAYOUT,
   "conformance-single-parent",
   genStructuredGenoIDSingleParent,
-  "conformance (single-parent)",
+  "conformance (single-parent)"
 )
 
 console.log("\n=== Compiled golden vectors (different CSPRNG consumption) ===")

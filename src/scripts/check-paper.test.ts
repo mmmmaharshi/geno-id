@@ -1,21 +1,18 @@
 /// <reference types="node" />
 
 import assert from "node:assert/strict"
+import { readFileSync } from "node:fs"
+import path from "node:path"
+import { test } from "node:test"
 
 import { lintPaperText } from "./check-paper.js"
-
-import path from "node:path"
-
-import { readFileSync } from "node:fs"
-
-import { test } from "node:test"
 
 const __dirname = import.meta.dirname
 
 void test("clean prose and latex ranges report no violations", () => {
   assert.deepEqual(
     lintPaperText("Plain text.\nA range $2.8$--$12.9$ is fine.\n"),
-    [],
+    []
   )
 })
 
@@ -36,7 +33,7 @@ void test("triple dash and unicode dashes report rule and line", () => {
 void test("checked-in paper.tex is clean", () => {
   const text = readFileSync(
     path.resolve(__dirname, "..", "..", "paper.tex"),
-    "utf8",
+    "utf8"
   )
 
   assert.deepEqual(lintPaperText(text), [])

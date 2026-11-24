@@ -1,4 +1,10 @@
 import {
+  shiftLeftBits,
+  shiftRightUnsignedBits,
+  xor32,
+  xorByte,
+} from "./shared/bitwise.js"
+import {
   absentValue,
   isArray,
   isMissing,
@@ -6,12 +12,6 @@ import {
   need,
   nullValue,
 } from "./shared/need.js"
-import {
-  shiftLeftBits,
-  shiftRightUnsignedBits,
-  xor32,
-  xorByte,
-} from "./shared/bitwise.js"
 
 export { and32, or32, xor32 } from "./shared/bitwise.js"
 // Single 256-entry byte->hex table. Replaces the two 65536-entry word tables
@@ -27,7 +27,7 @@ export { and32, or32, xor32 } from "./shared/bitwise.js"
 // Hex table a constrained host ("lean" footprint) ever allocates.
 
 export const HEX8: string[] = Array.from({ length: 256 }, (_, i) =>
-  i.toString(16).padStart(2, "0"),
+  i.toString(16).padStart(2, "0")
 )
 
 // Optional 65536-entry big-endian word->hex table (HEX8[hi] + HEX8[lo]). It is
@@ -89,7 +89,7 @@ const formatUuidBytes = (
   b: Readonly<Uint8Array>,
   w: string[] | null,
   t: string[],
-  o = 0,
+  o = 0
 ): string => {
   if (w) {
     return `${w[b[o] * 256 + b[o + 1]]}${w[b[o + 2] * 256 + b[o + 3]]}-${w[b[o + 4] * 256 + b[o + 5]]}-${w[b[o + 6] * 256 + b[o + 7]]}-${w[b[o + 8] * 256 + b[o + 9]]}-${w[b[o + 10] * 256 + b[o + 11]]}${w[b[o + 12] * 256 + b[o + 13]]}${w[b[o + 14] * 256 + b[o + 15]]}`
@@ -156,7 +156,7 @@ const _webCryptoFill: RandomFill = (buf) => {
 const _noRngFill: RandomFill = () => {
   throw new TypeError(
     "GenoID: no CSPRNG available — Web Crypto (crypto.getRandomValues) was not found on this host. " +
-      "Call configureRandom(fn) with a platform CSPRNG (e.g. os.urandom on MicroPython, esp_fill_random on ESP-IDF) before generating IDs.",
+      "Call configureRandom(fn) with a platform CSPRNG (e.g. os.urandom on MicroPython, esp_fill_random on ESP-IDF) before generating IDs."
   )
 }
 
@@ -182,12 +182,15 @@ const _poolMonoTick = new Map<string, number>()
 
 const _layoutTick = new Map<string, number>()
 
-const _spPool = new Map<string, {
-  pool: Uint8Array<ArrayBuffer>
-  strs: string[]
-  idx: number
-  size: number
-}>()
+const _spPool = new Map<
+  string,
+  {
+    pool: Uint8Array<ArrayBuffer>
+    strs: string[]
+    idx: number
+    size: number
+  }
+>()
 
 const _compiledGenCache = new Map<string, () => string>()
 
@@ -209,7 +212,7 @@ export const resetSeededState = (): void => {
 
 export const createSeededRandom = (
   seed0: number,
-  seed1: number,
+  seed1: number
 ): RandomFill => {
   let s0 = Math.trunc(seed0)
 
@@ -280,7 +283,7 @@ export const configureRandom = (fn: RandomFill | null): void => {
 
   if (typeof fn !== "function") {
     throw new TypeError(
-      "configureRandom: expected a function (buf: Uint8Array) => void, or null to reset",
+      "configureRandom: expected a function (buf: Uint8Array) => void, or null to reset"
     )
   }
 
@@ -335,19 +338,19 @@ export const genMathRandom = (): string =>
       }
 
       return value.toString(16)
-    },
+    }
   )
 
 const digestSeed = async (seed: Readonly<Uint8Array>): Promise<ArrayBuffer> => {
   try {
     return await crypto.subtle.digest(
       "SHA-256",
-      seed as Uint8Array<ArrayBuffer>,
+      seed as Uint8Array<ArrayBuffer>
     )
   } catch (error) {
     throw new Error(
       `genHashUUID: SubtleCrypto unavailable — ${(error as Error).message}`,
-      { cause: error },
+      { cause: error }
     )
   }
 }
@@ -476,7 +479,15 @@ export const genGenoID = (): string => {
 
 // Auto-forced at emit; layouts need not declare them.
 
-export type FieldType = "timestamp-ms" | "timestamp-us" | "counter" | "shard" | "node" | "process" | "fixed" | "random"
+export type FieldType =
+  | "timestamp-ms"
+  | "timestamp-us"
+  | "counter"
+  | "shard"
+  | "node"
+  | "process"
+  | "fixed"
+  | "random"
 
 export interface V8FieldConstraint {
   allowed?: number[]
@@ -528,7 +539,7 @@ interface ReadonlyV8Layout {
   readonly fields: readonly ReadonlyV8Field[]
 }
 
-type DeepReadonly<Value,> = Value extends (...args: never[]) => unknown
+type DeepReadonly<Value> = Value extends (...args: never[]) => unknown
   ? Value
   : Value extends readonly (infer Item)[]
     ? readonly DeepReadonly<Item>[]
@@ -584,7 +595,11 @@ export interface LayoutCompilerInput {
   collisionTarget?: number
 }
 
-export type LayoutCompilerErrorCode = "invalid-schema" | "invalid-workload" | "unknown-workload-field" | "duplicate-workload-field"
+export type LayoutCompilerErrorCode =
+  | "invalid-schema"
+  | "invalid-workload"
+  | "unknown-workload-field"
+  | "duplicate-workload-field"
 
 export class LayoutCompilerError extends Error {
   public readonly code: LayoutCompilerErrorCode
@@ -594,7 +609,7 @@ export class LayoutCompilerError extends Error {
   public constructor(
     code: LayoutCompilerErrorCode,
     message: string,
-    field?: string,
+    field?: string
   ) {
     super(message)
 
@@ -626,7 +641,9 @@ export interface RepairPolicy {
   fixed: "deterministic"
 }
 
-export type StructuredGenerationMode = "compiled-direct-v8" | "single-parent-pooled"
+export type StructuredGenerationMode =
+  | "compiled-direct-v8"
+  | "single-parent-pooled"
 
 export interface GenerationPlan {
   name: "compiled-direct-v8"
@@ -740,7 +757,7 @@ const validateLayoutStructure = (
 
   layoutName: string,
 
-  requireComplete: boolean,
+  requireComplete: boolean
 ): LayoutValidationFailure | undefined => {
   const covered = Array.from<boolean>({ length: 128 }).fill(false)
 
@@ -837,7 +854,7 @@ export const validateLayout = (layout: ReadonlyV8Layout): void => {
 
 export const getFieldValue = (
   bytes: Readonly<Uint8Array>,
-  field: ReadonlyV8Field,
+  field: ReadonlyV8Field
 ): bigint => {
   if (field.start + field.length > 128) {
     throw new Error(`getFieldValue: field ${field.name} exceeds 128-bit UUID`)
@@ -870,7 +887,7 @@ export const getFieldValue = (
 
 const readFieldNumber = (
   bytes: Readonly<Uint8Array>,
-  field: ReadonlyV8Field,
+  field: ReadonlyV8Field
 ): number => {
   let value = 0
 
@@ -968,7 +985,7 @@ export const getFieldWritePlan = (field: ReadonlyV8Field): WritePlanEntry[] => {
 const writeFieldValue = (
   bytes: Uint8Array,
   field: ReadonlyV8Field,
-  value: number,
+  value: number
 ): void => {
   if (field.start + field.length > 128) {
     throw new Error(`writeFieldValue: field ${field.name} exceeds 128-bit UUID`)
@@ -1018,7 +1035,7 @@ export const copyField = (
 
   src: Readonly<Uint8Array>,
 
-  field: ReadonlyV8Field,
+  field: ReadonlyV8Field
 ): void => {
   if (field.start + field.length > 128) {
     throw new Error(`copyField: field ${field.name} exceeds 128-bit UUID`)
@@ -1080,7 +1097,7 @@ export const copyField = (
 export const forceVersionVariant = (bytes: Uint8Array): void => {
   if (bytes.length < 9) {
     throw new Error(
-      `forceVersionVariant: expected ≥9 bytes, got ${bytes.length}`,
+      `forceVersionVariant: expected ≥9 bytes, got ${bytes.length}`
     )
   }
 
@@ -1173,7 +1190,7 @@ export const uuidToBytes = (uuid: string): Uint8Array => {
 
 export const uuidToRandomBits = (
   uuid: string,
-  layout: ReadonlyV8Layout,
+  layout: ReadonlyV8Layout
 ): string => {
   const b = uuidToBytes(uuid)
 
@@ -1202,7 +1219,7 @@ export const uuidToRandomBits = (
 
 export const readStructured = (
   uuid: string,
-  layout: ReadonlyV8Layout,
+  layout: ReadonlyV8Layout
 ): Record<string, number> => {
   const b = uuidToBytes(uuid)
 
@@ -1227,7 +1244,7 @@ export const readStructured = (
 
 export const completeLayout = (
   name: string,
-  fields: readonly ReadonlyV8Field[],
+  fields: readonly ReadonlyV8Field[]
 ): V8Layout => {
   const covered = Array.from<boolean>({ length: 128 }).fill(false)
 
@@ -1281,7 +1298,7 @@ const validateSchema = (schema: DeepReadonly<LayoutSchema>): void => {
     throw new LayoutCompilerError(
       "invalid-schema",
       "schema name must be a non-empty string",
-      "schema.name",
+      "schema.name"
     )
   }
 
@@ -1296,7 +1313,7 @@ const validateSchema = (schema: DeepReadonly<LayoutSchema>): void => {
       throw new LayoutCompilerError(
         "invalid-schema",
         `${path} must be an object`,
-        path,
+        path
       )
     }
 
@@ -1304,7 +1321,7 @@ const validateSchema = (schema: DeepReadonly<LayoutSchema>): void => {
       throw new LayoutCompilerError(
         "invalid-schema",
         `${path}.name must be non-empty`,
-        `${path}.name`,
+        `${path}.name`
       )
     }
 
@@ -1312,7 +1329,7 @@ const validateSchema = (schema: DeepReadonly<LayoutSchema>): void => {
       throw new LayoutCompilerError(
         "invalid-schema",
         `${path}.name is declared more than once`,
-        `${path}.name`,
+        `${path}.name`
       )
     }
 
@@ -1322,7 +1339,7 @@ const validateSchema = (schema: DeepReadonly<LayoutSchema>): void => {
       throw new LayoutCompilerError(
         "invalid-schema",
         `${path}.type is unsupported`,
-        `${path}.type`,
+        `${path}.type`
       )
     }
   }
@@ -1333,7 +1350,7 @@ const validateAllowedConstraint = (
 
   path: string,
 
-  domainMax: number,
+  domainMax: number
 ): void => {
   if (constraint.allowed === absentValue) {
     return
@@ -1343,20 +1360,20 @@ const validateAllowedConstraint = (
     throw new LayoutCompilerError(
       "invalid-schema",
       `${path}.constraint.allowed must be an array`,
-      `${path}.constraint.allowed`,
+      `${path}.constraint.allowed`
     )
   }
 
   if (
     constraint.allowed.length === 0 ||
     constraint.allowed.some(
-      (value) => !Number.isInteger(value) || value < 0 || value > domainMax,
+      (value) => !Number.isInteger(value) || value < 0 || value > domainMax
     )
   ) {
     throw new LayoutCompilerError(
       "invalid-schema",
       `${path}.constraint.allowed must contain values in the field domain`,
-      `${path}.constraint.allowed`,
+      `${path}.constraint.allowed`
     )
   }
 }
@@ -1366,7 +1383,7 @@ const validateRangeConstraint = (
 
   path: string,
 
-  domainMax: number,
+  domainMax: number
 ): void => {
   if (
     constraint.min !== absentValue &&
@@ -1377,7 +1394,7 @@ const validateRangeConstraint = (
     throw new LayoutCompilerError(
       "invalid-schema",
       `${path}.constraint.min must be in the field domain`,
-      `${path}.constraint.min`,
+      `${path}.constraint.min`
     )
   }
 
@@ -1390,7 +1407,7 @@ const validateRangeConstraint = (
     throw new LayoutCompilerError(
       "invalid-schema",
       `${path}.constraint.max must be in the field domain`,
-      `${path}.constraint.max`,
+      `${path}.constraint.max`
     )
   }
 
@@ -1402,7 +1419,7 @@ const validateRangeConstraint = (
     throw new LayoutCompilerError(
       "invalid-schema",
       `${path}.constraint min must not exceed max`,
-      path,
+      path
     )
   }
 }
@@ -1412,7 +1429,7 @@ const validateFieldConstraint = (
 
   path: string,
 
-  domainMax: number,
+  domainMax: number
 ): void => {
   const { constraint } = field
 
@@ -1426,7 +1443,7 @@ const validateFieldConstraint = (
     throw new LayoutCompilerError(
       "invalid-schema",
       `${path}.constraint must be an object`,
-      `${path}.constraint`,
+      `${path}.constraint`
     )
   }
 
@@ -1443,13 +1460,13 @@ const validateFieldConstraint = (
     throw new LayoutCompilerError(
       "invalid-schema",
       `${path}.constraint.monotonic must be boolean`,
-      `${path}.constraint.monotonic`,
+      `${path}.constraint.monotonic`
     )
   }
 }
 
 const validateSchemaConstraints = (
-  schema: DeepReadonly<LayoutSchema>,
+  schema: DeepReadonly<LayoutSchema>
 ): void => {
   for (const [index, field] of schema.fields.entries()) {
     const path = `schema.fields[${index}]`
@@ -1467,7 +1484,7 @@ const validateSchemaConstraints = (
       throw new LayoutCompilerError(
         "invalid-schema",
         `${path}.value must be in the field domain`,
-        `${path}.value`,
+        `${path}.value`
       )
     }
   }
@@ -1478,13 +1495,13 @@ const assertNonnegative = (
 
   code: LayoutCompilerErrorCode,
 
-  field: string,
+  field: string
 ): void => {
   if (value !== absentValue && (!Number.isFinite(value) || value < 0)) {
     throw new LayoutCompilerError(
       code,
       `${field} must be a finite non-negative number`,
-      field,
+      field
     )
   }
 }
@@ -1581,7 +1598,7 @@ interface WorkloadStats {
 
 const validateTraceEvent = (
   event: DeepReadonly<WorkloadTraceEvent>,
-  path: string,
+  path: string
 ): void => {
   const { op: operation, kind } = event
 
@@ -1593,7 +1610,7 @@ const validateTraceEvent = (
     throw new LayoutCompilerError(
       "invalid-workload",
       `${path}.op must be "read" or "write"`,
-      path,
+      path
     )
   }
 
@@ -1601,7 +1618,7 @@ const validateTraceEvent = (
     throw new LayoutCompilerError(
       "invalid-workload",
       `${path}.kind must be "point", "range", or "scan"`,
-      path,
+      path
     )
   }
 }
@@ -1617,13 +1634,13 @@ const recordWorkloadFilter = (
 
   schemaFields: ReadonlySet<string>,
 
-  stats: WorkloadStats,
+  stats: WorkloadStats
 ): void => {
   if (!schemaFields.has(name)) {
     throw new LayoutCompilerError(
       "unknown-workload-field",
       `workload trace filters unknown field ${name}`,
-      name,
+      name
     )
   }
 
@@ -1659,7 +1676,7 @@ const recordWorkloadFilter = (
 
       `${path}: matched/scanned must satisfy 0 <= matched <= scanned, scanned > 0`,
 
-      path,
+      path
     )
   }
 
@@ -1675,7 +1692,7 @@ const recordWorkloadEvent = (
 
   schemaFields: ReadonlySet<string>,
 
-  stats: WorkloadStats,
+  stats: WorkloadStats
 ): void => {
   validateTraceEvent(event, path)
 
@@ -1693,12 +1710,12 @@ const recordWorkloadEvent = (
 export const inferWorkload = (
   trace: readonly DeepReadonly<WorkloadTraceEvent>[],
 
-  schema: DeepReadonly<LayoutSchema>,
+  schema: DeepReadonly<LayoutSchema>
 ): InferredWorkload => {
   if (!isArray(trace) || trace.length === 0) {
     throw new LayoutCompilerError(
       "invalid-workload",
-      "workload trace must be a non-empty array",
+      "workload trace must be a non-empty array"
     )
   }
 
@@ -1729,7 +1746,7 @@ export const inferWorkload = (
   if (stats.reads + stats.writes === 0) {
     throw new LayoutCompilerError(
       "invalid-workload",
-      "workload trace must be a non-empty array",
+      "workload trace must be a non-empty array"
     )
   }
 
@@ -1805,7 +1822,7 @@ const findAutoFieldStart = (
 
   index: number,
 
-  usedBits: Set<number>,
+  usedBits: Set<number>
 ): number => {
   let start = 0
 
@@ -1830,14 +1847,14 @@ const findAutoFieldStart = (
   throw new LayoutCompilerError(
     "invalid-schema",
     `field ${field.name} does not fit in the UUID`,
-    `schema.fields[${index}]`,
+    `schema.fields[${index}]`
   )
 }
 
 const placeSchemaFields = (
   fields: readonly DeepReadonly<LayoutSchemaField>[],
 
-  profiles: readonly DeepReadonly<WorkloadFieldProfile>[],
+  profiles: readonly DeepReadonly<WorkloadFieldProfile>[]
 ): V8Field[] => {
   const starts = Array.from<number | undefined>({ length: fields.length })
 
@@ -1850,7 +1867,7 @@ const placeSchemaFields = (
       throw new LayoutCompilerError(
         "invalid-schema",
         `${path}.length must be a positive integer`,
-        `${path}.length`,
+        `${path}.length`
       )
     }
 
@@ -1858,7 +1875,7 @@ const placeSchemaFields = (
       throw new LayoutCompilerError(
         "invalid-schema",
         `${path}.length exceeds ${MAX_FIELD_BITS} bits`,
-        `${path}.length`,
+        `${path}.length`
       )
     }
 
@@ -1871,7 +1888,7 @@ const placeSchemaFields = (
         throw new LayoutCompilerError(
           "invalid-schema",
           `${path}.start is outside the 128-bit UUID`,
-          `${path}.start`,
+          `${path}.start`
         )
       }
 
@@ -1931,13 +1948,13 @@ const placeSchemaFields = (
       throw new LayoutCompilerError(
         "invalid-schema",
         `field ${field.name} was not placed`,
-        `schema.fields[${index}]`,
+        `schema.fields[${index}]`
       )
     }
 
     const placedField = Object.assign(
       Object.create(Object.prototype) as LayoutSchemaField,
-      field,
+      field
     )
 
     placedField.start = start
@@ -1949,7 +1966,7 @@ const placeSchemaFields = (
 export const minBitsForCardinality = (cardinality: number): number => {
   if (!Number.isInteger(cardinality) || cardinality < 1) {
     throw new RangeError(
-      `minBitsForCardinality: cardinality must be a positive integer, got ${cardinality}`,
+      `minBitsForCardinality: cardinality must be a positive integer, got ${cardinality}`
     )
   }
 
@@ -1965,7 +1982,7 @@ export const minBitsForCardinality = (cardinality: number): number => {
 
 export const collisionProbabilityUpperBound = (
   n: number,
-  randomBits: number,
+  randomBits: number
 ): number => {
   if (n <= 1) {
     return 0
@@ -1987,22 +2004,22 @@ export const collisionProbabilityUpperBound = (
 
 export const minRandomBitsForCollisionBudget = (
   volume: number,
-  target: number,
+  target: number
 ): number => {
   if (!Number.isInteger(volume) || volume < 1) {
     throw new RangeError(
-      `minRandomBitsForCollisionBudget: volume must be a positive integer, got ${volume}`,
+      `minRandomBitsForCollisionBudget: volume must be a positive integer, got ${volume}`
     )
   }
 
   if (!(target > 0 && target < 1)) {
     throw new RangeError(
-      `minRandomBitsForCollisionBudget: target must be in (0,1), got ${target}`,
+      `minRandomBitsForCollisionBudget: target must be in (0,1), got ${target}`
     )
   }
 
   const closed = Math.log2(
-    (volume * (volume - 1)) / (4 * -Math.log(1 - target)),
+    (volume * (volume - 1)) / (4 * -Math.log(1 - target))
   )
 
   let r = Math.max(0, Math.ceil(closed))
@@ -2023,7 +2040,7 @@ const validateWorkloadProfile = (
 
   schemaFields: ReadonlySet<string>,
 
-  seen: Set<string>,
+  seen: Set<string>
 ): void => {
   const candidate: unknown = profile
 
@@ -2034,7 +2051,7 @@ const validateWorkloadProfile = (
   ) {
     throw new LayoutCompilerError(
       "invalid-workload",
-      "workload field name must be non-empty",
+      "workload field name must be non-empty"
     )
   }
 
@@ -2044,7 +2061,7 @@ const validateWorkloadProfile = (
 
       `workload field ${profile.name} is declared more than once`,
 
-      profile.name,
+      profile.name
     )
   }
 
@@ -2056,7 +2073,7 @@ const validateWorkloadProfile = (
 
       `workload field ${profile.name} is not present in the schema`,
 
-      profile.name,
+      profile.name
     )
   }
 
@@ -2070,7 +2087,7 @@ const validateWorkloadProfile = (
 
       `workload field ${profile.name} has an unsupported role`,
 
-      profile.name,
+      profile.name
     )
   }
 
@@ -2085,7 +2102,7 @@ const validateWorkloadProfile = (
 
       `workload field ${profile.name}.selectivity must be between 0 and 1`,
 
-      profile.name,
+      profile.name
     )
   }
 
@@ -2094,19 +2111,19 @@ const validateWorkloadProfile = (
   assertNonnegative(
     profile.readWeight,
     "invalid-workload",
-    `${profile.name}.readWeight`,
+    `${profile.name}.readWeight`
   )
 
   assertNonnegative(
     profile.writeWeight,
     "invalid-workload",
-    `${profile.name}.writeWeight`,
+    `${profile.name}.writeWeight`
   )
 }
 
 const validateWorkload = (
   workload: DeepReadonly<DatabaseWorkloadProfile>,
-  schemaFields: ReadonlySet<string>,
+  schemaFields: ReadonlySet<string>
 ): void => {
   const seen = new Set<string>()
 
@@ -2116,12 +2133,12 @@ const validateWorkload = (
 }
 
 const validateCompilerInput = (
-  input: DeepReadonly<LayoutCompilerInput>,
+  input: DeepReadonly<LayoutCompilerInput>
 ): void => {
   if (!isRecord(input)) {
     throw new LayoutCompilerError(
       "invalid-schema",
-      "compiler input must be an object",
+      "compiler input must be an object"
     )
   }
 
@@ -2138,7 +2155,7 @@ const validateCompilerInput = (
   ) {
     throw new LayoutCompilerError(
       "invalid-schema",
-      "schema must contain a name and fields array",
+      "schema must contain a name and fields array"
     )
   }
 
@@ -2149,7 +2166,7 @@ const validateCompilerInput = (
   ) {
     throw new LayoutCompilerError(
       "invalid-workload",
-      "workload must contain at least one field",
+      "workload must contain at least one field"
     )
   }
 
@@ -2157,7 +2174,7 @@ const validateCompilerInput = (
     throw new LayoutCompilerError(
       "invalid-workload",
       "workload.readWeight must be a number",
-      "workload.readWeight",
+      "workload.readWeight"
     )
   }
 
@@ -2165,32 +2182,32 @@ const validateCompilerInput = (
     throw new LayoutCompilerError(
       "invalid-workload",
       "workload.writeWeight must be a number",
-      "workload.writeWeight",
+      "workload.writeWeight"
     )
   }
 
   assertNonnegative(
     workload.readWeight,
     "invalid-workload",
-    "workload.readWeight",
+    "workload.readWeight"
   )
 
   assertNonnegative(
     workload.writeWeight,
     "invalid-workload",
-    "workload.writeWeight",
+    "workload.writeWeight"
   )
 
   if (workload.readWeight + workload.writeWeight === 0) {
     throw new LayoutCompilerError(
       "invalid-workload",
-      "workload must have a positive readWeight or writeWeight",
+      "workload must have a positive readWeight or writeWeight"
     )
   }
 }
 
 export const compileDatabaseLayout = (
-  input: DeepReadonly<LayoutCompilerInput>,
+  input: DeepReadonly<LayoutCompilerInput>
 ): DatabaseLayoutCompilation => {
   validateCompilerInput(input)
 
@@ -2204,18 +2221,18 @@ export const compileDatabaseLayout = (
 
   const layout = completeLayout(
     schema.name,
-    placeSchemaFields(schema.fields, workload.fields),
+    placeSchemaFields(schema.fields, workload.fields)
   )
 
   const layoutFailure = validateLayoutStructure(
     layout.fields,
     layout.name,
-    true,
+    true
   )
 
   if (layoutFailure) {
     const schemaIndex = schema.fields.findIndex(
-      (field) => field.name === layoutFailure.field,
+      (field) => field.name === layoutFailure.field
     )
 
     const { field: failedField } = layoutFailure
@@ -2229,7 +2246,7 @@ export const compileDatabaseLayout = (
     throw new LayoutCompilerError(
       "invalid-schema",
       layoutFailure.message,
-      field,
+      field
     )
   }
 
@@ -2274,7 +2291,7 @@ export const compileDatabaseLayout = (
   }
 
   const widthFloorsMet = widthFloors.every(
-    (entry) => entry.declaredBits >= entry.floor,
+    (entry) => entry.declaredBits >= entry.floor
   )
 
   const volumeTarget = input.volume ?? DEFAULT_COLLISION_VOLUME
@@ -2288,17 +2305,17 @@ export const compileDatabaseLayout = (
       collisionProbabilityAtVolume: collisionProbabilityUpperBound(
         volumeTarget,
 
-        128 - NIBBLE_BITS.size - structuredBits.size,
+        128 - NIBBLE_BITS.size - structuredBits.size
       ),
 
       collisionTarget: tau,
 
       constrainedFields: layout.fields.filter(
-        (field) => constraintKinds(field).length > 0,
+        (field) => constraintKinds(field).length > 0
       ).length,
 
       localityFields: workload.fields.filter(
-        (field) => field.role === "partition" || field.role === "cluster",
+        (field) => field.role === "partition" || field.role === "cluster"
       ).length,
 
       lookupFields: workload.fields.filter((field) => field.role === "lookup")
@@ -2493,9 +2510,9 @@ const fits = (offset: number, bits: number, used: Set<number>): boolean => {
  * @returns {Item[]} A stably sorted copy.
  */
 
-const sortBy = <Item,>(
+const sortBy = <Item>(
   items: readonly Item[],
-  compare: (left: Item, right: Item) => number,
+  compare: (left: Item, right: Item) => number
 ): Item[] => {
   const out = [...items]
 
@@ -2524,7 +2541,7 @@ const sortBy = <Item,>(
  */
 
 const byLocalityRank = (
-  fields: readonly ReadonlyAllocationField[],
+  fields: readonly ReadonlyAllocationField[]
 ): ReadonlyAllocationField[] =>
   sortBy(fields, (a, b) => {
     const ra = localityRank(a.locality)
@@ -2541,7 +2558,9 @@ const byLocalityRank = (
     )
   })
 
-const pack = (order: readonly ReadonlyAllocationField[]): {
+const pack = (
+  order: readonly ReadonlyAllocationField[]
+): {
   placed: { field: ReadonlyAllocationField; offset: number }[]
 
   filler: { offset: number; bits: number }[]
@@ -2613,7 +2632,7 @@ const depthOf = (
   order: readonly {
     readonly field: ReadonlyAllocationField
     readonly offset: number
-  }[],
+  }[]
 ): number => {
   let total = 0
 
@@ -2635,19 +2654,19 @@ const validateAllocationField = (field: ReadonlyAllocationField): void => {
     candidate.name.length === 0
   ) {
     throw new RangeError(
-      "planBitAllocation: every field needs a non-empty name",
+      "planBitAllocation: every field needs a non-empty name"
     )
   }
 
   if (!Number.isInteger(field.cardinality) || field.cardinality < 1) {
     throw new RangeError(
-      `planBitAllocation: ${field.name}.cardinality must be a positive integer`,
+      `planBitAllocation: ${field.name}.cardinality must be a positive integer`
     )
   }
 
   if (!Number.isFinite(field.weight) || field.weight < 0) {
     throw new RangeError(
-      `planBitAllocation: ${field.name}.weight must be a finite non-negative number`,
+      `planBitAllocation: ${field.name}.weight must be a finite non-negative number`
     )
   }
 
@@ -2662,14 +2681,14 @@ const validateAllocationField = (field: ReadonlyAllocationField): void => {
     alignment !== 8
   ) {
     throw new RangeError(
-      `planBitAllocation: ${field.name}.align must be 1, 4, or 8`,
+      `planBitAllocation: ${field.name}.align must be 1, 4, or 8`
     )
   }
 }
 
 const compareSmithFields = (
   a: ReadonlyAllocationField,
-  b: ReadonlyAllocationField,
+  b: ReadonlyAllocationField
 ): number => {
   const pa = a.weight / minBitsForCardinality(a.cardinality)
 
@@ -2697,7 +2716,7 @@ const allocationFailure = (
 
   required: number,
 
-  structuredBits: number,
+  structuredBits: number
 ): BitAllocationPlan => ({
   algorithm: "smith-rule",
 
@@ -2721,7 +2740,7 @@ const allocationFailure = (
 })
 
 export const planBitAllocation = (
-  input: DeepReadonly<BitAllocationInput>,
+  input: DeepReadonly<BitAllocationInput>
 ): BitAllocationPlan => {
   if (!isRecord(input)) {
     throw new RangeError("planBitAllocation: fields must be a non-empty array")
@@ -2739,7 +2758,7 @@ export const planBitAllocation = (
 
   if (!Number.isInteger(budget) || budget < 1) {
     throw new RangeError(
-      `planBitAllocation: budget must be a positive integer, got ${budget}`,
+      `planBitAllocation: budget must be a positive integer, got ${budget}`
     )
   }
 
@@ -2752,14 +2771,14 @@ export const planBitAllocation = (
   if (input.volume !== absentValue && input.collisionTarget !== absentValue) {
     required = minRandomBitsForCollisionBudget(
       input.volume,
-      input.collisionTarget,
+      input.collisionTarget
     )
   }
 
   required = input.minRandomBits ?? required
 
   const floors = new Map(
-    fields.map((f) => [f.name, minBitsForCardinality(f.cardinality)]),
+    fields.map((f) => [f.name, minBitsForCardinality(f.cardinality)])
   )
 
   const totalFloor = [...floors.values()].reduce((a, b) => a + b, 0)
@@ -2773,7 +2792,7 @@ export const planBitAllocation = (
 
       required,
 
-      totalFloor,
+      totalFloor
     )
   }
 
@@ -2786,7 +2805,7 @@ export const planBitAllocation = (
 
       required,
 
-      totalFloor,
+      totalFloor
     )
   }
 
@@ -2802,11 +2821,13 @@ export const planBitAllocation = (
 
   const order = [...leading, ...rest]
 
-  const tryPackPlans = (): {
-    ok: true
-    packed: ReturnType<typeof pack>
-    ranked: ReturnType<typeof pack>
-  } | { ok: false; reason: string } => {
+  const tryPackPlans = ():
+    | {
+        ok: true
+        packed: ReturnType<typeof pack>
+        ranked: ReturnType<typeof pack>
+      }
+    | { ok: false; reason: string } => {
     try {
       return {
         ok: true,
@@ -2992,7 +3013,7 @@ export const layoutStructureKey = (layout: ReadonlyV8Layout): string => {
 
           f.value ?? nullValue,
         ]
-      }),
+      })
     )
 
     _structureKeyCache.set(layout, k)
@@ -3010,7 +3031,7 @@ const assertLayoutIdentity = (layout: ReadonlyV8Layout): string => {
     _layoutIdentities.set(layout.name, key)
   } else if (seen !== key) {
     throw new Error(
-      `layout "${layout.name}": field structure differs from the previously registered layout "${layout.name}" (registered ${seen.slice(0, 120)} vs new ${key.slice(0, 120)})`,
+      `layout "${layout.name}": field structure differs from the previously registered layout "${layout.name}" (registered ${seen.slice(0, 120)} vs new ${key.slice(0, 120)})`
     )
   }
 
@@ -3051,7 +3072,7 @@ const structuredValue = (
   layout: ReadonlyV8Layout,
   f: ReadonlyV8Field,
   _rng: Rng,
-  now?: number,
+  now?: number
 ): number => {
   const mod = fieldMod(f)
 
@@ -3112,7 +3133,7 @@ const applyStructuredFields = (
 
   _rng?: Rng,
 
-  now?: number,
+  now?: number
 ): void => {
   const { fields } = layout
 
@@ -3123,7 +3144,7 @@ const applyStructuredFields = (
       writeFieldValue(
         bytes,
         f,
-        structuredValue(layout, f, _rng ?? ((): number => 0), now),
+        structuredValue(layout, f, _rng ?? ((): number => 0), now)
       )
     }
 
@@ -3152,7 +3173,7 @@ export const composeStructured = (
 
   parentB: Readonly<Uint8Array>,
 
-  fieldSelect: number,
+  fieldSelect: number
 ): Uint8Array => {
   ensureValidated(layout)
 
@@ -3197,7 +3218,11 @@ export const composeStructured = (
 
 // Clipped [min,max] endpoint masses: P(min)=(lo+1)/2^ell, P(max)=(2^ell-hi)/2^ell.
 
-export const rangeClampMass = (ell: number, min: number, max: number): {
+export const rangeClampMass = (
+  ell: number,
+  min: number,
+  max: number
+): {
   pMin: number
 
   pMax: number
@@ -3248,7 +3273,7 @@ const pickFromAllowed = (allowed: readonly number[], byte: number): number => {
 
 export const repairConstraints = (
   layout: ReadonlyV8Layout,
-  bytes: Uint8Array,
+  bytes: Uint8Array
 ): number => {
   let repairs = 0
 
@@ -3299,7 +3324,7 @@ export const repairConstraints = (
 export const genStructuredParent = (
   layout: ReadonlyV8Layout,
 
-  mask: readonly number[],
+  mask: readonly number[]
 ): Uint8Array => {
   ensureValidated(layout)
 
@@ -3332,7 +3357,7 @@ interface SingleParentPool {
 
 const ensureSingleParentPool = (
   structureKey: string,
-  size: number,
+  size: number
 ): SingleParentPool => {
   const entry = _spPool.get(structureKey)
 
@@ -3442,7 +3467,7 @@ const refillSingleParentPool = (layout: ReadonlyV8Layout): void => {
 }
 
 export const genStructuredGenoIDSingleParent = (
-  layout: ReadonlyV8Layout,
+  layout: ReadonlyV8Layout
 ): string => {
   ensureValidated(layout)
 
@@ -3513,7 +3538,7 @@ export const configurePools = (cfg: Readonly<PoolConfig>): void => {
 
     if (!Number.isInteger(n) || n < 1) {
       throw new Error(
-        `configurePools: simplePoolSize must be a positive integer, got ${n}`,
+        `configurePools: simplePoolSize must be a positive integer, got ${n}`
       )
     }
 
@@ -3533,7 +3558,7 @@ export const configurePools = (cfg: Readonly<PoolConfig>): void => {
 
     if (!Number.isInteger(n) || n < 1) {
       throw new Error(
-        `configurePools: structuredPoolSize must be a positive integer, got ${n}`,
+        `configurePools: structuredPoolSize must be a positive integer, got ${n}`
       )
     }
 
@@ -3613,7 +3638,7 @@ const genTimestampExpr = (
   f: ReadonlyV8Field,
   mod: number,
   raw: boolean,
-  batchNow: boolean,
+  batchNow: boolean
 ): string => {
   let timestamp = "Date.now()"
 
@@ -3638,7 +3663,7 @@ const genTimestampExpr = (
   }
 
   const pow2 =
-    mod > 0 && Number.isInteger(Math.log2(mod)) && mod <= 0x7F_FF_FF_FF
+    mod > 0 && Number.isInteger(Math.log2(mod)) && mod <= 0x7f_ff_ff_ff
 
   if (pow2) {
     return `${value}&${mod - 1}`
@@ -3653,7 +3678,7 @@ const genCounterExpr = (mod: number, raw: boolean): string => {
   }
 
   const pow2 =
-    mod > 0 && Number.isInteger(Math.log2(mod)) && mod <= 0x7F_FF_FF_FF
+    mod > 0 && Number.isInteger(Math.log2(mod)) && mod <= 0x7f_ff_ff_ff
 
   if (pow2) {
     return `(_ctr += 1)&${mod - 1}`
@@ -3666,7 +3691,7 @@ const genSelectorExpr = (
   f: ReadonlyV8Field,
   mod: number,
   bm: readonly ByteMask[],
-  buf: string,
+  buf: string
 ): string => {
   const { constraint } = f
 
@@ -3708,7 +3733,7 @@ const genValueExpr = (
   bm: readonly ByteMask[],
   raw?: boolean,
   buf = "b",
-  batchNow = false,
+  batchNow = false
 ): string => {
   switch (f.type) {
     case "timestamp-ms":
@@ -3745,7 +3770,7 @@ const emitFieldWrite = (
   lines: readonly string[],
   varName = "v",
   mod = 0,
-  buf = "b",
+  buf = "b"
 ): void => {
   const useArith = mod > 2 ** 32
 
@@ -3764,7 +3789,7 @@ const emitFieldWrite = (
       }
 
       return `${buf}[${e.byte}]=(${buf}[${e.byte}]&${e.clearMask})|${srcPart};`
-    }),
+    })
   )
 }
 
@@ -3779,19 +3804,19 @@ const poolfy = (s: string): string => s.replaceAll("b[", "_bp[_o+")
 
 const emitMonotonicClamp = (
   target: readonly string[],
-  field: ReadonlyV8Field,
+  field: ReadonlyV8Field
 ): void => {
   const output = target as string[]
 
   output.push(
-    `{const lk="${field.name}";const lv=_last[lk];if(lv!==undefined&&rv<lv){rv=lv;}_last[lk]=rv;}`,
+    `{const lk="${field.name}";const lv=_last[lk];if(lv!==undefined&&rv<lv){rv=lv;}_last[lk]=rv;}`
   )
 }
 
 const genLayoutSource = (
   layout: ReadonlyV8Layout,
   raw: boolean,
-  poolSize = 0,
+  poolSize = 0
 ): string => {
   const fieldMeta = layout.fields.map((f) => {
     const wp = computeWritePlan(f)
@@ -3829,7 +3854,7 @@ const genLayoutSource = (
       (m) =>
         m.f.type === "timestamp-ms" ||
         m.f.type === "timestamp-us" ||
-        (m.f.type === "counter" && isMonotonic(m.f)),
+        (m.f.type === "counter" && isMonotonic(m.f))
     )
 
   if (raw) {
@@ -3854,7 +3879,7 @@ const genLayoutSource = (
       "return function(){",
       `if(_pi>=${poolSize}){`,
       "cr.getRandomValues(_bp);",
-      `for(_pi=0;_pi<${poolSize};_pi += 1){const _o=_pi*16;`,
+      `for(_pi=0;_pi<${poolSize};_pi += 1){const _o=_pi*16;`
     )
   } else {
     lines.push("const b=new Uint8Array(16);let _ctr=0;")
@@ -3892,7 +3917,7 @@ const genLayoutSource = (
             `if(c===undefined){c=rs}` +
             `else if(c>=${maxCtr}){if(_now<=_tick){while(Date.now()<=_tick){};_now=Date.now()};c=rs}` +
             `else{c=(c+1)&${maxCtr}}` +
-            `_mctr[lk]=c}`,
+            `_mctr[lk]=c}`
         )
       }
     }
@@ -3909,7 +3934,7 @@ const genLayoutSource = (
 
     constraint: ReadonlyV8Constraint | undefined,
 
-    target: readonly string[],
+    target: readonly string[]
   ): void => {
     if (isMissing(constraint)) {
       return
@@ -3938,7 +3963,7 @@ const genLayoutSource = (
 
     if (allowed !== absentValue && allowed.length > 0) {
       output.push(
-        `const rv=${JSON.stringify(allowed)}[${readExpr}%${allowed.length}];`,
+        `const rv=${JSON.stringify(allowed)}[${readExpr}%${allowed.length}];`
       )
     } else {
       output.push(`let rv=${readExpr};`)
@@ -3972,7 +3997,7 @@ const genLayoutSource = (
 
     constraint: ReadonlyV8Constraint | undefined,
 
-    target: readonly string[],
+    target: readonly string[]
   ): void => {
     const monoCounter = !raw && field.type === "counter" && isMonotonic(field)
 
@@ -4052,7 +4077,7 @@ const genLayoutSource = (
       `  _p[_pi]=${poolfy(COMPILED_FMT_EXPR)};`,
       "}_pi=0;}",
       "return _p[_pi++];",
-      "};",
+      "};"
     )
   }
 
@@ -4071,7 +4096,7 @@ interface CompiledField {
 
 const selectorValue = (
   field: ReadonlyV8Field,
-  bytes: Readonly<Uint8Array>,
+  bytes: Readonly<Uint8Array>
 ): number => {
   const value = readFieldNumber(bytes, field)
 
@@ -4091,11 +4116,10 @@ const selectorValue = (
   return value
 }
 
-const createCompiledWriter = (layout: ReadonlyV8Layout, raw: boolean): (
-  bytes: Uint8Array,
-  now: number,
-  ctr: number,
-) => string => {
+const createCompiledWriter = (
+  layout: ReadonlyV8Layout,
+  raw: boolean
+): ((bytes: Uint8Array, now: number, ctr: number) => string) => {
   const fields: CompiledField[] = layout.fields.map((field) => ({
     field,
 
@@ -4112,7 +4136,7 @@ const createCompiledWriter = (layout: ReadonlyV8Layout, raw: boolean): (
       ({ field }) =>
         field.type === "timestamp-ms" ||
         field.type === "timestamp-us" ||
-        (field.type === "counter" && isMonotonic(field)),
+        (field.type === "counter" && isMonotonic(field))
     )
 
   let counter = 0
@@ -4125,7 +4149,7 @@ const createCompiledWriter = (layout: ReadonlyV8Layout, raw: boolean): (
 
   const resolveTick = (
     bytes: Readonly<Uint8Array>,
-    initialNow: number,
+    initialNow: number
   ): number => {
     let now = initialNow
 
@@ -4172,7 +4196,7 @@ const createCompiledWriter = (layout: ReadonlyV8Layout, raw: boolean): (
     { field, mod }: Readonly<CompiledField>,
     bytes: Readonly<Uint8Array>,
     now: number,
-    ctr: number,
+    ctr: number
   ): number => {
     switch (field.type) {
       case "timestamp-ms": {
@@ -4217,7 +4241,7 @@ const createCompiledWriter = (layout: ReadonlyV8Layout, raw: boolean): (
   const constrainValue = (
     meta: Readonly<CompiledField>,
     value: number,
-    skipMonotonic: boolean,
+    skipMonotonic: boolean
   ): number => {
     const { constraint } = meta.field
 
@@ -4265,7 +4289,7 @@ const createCompiledWriter = (layout: ReadonlyV8Layout, raw: boolean): (
         const value = constrainValue(
           meta,
           baseValue(meta, bytes, resolvedNow, ctr),
-          monoCounter,
+          monoCounter
         )
 
         writeFieldValue(bytes, field, value)
@@ -4280,7 +4304,7 @@ const createCompiledWriter = (layout: ReadonlyV8Layout, raw: boolean): (
 
 export const compileLayout = (
   layout: ReadonlyV8Layout,
-  poolSize = 0,
+  poolSize = 0
 ): CompiledLayout => {
   const source = genLayoutSource(layout, false, poolSize)
 
@@ -4302,7 +4326,7 @@ export const compileLayout = (
 
   if (!Number.isInteger(poolSize)) {
     throw new RangeError(
-      `compileLayout: poolSize must be a positive integer, got ${poolSize}`,
+      `compileLayout: poolSize must be a positive integer, got ${poolSize}`
     )
   }
 
@@ -4342,7 +4366,7 @@ export interface CompiledRawLayout {
 }
 
 export const compileRawLayout = (
-  layout: ReadonlyV8Layout,
+  layout: ReadonlyV8Layout
 ): CompiledRawLayout => {
   const source = genLayoutSource(layout, true)
 
@@ -4360,7 +4384,7 @@ export const compileRawLayout = (
  */
 
 export const genStructuredGenoID = (
-  input: ReadonlyV8Layout | { readonly  layout: ReadonlyV8Layout },
+  input: ReadonlyV8Layout | { readonly layout: ReadonlyV8Layout }
 ): string => {
   let layout = input as ReadonlyV8Layout
 
@@ -4400,7 +4424,7 @@ const rawFieldValue = (
   field: ReadonlyV8Field,
   bytes: Readonly<Uint8Array>,
   now: number,
-  ctr: number,
+  ctr: number
 ): number => {
   switch (field.type) {
     case "timestamp-ms": {
@@ -4437,7 +4461,7 @@ const applyInterpretedConstraint = (
 
   value: number,
 
-  structureKey: string,
+  structureKey: string
 ): number => {
   const { constraint } = field
 
@@ -4477,7 +4501,7 @@ export const interpretRawLayout = (
 
   now: number,
 
-  ctr: number,
+  ctr: number
 ): string => {
   const structureKey = assertLayoutIdentity(layout)
 
@@ -4502,7 +4526,7 @@ export const interpretRawLayout = (
       const value = applyInterpretedConstraint(
         f,
         rawFieldValue(f, b, now, ctr),
-        structureKey,
+        structureKey
       )
 
       writeFieldValue(b, f, value)

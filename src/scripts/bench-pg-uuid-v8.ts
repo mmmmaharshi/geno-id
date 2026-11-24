@@ -26,27 +26,24 @@
 
 //  - benchSync / collisionTest / birthdayBound50 from bench-core.ts
 
+import { mkdirSync, writeFileSync } from "node:fs"
+
 import {
   DBKEY_LAYOUT,
   genStructuredGenoID,
   uuidToRandomBits,
 } from "../../dist/algo.js"
-
-import { andBits, shiftRightBits } from "../shared/bitwise.ts"
-
 import {
   benchSync,
   birthdayBound50,
   collisionTest,
 } from "../../dist/bench-core.js"
-
+import { andBits, shiftRightBits } from "../shared/bitwise.ts"
 import {
   extractPgUuidV8Timestamp,
   genPgUuidV8,
   uuidToBytes,
 } from "./baselines.js"
-
-import { mkdirSync, writeFileSync } from "node:fs"
 
 const N_SYNC = 200_000
 
@@ -104,11 +101,11 @@ const main = (): void => {
   console.log(`  v4 native:            ${rV4.opsPerSec.toFixed(0)}`)
 
   console.log(
-    `  GenoID-structured:    ${rGeno.opsPerSec.toFixed(0)}  (${(rV4.opsPerSec / rGeno.opsPerSec).toFixed(1)}x slower vs v4)`,
+    `  GenoID-structured:    ${rGeno.opsPerSec.toFixed(0)}  (${(rV4.opsPerSec / rGeno.opsPerSec).toFixed(1)}x slower vs v4)`
   )
 
   console.log(
-    `  pg_uuid_v8:           ${rPg.opsPerSec.toFixed(0)}  (${(rV4.opsPerSec / rPg.opsPerSec).toFixed(1)}x slower vs v4)`,
+    `  pg_uuid_v8:           ${rPg.opsPerSec.toFixed(0)}  (${(rV4.opsPerSec / rPg.opsPerSec).toFixed(1)}x slower vs v4)`
   )
 
   // ---- Composition correctness (E1-style) ----
@@ -124,7 +121,7 @@ const main = (): void => {
 
     const b = uuidToBytes(u)
 
-    const version = andBits(shiftRightBits(b[6], 4), 0x0F)
+    const version = andBits(shiftRightBits(b[6], 4), 0x0f)
 
     const variant = andBits(shiftRightBits(b[8], 6), 0x03)
 
@@ -158,7 +155,7 @@ const main = (): void => {
   console.log("\nCollisions:")
 
   console.log(
-    `  GenoID-structured (n=${N_COLL}): ${cGeno}  (bound 50% @122b: ${birthdayBound50(122).toExponential(2)})`,
+    `  GenoID-structured (n=${N_COLL}): ${cGeno}  (bound 50% @122b: ${birthdayBound50(122).toExponential(2)})`
   )
 
   console.log(`  pg_uuid_v8        (n=${N_COLL}): ${cPg}`)
@@ -169,7 +166,7 @@ const main = (): void => {
 
   const bitsGeno = uuidToRandomBits(
     genStructuredGenoID(DBKEY_LAYOUT),
-    DBKEY_LAYOUT,
+    DBKEY_LAYOUT
   )
 
   const nBits = bitsGeno.length
@@ -229,7 +226,7 @@ const main = (): void => {
   writeFileSync(`${dist}/pg-uuid-v8.bits.txt`, outP.join("\n"))
 
   console.log(
-    `\nExported ${N_NIST} UUIDs each -> dist/struct-dbkey-p1.bits.txt, dist/pg-uuid-v8.bits.txt`,
+    `\nExported ${N_NIST} UUIDs each -> dist/struct-dbkey-p1.bits.txt, dist/pg-uuid-v8.bits.txt`
   )
 
   // ---- Summary table ----
@@ -241,19 +238,19 @@ const main = (): void => {
   console.log("------------------------|-------------------|-----------")
 
   console.log(
-    `ops/sec                 | ${rGeno.opsPerSec.toFixed(0).padStart(17)} | ${rPg.opsPerSec.toFixed(0).padStart(9)}`,
+    `ops/sec                 | ${rGeno.opsPerSec.toFixed(0).padStart(17)} | ${rPg.opsPerSec.toFixed(0).padStart(9)}`
   )
 
   console.log(
-    `collisions (n=${N_COLL})     | ${String(cGeno).padStart(17)} | ${String(cPg).padStart(9)}`,
+    `collisions (n=${N_COLL})     | ${String(cGeno).padStart(17)} | ${String(cPg).padStart(9)}`
   )
 
   console.log(
-    `uniformity max-dev      | ${devG.toFixed(4).padStart(17)} | ${devP.toFixed(4).padStart(9)}`,
+    `uniformity max-dev      | ${devG.toFixed(4).padStart(17)} | ${devP.toFixed(4).padStart(9)}`
   )
 
   console.log(
-    `ts/field round-trip OK  | ${"n/a (declarative)".padStart(17)} | ${(tsFail === 0).toString().padStart(9)}`,
+    `ts/field round-trip OK  | ${"n/a (declarative)".padStart(17)} | ${(tsFail === 0).toString().padStart(9)}`
   )
 }
 

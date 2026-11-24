@@ -1,5 +1,9 @@
 /// <reference types="node" />
 
+import assert from "node:assert/strict"
+import path from "node:path"
+import { test } from "node:test"
+
 import {
   SAMPLE_DEFINITIONS,
   buildSuiteEvidence,
@@ -8,12 +12,6 @@ import {
   freeMaskForLayout,
   holmBonferroni,
 } from "./stats-evidence-core.ts"
-
-import assert from "node:assert/strict"
-
-import path from "node:path"
-
-import { test } from "node:test"
 
 const nullValue: null = JSON.parse("null") as null
 
@@ -29,7 +27,7 @@ void test("holmBonferroni adjusts p-values and reports rejections", () => {
       { name: "chi-square", p: 0.9 },
     ],
 
-    0.05,
+    0.05
   )
 
   assert.equal(result.method, "holm-bonferroni")
@@ -148,7 +146,7 @@ void test("classifyRejectionCell rejects an analytical cell that reports wall-cl
         speedupVsGeno: 100,
       }),
 
-    /analytical cell cannot report measured runtime/u,
+    /analytical cell cannot report measured runtime/u
   )
 })
 
@@ -167,7 +165,7 @@ void test("buildSuiteEvidence requires p-values for measured suites", () => {
         suite: "in-house",
       }),
 
-    /measured suite requires sample bits and p-values/u,
+    /measured suite requires sample bits and p-values/u
   )
 })
 
@@ -208,7 +206,7 @@ void test("buildSuiteEvidence requires a limitation for an unavailable suite", (
         suite: "testu01",
       }),
 
-    /unavailable suite requires a limitation/u,
+    /unavailable suite requires a limitation/u
   )
 })
 
@@ -224,7 +222,7 @@ void test("holmBonferroni stops at the first failure and rejects no later hypoth
       { name: "largest", p: 0.9 },
     ],
 
-    0.05,
+    0.05
   )
 
   assert.deepEqual(result.rejected, ["first"])
@@ -251,11 +249,11 @@ void test("freeMaskForLayout marks only random payload bits as free", () => {
     { length: 4, start: 16, type: "random" },
   ])
 
-  assert.equal(mask[0], 0xFF)
+  assert.equal(mask[0], 0xff)
 
   assert.equal(mask[1], 0x00)
 
-  assert.equal(mask[2], 0xF0)
+  assert.equal(mask[2], 0xf0)
 
   assert.equal(mask[3], 0x00)
 })
@@ -293,8 +291,8 @@ void test("classifyExternalSuite reports a missing archive as unavailable, not e
 
   assert.ok(
     result.limitations.some((entry) =>
-      entry.includes("results/statistics/practrand.txt"),
-    ),
+      entry.includes("results/statistics/practrand.txt")
+    )
   )
 })
 
@@ -317,16 +315,16 @@ void test("classifyExternalSuite names the missing tool instead of printing null
 
   assert.ok(
     result.limitations.some((entry) =>
-      entry.includes("practrand is not installed"),
+      entry.includes("practrand is not installed")
     ),
 
-    `expected the tool to be named, got ${JSON.stringify(result.limitations)}`,
+    `expected the tool to be named, got ${JSON.stringify(result.limitations)}`
   )
 
   assert.ok(
     !result.limitations.some((entry) => entry.includes("null")),
 
-    `no limitation may render a null tool name, got ${JSON.stringify(result.limitations)}`,
+    `no limitation may render a null tool name, got ${JSON.stringify(result.limitations)}`
   )
 })
 

@@ -1,22 +1,16 @@
 /// <reference types="node" />
 
-import { andBits, shiftRightBits } from "../shared/bitwise.ts"
-
-import { Worker } from "node:worker_threads"
-
 import assert from "node:assert/strict"
+import { once } from "node:events"
+import os from "node:os"
+import path from "node:path"
+import { test } from "node:test"
+import { pathToFileURL } from "node:url"
+import { Worker } from "node:worker_threads"
 
 import { fromAny } from "@total-typescript/shoehorn"
 
-import { once } from "node:events"
-
-import os from "node:os"
-
-import path from "node:path"
-
-import { pathToFileURL } from "node:url"
-
-import { test } from "node:test"
+import { andBits, shiftRightBits } from "../shared/bitwise.ts"
 
 const nullValue: null = JSON.parse("null") as null
 
@@ -140,7 +134,7 @@ const {
   repairConstraints: (l: unknown, b: Uint8Array) => number
 
   configurePools: (
-    cfg: Readonly<{ simplePoolSize?: number; structuredPoolSize?: number }>,
+    cfg: Readonly<{ simplePoolSize?: number; structuredPoolSize?: number }>
   ) => void
 
   getPoolConfig: () => { simplePoolSize: number; structuredPoolSize: number }
@@ -248,7 +242,7 @@ const constrainedFields = (layout: unknown): Field[] =>
 const assertConstraint = (
   f: Readonly<Field>,
   value: number,
-  ctx: string,
+  ctx: string
 ): void => {
   const c = f.constraint
 
@@ -259,7 +253,7 @@ const assertConstraint = (
   if (c.allowed && c.allowed.length > 0) {
     assert.ok(
       c.allowed.includes(value),
-      `${ctx}: ${f.name}=${value} not in allowed ${JSON.stringify(c.allowed)}`,
+      `${ctx}: ${f.name}=${value} not in allowed ${JSON.stringify(c.allowed)}`
     )
   }
 
@@ -492,7 +486,7 @@ const spawnPool = async (): Promise<void> => {
     await Promise.all(
       POOL.map(async (w): Promise<void> => {
         await w.terminate()
-      }),
+      })
     )
 
     POOL = []
@@ -574,7 +568,7 @@ const scanStats = async (name: string, iters: number): Promise<Stats> => {
       }
 
       return { nonV8: 0, ones: 0, total: 0, violations: 0 }
-    }),
+    })
   )
 
   const merged: Stats = { nonV8: 0, ones: 0, total: 0, violations: 0 }
@@ -629,7 +623,7 @@ const countUnique = async (name: string, iters: number): Promise<number> => {
       }
 
       return { bytes: new ArrayBuffer(0) }
-    }),
+    })
   )
 
   for (const { bytes } of buffers) {
@@ -654,7 +648,7 @@ const configurePoolWorkers = async (
     reset: boolean
     simplePoolSize: number
     structuredPoolSize: number
-  }>,
+  }>
 ): Promise<void> => {
   if (!USE_WORKERS || POOL.length === 0) {
     return
@@ -667,10 +661,10 @@ const configurePoolWorkers = async (
         Object.assign(
           Object.create(Object.prototype) as Record<string, unknown>,
           { job: "config" },
-          cfg,
-        ),
+          cfg
+        )
       )
-    }),
+    })
   )
 }
 
@@ -710,7 +704,7 @@ const UNIQUE: Record<string, number> = {}
 
 const scanLayouts = async (
   iters: number,
-  target: Record<string, Stats>,
+  target: Record<string, Stats>
 ): Promise<void> => {
   const scan = async (index: number): Promise<void> => {
     if (index >= LAYOUT_KEYS.length) {
@@ -756,8 +750,8 @@ void test(
             structuredPoolSize: number
           },
           { reset: false },
-          tiny,
-        ),
+          tiny
+        )
       )
 
       configureRandom((buf) => {
@@ -783,12 +777,12 @@ void test(
       await Promise.all(
         POOL.map(async (w): Promise<void> => {
           await w.terminate()
-        }),
+        })
       )
 
       POOL = []
     }
-  },
+  }
 )
 
 // ---------------------------------------------------------------------------
@@ -802,7 +796,7 @@ void test("INV-1: every GenoID generator emits a syntactically valid v8 UUID", (
     assert.equal(
       STATS[name].nonV8,
       0,
-      `${name}: ${STATS[name].nonV8} non-v8 UUIDs`,
+      `${name}: ${STATS[name].nonV8} non-v8 UUIDs`
     )
   }
 
@@ -813,15 +807,15 @@ void test("INV-1: every GenoID generator emits a syntactically valid v8 UUID", (
       const b = genStructuredParent(LAYOUT_BY_NAME[name], [])
 
       assert.equal(
-        andBits(b[6], 0xF0),
+        andBits(b[6], 0xf0),
         0x80,
-        `genStructuredParent(${name}) version nibble != 8`,
+        `genStructuredParent(${name}) version nibble != 8`
       )
 
       assert.equal(
-        andBits(b[8], 0xC0),
+        andBits(b[8], 0xc0),
         0x80,
-        `genStructuredParent(${name}) variant bits != 10`,
+        `genStructuredParent(${name}) variant bits != 10`
       )
     }
   }
@@ -838,7 +832,7 @@ void test("INV-2: zero constraint violations across all layouts at scale", () =>
     assert.equal(
       STATS[name].violations,
       0,
-      `${name}: ${STATS[name].violations} constraint violations over ${N}`,
+      `${name}: ${STATS[name].violations} constraint violations over ${N}`
     )
   }
 })
@@ -874,7 +868,7 @@ void test(
 
           assert.ok(
             v >= 0 && v < mod,
-            `${name}.${cf.name}=${v} outside [0,2^${cf.length})`,
+            `${name}.${cf.name}=${v} outside [0,2^${cf.length})`
           )
 
           if (prev >= 0 && v < prev) {
@@ -888,11 +882,11 @@ void test(
 
         assert.ok(
           decreases <= wrapBound,
-          `${name}.${cf.name}: ${decreases} decreases > wrap bound ${wrapBound} — ordering broken`,
+          `${name}.${cf.name}: ${decreases} decreases > wrap bound ${wrapBound} — ordering broken`
         )
       }
     }
-  },
+  }
 )
 
 // ---------------------------------------------------------------------------
@@ -919,7 +913,7 @@ void test("INV-4: constraint repair is bounded, idempotent, and correct", () => 
 
         assert.ok(
           first <= k,
-          `${name}: repaired ${first} > ${k} constrained fields`,
+          `${name}: repaired ${first} > ${k} constrained fields`
         )
 
         const second = repairConstraints(layout, b)
@@ -927,14 +921,14 @@ void test("INV-4: constraint repair is bounded, idempotent, and correct", () => 
         assert.equal(
           second,
           0,
-          `${name}: repair not idempotent — second pass changed ${second} fields`,
+          `${name}: repair not idempotent — second pass changed ${second} fields`
         )
 
         for (const cf of cfields) {
           assertConstraint(
             cf,
             Number(getFieldValue(b, cf)),
-            `${name} post-repair#${i}`,
+            `${name} post-repair#${i}`
           )
         }
       }
@@ -952,13 +946,13 @@ void test("INV-5: no collisions across a large sample (simple + structured)", ()
   assert.equal(
     UNIQUE.simple,
     N_COLLISION,
-    `genGenoID produced ${N_COLLISION - UNIQUE.simple} collisions`,
+    `genGenoID produced ${N_COLLISION - UNIQUE.simple} collisions`
   )
 
   assert.equal(
     UNIQUE.dbkey,
     N_COLLISION,
-    `genStructuredGenoID produced ${N_COLLISION - UNIQUE.dbkey} collisions`,
+    `genStructuredGenoID produced ${N_COLLISION - UNIQUE.dbkey} collisions`
   )
 })
 
@@ -980,14 +974,14 @@ void test("INV-6: random payload is unbiased (monobit) — crossover preserves e
 
     assert.ok(
       total > 1_000_000,
-      `${name}: monobit sample too small (${total} bits)`,
+      `${name}: monobit sample too small (${total} bits)`
     )
 
     const ratio = ones / total
 
     assert.ok(
       Math.abs(ratio - 0.5) < TOL,
-      `${name}: monobit ratio ${ratio} deviates > ${TOL} from 0.5`,
+      `${name}: monobit ratio ${ratio} deviates > ${TOL} from 0.5`
     )
   }
 })
@@ -1016,12 +1010,12 @@ void test("INV-7: declared fields round-trip exactly", () => {
           assert.equal(
             BigInt(read[f.name]),
             exact,
-            `${name}.${f.name}: readStructured != getFieldValue`,
+            `${name}.${f.name}: readStructured != getFieldValue`
           )
 
           assert.ok(
             exact >= 0n && exact < 2n ** BigInt(f.length),
-            `${name}.${f.name}=${exact} outside field width`,
+            `${name}.${f.name}=${exact} outside field width`
           )
         }
       }
@@ -1039,11 +1033,11 @@ void test("INV-8: embeddability APIs reject invalid configuration", () => {
   assert.throws(
     () => {
       configureRandom(
-        fromAny<Parameters<typeof configureRandom>[0], unknown>(123),
+        fromAny<Parameters<typeof configureRandom>[0], unknown>(123)
       )
     },
 
-    /expected a function/u,
+    /expected a function/u
   )
 
   for (const bad of [0, -1, 3.5, Number.NaN]) {
@@ -1052,7 +1046,7 @@ void test("INV-8: embeddability APIs reject invalid configuration", () => {
         configurePools({ structuredPoolSize: bad })
       },
       /positive integer/u,
-      `structuredPoolSize=${bad} not rejected`,
+      `structuredPoolSize=${bad} not rejected`
     )
 
     assert.throws(
@@ -1060,7 +1054,7 @@ void test("INV-8: embeddability APIs reject invalid configuration", () => {
         configurePools({ simplePoolSize: bad })
       },
       /positive integer/u,
-      `simplePoolSize=${bad} not rejected`,
+      `simplePoolSize=${bad} not rejected`
     )
   }
 })
@@ -1086,20 +1080,20 @@ void test("INV-9: original guarantees hold under injected RNG + tiny pools", () 
     assert.equal(
       s.nonV8,
       0,
-      `INV-9 ${name}: ${s.nonV8} non-v8 under injected RNG/tiny pool`,
+      `INV-9 ${name}: ${s.nonV8} non-v8 under injected RNG/tiny pool`
     )
 
     assert.equal(
       s.violations,
       0,
-      `INV-9 ${name}: ${s.violations} constraint violations under injected RNG/tiny pool`,
+      `INV-9 ${name}: ${s.violations} constraint violations under injected RNG/tiny pool`
     )
 
     const ratio = s.ones / s.total
 
     assert.ok(
       Math.abs(ratio - 0.5) < 0.01,
-      `INV-9 ${name}: monobit ${ratio} biased under injected RNG/tiny pool`,
+      `INV-9 ${name}: monobit ${ratio} biased under injected RNG/tiny pool`
     )
   }
 })
@@ -1146,7 +1140,7 @@ void test("INV-10: lean and fast footprints are byte-identical", () => {
       assert.equal(
         toUuidString(bufs[i]),
         fast[i],
-        `lean/fast toUuidString diverged for ${fast[i]}`,
+        `lean/fast toUuidString diverged for ${fast[i]}`
       )
     }
 
@@ -1237,7 +1231,7 @@ void test("INV-11: allowed-set fields are ~uniformly distributed (no value colla
           assert.ok(
             obs > exp * 0.5 && obs < exp * 1.5,
 
-            `${name}.${f.name}: value ${v} got ${obs}, expected ~${Math.round(exp)} — allowed-set distribution collapsed`,
+            `${name}.${f.name}: value ${v} got ${obs}, expected ~${Math.round(exp)} — allowed-set distribution collapsed`
           )
         }
       }

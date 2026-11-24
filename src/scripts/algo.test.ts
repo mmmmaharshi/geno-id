@@ -1,17 +1,13 @@
-/// <reference types="node" />
-import { andBits, shiftRightBits } from "../shared/bitwise.ts"
-
 import assert from "node:assert/strict"
+import path from "node:path"
+import { test } from "node:test"
+import { pathToFileURL } from "node:url"
 
 import { fromAny } from "@total-typescript/shoehorn"
 
+/// <reference types="node" />
+import { andBits, shiftRightBits } from "../shared/bitwise.ts"
 import { need } from "../shared/need.ts"
-
-import path from "node:path"
-
-import { pathToFileURL } from "node:url"
-
-import { test } from "node:test"
 
 const __dirname = import.meta.dirname
 
@@ -86,7 +82,7 @@ void test("toUuidString then uuidToBytes is lossless", () => {
   const bytes = new Uint8Array(16)
 
   for (let i = 0; i < 16; i += 1) {
-    bytes[i] = andBits(i * 37 + 11, 0xFF)
+    bytes[i] = andBits(i * 37 + 11, 0xff)
   }
 
   const s = toUuidString(bytes)
@@ -130,9 +126,9 @@ void test("genGenoID forces the v8 version and RFC variant nibbles", () => {
 
     // Version nibble (bits 48-51) = 0x8, variant (bits 64-65) = 10xx
 
-    assert.equal(shiftRightBits(andBits(b[6], 0xF0), 4), 0x8)
+    assert.equal(shiftRightBits(andBits(b[6], 0xf0), 4), 0x8)
 
-    assert.equal(shiftRightBits(andBits(b[8], 0xC0), 6), 0b10)
+    assert.equal(shiftRightBits(andBits(b[8], 0xc0), 6), 0b10)
   }
 })
 
@@ -141,9 +137,9 @@ void test("forceVersionVariant sets v8 + RFC variant and rejects short buffers",
 
   forceVersionVariant(b)
 
-  assert.equal(shiftRightBits(andBits(b[6], 0xF0), 4), 0x8)
+  assert.equal(shiftRightBits(andBits(b[6], 0xf0), 4), 0x8)
 
-  assert.equal(shiftRightBits(andBits(b[8], 0xC0), 6), 0b10)
+  assert.equal(shiftRightBits(andBits(b[8], 0xc0), 6), 0b10)
 
   assert.throws(() => {
     forceVersionVariant(new Uint8Array(8))
@@ -159,7 +155,7 @@ void test("validateLayout rejects fields overlapping the reserved v8 nibble", ()
         fields: [{ length: 4, name: "x", start: 48, type: "random" }],
 
         name: "bad",
-      }),
+      })
     )
   })
 })
@@ -171,7 +167,7 @@ void test("validateLayout rejects layouts with uncovered bits", () => {
         fields: [{ length: 8, name: "x", start: 0, type: "random" }],
 
         name: "sparse",
-      }),
+      })
     )
   })
 })
@@ -187,7 +183,7 @@ void test("validateLayout rejects structured fields wider than 48 bits", () => {
         ],
 
         name: "wide",
-      }),
+      })
     )
   })
 })
@@ -213,7 +209,9 @@ void test("completeLayout fills every non-nibble bit with a random filler", () =
       start: 66,
       type: "counter",
     },
-  ]) as { fields: { name: string; type: string; start: number; length: number }[] }
+  ]) as {
+    fields: { name: string; type: string; start: number; length: number }[]
+  }
 
   const covered = Array.from<boolean>({ length: 128 }).fill(false)
 
@@ -230,9 +228,7 @@ void test("completeLayout fills every non-nibble bit with a random filler", () =
   assert.equal(covered.filter(Boolean).length, 122)
 
   assert.ok(
-    layout.fields.some(
-      (f) => f.name.startsWith("rand_") && f.type === "random",
-    ),
+    layout.fields.some((f) => f.name.startsWith("rand_") && f.type === "random")
   )
 })
 
@@ -271,7 +267,7 @@ void test("wide (>32-bit) random filler carries real high-bit entropy across gen
 
   assert.ok(
     anyHighBitSet,
-    "62-bit filler never exercised bits above 32 — truncation regression",
+    "62-bit filler never exercised bits above 32 — truncation regression"
   )
 
   assert.ok(seen.size > 10, "filler entropy collapsed — expected variation")
@@ -297,7 +293,7 @@ void test("wide node/process/shard fields span their full declared range (no 8-b
   assert.equal(
     stream.length,
     16,
-    "stream must be declared 16-bit for this guard",
+    "stream must be declared 16-bit for this guard"
   )
 
   const seen = new Set<number>()
@@ -305,7 +301,7 @@ void test("wide node/process/shard fields span their full declared range (no 8-b
   for (let i = 0; i < 5000; i += 1) {
     const fields = readStructured(
       genStructuredGenoID(EVENTSOURCING_LAYOUT),
-      EVENTSOURCING_LAYOUT,
+      EVENTSOURCING_LAYOUT
     )
 
     seen.add(fields.stream)
@@ -313,12 +309,12 @@ void test("wide node/process/shard fields span their full declared range (no 8-b
 
   assert.ok(
     seen.size > 256,
-    `stream entropy collapsed to ${seen.size} values — 8-bit cap regression`,
+    `stream entropy collapsed to ${seen.size} values — 8-bit cap regression`
   )
 
   assert.ok(
     [...seen].some((v) => v > 255),
-    "stream never exceeded 255 — high byte never drawn",
+    "stream never exceeded 255 — high byte never drawn"
   )
 })
 

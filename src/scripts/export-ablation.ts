@@ -1,3 +1,6 @@
+import fs from "node:fs"
+import path from "node:path"
+
 import {
   andBits,
   orBits,
@@ -5,13 +8,8 @@ import {
   shiftRightBits,
   xorBits,
 } from "../shared/bitwise.ts"
-
-import { genRawV8, hexVal } from "./shared/export-bits.ts"
-
-import fs from "node:fs"
-
 import { need } from "../shared/need.ts"
-import path from "node:path"
+import { genRawV8, hexVal } from "./shared/export-bits.ts"
 
 const __dirname = import.meta.dirname
 
@@ -20,9 +18,9 @@ const root = path.resolve(__dirname, "..", "..")
 const HEX_STARTS = [0, 2, 4, 6, 9, 11, 14, 16, 19, 21, 24, 26, 28, 30, 32, 34]
 
 const FREE_MASK = [
-  0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x0F, 0xFF, 0x3F, 0xFF, 0xFF, 0xFF,
+  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x0f, 0xff, 0x3f, 0xff, 0xff, 0xff,
 
-  0xFF, 0xFF, 0xFF, 0xFF,
+  0xff, 0xff, 0xff, 0xff,
 ]
 
 const uuidToFreeBits = (uuid: string): string => {
@@ -119,9 +117,9 @@ const genFull = (): string => {
 
       _child[mutPos] = xorBits(_child[mutPos], g[off + andBits(mutPos + 1, 15)])
 
-      _child[6] = orBits(andBits(_child[6], 0x0F), 0x80)
+      _child[6] = orBits(andBits(_child[6], 0x0f), 0x80)
 
-      _child[8] = orBits(andBits(_child[8], 0x3F), 0x80)
+      _child[8] = orBits(andBits(_child[8], 0x3f), 0x80)
 
       const v = _child16
 
@@ -171,9 +169,9 @@ const genCrossoverOnly = (): string => {
         _childX[j] = g[off + 16 + j]
       }
 
-      _childX[6] = orBits(andBits(_childX[6], 0x0F), 0x80)
+      _childX[6] = orBits(andBits(_childX[6], 0x0f), 0x80)
 
-      _childX[8] = orBits(andBits(_childX[8], 0x3F), 0x80)
+      _childX[8] = orBits(andBits(_childX[8], 0x3f), 0x80)
 
       const v = _childX16
 
@@ -221,12 +219,12 @@ const genMutationOnly = (): string => {
 
       _childM[mutPos] = xorBits(
         _childM[mutPos],
-        g[off + andBits(mutPos + 1, 15)],
+        g[off + andBits(mutPos + 1, 15)]
       )
 
-      _childM[6] = orBits(andBits(_childM[6], 0x0F), 0x80)
+      _childM[6] = orBits(andBits(_childM[6], 0x0f), 0x80)
 
-      _childM[8] = orBits(andBits(_childM[8], 0x3F), 0x80)
+      _childM[8] = orBits(andBits(_childM[8], 0x3f), 0x80)
 
       const v = _childM16
 
@@ -249,7 +247,7 @@ const exportSamples = (
 
   fn: () => string,
 
-  count: number,
+  count: number
 ): string => {
   const bits: string[] = Array.from<string>({ length: count })
 

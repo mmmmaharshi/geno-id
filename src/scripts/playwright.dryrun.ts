@@ -1,19 +1,20 @@
-import type { Browser } from "playwright"
-import { JSDOM } from "jsdom"
-import { setTimeout as delay } from "node:timers/promises"
 import fs from "node:fs"
 import path from "node:path"
+import { setTimeout as delay } from "node:timers/promises"
 import { pathToFileURL } from "node:url"
+
+import { JSDOM } from "jsdom"
+import type { Browser } from "playwright"
 
 const __dirname = import.meta.dirname
 const root = path.resolve(__dirname, "..", "..")
 
 interface MockPage {
-  $$eval: <T,>(
+  $$eval: <T>(
     selector: string,
-    fn: (els: readonly Readonly<Element>[]) => T,
+    fn: (els: readonly Readonly<Element>[]) => T
   ) => Promise<T>
-  $eval: <T,>(
+  $eval: <T>(
     selector: string,
     fn: (el: Readonly<Element>, ...args: readonly unknown[]) => T,
     ...args: readonly unknown[]
@@ -25,7 +26,7 @@ interface MockPage {
   waitForFunction: (
     fn: () => boolean,
     _arg?: unknown,
-    opts?: Readonly<{ timeout?: number }>,
+    opts?: Readonly<{ timeout?: number }>
   ) => Promise<boolean>
 }
 
@@ -85,16 +86,16 @@ const makeMockBrowser = async (): Promise<MockBrowser> => {
   benchModule.init(window)
 
   const page: MockPage = {
-    $$eval: async <T,>(
+    $$eval: async <T>(
       selector: string,
-      fn: (els: readonly Readonly<Element>[]) => T,
+      fn: (els: readonly Readonly<Element>[]) => T
     ): Promise<T> => {
       const result = await Promise.resolve(
-        fn([...window.document.querySelectorAll(selector)]),
+        fn([...window.document.querySelectorAll(selector)])
       )
       return result
     },
-    $eval: async <T,>(
+    $eval: async <T>(
       selector: string,
       fn: (el: Readonly<Element>, ...args: readonly unknown[]) => T,
       ...args: readonly unknown[]
@@ -122,7 +123,7 @@ const makeMockBrowser = async (): Promise<MockBrowser> => {
     waitForFunction: async (
       fn: () => boolean,
       _arg?: unknown,
-      opts: Readonly<{ timeout?: number }> = {},
+      opts: Readonly<{ timeout?: number }> = {}
     ): Promise<boolean> => {
       const timeout = opts.timeout ?? 30_000
       const start = Date.now()
@@ -172,7 +173,7 @@ const main = async (): Promise<void> => {
   console.log(
     "results rows:",
     output.results.length,
-    "(expect 6: v4, v7, hash, mathrandom, GenoID, GenoID-structured)",
+    "(expect 6: v4, v7, hash, mathrandom, GenoID, GenoID-structured)"
   )
   console.log("collisions rows:", output.collisions.length, "(expect 6)")
   console.log('rawLog includes "Done.":', output.rawLog.includes("Done."))

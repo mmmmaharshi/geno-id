@@ -2,7 +2,7 @@ import { nullValue, undefinedValue } from "./shared/runtime-values.ts"
 
 export const DISTRIBUTIONS = ["uniform", "hot-tenant", "bursty"] as const
 
-export type Distribution = typeof DISTRIBUTIONS[number]
+export type Distribution = (typeof DISTRIBUTIONS)[number]
 
 export const WORKLOADS = [
   "insert",
@@ -20,11 +20,11 @@ export const WORKLOADS = [
   "concurrentWriters",
 ] as const
 
-export type Workload = typeof WORKLOADS[number]
+export type Workload = (typeof WORKLOADS)[number]
 
 export const ENGINES = ["postgresql", "mysql-innodb"] as const
 
-export type EngineName = typeof ENGINES[number]
+export type EngineName = (typeof ENGINES)[number]
 
 /**
  * The engines an artifact actually measured, in canonical order. The result
@@ -37,7 +37,7 @@ export type EngineName = typeof ENGINES[number]
  */
 
 export const enginesWithResults = (
-  results: Record<string, unknown>,
+  results: Record<string, unknown>
 ): EngineName[] => ENGINES.filter((name) => name in results)
 
 export const SERVER_ENV: Record<EngineName, string> = {
@@ -50,7 +50,7 @@ export const SERVER_ENV: Record<EngineName, string> = {
 export const serverTarget = (
   name: EngineName,
 
-  env: Record<string, string | undefined>,
+  env: Record<string, string | undefined>
 ): { host: string; port: number } => {
   if (name === "postgresql") {
     return {
@@ -67,7 +67,7 @@ export const serverTarget = (
 
 export const unreachableMessage = (
   name: EngineName,
-  target: Readonly<{ host: string; port: number }>,
+  target: Readonly<{ host: string; port: number }>
 ): string[] => [
   `No ${name} server reachable at ${target.host}:${target.port}.`,
 
@@ -97,7 +97,7 @@ export const percentiles = (values: readonly number[]): Percentiles => {
 
   const at = (quantile: number): number =>
     sorted.at(
-      Math.min(sorted.length - 1, Math.floor(quantile * sorted.length)),
+      Math.min(sorted.length - 1, Math.floor(quantile * sorted.length))
     ) ?? 0
 
   return {
@@ -112,7 +112,7 @@ export const percentiles = (values: readonly number[]): Percentiles => {
 export const tenantFor = (
   distribution: Distribution,
   index: number,
-  random: () => number,
+  random: () => number
 ): number => {
   if (distribution === "uniform") {
     return 1 + (index % 1000)
@@ -211,7 +211,7 @@ const validateArm = (arm: string, value: unknown): void => {
   if ((cell.reps ?? 0) < 5) {
     throw new NativeResultError(
       "insufficient-reps",
-      `arm ${arm} has ${cell.reps ?? 0} reps`,
+      `arm ${arm} has ${cell.reps ?? 0} reps`
     )
   }
 
@@ -221,7 +221,7 @@ const validateArm = (arm: string, value: unknown): void => {
     if (!samples || samples.samples === 0) {
       throw new NativeResultError(
         "missing-metric",
-        `arm ${arm} has no ${metric} samples`,
+        `arm ${arm} has no ${metric} samples`
       )
     }
   }
@@ -229,14 +229,14 @@ const validateArm = (arm: string, value: unknown): void => {
   if (cell.rangeScan === undefinedValue) {
     throw new NativeResultError(
       "missing-metric",
-      `arm ${arm} has no rangeScan result`,
+      `arm ${arm} has no rangeScan result`
     )
   }
 
   if (cell.concurrentWriters === undefinedValue) {
     throw new NativeResultError(
       "missing-metric",
-      `arm ${arm} has no concurrentWriters result`,
+      `arm ${arm} has no concurrentWriters result`
     )
   }
 }
@@ -245,28 +245,28 @@ export const validateNativeResult = (result: Readonly<EngineResult>): void => {
   if (!ENGINES.includes(result.engine)) {
     throw new NativeResultError(
       "unknown-engine",
-      `unknown engine ${result.engine}`,
+      `unknown engine ${result.engine}`
     )
   }
 
   if (!result.serverVersion) {
     throw new NativeResultError(
       "missing-server-version",
-      "server version is required",
+      "server version is required"
     )
   }
 
   if (Object.keys(result.serverConfig).length === 0) {
     throw new NativeResultError(
       "missing-server-config",
-      "server configuration is required",
+      "server configuration is required"
     )
   }
 
   if (result.reps < 5) {
     throw new NativeResultError(
       "insufficient-reps",
-      `primary cells need at least 5 reps, got ${result.reps}`,
+      `primary cells need at least 5 reps, got ${result.reps}`
     )
   }
 
@@ -278,7 +278,7 @@ export const validateNativeResult = (result: Readonly<EngineResult>): void => {
     if (!result.workloads.includes(workload)) {
       throw new NativeResultError(
         "missing-workload",
-        `workload ${workload} is missing`,
+        `workload ${workload} is missing`
       )
     }
   }
@@ -287,7 +287,7 @@ export const validateNativeResult = (result: Readonly<EngineResult>): void => {
     if (!result.distributions.includes(distribution)) {
       throw new NativeResultError(
         "missing-distribution",
-        `distribution ${distribution} is missing`,
+        `distribution ${distribution} is missing`
       )
     }
   }
@@ -303,28 +303,28 @@ export const validateNativeResult = (result: Readonly<EngineResult>): void => {
   if (Object.keys(result.queryPlans).length === 0) {
     throw new NativeResultError(
       "missing-query-plan",
-      "at least one query plan is required",
+      "at least one query plan is required"
     )
   }
 
   if (Object.keys(result.storage).length === 0) {
     throw new NativeResultError(
       "missing-storage",
-      "storage metrics are required",
+      "storage metrics are required"
     )
   }
 
   if (Object.keys(result.maintenance).length === 0) {
     throw new NativeResultError(
       "missing-maintenance",
-      "maintenance metrics are required",
+      "maintenance metrics are required"
     )
   }
 
   if (result.walBytes === nullValue) {
     throw new NativeResultError(
       "missing-wal",
-      "WAL or redo-log size is required",
+      "WAL or redo-log size is required"
     )
   }
 }

@@ -1,14 +1,10 @@
 /// <reference types="node" />
 
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
-
 import assert from "node:assert/strict"
-
-import path from "node:path"
-
-import { test } from "node:test"
-
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
+import path from "node:path"
+import { test } from "node:test"
 
 import { verifyEvidenceTree } from "./verify-evidence-core.ts"
 
@@ -48,7 +44,7 @@ void test("every mapped artifact present verifies", () => {
         package_version: "1.2.3",
       },
 
-      f.dir,
+      f.dir
     )
 
     assert.equal(result.missing.length, 0)
@@ -69,7 +65,7 @@ void test("a missing mapped artifact is reported", () => {
         package_version: "1.2.3",
       },
 
-      f.dir,
+      f.dir
     )
 
     assert.equal(result.missing.length, 1)
@@ -95,7 +91,7 @@ void test("a comma-separated list of artifacts is checked element by element", (
         package_version: "1.2.3",
       },
 
-      f.dir,
+      f.dir
     )
 
     assert.equal(result.checked, 2)
@@ -122,7 +118,7 @@ void test("a glob resolves to the files that match it", () => {
         package_version: "1.2.3",
       },
 
-      f.dir,
+      f.dir
     )
 
     assert.equal(result.missing.length, 0)
@@ -145,7 +141,7 @@ void test("a glob that matches nothing is missing", () => {
         package_version: "1.2.3",
       },
 
-      f.dir,
+      f.dir
     )
 
     assert.equal(result.missing.length, 1)
@@ -171,7 +167,7 @@ void test("a metric expectation that matches the artifact verifies", () => {
         package_version: "1.2.3",
       },
 
-      f.dir,
+      f.dir
     )
 
     assert.equal(result.metricMismatches.length, 0)
@@ -197,7 +193,7 @@ void test("a metric expectation that drifted from the artifact is reported", () 
         package_version: "1.2.3",
       },
 
-      f.dir,
+      f.dir
     )
 
     assert.equal(result.metricMismatches.length, 1)
@@ -227,7 +223,7 @@ void test("a metric expectation with a missing JSON path is reported", () => {
         package_version: "1.2.3",
       },
 
-      f.dir,
+      f.dir
     )
 
     assert.equal(result.metricMismatches.length, 1)
@@ -251,12 +247,12 @@ void test("a version mismatch between the manifest and the package is an error",
         package_version: "1.2.3",
       },
 
-      f.dir,
+      f.dir
     )
 
     assert.equal(
       result.versionError,
-      "manifest package_version 1.2.3 != package.json 1.2.4",
+      "manifest package_version 1.2.3 != package.json 1.2.4"
     )
   } finally {
     rmSync(f.dir, { force: true, recursive: true })
@@ -278,12 +274,12 @@ void test("a version mismatch inside the release identity is an error", () => {
         releaseIdentityVersion: "1.0.0",
       },
 
-      f.dir,
+      f.dir
     )
 
     assert.match(
       result.versionError ?? "",
-      /release identity 1\.0\.0 != package\.json 1\.2\.3/u,
+      /release identity 1\.0\.0 != package\.json 1\.2\.3/u
     )
   } finally {
     rmSync(f.dir, { force: true, recursive: true })

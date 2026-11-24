@@ -1,5 +1,6 @@
-import type { CIBenchmarkResult } from "./ci-result.ts"
 import fs from "node:fs"
+
+import type { CIBenchmarkResult } from "./ci-result.ts"
 import { undefinedValue } from "./shared/runtime-values.ts"
 
 const summaryPath = process.env.GITHUB_STEP_SUMMARY
@@ -52,7 +53,7 @@ const main = (): void => {
     fs.writeFileSync("dist/ci-summary.md", md)
   } catch (error) {
     console.error(
-      `Failed to write dist/ci-summary.md: ${(error as Error).message}`,
+      `Failed to write dist/ci-summary.md: ${(error as Error).message}`
     )
   }
 

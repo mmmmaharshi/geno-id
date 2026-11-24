@@ -1,13 +1,10 @@
 /// <reference types="node" />
 import assert from "node:assert/strict"
-
-import { need } from "../shared/need.ts"
-
 import path from "node:path"
-
+import { test } from "node:test"
 import { pathToFileURL } from "node:url"
 
-import { test } from "node:test"
+import { need } from "../shared/need.ts"
 
 const root = path.resolve(import.meta.dirname, "..", "..")
 
@@ -22,7 +19,7 @@ const { inferWorkload } = algo as {
     schema: {
       readonly name: string
       readonly fields: readonly { readonly name: string }[]
-    },
+    }
   ) => {
     profile: {
       readWeight: number
@@ -44,7 +41,7 @@ const point = (
   op: string,
   filters: Readonly<Record<string, number>>,
   matched = 10,
-  scanned = 1000,
+  scanned = 1000
 ): {
   filters: Readonly<Record<string, number>>
   kind: "point"
@@ -56,7 +53,7 @@ const point = (
 void test("inferWorkload recovers weights and roles from a skewed trace", () => {
   const trace = [
     ...Array.from({ length: 80 }, (_, i) =>
-      point("read", { tenant: (i % 8) + 1 }),
+      point("read", { tenant: (i % 8) + 1 })
     ),
 
     ...Array.from({ length: 15 }, (_, i) => ({
@@ -120,18 +117,18 @@ void test("inferWorkload rejects an empty trace", () => {
 void test("inferWorkload rejects filters on unknown fields", () => {
   assert.throws(
     () => inferWorkload([point("read", { ghost: 1 })], schema),
-    /ghost/u,
+    /ghost/u
   )
 })
 
 void test("inferWorkload rejects garbage events", () => {
   assert.throws(
     () => inferWorkload([{ filters: {}, kind: "point", op: "delete" }], schema),
-    /op/u,
+    /op/u
   )
 
   assert.throws(
     () => inferWorkload([{ filters: {}, kind: "fetch", op: "read" }], schema),
-    /kind/u,
+    /kind/u
   )
 })

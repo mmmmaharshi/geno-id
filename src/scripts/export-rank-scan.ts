@@ -1,12 +1,9 @@
-import { andBits, orBits, shiftLeftBits } from "../shared/bitwise.ts"
-
-import { cpus, tmpdir } from "node:os"
-
-import { mkdtempSync, writeFileSync } from "node:fs"
-
 import { execFileSync } from "node:child_process"
-
+import { mkdtempSync, writeFileSync } from "node:fs"
+import { cpus, tmpdir } from "node:os"
 import path from "node:path"
+
+import { andBits, orBits, shiftLeftBits } from "../shared/bitwise.ts"
 
 // P2 — 34B-vs-16B NIST rank-stability scan (single-process, CPU-pooled).
 
@@ -90,9 +87,9 @@ const rawV8Bytes = (): Uint8Array => {
 
   crypto.getRandomValues(b)
 
-  b[6] = orBits(andBits(b[6], 0x0F), 0x80)
+  b[6] = orBits(andBits(b[6], 0x0f), 0x80)
 
-  b[8] = orBits(andBits(b[8], 0x3F), 0x80)
+  b[8] = orBits(andBits(b[8], 0x3f), 0x80)
 
   return b
 }
@@ -139,7 +136,7 @@ const main = (): void => {
   const rows: string[] = ["size,trials,fails,fail_rate"]
 
   console.log(
-    `=== P2: draw-size vs binary_matrix_rank FAIL (${cores} cores) ===`,
+    `=== P2: draw-size vs binary_matrix_rank FAIL (${cores} cores) ===`
   )
 
   console.log("size | trials | fails | fail_rate")
@@ -167,18 +164,18 @@ const main = (): void => {
 
     ["-u", driverPath, `${process.cwd()}/scripts`, payloadPath],
 
-    { encoding: "utf8", maxBuffer: shiftLeftBits(1, 30) },
+    { encoding: "utf8", maxBuffer: shiftLeftBits(1, 30) }
   )
 
   const results = JSON.parse(
-    out.trim().split("\n").pop() ?? "[]",
+    out.trim().split("\n").pop() ?? "[]"
   ) as RankScanResult[]
 
   for (const r of results) {
     rows.push(`${r.size},${r.trials},${r.fails},${r.fail_rate}`)
 
     console.log(
-      `${String(r.size).padStart(4)} | ${String(r.trials).padStart(6)} | ${String(r.fails).padStart(5)} | ${r.fail_rate}`,
+      `${String(r.size).padStart(4)} | ${String(r.trials).padStart(6)} | ${String(r.fails).padStart(5)} | ${r.fail_rate}`
     )
   }
 

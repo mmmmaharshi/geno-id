@@ -4,12 +4,9 @@ import {
   shiftLeftBits,
   shiftRightBits,
 } from "../shared/bitwise.ts"
-
-import { forEachSequential } from "./shared/sequence.ts"
-
 import { need } from "../shared/need.ts"
-
 import { nullValue } from "./shared/runtime-values.ts"
+import { forEachSequential } from "./shared/sequence.ts"
 
 // Pure computation core for the in-house NIST-style randomness battery. Shared
 
@@ -46,15 +43,15 @@ const hexToBytes = (s: string, out: Uint8Array): Uint8Array => {
 }
 
 export const STANDARD_FREE_MASK = [
-  0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x0F, 0xFF, 0x3F, 0xFF, 0xFF, 0xFF, 0xFF,
+  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x0f, 0xff, 0x3f, 0xff, 0xff, 0xff, 0xff,
 
-  0xFF, 0xFF, 0xFF,
+  0xff, 0xff, 0xff,
 ]
 
 export const V7_FREE_MASK = [
-  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0F, 0xFF, 0x3F, 0xFF, 0xFF, 0xFF, 0xFF,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0f, 0xff, 0x3f, 0xff, 0xff, 0xff, 0xff,
 
-  0xFF, 0xFF, 0xFF,
+  0xff, 0xff, 0xff,
 ]
 
 // Config for one battery run — also the data contract sent to `stats-worker.ts`.
@@ -93,7 +90,7 @@ export const erfc = (x: number): number => {
                               (-1.13520398 +
                                 t *
                                   (1.48851587 +
-                                    t * (-0.82215223 + t * 0.17087277)))))))),
+                                    t * (-0.82215223 + t * 0.17087277))))))))
     )
 
   if (x >= 0) {
@@ -206,7 +203,7 @@ const createSampleStats = (freeMask: readonly number[]): SampleStats => ({
 
     let size = 256
 
-    if (mask !== 0xFF) {
+    if (mask !== 0xff) {
       size = mask + 1
     }
 
@@ -233,7 +230,7 @@ const accumulateSample = (
 
   freeMask: readonly number[],
 
-  stats: SampleStats,
+  stats: SampleStats
 ): void => {
   for (let i = 0; i < 16; i += 1) {
     const value = bytes[i]
@@ -275,7 +272,7 @@ const accumulateProducts = (
 
   activeBytes: readonly number[],
 
-  sumprod: Float64Array,
+  sumprod: Float64Array
 ): void => {
   for (const i of activeBytes) {
     for (const j of activeBytes) {
@@ -291,7 +288,7 @@ const collectSyncSamples = (
 
   fn: () => string | Promise<string>,
 
-  consume: (uuid: string) => void,
+  consume: (uuid: string) => void
 ): void => {
   for (let sample = 0; sample < n; sample += 1) {
     consume(fn() as string)
@@ -303,7 +300,7 @@ const collectAsyncSamples = async (
 
   fn: () => string | Promise<string>,
 
-  consume: (uuid: string) => void,
+  consume: (uuid: string) => void
 ): Promise<void> => {
   await forEachSequential(n, async () => {
     consume(await fn())
@@ -315,7 +312,7 @@ const runsStatistics = (
 
   totalFreeBits: number,
 
-  runsCount: number,
+  runsCount: number
 ): { p: number | null; skipped: boolean } => {
   const pi = onesFree / totalFreeBits
 
@@ -328,7 +325,7 @@ const runsStatistics = (
   return {
     p: erfc(
       Math.abs(observed - 2 * totalFreeBits * pi * (1 - pi)) /
-        (2 * Math.sqrt(2 * totalFreeBits) * pi * (1 - pi)),
+        (2 * Math.sqrt(2 * totalFreeBits) * pi * (1 - pi))
     ),
 
     skipped: false,
@@ -340,7 +337,7 @@ const chiSquareResults = (
 
   freqFull: readonly (Float64Array | null)[],
 
-  n: number,
+  n: number
 ): ChiResult[] => {
   const results: ChiResult[] = []
 
@@ -388,7 +385,7 @@ const correlationFlags = (
 
   sumprod: Float64Array,
 
-  n: number,
+  n: number
 ): CorrFlag[] => {
   const flags: CorrFlag[] = []
 
@@ -426,14 +423,14 @@ const averageByteEntropy = (
 
   freqFull: readonly (Float64Array | null)[],
 
-  n: number,
+  n: number
 ): number => {
   let entropyCount = 0
 
   let entropySum = 0
 
   for (let i = 0; i < 16; i += 1) {
-    if (freeMask[i] === 0xFF) {
+    if (freeMask[i] === 0xff) {
       const frequencies = need(freqFull[i])
 
       let entropy = 0
@@ -464,7 +461,7 @@ export const runBattery = async (
 
   n: number,
 
-  FREE_MASK: number[],
+  FREE_MASK: number[]
 ): Promise<BatteryResult> => {
   const activeBytes = activeByteIndices(FREE_MASK)
 
@@ -497,7 +494,7 @@ export const runBattery = async (
   const { p: runsP, skipped: runsSkipped } = runsStatistics(
     stats.onesFree,
     nBits,
-    stats.runsCount,
+    stats.runsCount
   )
 
   return {
@@ -510,7 +507,7 @@ export const runBattery = async (
       stats.sum,
       stats.sumsq,
       stats.sumprod,
-      n,
+      n
     ),
 
     monobitP,

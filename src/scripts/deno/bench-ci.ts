@@ -1,5 +1,4 @@
 import { benchRepeated, collisionTest } from "../../../dist/bench-core.js"
-
 import {
   genPgUuidV8,
   genUlid,
@@ -7,9 +6,6 @@ import {
   genKsuid,
   genSnowflake,
 } from "../baselines.ts"
-
-import { compareBench } from "../significance.ts"
-
 import type {
   CIBenchmarkResult,
   EnvInfo,
@@ -17,6 +13,7 @@ import type {
   CollisionEntry,
   ComparisonEntry,
 } from "../ci-result.ts"
+import { compareBench } from "../significance.ts"
 
 const algo = (await import("../../../dist/algo.js")) as {
   genV4Native: () => string
@@ -37,7 +34,7 @@ const algo = (await import("../../../dist/algo.js")) as {
 const genDbkey = (): string => algo.genStructuredGenoID(algo.DBKEY_LAYOUT)
 
 const genCompiled = algo.compileLayout(
-  algo.DBKEY_LAYOUT as Parameters<typeof algo.compileLayout>[0],
+  algo.DBKEY_LAYOUT as Parameters<typeof algo.compileLayout>[0]
 ).fn
 
 function normalizeArch(arch: string): string {
@@ -236,7 +233,7 @@ console.log("=== GenoID CI benchmark (deno) ===")
 console.log("Environment:", JSON.stringify(env, null, 2))
 
 console.log(
-  `\nBenchmarks (ops/sec, mean ± std, 95% CI; Welch p & Cohen's d vs ${BASELINE}):`,
+  `\nBenchmarks (ops/sec, mean ± std, 95% CI; Welch p & Cohen's d vs ${BASELINE}):`
 )
 
 for (const b of benchmarks) {
@@ -246,8 +243,8 @@ for (const b of benchmarks) {
       .toString()
 
       .padStart(
-        8,
-      )}  CV=${b.cv}  CI[${b.ci95[0]}–${b.ci95[1]}]  p=${b.welchP}  d=${b.cohensD}`,
+        8
+      )}  CV=${b.cv}  CI[${b.ci95[0]}–${b.ci95[1]}]  p=${b.welchP}  d=${b.cohensD}`
   )
 }
 
@@ -255,7 +252,7 @@ console.log("\nPairwise comparisons:")
 
 for (const c of comparisons) {
   console.log(
-    `  ${c.name.padEnd(28)} ratio=${c.ratio}  p=${c.welchP}  d=${c.cohensD}  faster=${c.faster}`,
+    `  ${c.name.padEnd(28)} ratio=${c.ratio}  p=${c.welchP}  d=${c.cohensD}  faster=${c.faster}`
   )
 }
 
@@ -263,7 +260,7 @@ console.log("\nCollisions:")
 
 for (const c of collisions) {
   console.log(
-    `  ${c.name.padEnd(14)} n=${c.n}  collisions=${c.collisions}  PASS=${c.collisions === 0}`,
+    `  ${c.name.padEnd(14)} n=${c.n}  collisions=${c.collisions}  PASS=${c.collisions === 0}`
   )
 }
 

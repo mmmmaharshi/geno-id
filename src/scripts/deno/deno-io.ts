@@ -10,7 +10,7 @@ const distDir = new URL("../../../dist/", import.meta.url)
 
 export async function writeBitsFile(
   name: string,
-  content: string,
+  content: string
 ): Promise<URL> {
   const file = new URL(name, distDir)
 

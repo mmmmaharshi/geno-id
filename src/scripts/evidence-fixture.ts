@@ -1,23 +1,16 @@
+import { execFileSync } from "node:child_process"
+import { createHash } from "node:crypto"
+import { existsSync, readFileSync } from "node:fs"
+import { mkdir, writeFile } from "node:fs/promises"
+import path from "node:path"
+import { pathToFileURL } from "node:url"
+
+import { collisionTest } from "../../dist/bench-core.js"
 import {
   createEvidenceManifest,
   verifyEvidenceArtifacts,
 } from "../../dist/evidence-manifest.js"
-
-import { existsSync, readFileSync } from "node:fs"
-
-import { mkdir, writeFile } from "node:fs/promises"
-
-import { collisionTest } from "../../dist/bench-core.js"
-
-import { createHash } from "node:crypto"
-
-import { execFileSync } from "node:child_process"
-
 import { nullValue } from "./shared/runtime-values.ts"
-
-import path from "node:path"
-
-import { pathToFileURL } from "node:url"
 
 type EvidenceManifestInput = Parameters<typeof createEvidenceManifest>[0]
 
@@ -34,9 +27,7 @@ const algo = (await import(
 )) as {
   genStructuredGenoID: (layout: unknown) => string
 
-  compileDatabaseLayout: (
-    input: unknown,
-  ) => {
+  compileDatabaseLayout: (input: unknown) => {
     layout: unknown
 
     generationPlan: EvidenceManifestInput["generationPlan"]
@@ -75,7 +66,7 @@ const compilation = compileDatabaseLayout({
 const { layout } = compilation
 
 const rawIds = Array.from({ length: SAMPLE_SIZE }, () =>
-  genStructuredGenoID(layout),
+  genStructuredGenoID(layout)
 )
 
 const raw = `${rawIds.join("\n")}\n`
@@ -165,7 +156,7 @@ await writeFile(path.join(outDir, "uuids.txt"), raw)
 
 await writeFile(
   path.join(outDir, "manifest.json"),
-  `${JSON.stringify(manifest, nullValue, 2)}\n`,
+  `${JSON.stringify(manifest, nullValue, 2)}\n`
 )
 
 const states = verifyEvidenceArtifacts(manifest, (artifactPath) => {

@@ -1,5 +1,10 @@
 /// <reference types="node" />
 
+import assert from "node:assert/strict"
+import { test } from "node:test"
+
+import { fromAny } from "@total-typescript/shoehorn"
+
 import {
   andBits,
   orBits,
@@ -7,7 +12,7 @@ import {
   shiftRightBits,
   xorBits,
 } from "../shared/bitwise.ts"
-
+import { need } from "../shared/need.ts"
 import {
   extractPgUuidV8Timestamp,
   genKsuid,
@@ -18,21 +23,13 @@ import {
   uuidToBytes,
 } from "./baselines.ts"
 
-import assert from "node:assert/strict"
-
-import { fromAny } from "@total-typescript/shoehorn"
-
-import { need } from "../shared/need.ts"
-
-import { test } from "node:test"
-
 // Fixed constant mirrored from baselines.ts (verification oracle only).
 
 const KSUID_EPOCH = 1_400_000_000
 
 const SF_EPOCH = 1_288_834_974_657n
 
-const PG_KEY_48 = andBits(0x9E_37_79_B9_7F_4An, 0xFF_FF_FF_FF_FF_FFn)
+const PG_KEY_48 = andBits(0x9e_37_79_b9_7f_4an, 0xff_ff_ff_ff_ff_ffn)
 
 const CROCKFORD = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
 
@@ -43,9 +40,12 @@ const CROCKFORD = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
 // Comparison against external reference implementations.
 
 const withRandom = (pattern: readonly number[], fn: () => void): void => {
-  const c = fromAny<{
-    getRandomValues: (a: Uint8Array) => Uint8Array
-  }, unknown>(globalThis.crypto)
+  const c = fromAny<
+    {
+      getRandomValues: (a: Uint8Array) => Uint8Array
+    },
+    unknown
+  >(globalThis.crypto)
 
   const orig = c.getRandomValues
 
@@ -104,7 +104,7 @@ const ksuidDecode = (s: string): Uint8Array => {
   const payload = new Uint8Array(20)
 
   for (let i = 19; i >= 0; i -= 1) {
-    payload[i] = Number(andBits(num, 0xFFn))
+    payload[i] = Number(andBits(num, 0xffn))
 
     num = shiftRightBits(num, 8n)
   }
@@ -119,7 +119,7 @@ void test("genUlid matches the published ULID spec vector (t=1469918176385, zero
     Array.from({ length: 256 }, () => 0),
     () => {
       assert.equal(genUlid(1_469_918_176_385), "01ARYZ6S410000000000000000")
-    },
+    }
   )
 })
 
@@ -173,7 +173,7 @@ void test("genPgUuidV8 is v4/variant-correct and embeds the timestamp (XOR)", ()
 
   const variantBits = shiftRightBits(variantByte, 6)
 
-  assert.equal(andBits(versionNibble, 0xF), 4)
+  assert.equal(andBits(versionNibble, 0xf), 4)
 
   assert.equal(andBits(variantBits, 0b11), 0b10)
 
@@ -205,7 +205,7 @@ void test("genUlidV8 is v8/variant-correct and embeds the 48-bit ms timestamp", 
 
   const variantBits = shiftRightBits(variantByte, 6)
 
-  assert.equal(andBits(versionNibble, 0xF), 8)
+  assert.equal(andBits(versionNibble, 0xf), 8)
 
   assert.equal(andBits(variantBits, 0b11), 0b10)
 
@@ -261,15 +261,15 @@ void test("genSnowflake embeds 41-bit ts + worker and increments sequence monoto
 
   assert.equal(Number(shiftRightBits(id1, 22n)), t - Number(SF_EPOCH))
 
-  const workerBits = andBits(shiftRightBits(id1, 12n), 0x3_FFn)
+  const workerBits = andBits(shiftRightBits(id1, 12n), 0x3_ffn)
 
   assert.equal(Number(workerBits), Number(worker))
 
-  const seq1 = Number(andBits(id1, 0xF_FFn))
+  const seq1 = Number(andBits(id1, 0xf_ffn))
 
-  const seq2 = Number(andBits(id2, 0xF_FFn))
+  const seq2 = Number(andBits(id2, 0xf_ffn))
 
-  assert.equal(seq2, andBits(seq1 + 1, 0xF_FF))
+  assert.equal(seq2, andBits(seq1 + 1, 0xf_ff))
 
   assert.equal((BigInt(genSnowflake(-1n, t)) / 4096n) % 1024n, 1023n)
 })

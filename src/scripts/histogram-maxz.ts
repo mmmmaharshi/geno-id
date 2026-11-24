@@ -1,6 +1,7 @@
 import { readFileSync, writeFileSync } from "node:fs"
-import { nullValue } from "./shared/runtime-values.ts"
 import path from "node:path"
+
+import { nullValue } from "./shared/runtime-values.ts"
 
 // Stays TypeScript (not a scipy one-liner) on purpose: analyzeHistogram is
 // Imported by histogram-maxz.test.ts, which fails the gate if the archived
@@ -111,13 +112,16 @@ interface Cell {
 const root = path.resolve(import.meta.dirname, "..", "..")
 
 export const analyzeHistogram = (
-  histogramPath = path.join(root, "results", "shard-histogram-100m.json"),
+  histogramPath = path.join(root, "results", "shard-histogram-100m.json")
 ): HistogramAnalysis => {
   const histogram = JSON.parse(readFileSync(histogramPath, "utf8")) as {
     draws_per_layout: number
-    per_layout: Record<string, {
-      fields: { field: string; counts: Cell[]; max_abs_z: number }[]
-    }>
+    per_layout: Record<
+      string,
+      {
+        fields: { field: string; counts: Cell[]; max_abs_z: number }[]
+      }
+    >
   }
 
   const perField: {
@@ -182,11 +186,11 @@ if (import.meta.main) {
   writeFileSync(out, `${JSON.stringify(report, nullValue, 2)}\n`)
 
   console.log(
-    `cells=${report.cells} max|z|=${report.maxAbsZ.toFixed(3)} Bonferroni crit=${report.bonferroniCritical.toFixed(3)} Sidak crit=${report.sidakCritical.toFixed(3)} Bonferroni p=${report.bonferroniP.toFixed(3)} verdict=${report.verdict}`,
+    `cells=${report.cells} max|z|=${report.maxAbsZ.toFixed(3)} Bonferroni crit=${report.bonferroniCritical.toFixed(3)} Sidak crit=${report.sidakCritical.toFixed(3)} Bonferroni p=${report.bonferroniP.toFixed(3)} verdict=${report.verdict}`
   )
   for (const f of report.perField) {
     console.log(
-      `  ${f.layout}.${f.field}: cells=${f.cells} max|z|=${f.maxAbsZ.toFixed(3)}`,
+      `  ${f.layout}.${f.field}: cells=${f.cells} max|z|=${f.maxAbsZ.toFixed(3)}`
     )
   }
   console.log(`wrote results/shard-histogram-100m.maxz.json`)

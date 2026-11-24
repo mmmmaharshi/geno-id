@@ -1,12 +1,9 @@
 import fs from "node:fs"
-
-import { nullValue } from "./shared/runtime-values.ts"
-
 import path from "node:path"
-
 import { pathToFileURL } from "node:url"
 
 import { shiftLeftBits } from "../shared/bitwise.ts"
+import { nullValue } from "./shared/runtime-values.ts"
 
 // ===========================================================================
 
@@ -62,7 +59,10 @@ const algo = (await import(
   getFieldValue: (bytes: Uint8Array, field: unknown) => bigint
 }
 
-const makeLayout = (k: number, allowed: number[]): {
+const makeLayout = (
+  k: number,
+  allowed: number[]
+): {
   layout: unknown
   fields: unknown[]
 } => {
@@ -118,7 +118,10 @@ const rndByte = (): number => {
 
 // Warmup: one repair call outside timing.
 
-const genoNsPerId = (layout: unknown, samples: number): {
+const genoNsPerId = (
+  layout: unknown,
+  samples: number
+): {
   nsPerId: number
   repairsPerId: number
 } => {
@@ -147,7 +150,7 @@ const rejectNsPerId = (
   allowedSet: Set<number>,
   k: number,
   samples: number,
-  capTrials: number,
+  capTrials: number
 ): { nsPerId: number; trialsPerId: number } | null => {
   for (let w = 0; w < WARMUP_ITERS; w += 1) {
     let ok = true
@@ -246,7 +249,7 @@ for (let i = allConfigs.length - 1; i > 0; i -= 1) {
 const cells: Cell[] = []
 
 console.log(
-  "=== O(k) repair vs (1/d)^k rejection — allowed-set sparsity sweep ===",
+  "=== O(k) repair vs (1/d)^k rejection — allowed-set sparsity sweep ==="
 )
 
 for (const { k, allowedSize } of allConfigs) {
@@ -293,7 +296,7 @@ for (const { k, allowedSize } of allConfigs) {
     rejectionTrialsMeasured: measured,
     rejectionTrialsPerId: Number(trialsPerId.toPrecision(4)),
     speedupVsGeno: Number(
-      (trialsPerId / Math.max(1, geno.repairsPerId)).toPrecision(4),
+      (trialsPerId / Math.max(1, geno.repairsPerId)).toPrecision(4)
     ),
   })
 }
@@ -314,14 +317,14 @@ for (const c of cells.toSorted((a, b) => a.k - b.k || b.density - a.density)) {
   }
 
   console.log(
-    `k=${c.k}  d=${c.density.toFixed(4)}  geno ns/ID ${c.genoNsPerId.toFixed(0).padStart(7)}  repairs ${c.genoRepairsPerId.toFixed(2).padStart(5)}  rej trials ${trialsStr.padStart(20)}  rej ns/ID ${rejNsStr}`,
+    `k=${c.k}  d=${c.density.toFixed(4)}  geno ns/ID ${c.genoNsPerId.toFixed(0).padStart(7)}  repairs ${c.genoRepairsPerId.toFixed(2).padStart(5)}  rej trials ${trialsStr.padStart(20)}  rej ns/ID ${rejNsStr}`
   )
 }
 
 console.log(`\nRepair count per ID follows k(1-d) across all cells.`)
 
 console.log(
-  `Rejection trials per ID follow (1/d)^k; measured values agree with analytic expectation where feasible.`,
+  `Rejection trials per ID follow (1/d)^k; measured values agree with analytic expectation where feasible.`
 )
 
 // Artifacts
@@ -337,8 +340,8 @@ fs.writeFileSync(
   JSON.stringify(
     { cells: sorted, fieldSpace: FIELD_SPACE, idsPerCell: IDS },
     nullValue,
-    2,
-  ),
+    2
+  )
 )
 
 const csv = [
@@ -347,12 +350,12 @@ const csv = [
 
 for (const c of sorted) {
   csv.push(
-    `${c.k},${c.allowedSize},${c.density},${c.genoNsPerId},${c.genoRepairsPerId},${c.rejectionTrialsPerId},${c.rejectionTrialsMeasured},${c.rejectionNsPerId ?? ""},${c.speedupVsGeno}`,
+    `${c.k},${c.allowedSize},${c.density},${c.genoNsPerId},${c.genoRepairsPerId},${c.rejectionTrialsPerId},${c.rejectionTrialsMeasured},${c.rejectionNsPerId ?? ""},${c.speedupVsGeno}`
   )
 }
 
 fs.writeFileSync(path.join(outDir, "rejection-sweep.csv"), csv.join("\n"))
 
 console.log(
-  `Wrote results/rejection-sweep.json and results/rejection-sweep.csv (${sorted.length} cells)`,
+  `Wrote results/rejection-sweep.json and results/rejection-sweep.csv (${sorted.length} cells)`
 )

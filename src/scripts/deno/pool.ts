@@ -11,7 +11,7 @@ export async function mapPool<T, R>(
 
   fn: (item: T, index: number) => Promise<R>,
 
-  max: number,
+  max: number
 ): Promise<R[]> {
   const out = new Array<R>(items.length)
 

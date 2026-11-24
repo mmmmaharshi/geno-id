@@ -14,17 +14,13 @@
 
 /// <reference types="node" />
 
-import { DBKEY_LAYOUT, collisionTestScaled } from "./collision-100m.ts"
-
-import type { V8Layout } from "../../dist/algo.js"
-
 import assert from "node:assert/strict"
-
 import path from "node:path"
-
+import { test } from "node:test"
 import { pathToFileURL } from "node:url"
 
-import { test } from "node:test"
+import type { V8Layout } from "../../dist/algo.js"
+import { DBKEY_LAYOUT, collisionTestScaled } from "./collision-100m.ts"
 
 const root = path.resolve(import.meta.dirname, "..", "..")
 
@@ -59,7 +55,7 @@ const assertNoCollisions = (label: string, gen: () => string): void => {
 
   assert.ok(
     r.tableMB > 0 && r.tableMB < 1024,
-    `${label} table memory should be bounded`,
+    `${label} table memory should be bounded`
   )
 }
 
@@ -69,7 +65,7 @@ for (const [label, gen] of GENERATORS) {
   pending.push(
     test(`Task D: ${label} produces 0 collisions at N=${N}`, () => {
       assertNoCollisions(label, gen)
-    }),
+    })
   )
 }
 

@@ -6,6 +6,12 @@
     "declaration": true,
     "types": ["node"]
   },
-  "include": ["src/algo.ts", "src/benchmark.ts", "src/bench-core.ts", "src/evidence-manifest.ts", "src/index.ts"],
+  "include": [
+    "src/algo.ts",
+    "src/benchmark.ts",
+    "src/bench-core.ts",
+    "src/evidence-manifest.ts",
+    "src/index.ts"
+  ],
   "exclude": ["dist", "src/scripts", "node_modules"]
 }

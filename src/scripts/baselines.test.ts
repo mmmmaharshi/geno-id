@@ -1,12 +1,10 @@
 /// <reference types="node" />
 
-import { bytesToUuid, genUlid, uuidToBytes } from "./baselines.ts"
+import assert from "node:assert/strict"
+import { test } from "node:test"
 
 import { andBits } from "../shared/bitwise.ts"
-
-import assert from "node:assert/strict"
-
-import { test } from "node:test"
+import { bytesToUuid, genUlid, uuidToBytes } from "./baselines.ts"
 
 const CROCKFORD = /^[0-9A-HJKMNP-TV-Z]{26}$/u
 
@@ -26,7 +24,7 @@ const randomProbe = (): Uint8Array => {
   const b = new Uint8Array(16)
 
   for (let i = 0; i < 16; i += 1) {
-    b[i] = andBits(i * 37 + 11, 0xFF)
+    b[i] = andBits(i * 37 + 11, 0xff)
   }
 
   return b

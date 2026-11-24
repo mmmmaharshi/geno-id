@@ -1,12 +1,9 @@
 /// <reference types="node" />
 
 import assert from "node:assert/strict"
-
 import path from "node:path"
-
-import { pathToFileURL } from "node:url"
-
 import { test } from "node:test"
+import { pathToFileURL } from "node:url"
 
 // Results/benchmark_results.json is a tracked artifact carrying the browser
 
@@ -23,7 +20,7 @@ const mod = (await import(
 )) as {
   planPlaywrightWrite: (
     runCount: number,
-    outPath: string,
+    outPath: string
   ) => { write: boolean; message: string }
 }
 

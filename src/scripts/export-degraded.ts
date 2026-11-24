@@ -1,3 +1,7 @@
+import fs from "node:fs"
+import path from "node:path"
+import { pathToFileURL } from "node:url"
+
 import {
   andBits,
   orBits,
@@ -5,15 +9,8 @@ import {
   shiftRightBits,
   xorBits,
 } from "../shared/bitwise.ts"
-
-import fs from "node:fs"
-
-import { hexVal } from "./shared/export-bits.ts"
-
 import { need } from "../shared/need.ts"
-import path from "node:path"
-
-import { pathToFileURL } from "node:url"
+import { hexVal } from "./shared/export-bits.ts"
 
 const __dirname = import.meta.dirname
 
@@ -28,9 +25,9 @@ const { toUuidString } = algo
 const HEX_STARTS = [0, 2, 4, 6, 9, 11, 14, 16, 19, 21, 24, 26, 28, 30, 32, 34]
 
 const FREE_MASK = [
-  0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x0F, 0xFF, 0x3F, 0xFF, 0xFF, 0xFF,
+  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x0f, 0xff, 0x3f, 0xff, 0xff, 0xff,
 
-  0xFF, 0xFF, 0xFF, 0xFF,
+  0xff, 0xff, 0xff, 0xff,
 ]
 
 const uuidToFreeBits = (uuid: string): string => {
@@ -64,9 +61,9 @@ const uuidToFreeBits = (uuid: string): string => {
 }
 
 const v8Format = (bytes: Uint8Array): string => {
-  bytes[6] = orBits(andBits(bytes[6], 0x0F), 0x80)
+  bytes[6] = orBits(andBits(bytes[6], 0x0f), 0x80)
 
-  bytes[8] = orBits(andBits(bytes[8], 0x3F), 0x80)
+  bytes[8] = orBits(andBits(bytes[8], 0x3f), 0x80)
 
   return toUuidString(bytes)
 }
@@ -127,7 +124,7 @@ const correlBytes = (n: number): Uint8Array => {
   b[0] = Math.floor(Math.random() * 256)
 
   for (let i = 1; i < n; i += 1) {
-    b[i] = xorBits(b[i - 1], 0xAA)
+    b[i] = xorBits(b[i - 1], 0xaa)
   }
 
   return b
@@ -183,7 +180,7 @@ const lcgBytes = (n: number): Uint8Array => {
   for (let i = 0; i < n; i += 1) {
     lcgState = Math.trunc(lcgState * 1_103_515_245 + 12_345)
 
-    b[i] = andBits(shiftRightBits(lcgState, 16), 0xFF)
+    b[i] = andBits(shiftRightBits(lcgState, 16), 0xff)
   }
 
   return b
@@ -272,7 +269,7 @@ const exportSamples = (
 
   fn: () => string,
 
-  count: number,
+  count: number
 ): string => {
   const bits: string[] = Array.from<string>({ length: count })
 

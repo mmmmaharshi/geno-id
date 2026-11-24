@@ -17,14 +17,11 @@
 //   PORT_OUT (default results/node-portability.json)
 
 import { mkdirSync, writeFileSync } from "node:fs"
+import os from "node:os"
+import path from "node:path"
+import { pathToFileURL } from "node:url"
 
 import { nullValue } from "./shared/runtime-values.ts"
-
-import os from "node:os"
-
-import path from "node:path"
-
-import { pathToFileURL } from "node:url"
 
 const N = Number(process.env.PORT_N ?? 200_000)
 
@@ -88,7 +85,7 @@ const meanCI = (xs: number[]): { mean: number; ci95: [number, number] } => {
   }
 
   const sd = Math.sqrt(
-    xs.reduce((a, x) => a + (x - m) ** 2, 0) / (xs.length - 1),
+    xs.reduce((a, x) => a + (x - m) ** 2, 0) / (xs.length - 1)
   )
 
   let t = 1.96
@@ -107,7 +104,7 @@ const v4 = meanCI(bench("v4", () => algo.genV4Native()))
 const base = meanCI(bench("base", () => algo.genGenoID()))
 
 const structured = meanCI(
-  bench("structured", () => algo.genStructuredGenoID(algo.DBKEY_LAYOUT)),
+  bench("structured", () => algo.genStructuredGenoID(algo.DBKEY_LAYOUT))
 )
 
 const bunVersion = process.versions.bun
@@ -153,9 +150,9 @@ mkdirSync(path.dirname(path.resolve(root, OUT)), { recursive: true })
 
 writeFileSync(
   path.resolve(root, OUT),
-  `${JSON.stringify(report, nullValue, 2)}\n`,
+  `${JSON.stringify(report, nullValue, 2)}\n`
 )
 
 console.log(
-  `wrote ${OUT} (structured/base ${report.structuredOverBase.toFixed(2)} CI [${report.structuredOverBaseCI95.map((x) => x.toFixed(2)).join(", ")}])`,
+  `wrote ${OUT} (structured/base ${report.structuredOverBase.toFixed(2)} CI [${report.structuredOverBaseCI95.map((x) => x.toFixed(2)).join(", ")}])`
 )

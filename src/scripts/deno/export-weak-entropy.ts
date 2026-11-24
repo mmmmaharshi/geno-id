@@ -1,5 +1,4 @@
 import { writeBitsFile } from "./deno-io.ts"
-
 import { hexVal } from "./export-bits.ts"
 
 const algo = (await import("../../../dist/algo.js")) as {
@@ -137,7 +136,7 @@ async function exportSamples(
 
   fn: () => string,
 
-  count: number,
+  count: number
 ): Promise<string> {
   const bits: string[] = new Array(count)
 

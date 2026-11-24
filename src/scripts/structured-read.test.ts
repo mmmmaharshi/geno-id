@@ -2,16 +2,13 @@
 
 /// <reference lib="es2023" />
 
-import type { V8Field, V8Layout } from "../../dist/algo.js"
-
-import { andBits, shiftRightBits } from "../shared/bitwise.ts"
-
 import assert from "node:assert/strict"
-
 import path from "node:path"
-
-import { pathToFileURL } from "node:url"
 import { test } from "node:test"
+import { pathToFileURL } from "node:url"
+
+import type { V8Field, V8Layout } from "../../dist/algo.js"
+import { andBits, shiftRightBits } from "../shared/bitwise.ts"
 
 interface ReadonlyV8Field {
   readonly name: string
@@ -64,7 +61,7 @@ const {
 
   readStructured: (
     uuid: string,
-    layout: ReadonlyV8Layout,
+    layout: ReadonlyV8Layout
   ) => Record<string, number>
 
   genStructuredGenoID: (l: ReadonlyV8Layout) => string
@@ -111,17 +108,17 @@ void test("readStructured reads full >32-bit fields (regression guard for trunca
 
   bytes[1] = 0x00
 
-  bytes[2] = 0xAB
+  bytes[2] = 0xab
 
-  bytes[3] = 0xCD
+  bytes[3] = 0xcd
 
-  bytes[4] = 0xEF
+  bytes[4] = 0xef
 
   const got = readStructured(bytesToUuid(bytes), layout)
 
   // 0x0100ABCDEF = 4306226671; a 32-bit truncation would yield 0x00ABCDEF.
 
-  assert.equal(got.big, 0x01_00_AB_CD_EF)
+  assert.equal(got.big, 0x01_00_ab_cd_ef)
 })
 
 void test("readStructured keys match field names and respect constraints on real UUIDs", () => {
@@ -133,7 +130,7 @@ void test("readStructured keys match field names and respect constraints on real
 
   assert.deepEqual(
     Object.keys(got).toSorted(),
-    layout.fields.map((f) => f.name).toSorted(),
+    layout.fields.map((f) => f.name).toSorted()
   )
 
   assert.ok([1, 2, 3, 4, 5].includes(got.shard))
@@ -146,5 +143,5 @@ void test("readStructured keys match field names and respect constraints on real
 
   const versionBits = shiftRightBits(bytes[6], 4)
 
-  assert.equal(andBits(versionBits, 0xF), 8)
+  assert.equal(andBits(versionBits, 0xf), 8)
 })

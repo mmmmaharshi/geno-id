@@ -1,18 +1,15 @@
+import fs from "node:fs"
+import path from "node:path"
+import { pathToFileURL } from "node:url"
+
 import {
   andBits,
   orBits,
   shiftLeftBits,
   shiftRightBits,
 } from "../shared/bitwise.ts"
-
-import { genRawV8, hexVal } from "./shared/export-bits.ts"
-
-import fs from "node:fs"
-
 import { need } from "../shared/need.ts"
-import path from "node:path"
-
-import { pathToFileURL } from "node:url"
+import { genRawV8, hexVal } from "./shared/export-bits.ts"
 
 const __dirname = import.meta.dirname
 
@@ -31,9 +28,9 @@ const { genV4Native, genGenoID } = algo
 const HEX_STARTS = [0, 2, 4, 6, 9, 11, 14, 16, 19, 21, 24, 26, 28, 30, 32, 34]
 
 const STANDARD_FREE_MASK = [
-  0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x0F, 0xFF, 0x3F, 0xFF, 0xFF, 0xFF,
+  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x0f, 0xff, 0x3f, 0xff, 0xff, 0xff,
 
-  0xFF, 0xFF, 0xFF, 0xFF,
+  0xff, 0xff, 0xff, 0xff,
 ]
 
 const uuidToFreeBits = (uuid: string): string => {
@@ -71,7 +68,7 @@ const generateSamples = (
 
   fn: () => string,
 
-  count: number,
+  count: number
 ): string => {
   let allBits = ""
 
@@ -85,7 +82,7 @@ const generateSamples = (
     fs.writeFileSync(filePath, allBits, "utf8")
 
     console.log(
-      `Wrote ${(allBits.length / 1_000_000).toFixed(1)}M bits to ${filePath}`,
+      `Wrote ${(allBits.length / 1_000_000).toFixed(1)}M bits to ${filePath}`
     )
   } catch (error) {
     console.error(`Failed to write ${filePath}: ${(error as Error).message}`)

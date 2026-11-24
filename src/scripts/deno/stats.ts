@@ -1,5 +1,4 @@
 import { mapPool } from "./pool.ts"
-
 import {
   STANDARD_FREE_MASK,
   V7_FREE_MASK,
@@ -10,7 +9,7 @@ import {
 console.log("=== Statistical randomness test suite (deno) ===")
 
 console.log(
-  "Free-bit mask excludes the 6 fixed version/variant bits: 122/128 bits tested per sample.\n",
+  "Free-bit mask excludes the 6 fixed version/variant bits: 122/128 bits tested per sample.\n"
 )
 
 const N_MAIN = 1_000_000
@@ -91,7 +90,7 @@ for (const r of runs) {
 const results = await mapPool(
   runs,
   runOneDef,
-  Math.max(1, navigator.hardwareConcurrency || 1),
+  Math.max(1, navigator.hardwareConcurrency || 1)
 )
 
 function fmtP(p: number | null): string {
@@ -99,7 +98,7 @@ function fmtP(p: number | null): string {
 }
 
 console.log(
-  "\n--- Monobit (frequency) + Runs test, concatenated free-bit stream ---",
+  "\n--- Monobit (frequency) + Runs test, concatenated free-bit stream ---"
 )
 
 for (const res of results) {
@@ -110,7 +109,7 @@ for (const res of results) {
   console.log(
     `  monobit p-value: ${fmtP(res.monobitP)} ${
       res.monobitP >= 0.01 ? "PASS" : "FAIL"
-    } (alpha=0.01)`,
+    } (alpha=0.01)`
   )
 
   console.log(
@@ -121,12 +120,12 @@ for (const res of results) {
           " " +
           (res.runsP! >= 0.01 ? "PASS" : "FAIL") +
           " (alpha=0.01)"
-    }`,
+    }`
   )
 }
 
 console.log(
-  "\n--- Per-byte-position chi-square uniformity (3 worst positions per algo) ---",
+  "\n--- Per-byte-position chi-square uniformity (3 worst positions per algo) ---"
 )
 
 for (const res of results) {
@@ -145,22 +144,22 @@ for (const res of results) {
   console.log(
     `${res.name}: ${failCount}/${
       res.chiResults.length
-    } positions fail at alpha=0.05 (positions: [${failPositions.join(",")}])`,
+    } positions fail at alpha=0.05 (positions: [${failPositions.join(",")}])`
   )
 
   for (const c of sorted) {
     console.log(
       `  byte[${c.pos}] (df=${c.df}): chi2=${c.chi2.toFixed(
-        2,
+        2
       )}, crit(a=0.05)=${c.crit05.toFixed(2)}, p=${fmtP(c.p)} ${
         c.chi2 <= c.crit05 ? "PASS" : "FAIL"
-      }`,
+      }`
     )
   }
 }
 
 console.log(
-  "\n--- Pairwise byte-position correlation, GenoID only (flags |z|>3.5 across 120 pairs) ---",
+  "\n--- Pairwise byte-position correlation, GenoID only (flags |z|>3.5 across 120 pairs) ---"
 )
 
 const geno = results[0]
@@ -177,13 +176,13 @@ if (geno.corrFlags.length === 0) {
         "]: r=" +
         f.r.toFixed(4) +
         ", z=" +
-        f.z.toFixed(2),
+        f.z.toFixed(2)
     )
   }
 }
 
 console.log(
-  "\n--- Shannon entropy estimate, avg over fully-free bytes (max 8.0000 bits/byte) ---",
+  "\n--- Shannon entropy estimate, avg over fully-free bytes (max 8.0000 bits/byte) ---"
 )
 
 for (const res of results) {

@@ -1,15 +1,11 @@
 /// <reference types="node" />
 import assert from "node:assert/strict"
-
-import { mulberry32 } from "./shared/cli-utils.ts"
-
-import { need } from "../shared/need.ts"
-
 import path from "node:path"
-
+import { test } from "node:test"
 import { pathToFileURL } from "node:url"
 
-import { test } from "node:test"
+import { need } from "../shared/need.ts"
+import { mulberry32 } from "./shared/cli-utils.ts"
 
 // Bit allocation. The allocator reduces "where do declared fields sit in a
 
@@ -99,11 +95,11 @@ const withBase = (overrides: Partial<AllocationInput>): AllocationInput =>
   Object.assign(
     Object.create(Object.prototype) as AllocationInput,
     base,
-    overrides,
+    overrides
   )
 
 const planWithBase = (
-  overrides: Partial<AllocationInput>,
+  overrides: Partial<AllocationInput>
 ): ReturnType<typeof planBitAllocation> =>
   planBitAllocation(withBase(overrides))
 
@@ -140,7 +136,7 @@ void test("minBitsForCardinality rejects non-positive or non-integer input", () 
     assert.throws(
       () => minBitsForCardinality(bad),
       RangeError,
-      `expected a throw for ${bad}`,
+      `expected a throw for ${bad}`
     )
   }
 })
@@ -151,13 +147,13 @@ void test("every cardinality floor round-trips: the widened field can hold the d
 
     assert.ok(
       2 ** bits >= cardinality,
-      `${cardinality} values do not fit in ${bits} bits`,
+      `${cardinality} values do not fit in ${bits} bits`
     )
 
     if (bits > 1) {
       assert.ok(
         2 ** (bits - 1) < cardinality,
-        `${bits} bits is not minimal for ${cardinality} values`,
+        `${bits} bits is not minimal for ${cardinality} values`
       )
     }
   }
@@ -179,7 +175,7 @@ void test("collisionProbabilityUpperBound is monotone decreasing in the random-b
 
     assert.ok(
       p <= previous,
-      `collision bound rose from ${previous} to ${p} at r=${r}`,
+      `collision bound rose from ${previous} to ${p} at r=${r}`
     )
 
     previous = p
@@ -205,12 +201,12 @@ void test("minRandomBitsForCollisionBudget returns the smallest r that meets the
 
   assert.ok(
     collisionProbabilityUpperBound(n, r) <= target,
-    `${r} bits misses the target`,
+    `${r} bits misses the target`
   )
 
   assert.ok(
     collisionProbabilityUpperBound(n, r - 1) > target,
-    `${r - 1} bits already meets the target`,
+    `${r - 1} bits already meets the target`
   )
 })
 
@@ -236,7 +232,7 @@ void test("a tighter collision target never needs fewer bits", () => {
 
     assert.ok(
       r >= previous,
-      `target ${target} demanded fewer bits than a looser one`,
+      `target ${target} demanded fewer bits than a looser one`
     )
 
     previous = r
@@ -367,7 +363,7 @@ void test("a feasible plan partitions the 128 bits exactly, reserved bits exclud
   assert.equal(
     covered.size + 6,
     128,
-    "allocated plus reserved bits must cover the UUID",
+    "allocated plus reserved bits must cover the UUID"
   )
 
   assert.equal(plan.structuredBits + plan.randomBits, 122)
@@ -393,7 +389,7 @@ void test("fields never overlap each other", () => {
       assert.ok(
         spans[i][1] <= spans[j][0] || spans[j][1] <= spans[i][0],
 
-        `${plan.fields[i].name} overlaps ${plan.fields[j].name}`,
+        `${plan.fields[i].name} overlaps ${plan.fields[j].name}`
       )
     }
   }
@@ -438,7 +434,7 @@ interface SmallField {
 
 const weightedDepthOfOrder = (
   fields: readonly SmallField[],
-  align: 1 | 4 | 8,
+  align: 1 | 4 | 8
 ): number => {
   const used = new Set<number>()
 
@@ -501,7 +497,7 @@ const alignField = (field: SmallField): SmallField & { align: 1 } =>
   Object.assign(
     Object.create(Object.prototype) as SmallField & { align: 1 },
     field,
-    { align: 1 },
+    { align: 1 }
   )
 
 void test("Smith's rule beats the rank order on the textbook case where longest-first fails", () => {
@@ -517,7 +513,7 @@ void test("Smith's rule beats the rank order on the textbook case where longest-
 
   assert.ok(
     weightedDepthOfOrder(fields, 1) <
-      weightedDepthOfOrder([fields[1], fields[0]], 1),
+      weightedDepthOfOrder([fields[1], fields[0]], 1)
   )
 
   const plan = planBitAllocation({
@@ -550,7 +546,7 @@ void test("the allocator is optimal over every permutation, on 400 randomized in
 
     const floorTotal = fields.reduce(
       (sum, f) => sum + minBitsForCardinality(f.cardinality),
-      0,
+      0
     )
 
     if (floorTotal <= 120) {
@@ -562,11 +558,11 @@ void test("the allocator is optimal over every permutation, on 400 randomized in
       assert.equal(
         plan.feasible,
         true,
-        `trial ${trial} was unexpectedly infeasible`,
+        `trial ${trial} was unexpectedly infeasible`
       )
 
       const best = Math.min(
-        ...permutations(fields).map((order) => weightedDepthOfOrder(order, 1)),
+        ...permutations(fields).map((order) => weightedDepthOfOrder(order, 1))
       )
 
       assert.equal(
@@ -574,7 +570,7 @@ void test("the allocator is optimal over every permutation, on 400 randomized in
 
         best,
 
-        `trial ${trial}: allocator depth ${plan.weightedDepth} but brute force found ${best} for ${JSON.stringify(fields)}`,
+        `trial ${trial}: allocator depth ${plan.weightedDepth} but brute force found ${best} for ${JSON.stringify(fields)}`
       )
 
       if (plan.weightedDepth < plan.weightedDepthRankOrder) {
@@ -585,7 +581,7 @@ void test("the allocator is optimal over every permutation, on 400 randomized in
 
   assert.ok(
     improved > 0,
-    "expected the Smith order to beat the rank order on at least one instance",
+    "expected the Smith order to beat the rank order on at least one instance"
   )
 })
 
@@ -595,13 +591,13 @@ void test("invalid input is rejected with a RangeError naming the field", () => 
   assert.throws(
     () =>
       planBitAllocation({ fields: [{ cardinality: 0, name: "a", weight: 1 }] }),
-    /cardinality/u,
+    /cardinality/u
   )
 
   assert.throws(
     () =>
       planBitAllocation({ fields: [{ cardinality: 2, name: "", weight: 1 }] }),
-    /non-empty name/u,
+    /non-empty name/u
   )
 
   assert.throws(
@@ -610,7 +606,7 @@ void test("invalid input is rejected with a RangeError naming the field", () => 
         fields: [{ cardinality: 2, name: "a", weight: -1 }],
       }),
 
-    /weight/u,
+    /weight/u
   )
 
   assert.throws(
@@ -620,7 +616,7 @@ void test("invalid input is rejected with a RangeError naming the field", () => 
         fields: [{ cardinality: 2, name: "a", weight: 1 }],
       }),
 
-    RangeError,
+    RangeError
   )
 })
 
@@ -677,7 +673,7 @@ void test("the allocator is exactly optimal whenever all structure fits in the f
       checked += 1
 
       const best = Math.min(
-        ...permutations(fields).map((order) => weightedDepthOfOrder(order, 1)),
+        ...permutations(fields).map((order) => weightedDepthOfOrder(order, 1))
       )
 
       assert.equal(
@@ -685,14 +681,14 @@ void test("the allocator is exactly optimal whenever all structure fits in the f
 
         best,
 
-        `structuredBits=${plan.structuredBits} crossed bit 48 yet the allocator was suboptimal`,
+        `structuredBits=${plan.structuredBits} crossed bit 48 yet the allocator was suboptimal`
       )
     }
   }
 
   assert.ok(
     checked > 20,
-    `expected many single-segment instances, saw ${checked}`,
+    `expected many single-segment instances, saw ${checked}`
   )
 })
 
@@ -725,19 +721,19 @@ void test("a specific fragmented instance shows the bounded reserved-bit deviati
   assert.ok(plan.feasible)
 
   const best = Math.min(
-    ...permutations(fields).map((order) => weightedDepthOfOrder(order, 1)),
+    ...permutations(fields).map((order) => weightedDepthOfOrder(order, 1))
   )
 
   const excess = (plan.weightedDepth - best) / best
 
   assert.ok(
     plan.weightedDepth >= best,
-    "the allocator cannot beat the exhaustive optimum",
+    "the allocator cannot beat the exhaustive optimum"
   )
 
   assert.ok(
     excess <= 0.05,
-    `the reserved-bit deviation looks unbounded at ${(excess * 100).toFixed(2)}%`,
+    `the reserved-bit deviation looks unbounded at ${(excess * 100).toFixed(2)}%`
   )
 })
 
@@ -768,13 +764,13 @@ void test("the shipped role-rank order is never better than Smith on the weighte
       assert.ok(
         plan.weightedDepth <= plan.weightedDepthRankOrder,
 
-        "the Smith order must never be worse than the rank order it replaces",
+        "the Smith order must never be worse than the rank order it replaces"
       )
     }
   }
 
   assert.ok(
     compared > 20,
-    `expected many comparable instances, saw ${compared}`,
+    `expected many comparable instances, saw ${compared}`
   )
 })

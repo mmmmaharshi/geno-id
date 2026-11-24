@@ -1,22 +1,17 @@
+import { mkdirSync, writeFileSync } from "node:fs"
+import path from "node:path"
+import { performance } from "node:perf_hooks"
+
 import type { V8Field, V8Layout } from "../../dist/algo.js"
+import { collisionTest } from "../../dist/bench-core.js"
 import {
   andBits,
   orBits,
   shiftLeftBits,
   shiftRightBits,
 } from "../shared/bitwise.ts"
-
-import { mkdirSync, writeFileSync } from "node:fs"
-
-import { collisionTest } from "../../dist/bench-core.js"
-
 import { need } from "../shared/need.ts"
-
 import { nullValue } from "./shared/runtime-values.ts"
-
-import path from "node:path"
-
-import { performance } from "node:perf_hooks"
 
 const __dirname = need(import.meta.dirname)
 
@@ -44,7 +39,7 @@ const { genStructuredGenoID, uuidToBytes, getFieldValue, DBKEY_LAYOUT } = algo
 
 const vManualTs = (bytes: Uint8Array, layout: V8Layout): bigint => {
   const f = layout.fields.find(
-    (field) => field.type === "timestamp-ms" || field.type === "timestamp-us",
+    (field) => field.type === "timestamp-ms" || field.type === "timestamp-us"
   )
 
   if (!f) {
@@ -55,7 +50,7 @@ const vManualTs = (bytes: Uint8Array, layout: V8Layout): bigint => {
 
   for (const bitIndex of Array.from(
     { length: f.length },
-    (_, index) => index,
+    (_, index) => index
   )) {
     const pos = f.start + bitIndex
 
@@ -131,7 +126,7 @@ for (let i = 0; i < N; i += 1) {
 
     for (const bitIndex of Array.from(
       { length: f.length },
-      (_, index) => index,
+      (_, index) => index
     )) {
       const pos = f.start + bitIndex
 
@@ -182,7 +177,7 @@ const collStart = performance.now()
 
 const collisions = collisionTest(
   () => genStructuredGenoID(DBKEY_LAYOUT),
-  2_000_000,
+  2_000_000
 )
 
 const elapsedColl = performance.now() - collStart
@@ -242,7 +237,7 @@ mkdirSync("results", { recursive: true })
 
 writeFileSync(
   "results/e1-production-1500k.json",
-  JSON.stringify(result, nullValue, 2),
+  JSON.stringify(result, nullValue, 2)
 )
 
 console.log("\n=== E1 Production Composition Correctness ===")
@@ -252,7 +247,7 @@ console.log("Algorithm:", result.algorithm)
 console.log(
   "Layout:",
   result.layout,
-  `(${structFields.length} structured fields)`,
+  `(${structFields.length} structured fields)`
 )
 
 console.log("UUIDs generated:", N)
@@ -265,7 +260,7 @@ console.log("Constraint violations (shard in {1..5}):", constraintViolations)
 
 console.log(
   "Monotonicity violations ((timestamp,counter) pair):",
-  monotonicityViolations,
+  monotonicityViolations
 )
 
 console.log("PASS:", result.pass)
@@ -273,7 +268,7 @@ console.log("PASS:", result.pass)
 console.log("Collision test (2M):", collisions, "collisions")
 
 console.log(
-  `Time: ${result.elapsed_ms.e1.toFixed(1)}ms E1 + ${result.elapsed_ms.collision.toFixed(1)}ms collision`,
+  `Time: ${result.elapsed_ms.e1.toFixed(1)}ms E1 + ${result.elapsed_ms.collision.toFixed(1)}ms collision`
 )
 
 console.log("Result saved: results/e1-production-1500k.json")

@@ -8,7 +8,6 @@ import {
   genV7,
   getStructuredGenerationMode,
 } from "./algo.js"
-import { absentValue, need } from "./shared/need.js"
 import {
   benchRepeated,
   benchRepeatedAsync,
@@ -16,6 +15,7 @@ import {
   collisionTest,
   collisionTestAsync,
 } from "./bench-core.js"
+import { absentValue, need } from "./shared/need.js"
 
 interface AlgoMetadata {
   readonly key: string
@@ -26,8 +26,11 @@ interface AlgoMetadata {
 }
 
 type AlgoEntry =
-  | (AlgoMetadata & { readonly  async: false; readonly  fn: () => string })
-  | (AlgoMetadata & { readonly  async: true; readonly  fn: () => Promise<string> })
+  | (AlgoMetadata & { readonly async: false; readonly fn: () => string })
+  | (AlgoMetadata & {
+      readonly async: true
+      readonly fn: () => Promise<string>
+    })
 
 const ALGOS: readonly AlgoEntry[] = [
   {
@@ -106,8 +109,8 @@ const queryTable = (selector: string): HTMLTableElement | null =>
 const queryTableSection = (selector: string): HTMLTableSectionElement | null =>
   document.querySelector<HTMLTableSectionElement>(selector)
 
-const requireElement = <ElementType extends Element,>(
-  element: ElementType | null,
+const requireElement = <ElementType extends Element>(
+  element: ElementType | null
 ): ElementType => {
   if (element === null) {
     throw new TypeError("required benchmark element is missing")
@@ -120,12 +123,12 @@ interface ClipboardButton {
   readonly disabled: boolean
 }
 
-const cellText = (cell: { readonly  textContent: string | null }): string =>
+const cellText = (cell: { readonly textContent: string | null }): string =>
   cell.textContent ?? ""
 
 const copyToClipboard = async (
   text: string,
-  btn: Readonly<ClipboardButton>,
+  btn: Readonly<ClipboardButton>
 ): Promise<void> => {
   await navigator.clipboard.writeText(text)
   const button = btn as HTMLButtonElement
@@ -140,11 +143,11 @@ const copyToClipboard = async (
 
 const copyTableToClipboard = async (
   tableId: string,
-  btn: Readonly<ClipboardButton>,
+  btn: Readonly<ClipboardButton>
 ): Promise<void> => {
   const table = requireElement(queryTable(`#${tableId}`))
   const rows = [...table.querySelectorAll("tr")].map((row) =>
-    [...row.children].map((cell) => cellText(cell).trim()).join("\t"),
+    [...row.children].map((cell) => cellText(cell).trim()).join("\t")
   )
   await copyToClipboard(rows.join("\n"), btn)
 }
@@ -163,7 +166,7 @@ const showSamples = async (): Promise<void> => {
           return value
         }
         return algo.fn()
-      }),
+      })
     )
     let html = ""
     for (const [index, algo] of ALGOS.entries()) {
@@ -207,7 +210,7 @@ type BenchStats = ReturnType<typeof benchRepeated>
 const measureAlgorithm = async (
   algo: Readonly<AlgoEntry>,
   syncCount: number,
-  asyncCount: number,
+  asyncCount: number
 ): Promise<BenchStats> => {
   if (algo.async) {
     const result = await benchRepeatedAsync(algo.fn, asyncCount, TRIALS)
@@ -218,10 +221,14 @@ const measureAlgorithm = async (
 
 const testCollisions = async (
   algo: Readonly<AlgoEntry>,
-  count: number,
+  count: number
 ): Promise<number> => {
   if (algo.async) {
-    const collisions = await collisionTestAsync(algo.fn, count, ASYNC_COLLISION_BATCH_SIZE)
+    const collisions = await collisionTestAsync(
+      algo.fn,
+      count,
+      ASYNC_COLLISION_BATCH_SIZE
+    )
     return collisions
   }
   return collisionTest(algo.fn, count)
@@ -269,7 +276,7 @@ const runAll = async (): Promise<void> => {
       const result = await measureAlgorithm(algo, syncCount, asyncCount)
       results.set(algo.key, result)
       log(
-        `  -> ${fmt(result.mean)} ± ${fmt(result.std)} ops/sec (95% CI ${fmt(result.ci95[0])}–${fmt(result.ci95[1])})`,
+        `  -> ${fmt(result.mean)} ± ${fmt(result.std)} ops/sec (95% CI ${fmt(result.ci95[0])}–${fmt(result.ci95[1])})`
       )
       await runAlgorithm(index + 1)
     }
@@ -323,7 +330,7 @@ const runAll = async (): Promise<void> => {
         row.innerHTML = `<td>${algo.name}</td><td>${countLabel}</td><td>${collisions}</td><td>${fmt(bound)}</td>`
         collisionBody.append(row)
         log(
-          `  ${algo.name}: ${collisions} collisions in ${count.toLocaleString()} samples`,
+          `  ${algo.name}: ${collisions} collisions in ${count.toLocaleString()} samples`
         )
         await runCollision(index + 1)
       }
@@ -357,7 +364,7 @@ const runAll = async (): Promise<void> => {
       which compresses the apparent cost of the structured framework.</p>`
     }
     log(
-      `Native baseline: v4=${fmt(v4)} ops/s, GenoID pool=${fmt(pool)} ops/s (${fmt(pool / v4)}x faster), structured=${fmt(structured)} ops/s (${fmt(v4 / structured)}x slower vs v4).`,
+      `Native baseline: v4=${fmt(v4)} ops/s, GenoID pool=${fmt(pool)} ops/s (${fmt(pool / v4)}x faster), structured=${fmt(structured)} ops/s (${fmt(v4 / structured)}x slower vs v4).`
     )
   }
 
@@ -372,10 +379,9 @@ interface BenchmarkGlobals {
 }
 
 export const init = (host?: Readonly<object>): void => {
-  const browserWindow = Reflect.get(
-    globalThis,
-    "window",
-  ) as Window & typeof globalThis | undefined
+  const browserWindow = Reflect.get(globalThis, "window") as
+    | (Window & typeof globalThis)
+    | undefined
   const targetWindow = host ?? browserWindow
   if (!targetWindow) {
     return

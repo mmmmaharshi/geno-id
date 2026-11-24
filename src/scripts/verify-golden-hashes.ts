@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto"
 import fs from "node:fs"
 import path from "node:path"
+
 import { undefinedValue } from "./shared/runtime-values.ts"
 
 // Verifies the committed golden vectors against their recorded hashes.
@@ -60,7 +61,7 @@ const verify = (): void => {
   if (
     unrecorded.length > 0 &&
     fail(
-      `${unrecorded.length} vector file(s) are not covered by the manifest: ${unrecorded.join(", ")}`,
+      `${unrecorded.length} vector file(s) are not covered by the manifest: ${unrecorded.join(", ")}`
     )
   ) {
     return
@@ -76,7 +77,7 @@ const verify = (): void => {
       if (
         actual !== expected &&
         fail(
-          `${name} does not match its recorded hash\n  expected ${expected}\n  actual   ${actual}`,
+          `${name} does not match its recorded hash\n  expected ${expected}\n  actual   ${actual}`
         )
       ) {
         return
@@ -88,7 +89,7 @@ const verify = (): void => {
   }
 
   console.log(
-    `GOLDEN HASHES VERIFIED: ${checked} committed vectors match their recorded hashes.`,
+    `GOLDEN HASHES VERIFIED: ${checked} committed vectors match their recorded hashes.`
   )
 }
 
@@ -96,6 +97,6 @@ if (fs.existsSync(MANIFEST)) {
   verify()
 } else {
   fail(
-    `missing ${path.relative(root, MANIFEST)} — run \`bun run src/scripts/hash-golden.ts\``,
+    `missing ${path.relative(root, MANIFEST)} — run \`bun run src/scripts/hash-golden.ts\``
   )
 }

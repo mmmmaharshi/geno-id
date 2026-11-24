@@ -12,6 +12,10 @@
 
 // Renders one wide table (one column per environment).
 
+import fs from "node:fs"
+import path from "node:path"
+
+import { need } from "../shared/need.ts"
 import type {
   BenchEntry,
   CIBenchmarkResult,
@@ -19,14 +23,7 @@ import type {
   ComparisonEntry,
   EnvInfo,
 } from "./ci-result.ts"
-
 import { nullValue, undefinedValue } from "./shared/runtime-values.ts"
-
-import fs from "node:fs"
-
-import { need } from "../shared/need.ts"
-
-import path from "node:path"
 
 const platformName = (platform: string): string => {
   if (platform === "darwin") {
@@ -120,7 +117,7 @@ const collectFiles = (dir: string): string[] => {
 
 export const renderConsolidated = (results: CIBenchmarkResult[]): string => {
   const sorted = [...results].toSorted(
-    (a, b) => rankEnv(a.environment) - rankEnv(b.environment),
+    (a, b) => rankEnv(a.environment) - rankEnv(b.environment)
   )
 
   if (sorted.length === 0) {
@@ -270,13 +267,13 @@ const main = (): void => {
   try {
     fs.writeFileSync(
       "dist/all-results.json",
-      JSON.stringify(results, nullValue, 2),
+      JSON.stringify(results, nullValue, 2)
     )
 
     fs.writeFileSync("dist/all-summary.md", md)
   } catch (error) {
     console.error(
-      `Failed to write consolidate output: ${(error as Error).message}`,
+      `Failed to write consolidate output: ${(error as Error).message}`
     )
   }
 

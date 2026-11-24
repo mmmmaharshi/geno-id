@@ -4,28 +4,28 @@ on:
   push:
     branches: [main]
     paths-ignore:
-      - '**/*.md'
-      - 'docs/**'
-      - 'sources/**'
-      - 'results/**'
-      - 'paper.tex'
-      - '*.md'
-      - 'LICENSE'
-      - 'CITATION.cff'
-      - '.opencode/**'
-      - 'AGENTS.md'
+      - "**/*.md"
+      - "docs/**"
+      - "sources/**"
+      - "results/**"
+      - "paper.tex"
+      - "*.md"
+      - "LICENSE"
+      - "CITATION.cff"
+      - ".opencode/**"
+      - "AGENTS.md"
   pull_request:
     paths-ignore:
-      - '**/*.md'
-      - 'docs/**'
-      - 'sources/**'
-      - 'results/**'
-      - 'paper.tex'
-      - '*.md'
-      - 'LICENSE'
-      - 'CITATION.cff'
-      - '.opencode/**'
-      - 'AGENTS.md'
+      - "**/*.md"
+      - "docs/**"
+      - "sources/**"
+      - "results/**"
+      - "paper.tex"
+      - "*.md"
+      - "LICENSE"
+      - "CITATION.cff"
+      - ".opencode/**"
+      - "AGENTS.md"
   workflow_dispatch:
 
 permissions:
@@ -253,8 +253,7 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U genoid -d genoid"
-          --health-interval 10s --health-timeout 5s --health-retries 10
+          --health-cmd "pg_isready -U genoid -d genoid" --health-interval 10s --health-timeout 5s --health-retries 10
       mysql:
         image: mysql:8.0
         env:
@@ -265,8 +264,7 @@ jobs:
         ports:
           - 3306:3306
         options: >-
-          --health-cmd "mysqladmin ping -h localhost -uroot -proot"
-          --health-interval 10s --health-timeout 5s --health-retries 10
+          --health-cmd "mysqladmin ping -h localhost -uroot -proot" --health-interval 10s --health-timeout 5s --health-retries 10
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
@@ -369,4 +367,3 @@ jobs:
             sleep 10
           done
           exit 1
-

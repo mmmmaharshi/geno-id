@@ -1,15 +1,12 @@
 /// <reference types="node" />
 
-import type { CompiledRawLayout, V8Field, V8Layout } from "../../dist/algo.js"
-
-import { andBits } from "../shared/bitwise.ts"
-
 import assert from "node:assert/strict"
-
 import path from "node:path"
-
-import { pathToFileURL } from "node:url"
 import { test } from "node:test"
+import { pathToFileURL } from "node:url"
+
+import type { CompiledRawLayout, V8Field, V8Layout } from "../../dist/algo.js"
+import { andBits } from "../shared/bitwise.ts"
 
 interface ReadonlyV8Field {
   readonly name: string
@@ -54,7 +51,7 @@ const {
     l: Readonly<V8Layout>,
     raw: Readonly<Uint8Array>,
     now: number,
-    ctr: number,
+    ctr: number
   ) => string
 
   getFieldValue: (b: Readonly<Uint8Array>, f: ReadonlyV8Field) => bigint
@@ -104,8 +101,8 @@ const EDGE_CASES: Uint8Array[] = [
   rawBytes([1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
 
   rawBytes([
-    0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F,
-    0x0F, 0x0F, 0x0F, 0x0F,
+    0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f,
+    0x0f, 0x0f, 0x0f, 0x0f,
   ]),
 
   rawBytes([0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
@@ -113,8 +110,8 @@ const EDGE_CASES: Uint8Array[] = [
   rawBytes([0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
 
   rawBytes([
-    0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF,
-    0x00, 0xFF, 0x00, 0xFF,
+    0x00, 0xff, 0x00, 0xff, 0x00, 0xff, 0x00, 0xff, 0x00, 0xff, 0x00, 0xff,
+    0x00, 0xff, 0x00, 0xff,
   ]),
 
   rawBytes([
@@ -123,8 +120,8 @@ const EDGE_CASES: Uint8Array[] = [
   ]),
 
   rawBytes([
-    0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
-    0xAA, 0xAA, 0xAA, 0xAA,
+    0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa,
+    0xaa, 0xaa, 0xaa, 0xaa,
   ]),
 ]
 
@@ -200,7 +197,7 @@ const makeCtx = (layout: Readonly<V8Layout>): TestCtx => {
   }
 
   const tsField = layout.fields.find(
-    (f) => f.type === "timestamp-ms" || f.type === "timestamp-us",
+    (f) => f.type === "timestamp-ms" || f.type === "timestamp-us"
   )
 
   const ctrFields = layout.fields.filter((f) => f.type === "counter")
@@ -233,7 +230,7 @@ for (const lt of LAYOUTS) {
         if (compiled !== interpreted) {
           throw new Error(
             `${lt.name}[${i}]: compiled "${compiled}" !== interpreted "${interpreted}" for ` +
-              `raw=${bytesHex(raw)} ts=${FIXED_TS} ctr=${i}`,
+              `raw=${bytesHex(raw)} ts=${FIXED_TS} ctr=${i}`
           )
         }
       }
@@ -266,11 +263,11 @@ for (const lt of LAYOUTS) {
 
         const b = uuidToBytes(uuid)
 
-        if (andBits(b[6], 0xF0) !== 0x80) {
+        if (andBits(b[6], 0xf0) !== 0x80) {
           throw new Error(`${lt.name}: version nibble wrong`)
         }
 
-        if (andBits(b[8], 0xC0) !== 0x80) {
+        if (andBits(b[8], 0xc0) !== 0x80) {
           throw new Error(`${lt.name}: variant bits wrong`)
         }
 
@@ -279,7 +276,7 @@ for (const lt of LAYOUTS) {
 
           if (!check(v)) {
             throw new Error(
-              `${lt.name}: field ${fname}=${v} violates constraint`,
+              `${lt.name}: field ${fname}=${v} violates constraint`
             )
           }
         }

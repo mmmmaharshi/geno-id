@@ -1,22 +1,17 @@
+import { mkdirSync, writeFileSync } from "node:fs"
+import os from "node:os"
+import path from "node:path"
+import { performance } from "node:perf_hooks"
+
 import {
   andBits,
   orBits,
   shiftLeftBits,
   shiftRightBits,
 } from "../shared/bitwise.ts"
-import { gitSha, runtimeVersion } from "./shared/cli-utils.ts"
-
-import { mkdirSync, writeFileSync } from "node:fs"
-
-import { nullValue, undefinedValue } from "./shared/runtime-values.ts"
-
 import { need } from "../shared/need.ts"
-
-import os from "node:os"
-
-import path from "node:path"
-
-import { performance } from "node:perf_hooks"
+import { gitSha, runtimeVersion } from "./shared/cli-utils.ts"
+import { nullValue, undefinedValue } from "./shared/runtime-values.ts"
 
 interface V8FieldConstraint {
   allowed?: number[]
@@ -55,7 +50,7 @@ const algo = (await import(algoPath)) as {
 
   getFieldValue: (
     b: Readonly<Uint8Array>,
-    f: Readonly<V8Field>,
+    f: Readonly<V8Field>
   ) => number | bigint
 
   uuidToBytes: (uuid: string) => Uint8Array
@@ -173,7 +168,7 @@ const classSize = (r: number, m: number, fieldLen: number): number => {
 const preimagesCompiled = (
   allowed: number[],
   index: number,
-  fieldLen: number,
+  fieldLen: number
 ): number => classSize(index, allowed.length, fieldLen)
 
 // Pooled fallback path: `v in A ? v : A[v mod m]` — the identity guard moves
@@ -187,7 +182,7 @@ const preimagesCompiled = (
 const preimagesGuarded = (
   allowed: number[],
   index: number,
-  fieldLen: number,
+  fieldLen: number
 ): number => {
   const m = allowed.length
 
@@ -243,7 +238,9 @@ interface FieldReport {
   max_abs_z: number
 }
 
-const runLayout = (layout: V8Layout): {
+const runLayout = (
+  layout: V8Layout
+): {
   fields: FieldReport[]
   elapsedMs: number
 } => {
@@ -294,7 +291,7 @@ const runLayout = (layout: V8Layout): {
 
       if (viaString !== viaBytes) {
         throw new Error(
-          `extractor mismatch on ${layout.name}.${field.name}: ${viaString} != ${viaBytes}`,
+          `extractor mismatch on ${layout.name}.${field.name}: ${viaString} != ${viaBytes}`
         )
       }
     }
@@ -477,7 +474,7 @@ const out = path.join(root, "results", "shard-histogram-100m.json")
 writeFileSync(out, `${JSON.stringify(report, nullValue, 2)}\n`)
 
 console.log(
-  `\n=== shard-histogram-100m (${mode}, N=${N.toLocaleString()}/layout) ===`,
+  `\n=== shard-histogram-100m (${mode}, N=${N.toLocaleString()}/layout) ===`
 )
 
 for (const name of perLayout) {
@@ -488,12 +485,12 @@ for (const name of perLayout) {
 
   for (const f of entry.fields) {
     console.log(
-      `${name}.${f.field}: exact_uniform=${f.exact_uniform} max|dev|=${f.max_abs_dev_pp}pp max|z|=${f.max_abs_z}`,
+      `${name}.${f.field}: exact_uniform=${f.exact_uniform} max|dev|=${f.max_abs_dev_pp}pp max|z|=${f.max_abs_z}`
     )
 
     for (const r of f.counts) {
       console.log(
-        `  ${String(r.value).padStart(2)}: count=${r.count.toLocaleString().padStart(13)} obs=${r.observed_pp.toFixed(4)}pp pred=${r.predicted_pp.toFixed(4)}pp dev=${r.abs_dev_pp.toFixed(4)}pp sd=${r.sampling_sd_pp.toFixed(4)}pp z=${r.z.toFixed(2)}`,
+        `  ${String(r.value).padStart(2)}: count=${r.count.toLocaleString().padStart(13)} obs=${r.observed_pp.toFixed(4)}pp pred=${r.predicted_pp.toFixed(4)}pp dev=${r.abs_dev_pp.toFixed(4)}pp sd=${r.sampling_sd_pp.toFixed(4)}pp z=${r.z.toFixed(2)}`
       )
     }
   }
@@ -504,11 +501,11 @@ const outOfAllowedCounts = Object.fromEntries(
     const entry = generationsPerLayout[l.name] as { fields: FieldReport[] }
 
     return [l.name, entry.fields.map((f) => f.out_of_allowed_set)]
-  }),
+  })
 )
 
 console.log(`out-of-allowed-set draws: ${JSON.stringify(outOfAllowedCounts)}`)
 
 console.log(
-  `Result saved: results/shard-histogram-100m.json (${(report.elapsed_ms_total / 1000).toFixed(1)}s)`,
+  `Result saved: results/shard-histogram-100m.json (${(report.elapsed_ms_total / 1000).toFixed(1)}s)`
 )

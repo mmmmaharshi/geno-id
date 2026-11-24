@@ -1,3 +1,12 @@
+import { Database } from "bun:sqlite"
+import { mkdirSync, writeFileSync } from "node:fs"
+import os from "node:os"
+import path from "node:path"
+import { performance } from "node:perf_hooks"
+import { pathToFileURL } from "node:url"
+
+import { PGlite } from "@electric-sql/pglite"
+
 import {
   andBits,
   orBits,
@@ -6,27 +15,10 @@ import {
   shiftRightUnsignedBits,
   xorBits,
 } from "../shared/bitwise.ts"
-import { mkdirSync, writeFileSync } from "node:fs"
-
-import { nullValue, undefinedValue } from "./shared/runtime-values.ts"
-
-import { Database } from "bun:sqlite"
-
-import { PGlite } from "@electric-sql/pglite"
-
-import { aggregateReps } from "./bench-db.ts"
-
-import { mapPool } from "./shared/pool.ts"
-
 import { need } from "../shared/need.ts"
-
-import os from "node:os"
-
-import path from "node:path"
-
-import { pathToFileURL } from "node:url"
-
-import { performance } from "node:perf_hooks"
+import { aggregateReps } from "./bench-db.ts"
+import { mapPool } from "./shared/pool.ts"
+import { nullValue, undefinedValue } from "./shared/runtime-values.ts"
 
 // Workload-driven layout planning, end to end (future.md item 1).
 
@@ -66,7 +58,7 @@ const algo = (await import(
   inferWorkload: (
     trace: readonly unknown[],
 
-    schema: Readonly<{ name: string; fields: readonly { name: string }[] }>,
+    schema: Readonly<{ name: string; fields: readonly { name: string }[] }>
   ) => {
     profile: {
       readWeight: number
@@ -116,11 +108,11 @@ const LOOKUPS = Number(process.env.WORKLOAD_LOOKUPS ?? 500)
 
 const OUT = process.env.WORKLOAD_OUT ?? "results/workload-planning.json"
 
-const SEED = Math.trunc(Number(process.env.WORKLOAD_SEED ?? 0x9E_37_79_B9))
+const SEED = Math.trunc(Number(process.env.WORKLOAD_SEED ?? 0x9e_37_79_b9))
 
 // Seeded xorshift32: the trace distribution is fixed and archived.
 
-const rng32 = (seed: number): () => number => {
+const rng32 = (seed: number): (() => number) => {
   let s = Math.trunc(seed)
 
   return () => {
@@ -153,7 +145,7 @@ interface TraceEvent {
 const generateTrace = (
   n: number,
   rand: () => number,
-  mix: readonly [number, number, number],
+  mix: readonly [number, number, number]
 ): TraceEvent[] => {
   const trace: TraceEvent[] = []
 
@@ -227,7 +219,7 @@ const mixParts = (process.env.WORKLOAD_MIX ?? "0.8,0.15,0.05")
 
 if (mixParts.length !== 3 || mixParts.some((x) => !(x >= 0))) {
   throw new Error(
-    `WORKLOAD_MIX must be "tenant,region,write" shares, got ${process.env.WORKLOAD_MIX}`,
+    `WORKLOAD_MIX must be "tenant,region,write" shares, got ${process.env.WORKLOAD_MIX}`
   )
 }
 
@@ -243,7 +235,7 @@ console.log("inferred weights:", JSON.stringify(inferred.weights))
 
 console.log(
   "inferred roles:",
-  JSON.stringify(inferred.profile.fields.map((f) => `${f.name}:${f.role}`)),
+  JSON.stringify(inferred.profile.fields.map((f) => `${f.name}:${f.role}`))
 )
 
 const plan = planBitAllocation({
@@ -265,7 +257,7 @@ const smithOrder = plan.fields.map((f) => f.name)
 console.log(
   "smith order:",
   smithOrder.join(","),
-  `randomBits=${plan.randomBits}`,
+  `randomBits=${plan.randomBits}`
 )
 
 const layoutFor = (order: readonly string[], tag: string): Layout => {
@@ -311,7 +303,7 @@ const engineNames = (process.env.WORKLOAD_ENGINES ?? "sqlite,pg")
 for (const engine of engineNames) {
   if (engine !== "sqlite" && engine !== "pg") {
     throw new Error(
-      `WORKLOAD_ENGINES must list sqlite and/or pg, got ${process.env.WORKLOAD_ENGINES}`,
+      `WORKLOAD_ENGINES must list sqlite and/or pg, got ${process.env.WORKLOAD_ENGINES}`
     )
   }
 }
@@ -331,19 +323,17 @@ interface BenchDb {
 
   insertIds: (ids: readonly Uint8Array[]) => number | Promise<number>
 
-  countRanges: (
-    ranges: readonly  [number, number][],
-  ) => number | Promise<number>
+  countRanges: (ranges: readonly [number, number][]) => number | Promise<number>
 
   close: () => void | Promise<void>
 }
 
 const rangeBounds = (
-  range: readonly [number, number],
+  range: readonly [number, number]
 ): [Uint8Array, Uint8Array] => {
   const loB = new Uint8Array(16)
 
-  const hiB = new Uint8Array(16).fill(0xFF)
+  const hiB = new Uint8Array(16).fill(0xff)
 
   const [lo0] = range
   loB[0] = lo0
@@ -362,7 +352,7 @@ const makeSqliteDb = (): BenchDb => {
       db.close()
     },
 
-    countRanges(ranges: readonly  [number, number][]): number {
+    countRanges(ranges: readonly [number, number][]): number {
       const terms = ranges.map(() => "(id >= ? AND id <= ?)").join(" OR ")
 
       const params: Uint8Array[] = []
@@ -406,9 +396,7 @@ const makePgDb = (): BenchDb => {
       await db.close()
     },
 
-    async countRanges(
-      ranges: readonly  [number, number][],
-    ): Promise<number> {
+    async countRanges(ranges: readonly [number, number][]): Promise<number> {
       let i = 0
 
       const terms = ranges
@@ -429,7 +417,7 @@ const makePgDb = (): BenchDb => {
 
       const result = await db.query(
         `SELECT COUNT(*) AS n FROM ids WHERE ${terms}`,
-        params,
+        params
       )
 
       return Number((result.rows[0] as { n: string }).n)
@@ -486,7 +474,7 @@ const openDb = (engine: string): BenchDb => {
 const fieldRanges = (
   value: number,
   start: number,
-  length: number,
+  length: number
 ): [number, number][] => {
   const shift = 7 - (start + length - 1)
 
@@ -528,7 +516,7 @@ const benchLookups = async (
 
   start: number,
 
-  length: number,
+  length: number
 ): Promise<number[]> => {
   const times: number[] = []
 
@@ -565,7 +553,7 @@ const benchLookups = async (
 
 const fieldStart = (
   layout: Readonly<{ fields: readonly { name: string; start: number }[] }>,
-  name: string,
+  name: string
 ): number => {
   const field = layout.fields.find((f) => f.name === name)
 
@@ -588,7 +576,7 @@ if (inferred.weights.tenant >= inferred.weights.region) {
 
 const probeValues = Array.from(
   { length: LOOKUPS },
-  (_, i) => hotField.values[i % hotField.values.length],
+  (_, i) => hotField.values[i % hotField.values.length]
 )
 
 const plannedStart = fieldStart(planned, hotField.name)
@@ -624,7 +612,7 @@ interface EngineArm {
 const decodeField = (
   bytes: Readonly<Uint8Array>,
   start: number,
-  length: number,
+  length: number
 ): number => {
   let v = 0
 
@@ -645,11 +633,16 @@ const decodeField = (
 
 const INSERT_REPS = 2
 
-const engines: Partial<Record<"sqlite" | "pg", {
-  planned: EngineArm
-  hand: EngineArm
-  ratio: number
-}>> = {}
+const engines: Partial<
+  Record<
+    "sqlite" | "pg",
+    {
+      planned: EngineArm
+      hand: EngineArm
+      ratio: number
+    }
+  >
+> = {}
 
 await mapPool(
   ENGINES,
@@ -679,7 +672,7 @@ await mapPool(
 
     const insertOrder = Array.from(
       { length: INSERT_REPS },
-      () => ["planned", "hand"] as const,
+      () => ["planned", "hand"] as const
     ).flat()
 
     await mapPool(
@@ -693,7 +686,7 @@ await mapPool(
 
         await db.close()
       },
-      1,
+      1
     )
 
     const arms: Record<string, EngineArm> = {}
@@ -723,16 +716,16 @@ await mapPool(
           hotField.values,
           async (v) => {
             const got = await db.countRanges(
-              fieldRanges(v, start, hotField.length),
+              fieldRanges(v, start, hotField.length)
             )
 
             if (got !== expected[v]) {
               throw new Error(
-                `${engine} ${label} ${hotField.name} ${v}: SQL count ${got} != decoded ${expected[v]}`,
+                `${engine} ${label} ${hotField.name} ${v}: SQL count ${got} != decoded ${expected[v]}`
               )
             }
           },
-          1,
+          1
         )
 
         const us = await benchLookups(db, probeValues, start, hotField.length)
@@ -750,7 +743,7 @@ await mapPool(
           lookupUs: aggregateReps(us),
         }
       },
-      1,
+      1
     )
 
     const ratio = arms.hand.lookupUs.mean / arms.planned.lookupUs.mean
@@ -758,22 +751,22 @@ await mapPool(
     engines[engine] = { hand: arms.hand, planned: arms.planned, ratio }
 
     console.log(
-      `  integrity: SQL range counts match JS bit-decodes on both layouts`,
+      `  integrity: SQL range counts match JS bit-decodes on both layouts`
     )
 
     console.log(
-      `  insert planned: ${arms.planned.insertRowsPerSec} rows/s [${arms.planned.insertReps.join(",")}] hand: ${arms.hand.insertRowsPerSec} rows/s [${arms.hand.insertReps.join(",")}]`,
+      `  insert planned: ${arms.planned.insertRowsPerSec} rows/s [${arms.planned.insertReps.join(",")}] hand: ${arms.hand.insertRowsPerSec} rows/s [${arms.hand.insertReps.join(",")}]`
     )
 
     console.log(
-      `  ${hotField.name} lookup planned: ${arms.planned.lookupUs.mean.toFixed(2)} us (CI ${arms.planned.lookupUs.ci95[0].toFixed(2)}-${arms.planned.lookupUs.ci95[1].toFixed(2)})`,
+      `  ${hotField.name} lookup planned: ${arms.planned.lookupUs.mean.toFixed(2)} us (CI ${arms.planned.lookupUs.ci95[0].toFixed(2)}-${arms.planned.lookupUs.ci95[1].toFixed(2)})`
     )
 
     console.log(
-      `  ${hotField.name} lookup hand:    ${arms.hand.lookupUs.mean.toFixed(2)} us (CI ${arms.hand.lookupUs.ci95[0].toFixed(2)}-${arms.hand.lookupUs.ci95[1].toFixed(2)})`,
+      `  ${hotField.name} lookup hand:    ${arms.hand.lookupUs.mean.toFixed(2)} us (CI ${arms.hand.lookupUs.ci95[0].toFixed(2)}-${arms.hand.lookupUs.ci95[1].toFixed(2)})`
     )
   },
-  1,
+  1
 )
 
 const bunVersion = process.versions.bun
@@ -786,11 +779,13 @@ if (typeof bunVersion === "string") {
 
 const sqliteEngine = engines.sqlite
 
-let lookupUs: {
-  hand: EngineArm["lookupUs"]
-  planned: EngineArm["lookupUs"]
-  ratio: number
-} | undefined = undefinedValue
+let lookupUs:
+  | {
+      hand: EngineArm["lookupUs"]
+      planned: EngineArm["lookupUs"]
+      ratio: number
+    }
+  | undefined = undefinedValue
 
 if (sqliteEngine) {
   lookupUs = {
@@ -845,7 +840,7 @@ mkdirSync(path.dirname(path.resolve(root, OUT)), { recursive: true })
 
 writeFileSync(
   path.resolve(root, OUT),
-  `${JSON.stringify(report, nullValue, 2)}\n`,
+  `${JSON.stringify(report, nullValue, 2)}\n`
 )
 
 console.log(`\nwrote ${OUT}`)

@@ -1,10 +1,8 @@
-import type { V8Layout } from "../../dist/algo.js"
-
 import fs from "node:fs"
-
 import path from "node:path"
-
 import { pathToFileURL } from "node:url"
+
+import type { V8Layout } from "../../dist/algo.js"
 
 const __dirname = import.meta.dirname
 
@@ -65,7 +63,7 @@ for (const layout of layouts) {
     fs.writeFileSync(filePath, all, "utf8")
 
     console.log(
-      `Wrote ${(all.length / 1e6).toFixed(2)}M random bits (${n.toLocaleString()} UUIDs) -> ${filePath}`,
+      `Wrote ${(all.length / 1e6).toFixed(2)}M random bits (${n.toLocaleString()} UUIDs) -> ${filePath}`
     )
   } catch (error) {
     console.error(`Failed to write ${filePath}: ${(error as Error).message}`)

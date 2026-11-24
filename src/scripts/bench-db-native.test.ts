@@ -1,5 +1,10 @@
 /// <reference types="node" />
 
+import assert from "node:assert/strict"
+import { test } from "node:test"
+
+import { fromAny } from "@total-typescript/shoehorn"
+
 import {
   DISTRIBUTIONS,
   NativeResultError,
@@ -9,12 +14,6 @@ import {
   tenantFor,
   validateNativeResult,
 } from "./bench-db-native-core.ts"
-
-import assert from "node:assert/strict"
-
-import { fromAny } from "@total-typescript/shoehorn"
-
-import { test } from "node:test"
 
 type EngineResult = Parameters<typeof validateNativeResult>[0]
 
@@ -41,14 +40,14 @@ void test("percentiles orders samples and reports the count", () => {
 void test("tenantFor spreads uniform keys and concentrates hot-tenant keys", () => {
   const uniform = new Set(
     Array.from({ length: 200 }, (_, index) =>
-      tenantFor("uniform", index, random),
-    ),
+      tenantFor("uniform", index, random)
+    )
   )
 
   const hot = new Set(
     Array.from({ length: 200 }, (_, index) =>
-      tenantFor("hot-tenant", index, random),
-    ),
+      tenantFor("hot-tenant", index, random)
+    )
   )
 
   assert.equal(uniform.size, 200)
@@ -110,7 +109,7 @@ const baseResult = (overrides: Partial<EngineResult> = {}): EngineResult => {
 
       workloads: [...WORKLOADS],
     },
-    overrides,
+    overrides
   )
 }
 
@@ -140,7 +139,7 @@ void test("validateNativeResult rejects fewer than five reps", () => {
       validateNativeResult(baseResult({ reps: 3 }))
     },
 
-    "insufficient-reps",
+    "insufficient-reps"
   )
 })
 
@@ -150,11 +149,11 @@ void test("validateNativeResult rejects a missing workload", () => {
       validateNativeResult(
         baseResult({
           workloads: WORKLOADS.filter((entry) => entry !== "delete"),
-        }),
+        })
       )
     },
 
-    "missing-workload",
+    "missing-workload"
   )
 })
 
@@ -164,7 +163,7 @@ void test("validateNativeResult rejects a missing distribution", () => {
       validateNativeResult(baseResult({ distributions: ["uniform"] }))
     },
 
-    "missing-distribution",
+    "missing-distribution"
   )
 })
 
@@ -174,7 +173,7 @@ void test("validateNativeResult rejects missing WAL metrics", () => {
       validateNativeResult(baseResult({ walBytes: nullValue }))
     },
 
-    "missing-wal",
+    "missing-wal"
   )
 })
 
@@ -184,7 +183,7 @@ void test("validateNativeResult rejects a missing server version", () => {
       validateNativeResult(baseResult({ serverVersion: "" }))
     },
 
-    "missing-server-version",
+    "missing-server-version"
   )
 })
 
@@ -193,7 +192,7 @@ void test("validateNativeResult rejects an arm without range scan evidence", () 
 
   const arm = Object.assign(
     Object.create(Object.prototype) as Record<string, unknown>,
-    fromAny<Record<string, unknown>, unknown>(result.arms.uuid_v7),
+    fromAny<Record<string, unknown>, unknown>(result.arms.uuid_v7)
   )
 
   delete arm.rangeScan
@@ -203,11 +202,11 @@ void test("validateNativeResult rejects an arm without range scan evidence", () 
       validateNativeResult(
         Object.assign(Object.create(Object.prototype) as EngineResult, result, {
           arms: { uuid_v7: arm },
-        }),
+        })
       )
     },
 
-    "missing-metric",
+    "missing-metric"
   )
 })
 
@@ -222,7 +221,7 @@ void test("enginesWithResults lists only the engines the artifact actually measu
       postgresql: baseResult(),
     }),
 
-    ["postgresql", "mysql-innodb"],
+    ["postgresql", "mysql-innodb"]
   )
 
   assert.deepEqual(enginesWithResults({}), [])

@@ -1,3 +1,10 @@
+import { execFileSync } from "node:child_process"
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs"
+import path from "node:path"
+import { pathToFileURL } from "node:url"
+
+import { nullValue, undefinedValue } from "./shared/runtime-values.ts"
+import { STANDARD_FREE_MASK, V7_FREE_MASK, runBattery } from "./stats-core.ts"
 import {
   SAMPLE_DEFINITIONS,
   buildSuiteEvidence,
@@ -5,18 +12,6 @@ import {
   classifyRejectionCell,
   freeMaskForLayout,
 } from "./stats-evidence-core.ts"
-
-import { STANDARD_FREE_MASK, V7_FREE_MASK, runBattery } from "./stats-core.ts"
-
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs"
-
-import { nullValue, undefinedValue } from "./shared/runtime-values.ts"
-
-import { execFileSync } from "node:child_process"
-
-import path from "node:path"
-
-import { pathToFileURL } from "node:url"
 
 interface PValueEntry {
   name: string
@@ -74,7 +69,7 @@ const structured = await runBattery(
 
   n,
 
-  structuredMask,
+  structuredMask
 )
 
 const v4 = await runBattery(
@@ -82,7 +77,7 @@ const v4 = await runBattery(
   () => crypto.randomUUID(),
   false,
   n,
-  STANDARD_FREE_MASK,
+  STANDARD_FREE_MASK
 )
 
 const v7 = await runBattery("v7", () => genV7(), false, n, V7_FREE_MASK)
@@ -269,7 +264,7 @@ const sweep = JSON.parse(readFileSync(sweepPath, "utf8")) as {
 
 if (!Array.isArray(sweep.cells) || sweep.cells.length === 0) {
   throw new Error(
-    "rejection sweep contains no cells; run bun run bench-rejection first",
+    "rejection sweep contains no cells; run bun run bench-rejection first"
   )
 }
 
@@ -284,7 +279,6 @@ const workingTree = execFileSync("git", ["status", "--porcelain"], {
   cwd: root,
   encoding: "utf8",
 })
-
   .split("\n")
 
   .filter((line) => line.length > 0)
@@ -328,7 +322,7 @@ const evidence = {
 
   rejection: {
     analyticalCells: rejectionCells.filter(
-      (cell) => cell.basis === "analytical",
+      (cell) => cell.basis === "analytical"
     ).length,
 
     cells: rejectionCells,
@@ -377,18 +371,18 @@ for (const suite of suites) {
 }
 
 console.log(
-  `rejection cells: ${evidence.rejection.measuredCells} measured, ${evidence.rejection.analyticalCells} analytical`,
+  `rejection cells: ${evidence.rejection.measuredCells} measured, ${evidence.rejection.analyticalCells} analytical`
 )
 
 console.log(
-  `limited suites: ${missingSuites.map((suite) => suite.suite).join(", ") || "none"}`,
+  `limited suites: ${missingSuites.map((suite) => suite.suite).join(", ") || "none"}`
 )
 
 if (failedSuites.length > 0) {
   for (const suite of failedSuites) {
     if (suite.multipleTesting) {
       console.error(
-        `${suite.suite} rejected: ${suite.multipleTesting.rejected.join(", ")}`,
+        `${suite.suite} rejected: ${suite.multipleTesting.rejected.join(", ")}`
       )
     }
   }

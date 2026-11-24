@@ -1,19 +1,15 @@
+import path from "node:path"
+import { performance } from "node:perf_hooks"
+import { pathToFileURL } from "node:url"
+
+import type { V8Layout } from "../../dist/algo.js"
 import {
   andBits,
   orBits,
   shiftLeftBits,
   shiftRightBits,
 } from "../shared/bitwise.ts"
-
-import type { V8Layout } from "../../dist/algo.js"
-
 import { nullValue } from "./shared/runtime-values.ts"
-
-import path from "node:path"
-
-import { pathToFileURL } from "node:url"
-
-import { performance } from "node:perf_hooks"
 
 const __dirname = import.meta.dirname
 
@@ -168,7 +164,7 @@ const armC = (): number => {
 // ── Arm D: two-parent POOLED (seeded RNG disables compiled path) ──
 
 const armD = (): number => {
-  configureRandom(createSeededRandom(0xDE_AD_BE_EF, 0x4F_15_F0_0D))
+  configureRandom(createSeededRandom(0xde_ad_be_ef, 0x4f_15_f0_0d))
 
   resetSeededState()
 
@@ -217,7 +213,7 @@ const genE = (): string => {
 
     // Reseed: draw from random
 
-    E_CTR = andBits(orBits(b[10], shiftLeftBits(b[11], 8)), 0x7F_FF)
+    E_CTR = andBits(orBits(b[10], shiftLeftBits(b[11], 8)), 0x7f_ff)
 
     // G=1 guard bit
   } else if (tau === E_TICK) {
@@ -226,40 +222,40 @@ const genE = (): string => {
 
   // Write 48-bit timestamp (bits 0-47)
 
-  b[0] = andBits(tau / 2 ** 40, 0xFF)
+  b[0] = andBits(tau / 2 ** 40, 0xff)
 
-  b[1] = andBits(tau / 2 ** 32, 0xFF)
+  b[1] = andBits(tau / 2 ** 32, 0xff)
 
-  b[2] = andBits(tau / 2 ** 24, 0xFF)
+  b[2] = andBits(tau / 2 ** 24, 0xff)
 
-  b[3] = andBits(tau / 2 ** 16, 0xFF)
+  b[3] = andBits(tau / 2 ** 16, 0xff)
 
-  b[4] = andBits(tau / 2 ** 8, 0xFF)
+  b[4] = andBits(tau / 2 ** 8, 0xff)
 
-  b[5] = andBits(tau, 0xFF)
+  b[5] = andBits(tau, 0xff)
 
   // Version nibble at bits 48-51 (byte 6 high nibble)
 
-  b[6] = orBits(andBits(b[6], 0x0F), 0x80)
+  b[6] = orBits(andBits(b[6], 0x0f), 0x80)
 
   // Variant at bits 64-65 (byte 8 high 2 bits)
 
-  b[8] = orBits(andBits(b[8], 0x3F), 0x80)
+  b[8] = orBits(andBits(b[8], 0x3f), 0x80)
 
   // Repair shard (bits 52-59): extract, mod 5, map to allowed, write back
 
   // Bit 52 = byte6[4], bit 59 = byte7[3]
 
   const rawShard = orBits(
-    shiftLeftBits(andBits(b[6], 0x0F), 4),
-    andBits(shiftRightBits(b[7], 4), 0x0F),
+    shiftLeftBits(andBits(b[6], 0x0f), 4),
+    andBits(shiftRightBits(b[7], 4), 0x0f)
   )
 
   const shardVal = ALLOWED[rawShard % 5]
 
-  b[6] = orBits(andBits(b[6], 0xF0), andBits(shiftRightBits(shardVal, 4), 0x0F))
+  b[6] = orBits(andBits(b[6], 0xf0), andBits(shiftRightBits(shardVal, 4), 0x0f))
 
-  b[7] = orBits(andBits(b[7], 0x0F), shiftLeftBits(andBits(shardVal, 0x0F), 4))
+  b[7] = orBits(andBits(b[7], 0x0f), shiftLeftBits(andBits(shardVal, 0x0f), 4))
 
   // Write counter (bits 66-81, length 16)
 
@@ -267,11 +263,11 @@ const genE = (): string => {
 
   // Preserve variant (upper 2 bits of byte 8 = 0xc0)
 
-  b[8] = orBits(andBits(b[8], 0xC0), andBits(shiftRightBits(E_CTR, 10), 0x3F))
+  b[8] = orBits(andBits(b[8], 0xc0), andBits(shiftRightBits(E_CTR, 10), 0x3f))
 
-  b[9] = andBits(shiftRightBits(E_CTR, 2), 0xFF)
+  b[9] = andBits(shiftRightBits(E_CTR, 2), 0xff)
 
-  b[10] = orBits(andBits(b[10], 0x3F), shiftLeftBits(andBits(E_CTR, 0x03), 6))
+  b[10] = orBits(andBits(b[10], 0x3f), shiftLeftBits(andBits(E_CTR, 0x03), 6))
 
   // Format to hex (16 HEX8 lookups + 4 hyphens)
 
@@ -301,7 +297,7 @@ console.log("=== Crossover ablation: 5-arm comparison ===")
 console.log(`layout=dbkey, n=${N}, warm=${WARM}`)
 
 console.log(
-  `WARNING: all numbers from Windows/Bun. CI (Ubuntu/Bun) is ~3.8× faster.\n`,
+  `WARNING: all numbers from Windows/Bun. CI (Ubuntu/Bun) is ~3.8× faster.\n`
 )
 
 const a = armA()
@@ -315,49 +311,49 @@ const d = armD()
 const e = armE()
 
 console.log(
-  `Arm A: single-parent pooled (pre-computed strs):  ${a.toFixed(0)} ops/sec`,
+  `Arm A: single-parent pooled (pre-computed strs):  ${a.toFixed(0)} ops/sec`
 )
 
 console.log(
-  `Arm B: single-parent pooled (raw format on read): ${b.toFixed(0)} ops/sec`,
+  `Arm B: single-parent pooled (raw format on read): ${b.toFixed(0)} ops/sec`
 )
 
 console.log(
-  `Arm C: two-parent compiled:                       ${c.toFixed(0)} ops/sec`,
+  `Arm C: two-parent compiled:                       ${c.toFixed(0)} ops/sec`
 )
 
 console.log(
-  `Arm D: two-parent pooled:                         ${d.toFixed(0)} ops/sec`,
+  `Arm D: two-parent pooled:                         ${d.toFixed(0)} ops/sec`
 )
 
 console.log(
-  `Arm E: single-parent compiled (inline):           ${e.toFixed(0)} ops/sec`,
+  `Arm E: single-parent compiled (inline):           ${e.toFixed(0)} ops/sec`
 )
 
 console.log(`\n--- Ratios ---`)
 
 console.log(
-  `A / B (string buffer effect):                   ${(a / b).toFixed(2)}x`,
+  `A / B (string buffer effect):                   ${(a / b).toFixed(2)}x`
 )
 
 console.log(
-  `D / A (two-parent vs single, both pooled):      ${(d / a).toFixed(2)}x`,
+  `D / A (two-parent vs single, both pooled):      ${(d / a).toFixed(2)}x`
 )
 
 console.log(
-  `E / A (compiled vs pooled, single-parent):      ${(e / a).toFixed(2)}x`,
+  `E / A (compiled vs pooled, single-parent):      ${(e / a).toFixed(2)}x`
 )
 
 console.log(
-  `C / E (compiled two-parent vs compiled single): ${(c / e).toFixed(2)}x`,
+  `C / E (compiled two-parent vs compiled single): ${(c / e).toFixed(2)}x`
 )
 
 console.log(
-  `E / C (single-parent compiled / two-parent cmp): ${(e / c).toFixed(2)}x`,
+  `E / C (single-parent compiled / two-parent cmp): ${(e / c).toFixed(2)}x`
 )
 
 console.log(
-  `C / A (two-parent compiled vs single pooled):   ${(c / a).toFixed(2)}x`,
+  `C / A (two-parent compiled vs single pooled):   ${(c / a).toFixed(2)}x`
 )
 
 // Projection to CI (Ubuntu/Bun) using A as anchor
@@ -375,11 +371,11 @@ const RIG_FACTOR = CI_TABLE2_STRUCTURED / CI_ANCHOR
 console.log(`\n--- CI projection (rig factor ${RIG_FACTOR.toFixed(2)}×) ---`)
 
 console.log(
-  `Single-parent compiled (projected): ${((e * RIG_FACTOR) / 1e6).toFixed(2)}M ops/sec`,
+  `Single-parent compiled (projected): ${((e * RIG_FACTOR) / 1e6).toFixed(2)}M ops/sec`
 )
 
 console.log(
-  `Two-parent compiled (projected):    ${((c * RIG_FACTOR) / 1e6).toFixed(2)}M ops/sec`,
+  `Two-parent compiled (projected):    ${((c * RIG_FACTOR) / 1e6).toFixed(2)}M ops/sec`
 )
 
 console.log(`v4-native (Table 2):                18.37M ops/sec`)

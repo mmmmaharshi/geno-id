@@ -1,18 +1,15 @@
+import { execFileSync } from "node:child_process"
+// Cross-cutting helpers shared by scripts/*.ts CLIs (provenance, runtime
+// Labels, seeded RNG). Each function here previously existed as 2-3
+// Byte-identical copies; this module is the single home. Side-effect free on
+// Import so tests can use it without running any CLI.
+
 import {
   andBits,
   orBits,
   shiftRightUnsignedBits,
   xorBits,
 } from "../../shared/bitwise.ts"
-// Cross-cutting helpers shared by scripts/*.ts CLIs (provenance, runtime
-
-// Labels, seeded RNG). Each function here previously existed as 2-3
-
-// Byte-identical copies; this module is the single home. Side-effect free on
-
-// Import so tests can use it without running any CLI.
-
-import { execFileSync } from "node:child_process"
 
 // Commit SHA of the working tree, or "unknown" when git is unavailable
 
@@ -43,17 +40,17 @@ export const runtimeVersion = (): string => {
 
 // Seeded xorshift32 stream for deterministic experiments.
 
-export const mulberry32 = (seed: number): () => number => {
-  let a = andBits(seed, 0xFF_FF_FF_FF)
+export const mulberry32 = (seed: number): (() => number) => {
+  let a = andBits(seed, 0xff_ff_ff_ff)
 
   return () => {
-    a = andBits(a + 0x6D_2B_79_F5, 0xFF_FF_FF_FF)
+    a = andBits(a + 0x6d_2b_79_f5, 0xff_ff_ff_ff)
 
     let t = Math.imul(xorBits(a, shiftRightUnsignedBits(a, 15)), orBits(a, 1))
 
     const factor = Math.imul(
       xorBits(t, shiftRightUnsignedBits(t, 7)),
-      orBits(t, 61),
+      orBits(t, 61)
     )
 
     t = xorBits(t, t + factor)

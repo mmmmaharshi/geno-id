@@ -1,20 +1,16 @@
+import fs from "node:fs"
+import path from "node:path"
+import { pathToFileURL } from "node:url"
+
+import type { V8Layout } from "../../dist/algo.js"
 import {
   andBits,
   orBits,
   shiftLeftBits,
   shiftRightBits,
 } from "../shared/bitwise.ts"
-
-import { genRawV8, hexVal } from "./shared/export-bits.ts"
-
-import type { V8Layout } from "../../dist/algo.js"
-
-import fs from "node:fs"
-
 import { need } from "../shared/need.ts"
-import path from "node:path"
-
-import { pathToFileURL } from "node:url"
+import { genRawV8, hexVal } from "./shared/export-bits.ts"
 
 // Shared exporter for the dieharder randomness battery. Driven by
 
@@ -65,9 +61,9 @@ const {
 const HEX_STARTS = [0, 2, 4, 6, 9, 11, 14, 16, 19, 21, 24, 26, 28, 30, 32, 34]
 
 const STANDARD_FREE_MASK = [
-  0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x0F, 0xFF, 0x3F, 0xFF, 0xFF, 0xFF,
+  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x0f, 0xff, 0x3f, 0xff, 0xff, 0xff,
 
-  0xFF, 0xFF, 0xFF, 0xFF,
+  0xff, 0xff, 0xff, 0xff,
 ]
 
 // Bit-packing sink: accumulates single bits into a preallocated byte buffer.
@@ -129,7 +125,7 @@ const exportFlat = (
 
   targetBits: number,
 
-  suffix = "",
+  suffix = ""
 ): void => {
   const bitsPerUuid = 122
 
@@ -148,7 +144,7 @@ const exportFlat = (
   fs.writeFileSync(filePath, packed)
 
   console.log(
-    `Wrote ${(packed.length / 1e6).toFixed(2)} MB (${n.toLocaleString()} UUIDs, ${w.bitPos.toLocaleString()} raw bits) -> ${filePath}`,
+    `Wrote ${(packed.length / 1e6).toFixed(2)} MB (${n.toLocaleString()} UUIDs, ${w.bitPos.toLocaleString()} raw bits) -> ${filePath}`
   )
 }
 
@@ -159,7 +155,7 @@ const exportStructured = (
 
   targetBits: number,
 
-  suffix = "",
+  suffix = ""
 ): void => {
   const randomBitsPerUuid = layout.fields
 
@@ -186,13 +182,13 @@ const exportStructured = (
   fs.writeFileSync(filePath, packed)
 
   console.log(
-    `Wrote ${(packed.length / 1e6).toFixed(2)} MB (${n.toLocaleString()} UUIDs, ${w.bitPos.toLocaleString()} raw bits) -> ${filePath}`,
+    `Wrote ${(packed.length / 1e6).toFixed(2)} MB (${n.toLocaleString()} UUIDs, ${w.bitPos.toLocaleString()} raw bits) -> ${filePath}`
   )
 }
 
 export const runExport = async (
   targetBits: number,
-  trial = -1,
+  trial = -1
 ): Promise<void> => {
   let suffix = ""
 
@@ -205,7 +201,7 @@ export const runExport = async (
   }
 
   console.log(
-    `Exporting dieharder bitstreams${tag} (${(targetBits / 1e6).toFixed(2)}M bits target per generator)...`,
+    `Exporting dieharder bitstreams${tag} (${(targetBits / 1e6).toFixed(2)}M bits target per generator)...`
   )
 
   exportFlat("v4", genV4Native, targetBits, suffix)

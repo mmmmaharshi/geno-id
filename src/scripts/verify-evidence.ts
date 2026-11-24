@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from "node:fs"
-import { nullValue, undefinedValue } from "./shared/runtime-values.ts"
 import path from "node:path"
+
+import { nullValue, undefinedValue } from "./shared/runtime-values.ts"
 import { verifyEvidenceTree } from "./verify-evidence-core.ts"
 
 // The complete evidence command for the journal package.
@@ -23,7 +24,12 @@ interface Manifest {
   commit: string
   package_version: string
   artifacts: Record<string, { artifact: string; generated?: string[] }>
-  metrics?: { artifact: string; path: string; value: number; precision?: number }[]
+  metrics?: {
+    artifact: string
+    path: string
+    value: number
+    precision?: number
+  }[]
   notes: {
     release_identity: { package_version: string; frozen_commit: string }
     unsupported_claims: string[]
@@ -40,7 +46,7 @@ const fail = (message: string): boolean => {
 const verify = (): void => {
   const manifest = JSON.parse(readFileSync(MANIFEST, "utf8")) as Manifest
   const pkg = JSON.parse(
-    readFileSync(path.join(root, "package.json"), "utf8"),
+    readFileSync(path.join(root, "package.json"), "utf8")
   ) as {
     version: string
   }
@@ -53,7 +59,7 @@ const verify = (): void => {
       package_version: manifest.package_version,
       releaseIdentityVersion: manifest.notes.release_identity.package_version,
     },
-    root,
+    root
   )
 
   if (
@@ -69,20 +75,20 @@ const verify = (): void => {
   if (
     result.missing.length > 0 &&
     fail(
-      `${result.missing.length} of ${result.checked} mapped artifacts are missing`,
+      `${result.missing.length} of ${result.checked} mapped artifacts are missing`
     )
   ) {
     return
   }
   for (const m of result.metricMismatches) {
     console.error(
-      `  METRIC DRIFT ${m.expectation.artifact}:${m.expectation.path} claim=${m.expectation.value} actual=${m.actual ?? "missing"}`,
+      `  METRIC DRIFT ${m.expectation.artifact}:${m.expectation.path} claim=${m.expectation.value} actual=${m.actual ?? "missing"}`
     )
   }
   if (
     result.metricMismatches.length > 0 &&
     fail(
-      `${result.metricMismatches.length} manifest metric claim(s) drifted from their artifacts`,
+      `${result.metricMismatches.length} manifest metric claim(s) drifted from their artifacts`
     )
   ) {
     return
@@ -92,7 +98,7 @@ const verify = (): void => {
     metricCount = manifest.metrics.length
   }
   console.log(
-    `EVIDENCE VERIFIED: ${result.checked} artifacts present, ${metricCount} metric claims checked, package version ${pkg.version}, ${Object.keys(manifest.artifacts).length} claims mapped.`,
+    `EVIDENCE VERIFIED: ${result.checked} artifacts present, ${metricCount} metric claims checked, package version ${pkg.version}, ${Object.keys(manifest.artifacts).length} claims mapped.`
   )
 }
 

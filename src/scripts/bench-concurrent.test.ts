@@ -15,10 +15,9 @@
 /// <reference types="node" />
 
 import assert from "node:assert/strict"
+import { test } from "node:test"
 
 import { runConcurrent } from "./bench-concurrent.ts"
-
-import { test } from "node:test"
 
 void test("Task B: zero cross-worker collisions (plain genoid)", async () => {
   const res = await runConcurrent({

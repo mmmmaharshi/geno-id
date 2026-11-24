@@ -1,17 +1,12 @@
 /// <reference types="node" />
 import assert from "node:assert/strict"
-
 import fs from "node:fs"
-
-import { need } from "../shared/need.ts"
-
 import path from "node:path"
-
+import { test } from "node:test"
 import { pathToFileURL } from "node:url"
 
+import { need } from "../shared/need.ts"
 import { readLines } from "./shared/read-lines.ts"
-
-import { test } from "node:test"
 
 // The golden vectors must cover every constraint kind the library supports,
 
@@ -61,7 +56,7 @@ const VECTORS = path.join(root, "golden", "conformance-single-parent.txt")
 
 const layout = algo.CONFORMANCE_LAYOUT
 
-const field = (name: string): typeof layout.fields[number] =>
+const field = (name: string): (typeof layout.fields)[number] =>
   need(layout.fields.find((f) => f.name === name))
 
 void test("the conformance layout declares a range constraint, a fixed field, and a wide field", () => {
@@ -83,7 +78,7 @@ void test("the conformance layout declares a range constraint, a fixed field, an
 
   assert.ok(
     wide.length > 32,
-    `the wide field must exceed 32 bits, got ${wide.length}`,
+    `the wide field must exceed 32 bits, got ${wide.length}`
   )
 })
 
@@ -100,7 +95,7 @@ void test("every conformance vector satisfies the range constraint", () => {
     assert.ok(
       value >= 100 && value <= 4999,
 
-      `window value ${value} is outside the declared range [100, 4999]`,
+      `window value ${value} is outside the declared range [100, 4999]`
     )
   }
 })
@@ -124,8 +119,8 @@ void test("the wide field takes distinct values across the vectors", () => {
 
   const values = new Set(
     lines.map((line) =>
-      algo.getFieldValue(algo.uuidToBytes(line), wide).toString(),
-    ),
+      algo.getFieldValue(algo.uuidToBytes(line), wide).toString()
+    )
   )
 
   // A wide field that always read the same value would carry no entropy and
@@ -134,6 +129,6 @@ void test("the wide field takes distinct values across the vectors", () => {
 
   assert.ok(
     values.size > lines.length / 2,
-    `wide field had only ${values.size} distinct values`,
+    `wide field had only ${values.size} distinct values`
   )
 })

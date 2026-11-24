@@ -1,3 +1,20 @@
+import { execFileSync } from "node:child_process"
+import { once } from "node:events"
+import { mkdirSync, writeFileSync } from "node:fs"
+import net from "node:net"
+import path from "node:path"
+import { pathToFileURL } from "node:url"
+
+import type { RowDataPacket } from "mysql2"
+import mysql from "mysql2/promise"
+import { Client } from "pg"
+
+import type {
+  DatabaseLayoutCompilation,
+  StructuredGenerationMode,
+  V8Field,
+  V8Layout,
+} from "../algo.ts"
 import {
   DISTRIBUTIONS,
   ENGINES,
@@ -10,45 +27,17 @@ import {
   unreachableMessage,
   validateNativeResult,
 } from "./bench-db-native-core.ts"
-
-import type {
-  DatabaseLayoutCompilation,
-  StructuredGenerationMode,
-  V8Field,
-  V8Layout,
-} from "../algo.ts"
-
-import { mkdirSync, writeFileSync } from "node:fs"
-
-import { Client } from "pg"
-
-import type { RowDataPacket } from "mysql2"
-
-import { execFileSync } from "node:child_process"
-
+import { mulberry32 } from "./shared/cli-utils.ts"
+import { nullValue } from "./shared/runtime-values.ts"
 import { forEachSequential } from "./shared/sequence.ts"
 
-import { mulberry32 } from "./shared/cli-utils.ts"
-
-import mysql from "mysql2/promise"
-
-import net from "node:net"
-
-import { nullValue } from "./shared/runtime-values.ts"
-
-import { once } from "node:events"
-
-import path from "node:path"
-
-import { pathToFileURL } from "node:url"
-
-type EngineName = typeof ENGINES[number]
+type EngineName = (typeof ENGINES)[number]
 
 type Percentiles = ReturnType<typeof percentiles>
 
-type Workload = typeof WORKLOADS[number]
+type Workload = (typeof WORKLOADS)[number]
 
-type Distribution = typeof DISTRIBUTIONS[number]
+type Distribution = (typeof DISTRIBUTIONS)[number]
 
 interface EngineResult {
   engine: EngineName
@@ -76,11 +65,24 @@ interface EngineResult {
   maintenance: Record<string, number>
 }
 
-interface CountRow extends RowDataPacket { n: number }
-interface VersionRow extends RowDataPacket { v: string }
-interface SettingsRow extends RowDataPacket { buffer_pool: number; flush: number; max_conn: number }
-interface StorageRow extends RowDataPacket { data: number; idx: number }
-interface WalRow extends RowDataPacket { written: number }
+interface CountRow extends RowDataPacket {
+  n: number
+}
+interface VersionRow extends RowDataPacket {
+  v: string
+}
+interface SettingsRow extends RowDataPacket {
+  buffer_pool: number
+  flush: number
+  max_conn: number
+}
+interface StorageRow extends RowDataPacket {
+  data: number
+  idx: number
+}
+interface WalRow extends RowDataPacket {
+  written: number
+}
 
 const arg = (name: string, fallback: string): string => {
   const hit = process.argv.find((entry) => entry.startsWith(`--${name}=`))
@@ -114,7 +116,7 @@ const root = path.resolve(import.meta.dirname, "..", "..")
 
 const runSequentially = async (
   count: number,
-  visit: (index: number) => Promise<void>,
+  visit: (index: number) => Promise<void>
 ): Promise<void> => {
   await forEachSequential(count, visit)
 }
@@ -129,7 +131,7 @@ const algo = (await import(
   genGenoID: () => string
 
   genStructuredGenoID: (
-    input: Readonly<V8Layout> | Readonly<DatabaseLayoutCompilation>,
+    input: Readonly<V8Layout> | Readonly<DatabaseLayoutCompilation>
   ) => string
 
   genV4Native: () => string
@@ -215,7 +217,7 @@ interface Engine {
   insertBatch: (
     ids: string[],
     tenants: number[],
-    payload: string,
+    payload: string
   ) => Promise<void>
 
   count: () => Promise<number>
@@ -271,22 +273,23 @@ const connectPostgres = (): Client =>
     user: process.env.PG_USER ?? "genoid",
   })
 
-const connectMysql =
-  async (): Promise<Awaited<ReturnType<typeof mysql.createConnection>>> => {
-    const connection = await mysql.createConnection({
-      database: process.env.MYSQL_DB ?? "genoid",
+const connectMysql = async (): Promise<
+  Awaited<ReturnType<typeof mysql.createConnection>>
+> => {
+  const connection = await mysql.createConnection({
+    database: process.env.MYSQL_DB ?? "genoid",
 
-      host: process.env.MYSQL_HOST ?? "localhost",
+    host: process.env.MYSQL_HOST ?? "localhost",
 
-      password: process.env.MYSQL_PASSWORD ?? "password",
+    password: process.env.MYSQL_PASSWORD ?? "password",
 
-      port: Number(process.env.MYSQL_PORT ?? 3306),
+    port: Number(process.env.MYSQL_PORT ?? 3306),
 
-      user: process.env.MYSQL_USER ?? "root",
-    })
+    user: process.env.MYSQL_USER ?? "root",
+  })
 
-    return connection
-  }
+  return connection
+}
 
 const postgres = async (): Promise<Engine> => {
   const client = connectPostgres()
@@ -306,7 +309,7 @@ const postgres = async (): Promise<Engine> => {
           await conn.connect()
 
           return conn
-        }),
+        })
       )
 
       const random = mulberry32(99)
@@ -319,11 +322,11 @@ const postgres = async (): Promise<Engine> => {
 
               id.writeUInt32BE(writer + 1, 0)
 
-              id.writeUInt32BE(random() * 0xFF_FF_FF_FF, 4)
+              id.writeUInt32BE(random() * 0xff_ff_ff_ff, 4)
 
-              id.writeUInt32BE(random() * 0xFF_FF_FF_FF, 8)
+              id.writeUInt32BE(random() * 0xff_ff_ff_ff, 8)
 
-              id.writeUInt32BE(random() * 0xFF_FF_FF_FF, 12)
+              id.writeUInt32BE(random() * 0xff_ff_ff_ff, 12)
 
               await conn.query(
                 "INSERT INTO t (id, tenant, payload) VALUES ($1, $2, $3)",
@@ -333,10 +336,10 @@ const postgres = async (): Promise<Engine> => {
                   1 + (writer % 5),
 
                   payloadHex(random),
-                ],
+                ]
               )
             })
-          }),
+          })
         )
       } finally {
         await runSequentially(conns.length, async (index) => {
@@ -349,7 +352,7 @@ const postgres = async (): Promise<Engine> => {
 
     async count() {
       const res = await client.query<{ n: number }>(
-        "SELECT count(*)::int AS n FROM t",
+        "SELECT count(*)::int AS n FROM t"
       )
 
       const row = res.rows.at(0)
@@ -365,7 +368,7 @@ const postgres = async (): Promise<Engine> => {
       await client.query("DROP TABLE IF EXISTS t")
 
       await client.query(
-        "CREATE TABLE t (id bytea PRIMARY KEY, tenant int, payload bytea)",
+        "CREATE TABLE t (id bytea PRIMARY KEY, tenant int, payload bytea)"
       )
     },
 
@@ -373,7 +376,7 @@ const postgres = async (): Promise<Engine> => {
       const version = await client.query<{ v: string }>("SELECT version() AS v")
 
       const settings = await client.query<{ name: string; setting: string }>(
-        "SELECT name, setting FROM pg_settings WHERE name IN ('shared_buffers','max_connections','fsync','synchronous_commit','server_version')",
+        "SELECT name, setting FROM pg_settings WHERE name IN ('shared_buffers','max_connections','fsync','synchronous_commit','server_version')"
       )
 
       const versionRow = version.rows.at(0)
@@ -386,7 +389,7 @@ const postgres = async (): Promise<Engine> => {
 
       return {
         serverConfig: Object.fromEntries(
-          settings.rows.map((row) => [row.name, row.setting]),
+          settings.rows.map((row) => [row.name, row.setting])
         ),
 
         serverVersion,
@@ -395,11 +398,11 @@ const postgres = async (): Promise<Engine> => {
 
     async insertBatch(ids, tenants, payload) {
       const values = ids.map(
-        (id, i) => `('\\x${id}'::bytea, ${tenants[i]}, '${payload}'::bytea)`,
+        (id, i) => `('\\x${id}'::bytea, ${tenants[i]}, '${payload}'::bytea)`
       )
 
       await client.query(
-        `INSERT INTO t (id, tenant, payload) VALUES ${values.join(",")}`,
+        `INSERT INTO t (id, tenant, payload) VALUES ${values.join(",")}`
       )
     },
 
@@ -408,7 +411,7 @@ const postgres = async (): Promise<Engine> => {
 
       await runSequentially(probes, async (i) => {
         const res = await client.query(
-          `SELECT 1 FROM t WHERE id = '\\x${ids[i % ids.length]}'::bytea`,
+          `SELECT 1 FROM t WHERE id = '\\x${ids[i % ids.length]}'::bytea`
         )
 
         if (typeof res.rowCount === "number" && res.rowCount > 0) {
@@ -427,7 +430,7 @@ const postgres = async (): Promise<Engine> => {
 
     async plan() {
       const res = await client.query(
-        String.raw`EXPLAIN (ANALYZE, BUFFERS) SELECT 1 FROM t WHERE id = '\x00'::bytea`,
+        String.raw`EXPLAIN (ANALYZE, BUFFERS) SELECT 1 FROM t WHERE id = '\x00'::bytea`
       )
 
       return res.rows
@@ -437,7 +440,7 @@ const postgres = async (): Promise<Engine> => {
 
     async rangeScan(limit) {
       const res = await client.query<{ n: number }>(
-        String.raw`SELECT count(*)::int AS n FROM t WHERE id >= '\x00'::bytea AND id < '\xff'::bytea`,
+        String.raw`SELECT count(*)::int AS n FROM t WHERE id >= '\x00'::bytea AND id < '\xff'::bytea`
       )
 
       const row = res.rows.at(0)
@@ -453,7 +456,7 @@ const postgres = async (): Promise<Engine> => {
 
     async remove(limit) {
       const res = await client.query(
-        `DELETE FROM t WHERE ctid IN (SELECT ctid FROM t LIMIT ${limit})`,
+        `DELETE FROM t WHERE ctid IN (SELECT ctid FROM t LIMIT ${limit})`
       )
 
       return res.rowCount ?? 0
@@ -465,7 +468,7 @@ const postgres = async (): Promise<Engine> => {
         idx: number
         total: number
       }>(
-        "SELECT pg_table_size('t') AS heap, pg_indexes_size('t') AS idx, pg_total_relation_size('t') AS total",
+        "SELECT pg_table_size('t') AS heap, pg_indexes_size('t') AS idx, pg_total_relation_size('t') AS total"
       )
 
       const row = res.rows[0] ?? { heap: 0, idx: 0, total: 0 }
@@ -479,13 +482,13 @@ const postgres = async (): Promise<Engine> => {
 
     async update(limit) {
       await client.query(
-        `UPDATE t SET payload = decode(md5(random()::text), 'hex') WHERE ctid IN (SELECT ctid FROM t LIMIT ${limit})`,
+        `UPDATE t SET payload = decode(md5(random()::text), 'hex') WHERE ctid IN (SELECT ctid FROM t LIMIT ${limit})`
       )
     },
 
     async walBytes() {
       const res = await client.query<{ written: string }>(
-        "SELECT pg_stat_wal.wal_bytes AS written FROM pg_stat_wal",
+        "SELECT pg_stat_wal.wal_bytes AS written FROM pg_stat_wal"
       )
 
       const row = res.rows.at(0)
@@ -532,11 +535,11 @@ const mysqlInnoDB = async (): Promise<Engine> => {
 
               id.writeUInt32BE(writer + 1, 0)
 
-              id.writeUInt32BE(Math.floor(random() * 0xFF_FF_FF_FF), 4)
+              id.writeUInt32BE(Math.floor(random() * 0xff_ff_ff_ff), 4)
 
-              id.writeUInt32BE(Math.floor(random() * 0xFF_FF_FF_FF), 8)
+              id.writeUInt32BE(Math.floor(random() * 0xff_ff_ff_ff), 8)
 
-              id.writeUInt32BE(Math.floor(random() * 0xFF_FF_FF_FF), 12)
+              id.writeUInt32BE(Math.floor(random() * 0xff_ff_ff_ff), 12)
 
               await pool.query(
                 "INSERT INTO t (id, tenant, payload) VALUES (?, ?, ?)",
@@ -546,10 +549,10 @@ const mysqlInnoDB = async (): Promise<Engine> => {
                   1 + (writer % 5),
 
                   Buffer.from(payloadHex(random), "hex"),
-                ],
+                ]
               )
             })
-          }),
+          })
         )
       } finally {
         await pool.end()
@@ -560,7 +563,7 @@ const mysqlInnoDB = async (): Promise<Engine> => {
 
     async count() {
       const [rows] = await client.query<CountRow[]>(
-        "SELECT COUNT(*) AS n FROM t",
+        "SELECT COUNT(*) AS n FROM t"
       )
 
       const row = rows.at(0)
@@ -576,17 +579,17 @@ const mysqlInnoDB = async (): Promise<Engine> => {
       await client.query("DROP TABLE IF EXISTS t")
 
       await client.query(
-        "CREATE TABLE t (id BINARY(16) PRIMARY KEY, tenant INT, payload BLOB) ENGINE=InnoDB",
+        "CREATE TABLE t (id BINARY(16) PRIMARY KEY, tenant INT, payload BLOB) ENGINE=InnoDB"
       )
     },
 
     async identity() {
       const [version] = await client.query<VersionRow[]>(
-        "SELECT VERSION() AS v",
+        "SELECT VERSION() AS v"
       )
 
       const [settings] = await client.query<SettingsRow[]>(
-        "SELECT @@innodb_buffer_pool_size AS buffer_pool, @@innodb_flush_log_at_trx_commit AS flush, @@max_connections AS max_conn",
+        "SELECT @@innodb_buffer_pool_size AS buffer_pool, @@innodb_flush_log_at_trx_commit AS flush, @@max_connections AS max_conn"
       )
 
       const row = settings.at(0)
@@ -628,11 +631,11 @@ const mysqlInnoDB = async (): Promise<Engine> => {
 
     async insertBatch(ids, tenants, payload) {
       const values = ids.map(
-        (id, i) => `(UNHEX('${id}'), ${tenants[i]}, UNHEX('${payload}'))`,
+        (id, i) => `(UNHEX('${id}'), ${tenants[i]}, UNHEX('${payload}'))`
       )
 
       await client.query(
-        `INSERT INTO t (id, tenant, payload) VALUES ${values.join(",")}`,
+        `INSERT INTO t (id, tenant, payload) VALUES ${values.join(",")}`
       )
     },
 
@@ -642,7 +645,7 @@ const mysqlInnoDB = async (): Promise<Engine> => {
       await runSequentially(probes, async (i) => {
         const [rows] = await client.query<RowDataPacket[]>(
           "SELECT id FROM t WHERE id = ?",
-          [Buffer.from(ids[i % ids.length], "hex")],
+          [Buffer.from(ids[i % ids.length], "hex")]
         )
 
         if (rows.length > 0) {
@@ -662,7 +665,7 @@ const mysqlInnoDB = async (): Promise<Engine> => {
     async plan() {
       const [rows] = await client.query<RowDataPacket[]>(
         "EXPLAIN FORMAT=JSON SELECT id FROM t WHERE id = ?",
-        [Buffer.alloc(16)],
+        [Buffer.alloc(16)]
       )
 
       return JSON.stringify(rows[0] ?? {})
@@ -672,7 +675,7 @@ const mysqlInnoDB = async (): Promise<Engine> => {
       const [rows] = await client.query<CountRow[]>(
         "SELECT COUNT(*) AS n FROM t WHERE id >= ?",
 
-        [Buffer.alloc(16)],
+        [Buffer.alloc(16)]
       )
 
       const row = rows.at(0)
@@ -694,7 +697,7 @@ const mysqlInnoDB = async (): Promise<Engine> => {
 
     async storage() {
       const [rows] = await client.query<StorageRow[]>(
-        "SELECT data_length AS data, index_length AS idx FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 't'",
+        "SELECT data_length AS data, index_length AS idx FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 't'"
       )
 
       const row = rows.at(0)
@@ -724,7 +727,7 @@ const mysqlInnoDB = async (): Promise<Engine> => {
 
     async walBytes() {
       const [rows] = await client.query<WalRow[]>(
-        "SELECT VARIABLE_VALUE AS written FROM performance_schema.global_status WHERE VARIABLE_NAME = 'Innodb_os_log_written'",
+        "SELECT VARIABLE_VALUE AS written FROM performance_schema.global_status WHERE VARIABLE_NAME = 'Innodb_os_log_written'"
       )
 
       const row = rows.at(0)
@@ -878,7 +881,7 @@ const runEngine = async (engine: Readonly<Engine>): Promise<EngineResult> => {
       acc.concurrent += written / ((now() - writerStart) / 1000)
 
       console.log(
-        `  ${engine.name} ${arm} ${distribution}: ${acc.insert.length} reps, ${written} concurrent rows`,
+        `  ${engine.name} ${arm} ${distribution}: ${acc.insert.length} reps, ${written} concurrent rows`
       )
     })
   })
@@ -1012,13 +1015,13 @@ const MODE_ALIASES: Record<string, EngineName> = {
 let targets: EngineName[] = [...ENGINES]
 
 if (MODE !== "both") {
-  targets = [MODE_ALIASES[MODE] ?? MODE as EngineName]
+  targets = [MODE_ALIASES[MODE] ?? (MODE as EngineName)]
 }
 
 const isServerReachable = async (
   host: string,
   port: number,
-  timeoutMs = 4000,
+  timeoutMs = 4000
 ): Promise<boolean> => {
   const socket = net.connect(port, host)
 
@@ -1072,11 +1075,11 @@ const SERVER_TARGETS = Object.fromEntries(
       name,
       { env: SERVER_ENV[name], host: target.host, port: target.port },
     ]
-  }),
+  })
 ) as Record<EngineName, { host: string; port: number; env: string }>
 
 const measureEngine = async (
-  engine: Readonly<Engine>,
+  engine: Readonly<Engine>
 ): Promise<EngineResult> => {
   try {
     const result = await runEngine(engine)
@@ -1131,7 +1134,7 @@ const main = async (): Promise<void> => {
       const engine = await openEngine(name)
 
       console.log(
-        `\n=== ${name} rows=${ROWS} reps=${REPS} distributions=${DISTRIBUTIONS.length} arms=${Object.keys(ARMS).length} ===`,
+        `\n=== ${name} rows=${ROWS} reps=${REPS} distributions=${DISTRIBUTIONS.length} arms=${Object.keys(ARMS).length} ===`
       )
 
       const started = now()
@@ -1139,7 +1142,7 @@ const main = async (): Promise<void> => {
       out[name] = await measureEngine(engine)
 
       console.log(
-        `${name} complete in ${((now() - started) / 1000).toFixed(1)}s`,
+        `${name} complete in ${((now() - started) / 1000).toFixed(1)}s`
       )
     })
 
@@ -1149,7 +1152,7 @@ const main = async (): Promise<void> => {
 
     writeFileSync(
       path.resolve(root, OUT),
-      `${JSON.stringify(out, nullValue, 2)}\n`,
+      `${JSON.stringify(out, nullValue, 2)}\n`
     )
 
     console.log(`wrote ${OUT}`)

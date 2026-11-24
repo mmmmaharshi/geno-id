@@ -1,15 +1,12 @@
 /// <reference types="node" />
 
-import type { V8Field, V8Layout } from "../../dist/algo.js"
-
-import { andBits, shiftRightBits } from "../shared/bitwise.ts"
-
 import assert from "node:assert/strict"
-
 import path from "node:path"
-
-import { pathToFileURL } from "node:url"
 import { test } from "node:test"
+import { pathToFileURL } from "node:url"
+
+import type { V8Field, V8Layout } from "../../dist/algo.js"
+import { andBits, shiftRightBits } from "../shared/bitwise.ts"
 
 interface ReadonlyV8Field {
   readonly name: string
@@ -74,14 +71,14 @@ const {
     l: ReadonlyV8Layout,
     a: Readonly<Uint8Array>,
     b: Readonly<Uint8Array>,
-    fs: number,
+    fs: number
   ) => Uint8Array
 
   copyField: (dst: Uint8Array, src: Uint8Array, field: ReadonlyV8Field) => void
 
   genStructuredParent: (
     l: ReadonlyV8Layout,
-    mask: readonly number[],
+    mask: readonly number[]
   ) => Uint8Array
 
   repairConstraints: (l: ReadonlyV8Layout, b: Readonly<Uint8Array>) => number
@@ -162,9 +159,9 @@ void test("composeStructured inherits each structured field from exactly one par
     { length: 3, name: "bits", start: 2, type: "random" },
   ])
 
-  const source = new Uint8Array(16).fill(0xFF)
+  const source = new Uint8Array(16).fill(0xff)
 
-  const target = new Uint8Array(16).fill(0xFF)
+  const target = new Uint8Array(16).fill(0xff)
 
   copyField(target, source, unaligned)
 
@@ -236,19 +233,19 @@ void test("getFieldValue reads the leading field bits as an exact BigInt", () =>
 
   const b = uuidToBytes("1a2b3c4d-0000-8000-8000-000000000000")
 
-  assert.equal(getFieldValue(b, layout.fields[0]), 0x1A_2Bn)
+  assert.equal(getFieldValue(b, layout.fields[0]), 0x1a_2bn)
 })
 
 void test("uuidToBytes decodes the canonical UUID byte order", () => {
   const b = uuidToBytes("1a2b3c4d-0000-8000-8000-000000000000")
 
-  assert.equal(b[0], 0x1A)
+  assert.equal(b[0], 0x1a)
 
-  assert.equal(b[1], 0x2B)
+  assert.equal(b[1], 0x2b)
 
-  assert.equal(b[2], 0x3C)
+  assert.equal(b[2], 0x3c)
 
-  assert.equal(b[3], 0x4D)
+  assert.equal(b[3], 0x4d)
 
   assert.equal(b.length, 16)
 })

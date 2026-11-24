@@ -1,14 +1,12 @@
 /// <reference types="node" />
 
-import type { CIBenchmarkResult, EnvInfo } from "./ci-result.ts"
-
-import { envLabel, renderConsolidated } from "./ci-consolidate.ts"
-
 import assert from "node:assert/strict"
+import { test } from "node:test"
 
 import { fromPartial } from "@total-typescript/shoehorn"
 
-import { test } from "node:test"
+import { envLabel, renderConsolidated } from "./ci-consolidate.ts"
+import type { CIBenchmarkResult, EnvInfo } from "./ci-result.ts"
 
 const nullValue: null = JSON.parse("null") as null
 
@@ -32,7 +30,7 @@ const makeResult = (env: Partial<EnvInfo>, ops: number): CIBenchmarkResult => {
 
       totalMemoryMB: 16_000,
     },
-    env,
+    env
   )
 
   return {
@@ -58,45 +56,45 @@ const makeResult = (env: Partial<EnvInfo>, ops: number): CIBenchmarkResult => {
 void test("envLabel labels bun environments by OS", () => {
   assert.equal(
     envLabel(fromPartial({ bun: "1", platform: "linux", runtime: "bun" })),
-    "Ubuntu (Bun)",
+    "Ubuntu (Bun)"
   )
 
   assert.equal(
     envLabel(fromPartial({ bun: "1", platform: "darwin", runtime: "bun" })),
-    "macOS (Bun)",
+    "macOS (Bun)"
   )
 
   assert.equal(
     envLabel(fromPartial({ bun: "1", platform: "win32", runtime: "bun" })),
-    "Windows (Bun)",
+    "Windows (Bun)"
   )
 })
 
 void test("envLabel labels deno environments distinctly", () => {
   assert.equal(
     envLabel(
-      fromPartial({ node: "deno-2.9.3", platform: "linux", runtime: "deno" }),
+      fromPartial({ node: "deno-2.9.3", platform: "linux", runtime: "deno" })
     ),
 
-    "Deno 2.9.3 (Linux)",
+    "Deno 2.9.3 (Linux)"
   )
 
   assert.equal(
     envLabel(
-      fromPartial({ node: "deno-2.9.3", platform: "darwin", runtime: "deno" }),
+      fromPartial({ node: "deno-2.9.3", platform: "darwin", runtime: "deno" })
     ),
 
-    "Deno 2.9.3 (macOS)",
+    "Deno 2.9.3 (macOS)"
   )
 
   // Deno reports `windows` (not `win32` like Node/Bun) on Windows.
 
   assert.equal(
     envLabel(
-      fromPartial({ node: "deno-2.9.3", platform: "windows", runtime: "deno" }),
+      fromPartial({ node: "deno-2.9.3", platform: "windows", runtime: "deno" })
     ),
 
-    "Deno 2.9.3 (Windows)",
+    "Deno 2.9.3 (Windows)"
   )
 })
 
@@ -104,19 +102,19 @@ void test("envLabel labels node environments by real OS, not hardcoded Linux", (
   assert.equal(
     envLabel(fromPartial({ node: "22", platform: "linux", runtime: "node" })),
 
-    "Node 22 (Linux)",
+    "Node 22 (Linux)"
   )
 
   assert.equal(
     envLabel(fromPartial({ node: "22", platform: "darwin", runtime: "node" })),
 
-    "Node 22 (macOS)",
+    "Node 22 (macOS)"
   )
 
   assert.equal(
     envLabel(fromPartial({ node: "22", platform: "win32", runtime: "node" })),
 
-    "Node 22 (Windows)",
+    "Node 22 (Windows)"
   )
 })
 
@@ -124,7 +122,7 @@ void test("renderConsolidated renders a header and one column per environment", 
   const md = renderConsolidated([
     makeResult(
       { bun: nullValue, node: "22", platform: "linux", runtime: "node" },
-      12_500_000,
+      12_500_000
     ),
 
     makeResult({ bun: "1", platform: "linux", runtime: "bun" }, 11_192_453),
@@ -147,12 +145,12 @@ void test("renderConsolidated orders columns bun-first then node by version", ()
   const md = renderConsolidated([
     makeResult(
       { bun: nullValue, node: "23", platform: "linux", runtime: "node" },
-      1,
+      1
     ),
 
     makeResult(
       { bun: nullValue, node: "20", platform: "linux", runtime: "node" },
-      1,
+      1
     ),
 
     makeResult({ bun: "1", platform: "darwin", runtime: "bun" }, 1),
@@ -179,17 +177,17 @@ void test("renderConsolidated orders node columns by OS within a version", () =>
   const md = renderConsolidated([
     makeResult(
       { bun: nullValue, node: "22", platform: "win32", runtime: "node" },
-      1,
+      1
     ),
 
     makeResult(
       { bun: nullValue, node: "22", platform: "darwin", runtime: "node" },
-      1,
+      1
     ),
 
     makeResult(
       { bun: nullValue, node: "22", platform: "linux", runtime: "node" },
-      1,
+      1
     ),
   ])
 

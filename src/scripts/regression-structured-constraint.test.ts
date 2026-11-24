@@ -1,12 +1,9 @@
 /// <reference types="node" />
 
 import assert from "node:assert/strict"
-
 import path from "node:path"
-
-import { pathToFileURL } from "node:url"
-
 import { test } from "node:test"
+import { pathToFileURL } from "node:url"
 
 // Regression test for the single-parent structured-field population bug.
 
@@ -102,7 +99,7 @@ void test("structured UUIDs never emit a field outside its allowed set (single-p
           assert.ok(
             set.includes(fields[name]),
 
-            `field ${name}=${fields[name]} not in allowed ${JSON.stringify(set)}`,
+            `field ${name}=${fields[name]} not in allowed ${JSON.stringify(set)}`
           )
         }
       }

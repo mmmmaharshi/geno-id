@@ -1,18 +1,12 @@
 import { execFile, spawnSync } from "node:child_process"
-
 import fs from "node:fs"
-
-import { mapPool } from "./shared/pool.ts"
-
-import { need } from "../shared/need.ts"
-
 import os from "node:os"
-
 import path from "node:path"
-
 import { promisify } from "node:util"
 
+import { need } from "../shared/need.ts"
 import { runExport } from "./dieharder-common.ts"
+import { mapPool } from "./shared/pool.ts"
 
 const execFileAsync = promisify(execFile)
 
@@ -21,7 +15,7 @@ const execFileText = async (
 
   args: readonly string[],
 
-  options: Readonly<{ encoding: "utf8"; maxBuffer: number }>,
+  options: Readonly<{ encoding: "utf8"; maxBuffer: number }>
 ): Promise<string> => {
   const result = await execFileAsync(file, args, options)
 
@@ -124,7 +118,7 @@ const checkDieharder = (): boolean => {
     console.error("dieharder not found. Install it on the host, then re-run:")
 
     console.error(
-      "  macOS:  build from source (removed from Homebrew) — see sources/reproducibility.md §3",
+      "  macOS:  build from source (removed from Homebrew) — see sources/reproducibility.md §3"
     )
 
     console.error("  Linux:  sudo apt-get install -y dieharder")
@@ -154,7 +148,7 @@ const ensureSamples = async (): Promise<void> => {
   }
 
   console.log(
-    `Exporting ${missingTrials.length} trial(s) (${(TARGET_BITS / 1e6).toFixed(0)}M-bit samples each)...`,
+    `Exporting ${missingTrials.length} trial(s) (${(TARGET_BITS / 1e6).toFixed(0)}M-bit samples each)...`
   )
 
   // Trial exports are independent (distinct `.trial<N>` files) — run in parallel.
@@ -162,7 +156,7 @@ const ensureSamples = async (): Promise<void> => {
   await Promise.all(
     missingTrials.map(async (k): Promise<void> => {
       await runExport(TARGET_BITS, k)
-    }),
+    })
   )
 }
 
@@ -222,7 +216,7 @@ const runOneTest = async (
 
   t: number,
 
-  k: number,
+  k: number
 ): Promise<{ t: number; rows: Result[] }> => {
   const file = trialFileName(gen, k)
 
@@ -232,7 +226,7 @@ const runOneTest = async (
 
       ["-d", String(t), "-g", "201", "-f", file],
 
-      { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 },
+      { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 }
     )
 
     const parsed = rowsFromOutput(stdout)
@@ -253,7 +247,9 @@ const runOneTest = async (
 
 // Modal count and any FAILED trials so the result stays transparent.
 
-const aggregate = (assessments: string[]): {
+const aggregate = (
+  assessments: string[]
+): {
   assess: string
   detail: string
 } => {
@@ -302,7 +298,7 @@ const main = async (): Promise<void> => {
   console.log(`Curated dieharder tests: ${CURATED_TESTS.join(", ")}`)
 
   console.log(
-    `Running dieharder curated subset (${(TARGET_BITS / 1e6).toFixed(0)}M bits/sample, ${TRIALS} trials)...`,
+    `Running dieharder curated subset (${(TARGET_BITS / 1e6).toFixed(0)}M bits/sample, ${TRIALS} trials)...`
   )
 
   const outPath = path.resolve(root, "results", "dieharder-results.md")
@@ -350,7 +346,7 @@ const main = async (): Promise<void> => {
 
           return result
         },
-        MAX_CONCURRENCY,
+        MAX_CONCURRENCY
       )
 
       // Group the completed rows by test id, preserving the per-trial ordering.
@@ -403,7 +399,7 @@ const main = async (): Promise<void> => {
         }
       }
     },
-    1,
+    1
   )
 
   fs.mkdirSync(path.dirname(outPath), { recursive: true })
@@ -418,18 +414,18 @@ const main = async (): Promise<void> => {
 
   console.log(
     `\nSummary (modal across ${TRIALS} trials): ${passed} PASSED, ${weak} WEAK, ${failed} FAILED, ${errors} ERROR/SKIPPED (${total} sub-tests). ` +
-      `${persistentFail} sub-test(s) FAILED in the majority of trials.`,
+      `${persistentFail} sub-test(s) FAILED in the majority of trials.`
   )
 
   if (persistentFail > 0) {
     console.error(
-      `\n${persistentFail} sub-test(s) persistently FAILED across trials — consider dropping them from the curated list (community-standard for over-strict dieharder tests).`,
+      `\n${persistentFail} sub-test(s) persistently FAILED across trials — consider dropping them from the curated list (community-standard for over-strict dieharder tests).`
     )
 
     process.exitCode = 1
   } else if (errors > 0) {
     console.error(
-      `\n${errors} generator(s)/test(s) produced no dieharder results — check the dieharder install.`,
+      `\n${errors} generator(s)/test(s) produced no dieharder results — check the dieharder install.`
     )
 
     process.exitCode = 1

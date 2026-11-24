@@ -1,3 +1,6 @@
+import os from "node:os"
+import path from "node:path"
+import { pathToFileURL } from "node:url"
 import {
   Worker,
   isMainThread,
@@ -6,17 +9,9 @@ import {
 } from "node:worker_threads"
 
 import type { V8Layout } from "../../dist/algo.js"
-
 import { need } from "../shared/need.ts"
-import { nullValue } from "./shared/runtime-values.ts"
-
-import os from "node:os"
-
-import path from "node:path"
-
-import { pathToFileURL } from "node:url"
-
 import { waitForWorkerMessage } from "./shared/pool.ts"
+import { nullValue } from "./shared/runtime-values.ts"
 
 // Task B: concurrent / multi-process generation simulation.
 
@@ -63,7 +58,7 @@ const algo = (await import(
 
   readStructured: (
     uuid: string,
-    layout: Readonly<V8Layout>,
+    layout: Readonly<V8Layout>
   ) => Record<string, number>
 }
 
@@ -189,7 +184,7 @@ export const runConcurrent = async (
     workers?: number
 
     perWorker?: number
-  }> = {},
+  }> = {}
 ): Promise<ConcurrentResult> => {
   const mode = opts.mode ?? "genoid"
 
@@ -208,7 +203,7 @@ export const runConcurrent = async (
       const message = await waitForWorkerMessage<WorkerMsg>(w)
 
       return message
-    }),
+    })
   )
 
   const total = workers * perWorker
@@ -245,10 +240,10 @@ if (!isMainThread) {
   workerRun()
 } else if (import.meta.main) {
   const mode =
-    process.env.CONCURRENT_MODE as WorkerData["mode"] | undefined ?? "genoid"
+    (process.env.CONCURRENT_MODE as WorkerData["mode"] | undefined) ?? "genoid"
 
   const workers = Number(
-    process.env.CONCURRENT_WORKERS ?? Math.max(2, os.cpus().length),
+    process.env.CONCURRENT_WORKERS ?? Math.max(2, os.cpus().length)
   )
 
   const perWorker = Number(process.env.CONCURRENT_PER_WORKER ?? 200_000)

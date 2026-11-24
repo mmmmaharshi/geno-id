@@ -2,6 +2,13 @@
 
 /// <reference lib="es2023" />
 
+import assert from "node:assert/strict"
+import path from "node:path"
+import { test } from "node:test"
+import { pathToFileURL } from "node:url"
+
+import { fromAny } from "@total-typescript/shoehorn"
+
 import {
   DBKEY_LAYOUT,
   EVENTSOURCING_LAYOUT,
@@ -15,20 +22,8 @@ import {
   readStructured,
   uuidToBytes,
 } from "../../dist/index.js"
-
 import { andBits, shiftRightBits } from "../shared/bitwise.ts"
-
-import assert from "node:assert/strict"
-
-import { fromAny } from "@total-typescript/shoehorn"
-
 import { need } from "../shared/need.ts"
-
-import path from "node:path"
-
-import { pathToFileURL } from "node:url"
-
-import { test } from "node:test"
 
 type Layout = ReturnType<typeof completeLayout>
 
@@ -63,15 +58,15 @@ void test("genGenoID emits a valid RFC 9562 v8 UUID", () => {
   const b = uuidToBytes(uuid)
 
   assert.equal(
-    andBits(shiftRightBits(b[6], 4), 0xF),
+    andBits(shiftRightBits(b[6], 4), 0xf),
     8,
-    "version nibble must be 8",
+    "version nibble must be 8"
   )
 
   assert.equal(
     andBits(shiftRightBits(b[8], 6), 0b10),
     0b10,
-    "variant bits must be 10xx",
+    "variant bits must be 10xx"
   )
 })
 
@@ -157,7 +152,7 @@ void test("genStructuredGenoID is v8 and round-trips through readStructured", ()
   assert.deepEqual(
     Object.keys(got).toSorted(),
 
-    layout.fields.map((f) => f.name).toSorted(),
+    layout.fields.map((f) => f.name).toSorted()
   )
 
   assert.ok([1, 2, 3, 4, 5].includes(got.shard))
@@ -176,17 +171,17 @@ void test("readStructured reads full >32-bit fields (truncation regression guard
 
   bytes[1] = 0x00
 
-  bytes[2] = 0xAB
+  bytes[2] = 0xab
 
-  bytes[3] = 0xCD
+  bytes[3] = 0xcd
 
-  bytes[4] = 0xEF
+  bytes[4] = 0xef
 
   const got = readStructured(bytesToUuid(bytes), layout)
 
   // 0x0100ABCDEF = 4306226671; a 32-bit truncation would yield 0x00ABCDEF.
 
-  assert.equal(got.big, 0x01_00_AB_CD_EF)
+  assert.equal(got.big, 0x01_00_ab_cd_ef)
 })
 
 void test("compileDatabaseLayout places locality fields first for offset-free schemas", () => {
@@ -229,7 +224,7 @@ void test("compileDatabaseLayout places locality fields first for offset-free sc
   const result = compileDatabaseLayout(input)
 
   const byName = new Map(
-    result.layout.fields.map((field) => [field.name, field]),
+    result.layout.fields.map((field) => [field.name, field])
   )
 
   assert.deepEqual(compileDatabaseLayout(input), result)
@@ -275,7 +270,7 @@ void test("compileDatabaseLayout keeps explicit offsets hard while placing remai
   })
 
   const byName = new Map(
-    result.layout.fields.map((field) => [field.name, field]),
+    result.layout.fields.map((field) => [field.name, field])
   )
 
   assert.equal(need(byName.get("tenant")).start, 0)
@@ -328,7 +323,7 @@ void test("compileDatabaseLayout rejects an empty workload field list", () => {
   assert.throws(
     () => compileDatabaseLayout(input),
 
-    { code: "invalid-workload" },
+    { code: "invalid-workload" }
   )
 })
 
@@ -487,7 +482,7 @@ void test("compileDatabaseLayout rejects reserved schema bits with stable field 
   assert.throws(
     () => compileDatabaseLayout(input),
 
-    { code: "invalid-schema", field: "schema.fields[0]" },
+    { code: "invalid-schema", field: "schema.fields[0]" }
   )
 })
 
@@ -510,7 +505,7 @@ void test("compileDatabaseLayout rejects unknown workload fields with stable fie
   assert.throws(
     () => compileDatabaseLayout(input),
 
-    { code: "unknown-workload-field", field: "missing" },
+    { code: "unknown-workload-field", field: "missing" }
   )
 })
 
@@ -538,7 +533,7 @@ void test("compileDatabaseLayout rejects overlapping schema fields with stable e
   assert.throws(
     () => compileDatabaseLayout(input),
 
-    { code: "invalid-schema", field: "schema.fields[1]" },
+    { code: "invalid-schema", field: "schema.fields[1]" }
   )
 })
 
@@ -559,7 +554,7 @@ void test("compileDatabaseLayout requires workload weights", () => {
   assert.throws(
     () => compileDatabaseLayout(input),
 
-    { code: "invalid-workload", field: "workload.readWeight" },
+    { code: "invalid-workload", field: "workload.readWeight" }
   )
 })
 
@@ -635,7 +630,7 @@ void test("named generation modes preserve public field semantics", () => {
       for (let index = 0; index < 32; index += 1) {
         const values = readStructured(
           genStructuredGenoID(result),
-          result.layout,
+          result.layout
         )
 
         assert.equal(values.marker, 5)
@@ -735,7 +730,7 @@ void test("public barrel does NOT leak research/internal symbols", async () => {
 
       undefinedValue,
 
-      `public barrel must not export ${name}`,
+      `public barrel must not export ${name}`
     )
   }
 })

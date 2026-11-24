@@ -1,18 +1,14 @@
-/// <reference types="node" />
-import { andBits, shiftRightUnsignedBits } from "../shared/bitwise.ts"
-
-import type { V8Field } from "../../dist/algo.js"
-
 import assert from "node:assert/strict"
+import path from "node:path"
+import { test } from "node:test"
+import { pathToFileURL } from "node:url"
 
 import { fromAny } from "@total-typescript/shoehorn"
 
+import type { V8Field } from "../../dist/algo.js"
+/// <reference types="node" />
+import { andBits, shiftRightUnsignedBits } from "../shared/bitwise.ts"
 import { need } from "../shared/need.ts"
-
-import path from "node:path"
-
-import { pathToFileURL } from "node:url"
-import { test } from "node:test"
 
 const nullValue: null = JSON.parse("null") as null
 
@@ -55,7 +51,7 @@ const algo: unknown = await import(
 const algoTyped = algo as {
   compileLayout: (
     l: ReadonlyV8Layout,
-    poolSize?: number,
+    poolSize?: number
   ) => { source: string; fn: () => string }
 
   getFieldValue: (b: Readonly<Uint8Array>, f: ReadonlyV8Field) => bigint
@@ -108,7 +104,7 @@ void test("compileLayout produces valid UUID v8 format for all layouts", () => {
     assert.equal(
       uuid.length,
       36,
-      `${name}: expected 36-char UUID, got "${uuid}"`,
+      `${name}: expected 36-char UUID, got "${uuid}"`
     )
 
     assert.match(
@@ -116,7 +112,7 @@ void test("compileLayout produces valid UUID v8 format for all layouts", () => {
 
       /^[0-9a-f]{8}-[0-9a-f]{4}-8[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u,
 
-      `${name}: invalid v8 format: "${uuid}"`,
+      `${name}: invalid v8 format: "${uuid}"`
     )
   }
 })
@@ -153,7 +149,7 @@ void test("compileLayout dbkey: shard constraint [1..5] enforced", () => {
 
     assert.ok(
       shard >= 1 && shard <= 5,
-      `shard ${shard} out of [1,5] for "${uuid}"`,
+      `shard ${shard} out of [1,5] for "${uuid}"`
     )
   }
 })
@@ -162,11 +158,11 @@ void test("compileLayout multitenant: tenant [1..8] + region [1..4] enforced", (
   const compiled = compileLayout(MULTITENANT_LAYOUT)
 
   const tField = need(
-    MULTITENANT_LAYOUT.fields.find((f) => f.name === "tenant"),
+    MULTITENANT_LAYOUT.fields.find((f) => f.name === "tenant")
   )
 
   const rField = need(
-    MULTITENANT_LAYOUT.fields.find((f) => f.name === "region"),
+    MULTITENANT_LAYOUT.fields.find((f) => f.name === "region")
   )
 
   for (let i = 0; i < 200; i += 1) {
@@ -180,12 +176,12 @@ void test("compileLayout multitenant: tenant [1..8] + region [1..4] enforced", (
 
     assert.ok(
       tenant >= 1 && tenant <= 8,
-      `tenant ${tenant} out of [1,8] for "${uuid}"`,
+      `tenant ${tenant} out of [1,8] for "${uuid}"`
     )
 
     assert.ok(
       region >= 1 && region <= 4,
-      `region ${region} out of [1,4] for "${uuid}"`,
+      `region ${region} out of [1,4] for "${uuid}"`
     )
   }
 })
@@ -194,7 +190,7 @@ void test("compileLayout eventsourcing: stream is non-zero", () => {
   const compiled = compileLayout(EVENTSOURCING_LAYOUT)
 
   const sField = need(
-    EVENTSOURCING_LAYOUT.fields.find((f) => f.name === "stream"),
+    EVENTSOURCING_LAYOUT.fields.find((f) => f.name === "stream")
   )
 
   for (let i = 0; i < 100; i += 1) {
@@ -223,9 +219,9 @@ void test("compileLayout dbkey: counter monotonicity within generation batch", (
     const ctr = Number(getFieldValue(b, ctrField))
 
     assert.ok(
-      ctr > prev || (ctr === 0 && prev === 0xFF_FF),
+      ctr > prev || (ctr === 0 && prev === 0xff_ff),
 
-      `counter regressed: ${prev} → ${ctr} at call ${i}`,
+      `counter regressed: ${prev} → ${ctr} at call ${i}`
     )
 
     prev = ctr
@@ -238,11 +234,11 @@ void test("compileLayout applies deterministic CSPRNG bytes to every declared fi
   const shardField = need(DBKEY_LAYOUT.fields.find((f) => f.name === "shard"))
 
   const counterField = need(
-    DBKEY_LAYOUT.fields.find((f) => f.name === "counter"),
+    DBKEY_LAYOUT.fields.find((f) => f.name === "counter")
   )
 
   const timestampField = need(
-    DBKEY_LAYOUT.fields.find((f) => f.name === "timestamp"),
+    DBKEY_LAYOUT.fields.find((f) => f.name === "timestamp")
   )
 
   const fixedTime = 1_700_000_000_000
@@ -275,13 +271,13 @@ void test("compileLayout applies deterministic CSPRNG bytes to every declared fi
     const allowed = [1, 2, 3, 4, 5]
 
     const rawShard =
-      andBits(deterministicBytes[6], 0x0F) * 16 +
-      shiftRightUnsignedBits(andBits(deterministicBytes[7], 0xF0), 4)
+      andBits(deterministicBytes[6], 0x0f) * 16 +
+      shiftRightUnsignedBits(andBits(deterministicBytes[7], 0xf0), 4)
 
     assert.equal(shard, allowed[rawShard % allowed.length])
 
     const rawCounter =
-      andBits(deterministicBytes[8], 0x3F) * 1024 +
+      andBits(deterministicBytes[8], 0x3f) * 1024 +
       deterministicBytes[9] * 4 +
       shiftRightUnsignedBits(deterministicBytes[10], 6)
 
@@ -302,26 +298,26 @@ void test("compileLayout source exports valid JS", () => {
     assert.ok(
       compiled.source.includes("cr.getRandomValues"),
 
-      `${name}: missing getRandomValues call in source`,
+      `${name}: missing getRandomValues call in source`
     )
 
     assert.ok(
       compiled.source.includes("b[6]=(b[6]&0x0f)|0x80"),
 
-      `${name}: missing version nibble in source`,
+      `${name}: missing version nibble in source`
     )
 
     assert.ok(
       compiled.source.length < 20_000,
 
-      `${name}: source too long (${compiled.source.length})`,
+      `${name}: source too long (${compiled.source.length})`
     )
   }
 
   assert.match(
     compileLayout(DBKEY_LAYOUT, Number.NaN).fn(),
 
-    /^[0-9a-f]{8}-[0-9a-f]{4}-8[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u,
+    /^[0-9a-f]{8}-[0-9a-f]{4}-8[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u
   )
 
   assert.throws(() => compileLayout(DBKEY_LAYOUT, 1.5), RangeError)
@@ -333,7 +329,7 @@ void test("configureRandom rejects a non-function CSPRNG instead of emitting IDs
       configureRandom(fromAny<(buf: Uint8Array) => void, unknown>(123))
     },
 
-    TypeError,
+    TypeError
   )
 })
 
@@ -355,7 +351,7 @@ void test("compileLayout deterministic: same seed produces same output", () => {
   const idsA: string[] = []
 
   try {
-    configureRandom(createSeededRandom(0xDE_AD, 0xBE_EF))
+    configureRandom(createSeededRandom(0xde_ad, 0xbe_ef))
 
     for (let i = 0; i < 100; i += 1) {
       idsA.push(runA())
@@ -364,7 +360,7 @@ void test("compileLayout deterministic: same seed produces same output", () => {
     for (const uuid of idsA) {
       assert.match(
         uuid,
-        /^[0-9a-f]{8}-[0-9a-f]{4}-8[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u,
+        /^[0-9a-f]{8}-[0-9a-f]{4}-8[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u
       )
 
       const bytes = uuidToBytes(uuid)
@@ -374,7 +370,7 @@ void test("compileLayout deterministic: same seed produces same output", () => {
       assert.ok(shard >= 1 && shard <= 5, `shard ${shard} out of range`)
     }
 
-    configureRandom(createSeededRandom(0xDE_AD, 0xBE_EF))
+    configureRandom(createSeededRandom(0xde_ad, 0xbe_ef))
 
     for (let i = 0; i < 100; i += 1) {
       const bytesA = uuidToBytes(idsA[i])
@@ -390,24 +386,24 @@ void test("compileLayout deterministic: same seed produces same output", () => {
       assert.ok(
         Math.abs(timestampA - timestampB) <= wallMs + 1000,
 
-        `timestamp diff ${Math.abs(timestampA - timestampB)}ms > elapsed ${wallMs}ms + 1000ms`,
+        `timestamp diff ${Math.abs(timestampA - timestampB)}ms > elapsed ${wallMs}ms + 1000ms`
       )
 
       assert.equal(
         Number(getFieldValue(bytesA, shardField)),
-        Number(getFieldValue(bytesB, shardField)),
+        Number(getFieldValue(bytesB, shardField))
       )
 
       assert.equal(
         Number(getFieldValue(bytesA, counterField)),
-        Number(getFieldValue(bytesB, counterField)),
+        Number(getFieldValue(bytesB, counterField))
       )
 
       for (let byte = 6; byte < 16; byte += 1) {
         if (byte === 6) {
-          assert.equal(andBits(bytesA[byte], 0x0F), andBits(bytesB[byte], 0x0F))
+          assert.equal(andBits(bytesA[byte], 0x0f), andBits(bytesB[byte], 0x0f))
         } else if (byte === 8) {
-          assert.equal(andBits(bytesA[byte], 0x3F), andBits(bytesB[byte], 0x3F))
+          assert.equal(andBits(bytesA[byte], 0x3f), andBits(bytesB[byte], 0x3f))
         } else {
           assert.equal(bytesA[byte], bytesB[byte])
         }

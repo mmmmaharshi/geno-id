@@ -1,11 +1,8 @@
 /// <reference types="node" />
 
 import assert from "node:assert/strict"
-
-import path from "node:path"
-
 import { readFileSync } from "node:fs"
-
+import path from "node:path"
 import test from "node:test"
 
 const root = path.resolve(import.meta.dirname, "..", "..")
@@ -118,7 +115,7 @@ void test("cluster artifact records host scale, shard counts, and stated limits"
   assert.ok(a.deployment.limits.length >= 3)
 
   assert.ok(
-    a.deployment.limits.some((s) => /not production-scale evidence/u.test(s)),
+    a.deployment.limits.some((s) => /not production-scale evidence/u.test(s))
   )
 })
 
@@ -142,7 +139,7 @@ void test("cluster scan comparison uses the frozen single-index artifact at the 
   assert.equal(
     a.derived.shard_major_scan_ratio_vs_single_index,
 
-    round2(embeddedMean / a.scan.shardMajor.meanMs),
+    round2(embeddedMean / a.scan.shardMajor.meanMs)
   )
 
   assert.ok(a.scan.shardMajor.meanMs > 0)
@@ -151,7 +148,7 @@ void test("cluster scan comparison uses the frozen single-index artifact at the 
 
   assert.equal(
     a.scan.shardMajor.samples,
-    a.deployment.shardCountBefore * a.deployment.trials,
+    a.deployment.shardCountBefore * a.deployment.trials
   )
 })
 
@@ -183,7 +180,7 @@ void test("cluster reshard ratios match the archived read and migration measurem
   assert.equal(
     a.derived.dual_read_overhead_ratio,
 
-    round2(dualMean / singleMean),
+    round2(dualMean / singleMean)
   )
 
   const classified =
@@ -193,14 +190,14 @@ void test("cluster reshard ratios match the archived read and migration measurem
 
   assert.equal(
     a.reshard.dualRead.readsPerTrial,
-    a.reshard.singleRead.readsPerTrial,
+    a.reshard.singleRead.readsPerTrial
   )
 
   assert.equal(classified, a.reshard.dualRead.readsPerTrial)
 
   assert.equal(
     a.derived.v2_resolved_fraction,
-    round2(a.reshard.dualRead.v2Resolved / classified),
+    round2(a.reshard.dualRead.v2Resolved / classified)
   )
 })
 

@@ -5,7 +5,6 @@
 // This turns that into a red build instead of a stale sentence.
 
 import fs from "node:fs"
-
 import path from "node:path"
 
 const root = path.resolve(import.meta.dirname, "..", "..")

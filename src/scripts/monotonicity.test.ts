@@ -1,15 +1,11 @@
 /// <reference types="node" />
 import assert from "node:assert/strict"
-
-import { need } from "../shared/need.ts"
-
 import path from "node:path"
-
+import { test } from "node:test"
 import { pathToFileURL } from "node:url"
 
 import { shiftRightBits } from "../shared/bitwise.ts"
-
-import { test } from "node:test"
+import { need } from "../shared/need.ts"
 
 // RFC 9562 §6.2 monotonicity suite. Paper §3.6 promises: the
 
@@ -62,12 +58,12 @@ const {
 
   compileLayout: (
     l: unknown,
-    poolSize?: number,
+    poolSize?: number
   ) => { source: string; fn: () => string }
 
   completeLayout: (
     name: string,
-    core: unknown[],
+    core: unknown[]
   ) => {
     name: string
     fields: {
@@ -160,16 +156,16 @@ void test("§6.2 compiled: backwards clock re-emits the previous tick with an in
           assert.equal(
             b.ts,
             T,
-            "backwards clock must clamp the timestamp to the last tick, not regress it",
+            "backwards clock must clamp the timestamp to the last tick, not regress it"
           )
 
           assert.ok(
             b.ctr > a.ctr,
-            `counter must increment within a tick: ${a.ctr} → ${b.ctr}`,
+            `counter must increment within a tick: ${a.ctr} → ${b.ctr}`
           )
-        },
+        }
       )
-    },
+    }
   )
 })
 
@@ -188,12 +184,12 @@ void test("§6.2 compiled: counter increments strictly within a single tick", ()
 
         assert.ok(
           ctr > prev,
-          `counter regressed at call ${i}: ${prev} → ${ctr}`,
+          `counter regressed at call ${i}: ${prev} → ${ctr}`
         )
 
         prev = ctr
       }
-    },
+    }
   )
 })
 
@@ -249,14 +245,14 @@ void test("§6.2 compiled: counter exhaustion freezes generation until the clock
           if (pair.ts === prev.ts) {
             assert.ok(
               pair.ctr > prev.ctr,
-              `counter regressed within tick ${prev.ts}: ${prev.ctr} → ${pair.ctr}`,
+              `counter regressed within tick ${prev.ts}: ${prev.ctr} → ${pair.ctr}`
             )
           } else {
             boundaries += 1
 
             assert.ok(
               pair.ts > prev.ts,
-              `timestamp regressed at boundary: ${prev.ts} → ${pair.ts}`,
+              `timestamp regressed at boundary: ${prev.ts} → ${pair.ts}`
             )
 
             // A tick-boundary reseed draws from the 2^(len-1) reseed
@@ -265,14 +261,14 @@ void test("§6.2 compiled: counter exhaustion freezes generation until the clock
 
             assert.ok(
               pair.ctr < 8,
-              `reseeded counter ${pair.ctr} not in [0,2^3) at tick boundary`,
+              `reseeded counter ${pair.ctr} not in [0,2^3) at tick boundary`
             )
           }
 
           assert.ok(
             pair.ts > prev.ts || (pair.ts === prev.ts && pair.ctr > prev.ctr),
 
-            `(timestamp, counter) pair regressed: ${JSON.stringify(prev)} → ${JSON.stringify(pair)}`,
+            `(timestamp, counter) pair regressed: ${JSON.stringify(prev)} → ${JSON.stringify(pair)}`
           )
         }
 
@@ -281,9 +277,9 @@ void test("§6.2 compiled: counter exhaustion freezes generation until the clock
 
       assert.ok(
         boundaries > 10,
-        `expected the freeze path to run across many ticks, saw ${boundaries}`,
+        `expected the freeze path to run across many ticks, saw ${boundaries}`
       )
-    },
+    }
   )
 })
 
@@ -330,16 +326,16 @@ void test("§6.2 production genStructuredGenoID: backwards clock cannot regress 
 
           assert.ok(
             b.ts >= a.ts,
-            `timestamp regressed under a backwards clock: ${a.ts} → ${b.ts}`,
+            `timestamp regressed under a backwards clock: ${a.ts} → ${b.ts}`
           )
 
           assert.ok(
             b.ctr > a.ctr,
-            `counter must increment within a tick: ${a.ctr} → ${b.ctr}`,
+            `counter must increment within a tick: ${a.ctr} → ${b.ctr}`
           )
-        },
+        }
       )
-    },
+    }
   )
 })
 
@@ -369,16 +365,16 @@ void test("§6.2 single-parent: backwards clock clamps the timestamp and the cou
           assert.equal(
             b.ts,
             T,
-            "backwards clock must not regress the timestamp",
+            "backwards clock must not regress the timestamp"
           )
 
           assert.ok(
             b.ctr > a.ctr,
-            `counter must increment within a tick: ${a.ctr} → ${b.ctr}`,
+            `counter must increment within a tick: ${a.ctr} → ${b.ctr}`
           )
-        },
+        }
       )
-    },
+    }
   )
 })
 
@@ -397,12 +393,12 @@ void test("§6.2 single-parent: counter increments across pool refill boundaries
 
         assert.ok(
           ctr > prev,
-          `counter regressed at call ${i} (pool size 1024, refill boundary at ${Math.floor(i / 1024)}): ${prev} → ${ctr}`,
+          `counter regressed at call ${i} (pool size 1024, refill boundary at ${Math.floor(i / 1024)}): ${prev} → ${ctr}`
         )
 
         prev = ctr
       }
-    },
+    }
   )
 })
 
@@ -421,7 +417,7 @@ void test("§6.2 genStructuredParent: timestamp field clamps to the last tick on
     () => T,
     () => {
       const a = Number(
-        getFieldValue(genStructuredParent(DBKEY_LAYOUT, [0]), tsField),
+        getFieldValue(genStructuredParent(DBKEY_LAYOUT, [0]), tsField)
       )
 
       assert.equal(a, T)
@@ -430,16 +426,16 @@ void test("§6.2 genStructuredParent: timestamp field clamps to the last tick on
         () => T - 100_000,
         () => {
           const b = Number(
-            getFieldValue(genStructuredParent(DBKEY_LAYOUT, [0]), tsField),
+            getFieldValue(genStructuredParent(DBKEY_LAYOUT, [0]), tsField)
           )
 
           assert.equal(
             b,
             T,
-            "backwards clock must not regress the structured timestamp field",
+            "backwards clock must not regress the structured timestamp field"
           )
-        },
+        }
       )
-    },
+    }
   )
 })

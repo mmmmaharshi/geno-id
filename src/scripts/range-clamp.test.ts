@@ -1,15 +1,11 @@
 /// <reference types="node" />
 import assert from "node:assert/strict"
-
-import { mulberry32 } from "./shared/cli-utils.ts"
-
-import { need } from "../shared/need.ts"
-
 import path from "node:path"
-
+import { test } from "node:test"
 import { pathToFileURL } from "node:url"
 
-import { test } from "node:test"
+import { need } from "../shared/need.ts"
+import { mulberry32 } from "./shared/cli-utils.ts"
 
 // Range-clamp endpoint-accumulation bound (§4.3): pins the closed form and its empirical match on the production path.
 
@@ -42,7 +38,7 @@ const {
 
   completeLayout: (
     name: string,
-    core: unknown[],
+    core: unknown[]
   ) => {
     name: string
     fields: {
@@ -61,7 +57,7 @@ const {
   rangeClampMass: (
     ell: number,
     min: number,
-    max: number,
+    max: number
   ) => { pMin: number; pMax: number; pInterior: number; pinned: number }
 
   configureRandom: (fn: ((buf: Uint8Array) => void) | null) => void
@@ -77,7 +73,7 @@ const {
 
 // Mulberry32 is the repo's proven uniform seeded stream.
 
-const seededUniformFill = (seed: number): (buf: Uint8Array) => void => {
+const seededUniformFill = (seed: number): ((buf: Uint8Array) => void) => {
   const rand = mulberry32(seed)
 
   return (buf: Uint8Array): void => {
@@ -113,7 +109,7 @@ void test("range clamp: masses partition the raw space", () => {
 
     assert.ok(
       Math.abs(total - 1) < 1e-12,
-      `ell=${ell} [${min},${max}] masses sum to ${total}`,
+      `ell=${ell} [${min},${max}] masses sum to ${total}`
     )
   }
 })
@@ -172,7 +168,7 @@ void test(
 
     let atMax = 0
 
-    configureRandom(seededUniformFill(0x9E_37_79_B9))
+    configureRandom(seededUniformFill(0x9e_37_79_b9))
 
     try {
       for (let i = 0; i < N; i += 1) {
@@ -182,7 +178,7 @@ void test(
 
         assert.ok(
           v >= 10 && v <= 245,
-          `value ${v} outside the declared range [10, 245]`,
+          `value ${v} outside the declared range [10, 245]`
         )
 
         if (v === 10) {
@@ -204,13 +200,13 @@ void test(
     assert.ok(
       Math.abs(atMin / N - predicted.pMin) < 0.005,
 
-      `P(min) measured ${atMin / N} != stated ${predicted.pMin}`,
+      `P(min) measured ${atMin / N} != stated ${predicted.pMin}`
     )
 
     assert.ok(
       Math.abs(atMax / N - predicted.pMax) < 0.005,
 
-      `P(max) measured ${atMax / N} != stated ${predicted.pMax}`,
+      `P(max) measured ${atMax / N} != stated ${predicted.pMax}`
     )
-  },
+  }
 )

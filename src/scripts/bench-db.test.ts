@@ -12,11 +12,10 @@
 
 /// <reference types="node" />
 
-import { aggregateReps, shardRangeKeys } from "./bench-db.ts"
-
 import assert from "node:assert/strict"
-
 import { test } from "node:test"
+
+import { aggregateReps, shardRangeKeys } from "./bench-db.ts"
 
 void test("aggregateReps: exact 95% CI on a known sample (t(df=4)=2.776)", () => {
   // Sd = sqrt(10/4) ≈ 1.5811; margin = 2.776 × 1.5811 / sqrt(5) ≈ 1.963.
@@ -27,12 +26,12 @@ void test("aggregateReps: exact 95% CI on a known sample (t(df=4)=2.776)", () =>
 
   assert.ok(
     Math.abs(r.ci95[0] - 9.037) < 0.01,
-    `lo ${r.ci95[0]} must match t-based margin`,
+    `lo ${r.ci95[0]} must match t-based margin`
   )
 
   assert.ok(
     Math.abs(r.ci95[1] - 12.963) < 0.01,
-    `hi ${r.ci95[1]} must match t-based margin`,
+    `hi ${r.ci95[1]} must match t-based margin`
   )
 })
 

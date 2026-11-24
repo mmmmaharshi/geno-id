@@ -12,6 +12,13 @@
 
 /// <reference types="node" />
 
+import assert from "node:assert/strict"
+import path from "node:path"
+import { test } from "node:test"
+import { pathToFileURL } from "node:url"
+
+import type { V8Field } from "../../dist/algo.js"
+import { genUlidV8 as ulidV8, uuidToBytes } from "./baselines.ts"
 import {
   ARM_DDL,
   ARM_DEF,
@@ -20,18 +27,6 @@ import {
   benchSqlite,
   expressionIndexShardPredicate,
 } from "./bench-sqlite.ts"
-
-import { genUlidV8 as ulidV8, uuidToBytes } from "./baselines.ts"
-
-import type { V8Field } from "../../dist/algo.js"
-
-import assert from "node:assert/strict"
-
-import path from "node:path"
-
-import { pathToFileURL } from "node:url"
-
-import { test } from "node:test"
 
 interface ReadonlyV8Field {
   readonly name: string
@@ -80,8 +75,8 @@ interface SqliteDatabase {
 
   prepare: (sql: string) => { run: (...params: readonly unknown[]) => unknown }
 
-  query: <T = Record<string, unknown>,>(
-    sql: string,
+  query: <T = Record<string, unknown>>(
+    sql: string
   ) => {
     all: (...params: readonly unknown[]) => T[]
 
@@ -92,9 +87,7 @@ interface SqliteDatabase {
 }
 
 const { Database } = (await import("bun:sqlite")) as {
-  Database: new (
-    filename: string,
-  ) => SqliteDatabase
+  Database: new (filename: string) => SqliteDatabase
 }
 
 const N = 50_000
@@ -159,7 +152,7 @@ void test("Task C: all ID types keep a compact, unfragmented B-tree", () => {
   assert.ok(
     maxPPR <= minPPR * 1.05,
 
-    `page counts should be within 5% of each other (${minPPR.toFixed(5)}..${maxPPR.toFixed(5)})`,
+    `page counts should be within 5% of each other (${minPPR.toFixed(5)}..${maxPPR.toFixed(5)})`
   )
 
   for (const r of rs) {
@@ -167,7 +160,7 @@ void test("Task C: all ID types keep a compact, unfragmented B-tree", () => {
 
     assert.ok(
       r.freelistCount <= r.pageCount * 0.05,
-      `${r.name} is significantly fragmented`,
+      `${r.name} is significantly fragmented`
     )
   }
 })
@@ -178,12 +171,12 @@ void test("expression-index arm shares the embedded table and seeks via its inde
   assert.equal(
     arm[0],
     ARM_DDL.embedded[0],
-    "expression-index must use the same table as embedded",
+    "expression-index must use the same table as embedded"
   )
 
   assert.ok(
     arm.some((s) => s.startsWith("CREATE INDEX")),
-    "expression-index must add a secondary index",
+    "expression-index must add a secondary index"
   )
 
   const db = new Database(":memory:")
@@ -194,14 +187,14 @@ void test("expression-index arm shares the embedded table and seeks via its inde
 
   const plan = db
     .query(
-      `EXPLAIN QUERY PLAN SELECT val FROM ids WHERE ${expressionIndexShardPredicate(3)}`,
+      `EXPLAIN QUERY PLAN SELECT val FROM ids WHERE ${expressionIndexShardPredicate(3)}`
     )
     .all() as { detail: string }[]
 
   assert.ok(
     plan.some((p) => p.detail.includes("USING INDEX")),
 
-    `shard scan should seek the expression index, got ${JSON.stringify(plan)}`,
+    `shard scan should seek the expression index, got ${JSON.stringify(plan)}`
   )
 
   db.close()
@@ -222,7 +215,7 @@ void test("expression-index arm extracts the shard correctly and fills a clean B
 
   assert.ok(
     r.pointLookupUs > 0 && r.pointLookupUs < 1000,
-    `lookup out of range: ${r.pointLookupUs}`,
+    `lookup out of range: ${r.pointLookupUs}`
   )
 
   const db = new Database(":memory:")
@@ -244,18 +237,20 @@ void test("expression-index arm extracts the shard correctly and fills a clean B
   for (const shard of [1, 3, 5]) {
     const pred = expressionIndexShardPredicate(shard)
 
-    const got = (db
-      .query(`SELECT COUNT(*) AS n FROM ids WHERE ${pred}`)
-      .get() as { n: number }).n
+    const got = (
+      db.query(`SELECT COUNT(*) AS n FROM ids WHERE ${pred}`).get() as {
+        n: number
+      }
+    ).n
 
     const want = ids.filter(
-      ({ id }) => ARM_DEF.embedded.extractShard(id) === shard,
+      ({ id }) => ARM_DEF.embedded.extractShard(id) === shard
     ).length
 
     assert.equal(
       got,
       want,
-      `shard ${shard}: index predicate found ${got}, want ${want}`,
+      `shard ${shard}: index predicate found ${got}, want ${want}`
     )
   }
 

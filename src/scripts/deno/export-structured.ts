@@ -1,5 +1,4 @@
 import { type V8Layout } from "../../algo.ts"
-
 import { writeBitsFile } from "./deno-io.ts"
 
 const algo = (await import("../../../dist/algo.js")) as {
@@ -51,7 +50,7 @@ for (const layout of layouts) {
   const file = await writeBitsFile(`struct-${layout.name}.bits.txt`, all)
 
   console.log(
-    `Wrote ${(all.length / 1e6).toFixed(2)}M random bits (${n.toLocaleString()} UUIDs) -> ${file}`,
+    `Wrote ${(all.length / 1e6).toFixed(2)}M random bits (${n.toLocaleString()} UUIDs) -> ${file}`
   )
 }
 

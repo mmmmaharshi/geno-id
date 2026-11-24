@@ -1,5 +1,4 @@
 import { writeBitsFile } from "./deno-io.ts"
-
 import { hexVal, genRawV8 } from "./export-bits.ts"
 
 const HEX_STARTS = [0, 2, 4, 6, 9, 11, 14, 16, 19, 21, 24, 26, 28, 30, 32, 34]
@@ -254,7 +253,7 @@ async function exportSamples(
 
   fn: () => string,
 
-  count: number,
+  count: number
 ): Promise<string> {
   const bits: string[] = new Array(count)
 

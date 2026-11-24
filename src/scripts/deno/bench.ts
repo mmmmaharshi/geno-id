@@ -121,7 +121,7 @@ function betai(x: number, a: number, b: number): number {
         Math.log(1 - x) * b -
         lgamma(a) -
         lgamma(b) +
-        lgamma(a + b),
+        lgamma(a + b)
     ) / a
 
   return pf * betacf(x, a, b)
@@ -131,7 +131,10 @@ function studentTwoTailedP(t: number, df: number): number {
   return betai(df / (df + t * t), df / 2, 0.5)
 }
 
-function compareBench(a: BenchStats, b: BenchStats): {
+function compareBench(
+  a: BenchStats,
+  b: BenchStats
+): {
   t: number
 
   df: number
@@ -162,9 +165,7 @@ function compareBench(a: BenchStats, b: BenchStats): {
     (va / na + vb / nb) ** 2 /
     ((va / na) ** 2 / (na - 1) + (vb / nb) ** 2 / (nb - 1))
 
-  const pooled = Math.sqrt(
-    ((na - 1) * va + (nb - 1) * vb) / (na + nb - 2),
-  )
+  const pooled = Math.sqrt(((na - 1) * va + (nb - 1) * vb) / (na + nb - 2))
 
   const d = pooled === 0 ? 0 : (ma - mb) / pooled
 
@@ -223,7 +224,7 @@ function validateFormat(uuid: string, expectedVersionNibble: string): boolean {
 
 function fmtStats(r: BenchStats): string {
   return `${r.mean.toFixed(0)} ± ${r.std.toFixed(0)} ops/sec (95% CI ${r.ci95[0].toFixed(
-    0,
+    0
   )}–${r.ci95[1].toFixed(0)}, ${r.trials} trials)`
 }
 
@@ -234,10 +235,8 @@ function printCompare(label: string, a: BenchStats, b: BenchStats): void {
 
   console.log(
     `${label}: Δ=${delta.toFixed(1)}%, Welch t=${r.t.toFixed(2)}, p=${r.p.toFixed(
-      4,
-    )}, d=${r.d.toFixed(2)} (${
-      r.p < 0.05 ? "SIGNIFICANT" : "not significant"
-    })`,
+      4
+    )}, d=${r.d.toFixed(2)} (${r.p < 0.05 ? "SIGNIFICANT" : "not significant"})`
   )
 }
 
@@ -269,7 +268,7 @@ const nAsync = 50_000
 const TRIALS = 10
 
 console.log(
-  `\n--- Speed benchmark (Deno ${Deno.version.deno}, V8, ${TRIALS} repeated trials) ---`,
+  `\n--- Speed benchmark (Deno ${Deno.version.deno}, V8, ${TRIALS} repeated trials) ---`
 )
 
 const sV4 = benchRepeated(genV4Native, nSync, TRIALS)
@@ -303,7 +302,7 @@ console.log(
 
   collisionTest(genV4Native, nColl),
 
-  "collisions",
+  "collisions"
 )
 
 console.log(`v7 custom, n=${nColl}:`, collisionTest(genV7, nColl), "collisions")
@@ -313,7 +312,7 @@ console.log(
 
   collisionTest(genMathRandom, nColl),
 
-  "collisions",
+  "collisions"
 )
 
 const nCollHash = 50_000
@@ -323,7 +322,7 @@ console.log(
 
   await collisionTestAsync(genHashUUID, nCollHash),
 
-  "collisions",
+  "collisions"
 )
 
 console.log(
@@ -331,7 +330,7 @@ console.log(
 
   collisionTest(genGenoID, nColl),
 
-  "collisions",
+  "collisions"
 )
 
 // ---------- Uniformity validation ----------
@@ -347,7 +346,7 @@ async function uniformityTest(
 
   n: number,
 
-  label: string,
+  label: string
 ): Promise<UniformityResult> {
   let onesCount = 0,
     totalBits = 0
@@ -364,7 +363,7 @@ async function uniformityTest(
 
         .match(/.{2}/g)!
 
-        .map((h) => Number.parseInt(h, 16)),
+        .map((h) => Number.parseInt(h, 16))
     )
 
     byteHistogram[bytes[0]] += 1
@@ -392,10 +391,10 @@ async function uniformityTest(
 
   console.log(
     `${label}: bit-balance=${bitBalance.toFixed(
-      5,
+      5
     )} (expect 0.500), chi-sq(byte0, df=255)=${chiSq.toFixed(
-      2,
-    )} (crit@0.05=293.25, PASS=${chiSq < 293.25})`,
+      2
+    )} (crit@0.05=293.25, PASS=${chiSq < 293.25})`
   )
 
   return { bitBalance, chiSq }
@@ -408,7 +407,7 @@ await uniformityTest(async () => genV4Native(), 20_000, "v4 native")
 await uniformityTest(
   async () => genGenoID(),
   20_000,
-  "GenoID (v8, GA-inspired, pooled)",
+  "GenoID (v8, GA-inspired, pooled)"
 )
 
 console.log("\n--- Theoretical n for 50% collision probability ---")
@@ -428,7 +427,7 @@ console.log("GenoID (122 bits):", birthdayBound50(122).toExponential(3))
 // ULID / KSUID / Snowflake are the broader structured-ID landscape.
 
 console.log(
-  `\n--- Baseline throughput (Deno ${Deno.version.deno}, V8, ${TRIALS} repeated trials) ---`,
+  `\n--- Baseline throughput (Deno ${Deno.version.deno}, V8, ${TRIALS} repeated trials) ---`
 )
 
 const sPg = benchRepeated(genPgUuidV8, nSync, TRIALS)
@@ -452,7 +451,7 @@ const sSnow = benchRepeated(() => genSnowflake(), nSync, TRIALS)
 printRate("Snowflake (64-bit int)", sSnow)
 
 console.log(
-  "\n--- Statistical significance (Welch t-test, GenoID vs baselines) ---",
+  "\n--- Statistical significance (Welch t-test, GenoID vs baselines) ---"
 )
 
 printCompare("GenoID vs v4", sGeno, sV4)
@@ -474,13 +473,13 @@ console.log("\n--- Baseline collision (UUID-shaped only, n=2M) ---")
 console.log(
   `pg_uuid_v8, n=${nColl}:`,
   collisionTest(genPgUuidV8, nColl),
-  "collisions",
+  "collisions"
 )
 
 console.log(
   `ULID-v8, n=${nColl}:`,
   collisionTest(genUlidV8, nColl),
-  "collisions",
+  "collisions"
 )
 
 console.log("\n--- Baseline uniformity (random payload only, monobit) ---")
@@ -496,7 +495,7 @@ function randomMonobit(
 
   n: number,
 
-  label: string,
+  label: string
 ): void {
   let ones = 0
 
@@ -517,7 +516,7 @@ function randomMonobit(
   const pass = Math.abs(balance - 0.5) < 0.02
 
   console.log(
-    `${label}: random-bit-balance=${balance.toFixed(5)} (expect 0.500), PASS=${pass}`,
+    `${label}: random-bit-balance=${balance.toFixed(5)} (expect 0.500), PASS=${pass}`
   )
 }
 
@@ -525,14 +524,14 @@ await randomMonobit(
   genPgUuidV8,
   TIMESTAMPED_FIXED,
   20_000,
-  "pg_uuid_v8 (steganographic v4)",
+  "pg_uuid_v8 (steganographic v4)"
 )
 
 await randomMonobit(
   genUlidV8,
   TIMESTAMPED_FIXED,
   20_000,
-  "ULID-v8 (UUID-mapped)",
+  "ULID-v8 (UUID-mapped)"
 )
 
 // Exact (BigInt) large-scale collision test — memory-efficient vs full-string Set.
@@ -559,19 +558,19 @@ const nLarge = 10_000_000
 console.log(
   `v4 native, n=${nLarge}:`,
   collisionTestBigInt(genV4Native, nLarge),
-  "collisions",
+  "collisions"
 )
 
 console.log(
   `GenoID, n=${nLarge}:`,
   collisionTestBigInt(genGenoID, nLarge),
-  "collisions",
+  "collisions"
 )
 
 console.log(
   `v7 (RFC 9562), n=${nLarge}:`,
   collisionTestBigInt(genV7, nLarge),
-  "collisions",
+  "collisions"
 )
 
 console.log(
@@ -579,19 +578,19 @@ console.log(
 
   collisionTestBigInt(() => genStructuredGenoID(DBKEY_LAYOUT), nLarge),
 
-  "collisions",
+  "collisions"
 )
 
 console.log(
   `pg_uuid_v8, n=${nLarge}:`,
   collisionTestBigInt(genPgUuidV8, nLarge),
-  "collisions",
+  "collisions"
 )
 
 console.log(
   `ULID-v8, n=${nLarge}:`,
   collisionTestBigInt(genUlidV8, nLarge),
-  "collisions",
+  "collisions"
 )
 
 // Non-UUID-shaped IDs (ULID/KSUID are base32/base62 strings, Snowflake is a
@@ -601,7 +600,7 @@ console.log(
 // path, which only applies to 128-bit UUIDs).
 
 console.log(
-  "\n--- Baseline collision (non-UUID-shaped, n=2M, exact string Set) ---",
+  "\n--- Baseline collision (non-UUID-shaped, n=2M, exact string Set) ---"
 )
 
 console.log(`ULID, n=${nColl}:`, collisionTest(genUlid, nColl), "collisions")
@@ -613,5 +612,5 @@ console.log(
 
   collisionTest(() => genSnowflake(), nColl),
 
-  "collisions",
+  "collisions"
 )

@@ -10,13 +10,11 @@
 
 /// <reference types="node" />
 
-import { cohensD, compareBench, welchTTest } from "./significance.ts"
+import assert from "node:assert/strict"
+import { test } from "node:test"
 
 import type { BenchStats } from "../../dist/bench-core.js"
-
-import assert from "node:assert/strict"
-
-import { test } from "node:test"
+import { cohensD, compareBench, welchTTest } from "./significance.ts"
 
 const stats = (samples: readonly number[]): BenchStats => {
   const mean = samples.reduce((a, b) => a + b, 0) / samples.length
@@ -93,7 +91,7 @@ void test("cohensD: sign follows the mean difference and magnitude is large when
 void test("compareBench aggregates two BenchStats into a significance result", () => {
   const r = compareBench(
     stats([10, 11, 9, 10, 12, 8]),
-    stats([10, 9, 11, 10, 8, 12]),
+    stats([10, 9, 11, 10, 8, 12])
   )
 
   assert.ok(r.p >= 0 && r.p <= 1)

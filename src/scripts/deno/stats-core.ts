@@ -77,7 +77,7 @@ export function erfc(x: number): number {
                               (-1.13520398 +
                                 t *
                                   (1.48851587 +
-                                    t * (-0.82215223 + t * 0.17087277)))))))),
+                                    t * (-0.82215223 + t * 0.17087277))))))))
     )
 
   return x >= 0 ? ans : 2 - ans
@@ -151,7 +151,7 @@ export async function runBattery(
 
   n: number,
 
-  FREE_MASK: number[],
+  FREE_MASK: number[]
 ): Promise<BatteryResult> {
   let onesFree = 0,
     runsCount = 0,
@@ -170,7 +170,7 @@ export async function runBattery(
     freqFull.push(
       FREE_MASK[i] === 0x00
         ? null
-        : new Float64Array(FREE_MASK[i] === 0xff ? 256 : FREE_MASK[i] + 1),
+        : new Float64Array(FREE_MASK[i] === 0xff ? 256 : FREE_MASK[i] + 1)
     )
   }
 
@@ -246,7 +246,7 @@ export async function runBattery(
 
     runsP = erfc(
       Math.abs(vObs - 2 * nBits * pi * (1 - pi)) /
-        (2 * Math.sqrt(2 * nBits) * pi * (1 - pi)),
+        (2 * Math.sqrt(2 * nBits) * pi * (1 - pi))
     )
   }
 

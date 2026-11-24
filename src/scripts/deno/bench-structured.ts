@@ -3,7 +3,6 @@ import {
   collisionTest,
   birthdayBound50,
 } from "../../../dist/bench-core.js"
-
 import { type V8Field, type V8Layout } from "../../algo.ts"
 
 const algo = (await import("../../../dist/algo.js")) as {
@@ -13,7 +12,7 @@ const algo = (await import("../../../dist/algo.js")) as {
     l: V8Layout,
     a: Uint8Array,
     b: Uint8Array,
-    fs: number,
+    fs: number
   ) => Uint8Array
 
   repairConstraints: (l: V8Layout, b: Uint8Array) => number
@@ -140,15 +139,15 @@ function e2(): void {
   console.log("\n=== E2: GA repair vs CSPRNG rejection (RQ2) ===")
 
   console.log(
-    "  each constrained field: 8 bits, allowed set size 4 -> per-field reject ratio 64x",
+    "  each constrained field: 8 bits, allowed set size 4 -> per-field reject ratio 64x"
   )
 
   console.log(
-    "  analytic rejection trials/UUID = 64^k  (GA repairs/UUID ~= k, O(k*8) ops)",
+    "  analytic rejection trials/UUID = 64^k  (GA repairs/UUID ~= k, O(k*8) ops)"
   )
 
   console.log(
-    "  k | GA repairs/UUID | rejection trials/UUID | GA ms/M | reject ms/M",
+    "  k | GA repairs/UUID | rejection trials/UUID | GA ms/M | reject ms/M"
   )
 
   const N_GA = 200_000
@@ -227,7 +226,7 @@ function e2(): void {
     }
 
     console.log(
-      `  ${k} | ${(totalRepairs / N_GA).toFixed(3).padStart(14)} | ${rjTrialsStr.padStart(19)} | ${gaMs.toFixed(0).padStart(8)} | ${rjMs.toFixed(0).padStart(9)}`,
+      `  ${k} | ${(totalRepairs / N_GA).toFixed(3).padStart(14)} | ${rjTrialsStr.padStart(19)} | ${gaMs.toFixed(0).padStart(8)} | ${rjMs.toFixed(0).padStart(9)}`
     )
   }
 }
@@ -252,7 +251,7 @@ function e3e4e5(): void {
   const totalBits = randomFields.reduce((s, f) => s + f.length, 0)
 
   console.log(
-    `  theoretical 50% collision n (${totalBits} random bits): ${birthdayBound50(totalBits).toExponential(2)}`,
+    `  theoretical 50% collision n (${totalBits} random bits): ${birthdayBound50(totalBits).toExponential(2)}`
   )
 
   // Uniformity on random-field bits (reuse the canonical bit extractor)
@@ -276,7 +275,7 @@ function e3e4e5(): void {
   const maxDev = Math.max(...ones.map((o) => Math.abs(o / M - 0.5)))
 
   console.log(
-    `  uniformity: max |P(1)-0.5| over ${totalBits} random bits = ${maxDev.toFixed(4)} (PASS=${maxDev < 0.05})`,
+    `  uniformity: max |P(1)-0.5| over ${totalBits} random bits = ${maxDev.toFixed(4)} (PASS=${maxDev < 0.05})`
   )
 }
 
@@ -298,11 +297,11 @@ function e6(): void {
   console.log(`  v4 native:            ${rV4.opsPerSec.toFixed(0)} ops/sec`)
 
   console.log(
-    `  GenoID (base, v8):    ${rBase.opsPerSec.toFixed(0)} ops/sec  (${(rV4.opsPerSec / rBase.opsPerSec).toFixed(1)}x slower)`,
+    `  GenoID (base, v8):    ${rBase.opsPerSec.toFixed(0)} ops/sec  (${(rV4.opsPerSec / rBase.opsPerSec).toFixed(1)}x slower)`
   )
 
   console.log(
-    `  GenoID-structured:    ${rGeno.opsPerSec.toFixed(0)} ops/sec  (${(rV4.opsPerSec / rGeno.opsPerSec).toFixed(1)}x slower vs v4, ${(rBase.opsPerSec / rGeno.opsPerSec).toFixed(1)}x vs base)`,
+    `  GenoID-structured:    ${rGeno.opsPerSec.toFixed(0)} ops/sec  (${(rV4.opsPerSec / rGeno.opsPerSec).toFixed(1)}x slower vs v4, ${(rBase.opsPerSec / rGeno.opsPerSec).toFixed(1)}x vs base)`
   )
 }
 

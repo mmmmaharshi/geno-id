@@ -1,10 +1,8 @@
-import { countVerdicts, parsePractrandOutput } from "./practrand-core.ts"
-
 import { execFileSync } from "node:child_process"
-
 import fs from "node:fs"
-
 import path from "node:path"
+
+import { countVerdicts, parsePractrandOutput } from "./practrand-core.ts"
 
 // Local driver for the PractRand randomness battery. PractRand is installed
 
@@ -68,7 +66,7 @@ const checkPractrand = (): boolean => {
 
         ["practrand"],
 
-        { stdio: "pipe" },
+        { stdio: "pipe" }
       )
 
       return probe.toString().trim().length > 0
@@ -84,7 +82,7 @@ const checkPractrand = (): boolean => {
   console.error("practrand not found. Install it on the host, then re-run:")
 
   console.error(
-    "  build from source: https://www.practrand.com/ (the repo has no binary release)",
+    "  build from source: https://www.practrand.com/ (the repo has no binary release)"
   )
 
   process.exitCode = 1
@@ -103,7 +101,7 @@ const ensureSamples = async (): Promise<void> => {
   }
 
   console.log(
-    `Exporting ${missing.length} sample(s) at ${(TARGET_BITS / 1e6).toFixed(0)}M bits each...`,
+    `Exporting ${missing.length} sample(s) at ${(TARGET_BITS / 1e6).toFixed(0)}M bits each...`
   )
 
   const { runExport } = await import("./dieharder-common.ts")
@@ -121,7 +119,7 @@ const runOne = (gen: string): string => {
 
     ["-tl", "32", "-tlmax", String(TL_MAX), file],
 
-    { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 },
+    { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 }
   )
 }
 
@@ -184,18 +182,18 @@ const main = async (): Promise<void> => {
   console.log(`Wrote ${OUT}`)
 
   console.log(
-    `\nSummary: ${totalPassed} passed, ${totalFailed} failed, ${totalUnassessed} unassessed, ${emptyRuns} unparsable run(s).`,
+    `\nSummary: ${totalPassed} passed, ${totalFailed} failed, ${totalUnassessed} unassessed, ${emptyRuns} unparsable run(s).`
   )
 
   if (emptyRuns > 0) {
     console.error(
-      `\n${emptyRuns} generator(s) produced no parsable PractRand results — check the practrand install and the output format.`,
+      `\n${emptyRuns} generator(s) produced no parsable PractRand results — check the practrand install and the output format.`
     )
 
     process.exitCode = 1
   } else if (totalFailed > 0) {
     console.error(
-      `\n${totalFailed} PractRand test(s) reported an unusual result.`,
+      `\n${totalFailed} PractRand test(s) reported an unusual result.`
     )
 
     process.exitCode = 1

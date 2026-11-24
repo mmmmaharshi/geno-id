@@ -1,15 +1,19 @@
+import { existsSync } from "node:fs"
+
 import {
   andBits,
   orBits,
   shiftLeftBits,
   shiftRightBits,
 } from "../shared/bitwise.ts"
-
 import { nullValue, undefinedValue } from "./shared/runtime-values.ts"
 
-import { existsSync } from "node:fs"
-
-export type StatisticalSuite = "in-house" | "nist-sp800-22" | "dieharder" | "practrand" | "testu01"
+export type StatisticalSuite =
+  | "in-house"
+  | "nist-sp800-22"
+  | "dieharder"
+  | "practrand"
+  | "testu01"
 
 export type SuiteStatus = "measured" | "external" | "unavailable"
 
@@ -39,7 +43,7 @@ export interface MultipleTestingResult {
 
 export const holmBonferroni = (
   entries: readonly PValueEntry[],
-  alpha = 0.05,
+  alpha = 0.05
 ): MultipleTestingResult => {
   const sorted = entries.toSorted((left, right) => left.p - right.p)
 
@@ -129,7 +133,7 @@ export interface RejectionCellEvidence {
 }
 
 export const classifyRejectionCell = (
-  cell: RejectionCellInput,
+  cell: RejectionCellInput
 ): RejectionCellEvidence => {
   if (!cell.rejectionTrialsMeasured && cell.rejectionNsPerId !== nullValue) {
     throw new Error("analytical cell cannot report measured runtime")
@@ -301,7 +305,7 @@ export interface SuiteEvidence {
 }
 
 export const buildSuiteEvidence = (
-  input: SuiteEvidenceInput,
+  input: SuiteEvidenceInput
 ): SuiteEvidence => {
   const limitations = input.limitations ?? []
 
@@ -369,7 +373,7 @@ export interface LayoutBitField {
 }
 
 export const freeMaskForLayout = (
-  fields: readonly LayoutBitField[],
+  fields: readonly LayoutBitField[]
 ): number[] => {
   const mask = Array.from<number>({ length: 16 }).fill(0)
 
@@ -382,7 +386,7 @@ export const freeMaskForLayout = (
 
         mask[byte] = orBits(
           mask[byte],
-          shiftLeftBits(1, 7 - andBits(position, 7)),
+          shiftLeftBits(1, 7 - andBits(position, 7))
         )
       }
     }
@@ -391,26 +395,27 @@ export const freeMaskForLayout = (
   return mask
 }
 
-export const SAMPLE_DEFINITIONS: Readonly<Record<"collision" | "uniformity" | "in_house", SampleDefinition>> =
-  {
-    collision: {
-      ids: 2_000_000,
+export const SAMPLE_DEFINITIONS: Readonly<
+  Record<"collision" | "uniformity" | "in_house", SampleDefinition>
+> = {
+  collision: {
+    ids: 2_000_000,
 
-      seedPolicy:
-        "web-crypto CSPRNG, unseeded; the pinned sample size is the recorded definition",
-    },
+    seedPolicy:
+      "web-crypto CSPRNG, unseeded; the pinned sample size is the recorded definition",
+  },
 
-    in_house: {
-      ids: 200_000,
+  in_house: {
+    ids: 200_000,
 
-      seedPolicy:
-        "web-crypto CSPRNG, unseeded; the battery sample size is recorded per run",
-    },
+    seedPolicy:
+      "web-crypto CSPRNG, unseeded; the battery sample size is recorded per run",
+  },
 
-    uniformity: {
-      ids: 50_000,
+  uniformity: {
+    ids: 50_000,
 
-      seedPolicy:
-        "web-crypto CSPRNG, unseeded; the pinned sample size is the recorded definition",
-    },
-  }
+    seedPolicy:
+      "web-crypto CSPRNG, unseeded; the pinned sample size is the recorded definition",
+  },
+}

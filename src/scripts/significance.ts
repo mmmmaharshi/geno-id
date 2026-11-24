@@ -131,7 +131,7 @@ const betai = (x: number, a: number, b: number): number => {
         Math.log(1 - x) * b -
         lgamma(a) -
         lgamma(b) +
-        lgamma(a + b),
+        lgamma(a + b)
     ) / a
   return prefactor * betacf(x, a, b)
 }
@@ -163,7 +163,7 @@ export const cohensD = (a: number[], b: number[]): number => {
   const na = a.length
   const nb = b.length
   const pooled = Math.sqrt(
-    ((na - 1) * varianceOf(a) + (nb - 1) * varianceOf(b)) / (na + nb - 2),
+    ((na - 1) * varianceOf(a) + (nb - 1) * varianceOf(b)) / (na + nb - 2)
   )
   if (pooled === 0) {
     return 0

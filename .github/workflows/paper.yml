@@ -4,16 +4,16 @@ on:
   push:
     branches: [main]
     paths:
-      - 'paper.tex'
-      - 'results/artifact-manifest.json'
-      - 'src/scripts/check-paper*.ts'
-      - '.github/workflows/paper.yml'
+      - "paper.tex"
+      - "results/artifact-manifest.json"
+      - "src/scripts/check-paper*.ts"
+      - ".github/workflows/paper.yml"
   pull_request:
     paths:
-      - 'paper.tex'
-      - 'results/artifact-manifest.json'
-      - 'src/scripts/check-paper*.ts'
-      - '.github/workflows/paper.yml'
+      - "paper.tex"
+      - "results/artifact-manifest.json"
+      - "src/scripts/check-paper*.ts"
+      - ".github/workflows/paper.yml"
   workflow_dispatch:
 
 permissions:

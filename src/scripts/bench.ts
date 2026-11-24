@@ -1,3 +1,15 @@
+import path from "node:path"
+import { pathToFileURL } from "node:url"
+
+import {
+  benchRepeated,
+  benchRepeatedAsync,
+  birthdayBound50,
+  collisionTest,
+  collisionTestAsync,
+} from "../../dist/bench-core.js"
+import { andBits, shiftRightBits } from "../shared/bitwise.ts"
+import { need } from "../shared/need.ts"
 import {
   TIMESTAMPED_FIXED,
   extractRandomBits,
@@ -7,24 +19,7 @@ import {
   genUlid,
   genUlidV8,
 } from "./baselines.ts"
-
-import { andBits, shiftRightBits } from "../shared/bitwise.ts"
-
-import {
-  benchRepeated,
-  benchRepeatedAsync,
-  birthdayBound50,
-  collisionTest,
-  collisionTestAsync,
-} from "../../dist/bench-core.js"
-
 import { compareBench } from "./significance.ts"
-
-import { need } from "../shared/need.ts"
-
-import path from "node:path"
-
-import { pathToFileURL } from "node:url"
 
 type BenchStats = ReturnType<typeof benchRepeated>
 
@@ -62,7 +57,7 @@ const {
 
 const validateFormat = (
   uuid: string,
-  expectedVersionNibble: string,
+  expectedVersionNibble: string
 ): boolean => {
   const re = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u
 
@@ -79,7 +74,7 @@ const validateFormat = (
 
 const fmtStats = (r: BenchStats): string =>
   `${r.mean.toFixed(0)} ± ${r.std.toFixed(0)} ops/sec (95% CI ${r.ci95[0].toFixed(
-    0,
+    0
   )}–${r.ci95[1].toFixed(0)}, ${r.trials} trials)`
 
 const printCompare = (label: string, a: BenchStats, b: BenchStats): void => {
@@ -95,8 +90,8 @@ const printCompare = (label: string, a: BenchStats, b: BenchStats): void => {
 
   console.log(
     `${label}: Δ=${delta.toFixed(1)}%, Welch t=${r.t.toFixed(2)}, p=${r.p.toFixed(
-      4,
-    )}, d=${r.d.toFixed(2)} (${significance})`,
+      4
+    )}, d=${r.d.toFixed(2)} (${significance})`
   )
 }
 
@@ -133,7 +128,7 @@ const nAsync = 50_000
 const TRIALS = 10
 
 console.log(
-  `\n--- Speed benchmark (Node v22, V8, ${TRIALS} repeated trials) ---`,
+  `\n--- Speed benchmark (Node v22, V8, ${TRIALS} repeated trials) ---`
 )
 
 const sV4 = benchRepeated(genV4Native, nSync, TRIALS)
@@ -167,7 +162,7 @@ console.log(
 
   collisionTest(genV4Native, nColl),
 
-  "collisions",
+  "collisions"
 )
 
 console.log(`v7 custom, n=${nColl}:`, collisionTest(genV7, nColl), "collisions")
@@ -177,7 +172,7 @@ console.log(
 
   collisionTest(genMathRandom, nColl),
 
-  "collisions",
+  "collisions"
 )
 
 const nCollHash = 50_000
@@ -187,7 +182,7 @@ console.log(
 
   await collisionTestAsync(genHashUUID, nCollHash),
 
-  "collisions",
+  "collisions"
 )
 
 console.log(
@@ -195,7 +190,7 @@ console.log(
 
   collisionTest(genGenoID, nColl),
 
-  "collisions",
+  "collisions"
 )
 
 // ---------- Uniformity validation ----------
@@ -211,7 +206,7 @@ const uniformityTest = async (
 
   n: number,
 
-  label: string,
+  label: string
 ): Promise<UniformityResult> => {
   let onesCount = 0,
     totalBits = 0
@@ -258,10 +253,10 @@ const uniformityTest = async (
 
   console.log(
     `${label}: bit-balance=${bitBalance.toFixed(
-      5,
+      5
     )} (expect 0.500), chi-sq(byte0, df=255)=${chiSq.toFixed(
-      2,
-    )} (crit@0.05=293.25, PASS=${chiSq < 293.25})`,
+      2
+    )} (crit@0.05=293.25, PASS=${chiSq < 293.25})`
   )
 
   return { bitBalance, chiSq }
@@ -294,7 +289,7 @@ const printRate = (label: string, r: BenchStats): void => {
 }
 
 console.log(
-  `\n--- Baseline throughput (Node v22, V8, ${TRIALS} repeated trials) ---`,
+  `\n--- Baseline throughput (Node v22, V8, ${TRIALS} repeated trials) ---`
 )
 
 const sPg = benchRepeated(genPgUuidV8, nSync, TRIALS)
@@ -318,7 +313,7 @@ const sSnow = benchRepeated(() => genSnowflake(), nSync, TRIALS)
 printRate("Snowflake (64-bit int)", sSnow)
 
 console.log(
-  "\n--- Statistical significance (Welch t-test, GenoID vs baselines) ---",
+  "\n--- Statistical significance (Welch t-test, GenoID vs baselines) ---"
 )
 
 printCompare("GenoID vs v4", sGeno, sV4)
@@ -336,13 +331,13 @@ console.log("\n--- Baseline collision (UUID-shaped only, n=2M) ---")
 console.log(
   `pg_uuid_v8, n=${nColl}:`,
   collisionTest(genPgUuidV8, nColl),
-  "collisions",
+  "collisions"
 )
 
 console.log(
   `ULID-v8, n=${nColl}:`,
   collisionTest(genUlidV8, nColl),
-  "collisions",
+  "collisions"
 )
 
 console.log("\n--- Baseline uniformity (random payload only, monobit) ---")
@@ -358,7 +353,7 @@ const randomMonobit = (
 
   n: number,
 
-  label: string,
+  label: string
 ): void => {
   let ones = 0
 
@@ -381,7 +376,7 @@ const randomMonobit = (
   const pass = Math.abs(balance - 0.5) < 0.02
 
   console.log(
-    `${label}: random-bit-balance=${balance.toFixed(5)} (expect 0.500), PASS=${pass}`,
+    `${label}: random-bit-balance=${balance.toFixed(5)} (expect 0.500), PASS=${pass}`
   )
 }
 
@@ -389,7 +384,7 @@ randomMonobit(
   genPgUuidV8,
   TIMESTAMPED_FIXED,
   20_000,
-  "pg_uuid_v8 (steganographic v4)",
+  "pg_uuid_v8 (steganographic v4)"
 )
 
 randomMonobit(genUlidV8, TIMESTAMPED_FIXED, 20_000, "ULID-v8 (UUID-mapped)")
@@ -421,19 +416,19 @@ const nLarge = 10_000_000
 console.log(
   `v4 native, n=${nLarge}:`,
   collisionTestBigInt(genV4Native, nLarge),
-  "collisions",
+  "collisions"
 )
 
 console.log(
   `GenoID, n=${nLarge}:`,
   collisionTestBigInt(genGenoID, nLarge),
-  "collisions",
+  "collisions"
 )
 
 console.log(
   `v7 (RFC 9562), n=${nLarge}:`,
   collisionTestBigInt(genV7, nLarge),
-  "collisions",
+  "collisions"
 )
 
 console.log(
@@ -441,19 +436,19 @@ console.log(
 
   collisionTestBigInt(() => genStructuredGenoID(DBKEY_LAYOUT), nLarge),
 
-  "collisions",
+  "collisions"
 )
 
 console.log(
   `pg_uuid_v8, n=${nLarge}:`,
   collisionTestBigInt(genPgUuidV8, nLarge),
-  "collisions",
+  "collisions"
 )
 
 console.log(
   `ULID-v8, n=${nLarge}:`,
   collisionTestBigInt(genUlidV8, nLarge),
-  "collisions",
+  "collisions"
 )
 
 // Non-UUID-shaped IDs (ULID/KSUID are base32/base62 strings, Snowflake is a
@@ -463,7 +458,7 @@ console.log(
 // Path, which only applies to 128-bit UUIDs).
 
 console.log(
-  "\n--- Baseline collision (non-UUID-shaped, n=2M, exact string Set) ---",
+  "\n--- Baseline collision (non-UUID-shaped, n=2M, exact string Set) ---"
 )
 
 console.log(`ULID, n=${nColl}:`, collisionTest(genUlid, nColl), "collisions")
@@ -475,5 +470,5 @@ console.log(
 
   collisionTest(() => genSnowflake(), nColl),
 
-  "collisions",
+  "collisions"
 )

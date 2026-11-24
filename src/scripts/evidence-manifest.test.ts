@@ -1,21 +1,18 @@
 /// <reference types="node" />
 
+import assert from "node:assert/strict"
+import { createHash } from "node:crypto"
+import test from "node:test"
+
+import { fromAny } from "@total-typescript/shoehorn"
+
+import type { GenerationPlan } from "../../dist/algo.js"
 import type {
   EvidenceArtifactState,
   EvidenceManifest,
   EvidenceManifestErrorCode,
   EvidenceManifestInput,
 } from "../../dist/evidence-manifest.js"
-
-import type { GenerationPlan } from "../../dist/algo.js"
-
-import assert from "node:assert/strict"
-
-import { createHash } from "node:crypto"
-
-import { fromAny } from "@total-typescript/shoehorn"
-
-import test from "node:test"
 
 const undefinedValue: undefined = Reflect.get({}, "missing") as undefined
 
@@ -25,13 +22,11 @@ const evidence = (await import("../../dist/evidence-manifest.js")) as {
   verifyEvidenceArtifacts: (
     manifest: unknown,
 
-    read: (
-      path: string,
-    ) => Readonly<{
+    read: (path: string) => Readonly<{
       readonly exists: boolean
       readonly bytes?: number
       readonly sha256?: string
-    }>,
+    }>
   ) => EvidenceArtifactState[]
 }
 
@@ -99,7 +94,7 @@ void test("createEvidenceManifest records identity, source hash, plan, and claim
 
   assert.equal(
     manifest.sourceHash,
-    createHash("sha256").update("export const x = 1\n").digest("hex"),
+    createHash("sha256").update("export const x = 1\n").digest("hex")
   )
 
   assert.deepEqual(manifest.generationPlan, plan)
@@ -117,7 +112,7 @@ void test("createEvidenceManifest fails with stable codes for missing required d
         Object.assign(
           Object.create(Object.prototype) as EvidenceManifestInput,
           baseInput(),
-          { implementationCommit: "" },
+          { implementationCommit: "" }
         ),
     ],
 
@@ -127,7 +122,7 @@ void test("createEvidenceManifest fails with stable codes for missing required d
         Object.assign(
           Object.create(Object.prototype) as EvidenceManifestInput,
           baseInput(),
-          { command: "" },
+          { command: "" }
         ),
     ],
 
@@ -137,7 +132,7 @@ void test("createEvidenceManifest fails with stable codes for missing required d
         Object.assign(
           Object.create(Object.prototype) as EvidenceManifestInput,
           baseInput(),
-          { source: "" },
+          { source: "" }
         ),
     ],
 
@@ -147,7 +142,7 @@ void test("createEvidenceManifest fails with stable codes for missing required d
         Object.assign(
           Object.create(Object.prototype) as EvidenceManifestInput,
           baseInput(),
-          { environment: undefinedValue },
+          { environment: undefinedValue }
         ),
     ],
 
@@ -157,7 +152,7 @@ void test("createEvidenceManifest fails with stable codes for missing required d
         Object.assign(
           Object.create(Object.prototype) as EvidenceManifestInput,
           baseInput(),
-          { claims: [] },
+          { claims: [] }
         ),
     ],
 
@@ -171,13 +166,13 @@ void test("createEvidenceManifest fails with stable codes for missing required d
             claims: [
               Object.assign(
                 Object.create(
-                  Object.prototype,
+                  Object.prototype
                 ) as EvidenceManifestInput["claims"][number],
                 baseInput().claims[0],
-                { artifacts: [] },
+                { artifacts: [] }
               ),
             ],
-          },
+          }
         ),
     ],
   ]
@@ -186,7 +181,7 @@ void test("createEvidenceManifest fails with stable codes for missing required d
     assert.throws(
       () => evidence.createEvidenceManifest(fromAny(build())),
 
-      { code },
+      { code }
     )
   }
 })

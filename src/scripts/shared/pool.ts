@@ -1,6 +1,5 @@
-import type { Worker } from "node:worker_threads"
-
 import { once } from "node:events"
+import type { Worker } from "node:worker_threads"
 
 // Bounded-concurrency map: run `fn` over `items` with at most `max` in flight,
 
@@ -10,13 +9,12 @@ import { once } from "node:events"
 
 // (dieharder invocations, stats batteries, …) across all cores — see AGENTS.md.
 
-export const mapPool = async <T,
-R,>(
+export const mapPool = async <T, R>(
   items: readonly T[],
 
   fn: (item: T, index: number) => Promise<R>,
 
-  max: number,
+  max: number
 ): Promise<R[]> => {
   const out = Array.from<R>({ length: items.length })
 
@@ -45,8 +43,8 @@ R,>(
   return out
 }
 
-export const waitForWorkerMessage = async <T,>(
-  worker: Readonly<Worker>,
+export const waitForWorkerMessage = async <T>(
+  worker: Readonly<Worker>
 ): Promise<T> => {
   const controller = new AbortController()
 

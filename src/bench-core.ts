@@ -23,7 +23,7 @@ export const benchSync = (fn: () => string, n: number): BenchResult => {
 export const benchAsyncBatched = async (
   fn: () => Promise<string>,
   n: number,
-  batchSize = 1000,
+  batchSize = 1000
 ): Promise<BenchResult> => {
   const start = performance.now()
   const runBatch = async (done: number): Promise<void> => {
@@ -66,7 +66,7 @@ export const collisionTest = (fn: () => string, n: number): number => {
 export const collisionTestAsync = async (
   fn: () => Promise<string>,
   n: number,
-  batchSize = 1000,
+  batchSize = 1000
 ): Promise<number> => {
   // WebCrypto is awaited one call at a time in the sequential form, and
   // Playwright's WebKit build resolves each SubtleCrypto call in ~15 ms.
@@ -172,7 +172,7 @@ const studentTCritical95 = (df: number): number => {
 const summarize = (
   samples: number[],
   n: number,
-  trials: number,
+  trials: number
 ): BenchStats => {
   const mean = samples.reduce((a, b) => a + b, 0) / trials
   let variance = 0
@@ -210,7 +210,7 @@ export const benchRepeated = (
   fn: () => string,
   n: number,
   trials = 10,
-  warmupTrials = 3,
+  warmupTrials = 3
 ): BenchStats => {
   // Discard warmup pass(es): the first run pays JIT compilation (and any
   // Lazy one-time allocation) which would inflate variance and bias the mean
@@ -220,7 +220,7 @@ export const benchRepeated = (
   }
   const samples = Array.from(
     { length: trials },
-    () => benchSync(fn, n).opsPerSec,
+    () => benchSync(fn, n).opsPerSec
   )
   return summarize(samples, n, trials)
 }
@@ -229,7 +229,7 @@ export const benchRepeatedAsync = async (
   fn: () => Promise<string>,
   n: number,
   trials = 10,
-  batchSize = 1000,
+  batchSize = 1000
 ): Promise<BenchStats> => {
   const samples: number[] = []
   const runTrial = async (trial: number): Promise<void> => {

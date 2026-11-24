@@ -33,7 +33,6 @@
 // Test: bun test src/scripts/collision-100m.test.ts  (uses collisionTestScaled)
 
 import { birthdayBound50 } from "../../../dist/bench-core.js"
-
 import { genUlidV8 } from "../baselines.ts"
 
 export type V8Layout = {
@@ -171,7 +170,7 @@ export function collisionTestScaled(
 
   n: number,
 
-  label = "ids",
+  label = "ids"
 ): ScaledCollisionResult {
   const set = new Uuid128Set(n)
 
@@ -243,7 +242,7 @@ export async function collisionTestScaledParallel(
 
   n: number,
 
-  opts: { workers?: number; label?: string } = {},
+  opts: { workers?: number; label?: string } = {}
 ): Promise<ScaledCollisionResult> {
   const workers =
     opts.workers ?? Math.max(2, navigator.hardwareConcurrency || 1)
@@ -257,7 +256,7 @@ export async function collisionTestScaledParallel(
       const w = new Worker(
         new URL("collision-100m-worker.ts", import.meta.url).href,
 
-        { type: "module" },
+        { type: "module" }
       )
 
       w.postMessage({ mode, n: perWorker } satisfies WorkerData, [])
@@ -275,7 +274,7 @@ export async function collisionTestScaledParallel(
           reject(err)
         })
       })
-    }),
+    })
   )
 
   const elapsed = performance.now() - start
@@ -319,17 +318,17 @@ if (import.meta.main) {
   ]
 
   console.log(
-    `=== Task D: ${n.toLocaleString()}-scale collision test (deno) ===`,
+    `=== Task D: ${n.toLocaleString()}-scale collision test (deno) ===`
   )
 
   console.log(
-    `Birthday bound (50% collision prob) for 122-bit entropy: ${birthdayBound50(122).toExponential(2)} IDs\n`,
+    `Birthday bound (50% collision prob) for 122-bit entropy: ${birthdayBound50(122).toExponential(2)} IDs\n`
   )
 
   console.log(
     ["Generator", "N", "collisions", "ms", "IDs/s", "table MB", "verdict"].join(
-      "\t",
-    ),
+      "\t"
+    )
   )
 
   let allZero = true
@@ -358,14 +357,14 @@ if (import.meta.main) {
         r.tableMB.toFixed(0),
 
         verdict,
-      ].join("\t"),
+      ].join("\t")
     )
   }
 
   console.log(
     `\n${
       allZero ? "PASS" : "FAIL"
-    }: all generators reported 0 collisions at N=${n.toLocaleString()}.`,
+    }: all generators reported 0 collisions at N=${n.toLocaleString()}.`
   )
 
   if (!allZero) Deno.exit(1)

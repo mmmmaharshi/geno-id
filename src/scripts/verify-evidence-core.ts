@@ -1,8 +1,7 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs"
+import path from "node:path"
 
 import { nullValue, undefinedValue } from "./shared/runtime-values.ts"
-
-import path from "node:path"
 
 // The verification logic behind `src/scripts/verify-evidence.ts`, kept separate so
 
@@ -91,7 +90,6 @@ const resolveArtifact = (spec: string, root: string): string[] => {
     const [prefix, suffix] = pattern.split("*", 2)
 
     return readdirSync(dir)
-
       .filter((name) => name.startsWith(prefix) && name.endsWith(suffix))
 
       .map((name) => path.join(dir, name))
@@ -124,7 +122,7 @@ const readPath = (node: unknown, keys: readonly string[]): unknown => {
 
 export const verifyEvidenceTree = (
   input: EvidenceTreeInput,
-  root: string,
+  root: string
 ): EvidenceTreeResult => {
   let checked = 0
 

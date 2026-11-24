@@ -99,7 +99,9 @@ export const parsePractrandOutput = (output: string): PractRandRow[] => {
  * @returns {{ passed: number; failed: number; unassessed: number }} Counts of passed, failed, and unassessed rows.
  */
 
-export const countVerdicts = (rows: readonly PractRandRow[]): {
+export const countVerdicts = (
+  rows: readonly PractRandRow[]
+): {
   passed: number
 
   failed: number

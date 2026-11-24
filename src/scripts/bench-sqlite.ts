@@ -1,3 +1,9 @@
+import { Database } from "bun:sqlite"
+import fs from "node:fs"
+import os from "node:os"
+import path from "node:path"
+import { pathToFileURL } from "node:url"
+
 import type { V8Field, V8Layout } from "../../dist/algo.js"
 import {
   andBits,
@@ -5,19 +11,8 @@ import {
   shiftLeftBits,
   shiftRightBits,
 } from "../shared/bitwise.ts"
-import { genUlidV8, uuidToBytes } from "./baselines.ts"
-
-import { Database } from "bun:sqlite"
-
-import fs from "node:fs"
-
 import { need } from "../shared/need.ts"
-
-import os from "node:os"
-
-import path from "node:path"
-
-import { pathToFileURL } from "node:url"
+import { genUlidV8, uuidToBytes } from "./baselines.ts"
 
 // Task C: bulk-insert N IDs per generator into fresh in-memory SQLite and report throughput + B-tree compactness.
 
@@ -88,7 +83,7 @@ export interface SqliteResult {
 export const benchSqlite = (
   label: string,
   gen: () => string,
-  n: number,
+  n: number
 ): SqliteResult => {
   const db = new Database(":memory:")
 
@@ -120,20 +115,26 @@ export const benchSqlite = (
 
   const elapsed = performance.now() - start
 
-  const pageCount = (db.query("PRAGMA page_count").get() as {
-    page_count: number
-  }).page_count
+  const pageCount = (
+    db.query("PRAGMA page_count").get() as {
+      page_count: number
+    }
+  ).page_count
 
-  const freelistCount = (db.query("PRAGMA freelist_count").get() as {
-    freelist_count: number
-  }).freelist_count
+  const freelistCount = (
+    db.query("PRAGMA freelist_count").get() as {
+      freelist_count: number
+    }
+  ).freelist_count
 
   const pageSize = (db.query("PRAGMA page_size").get() as { page_size: number })
     .page_size
 
-  const integrity = (db.query("PRAGMA integrity_check").get() as {
-    integrity_check: string
-  }).integrity_check
+  const integrity = (
+    db.query("PRAGMA integrity_check").get() as {
+      integrity_check: string
+    }
+  ).integrity_check
 
   const integrityOk = integrity === "ok"
 
@@ -210,7 +211,13 @@ export interface CompositeKeySummary {
   results: CompositeKeyResult[]
 }
 
-export type CompositeKeyArm = "composite" | "composite-indexed" | "embedded" | "embedded56" | "concatenated" | "expression-index"
+export type CompositeKeyArm =
+  | "composite"
+  | "composite-indexed"
+  | "embedded"
+  | "embedded56"
+  | "concatenated"
+  | "expression-index"
 
 // Shard lives in bits 52-59 (hex chars 14-15); hex() keeps the predicate in TEXT so the expression index seeks.
 
@@ -240,7 +247,7 @@ export interface CompositeKeyArmDef {
 }
 
 const straddledShard = (bytes: Uint8Array): number =>
-  orBits(shiftLeftBits(andBits(bytes[6], 0x0F), 4), shiftRightBits(bytes[7], 4))
+  orBits(shiftLeftBits(andBits(bytes[6], 0x0f), 4), shiftRightBits(bytes[7], 4))
 
 const byteAlignedShard = (bytes: Uint8Array): number => bytes[7]
 
@@ -339,20 +346,22 @@ export const ARM_DDL: Record<CompositeKeyArm, string[]> = {
   ],
 }
 
-export const ARM_KEY_ENCODING: Record<CompositeKeyArm, "TEXT" | "BLOB(16)" | "INTEGER+BLOB(16)"> =
-  {
-    composite: "INTEGER+BLOB(16)",
+export const ARM_KEY_ENCODING: Record<
+  CompositeKeyArm,
+  "TEXT" | "BLOB(16)" | "INTEGER+BLOB(16)"
+> = {
+  composite: "INTEGER+BLOB(16)",
 
-    "composite-indexed": "INTEGER+BLOB(16)",
+  "composite-indexed": "INTEGER+BLOB(16)",
 
-    concatenated: "TEXT",
+  concatenated: "TEXT",
 
-    embedded: "BLOB(16)",
+  embedded: "BLOB(16)",
 
-    embedded56: "BLOB(16)",
+  embedded56: "BLOB(16)",
 
-    "expression-index": "BLOB(16)",
-  }
+  "expression-index": "BLOB(16)",
+}
 
 const pregenIds = (arm: CompositeKeyArm, n: number): unknown[] => {
   const ids: unknown[] = []
@@ -384,7 +393,7 @@ export const benchCompositeKeyArm = (
   ids: unknown[],
   lookupCount = 1000,
   trialIndex = 0,
-  totalTrials = 1,
+  totalTrials = 1
 ): CompositeKeyResult => {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "genoid-sqlite-"))
 
@@ -393,7 +402,7 @@ export const benchCompositeKeyArm = (
   const db = new Database(dbPath)
 
   db.run(
-    "PRAGMA synchronous = OFF; PRAGMA journal_mode = WAL; PRAGMA cache_size = -64000",
+    "PRAGMA synchronous = OFF; PRAGMA journal_mode = WAL; PRAGMA cache_size = -64000"
   )
 
   for (const ddl of ARM_DDL[arm]) {
@@ -464,13 +473,17 @@ export const benchCompositeKeyArm = (
 
   const scanElapsed = performance.now() - scanStart
 
-  const pageCount = (db.query("PRAGMA page_count").get() as {
-    page_count: number
-  }).page_count
+  const pageCount = (
+    db.query("PRAGMA page_count").get() as {
+      page_count: number
+    }
+  ).page_count
 
-  const freelistCount = (db.query("PRAGMA freelist_count").get() as {
-    freelist_count: number
-  }).freelist_count
+  const freelistCount = (
+    db.query("PRAGMA freelist_count").get() as {
+      freelist_count: number
+    }
+  ).freelist_count
 
   const pageSize = (db.query("PRAGMA page_size").get() as { page_size: number })
     .page_size
@@ -480,9 +493,11 @@ export const benchCompositeKeyArm = (
   let integrity = "ok"
 
   if (trialIndex === totalTrials - 1) {
-    integrity = (db.query("PRAGMA integrity_check").get() as {
-      integrity_check: string
-    }).integrity_check
+    integrity = (
+      db.query("PRAGMA integrity_check").get() as {
+        integrity_check: string
+      }
+    ).integrity_check
   }
 
   db.close()
@@ -564,7 +579,7 @@ export const benchCompositeKeyRepeated = (
   arm: CompositeKeyArm,
   n: number,
   trials = 10,
-  lookupCount = 1000,
+  lookupCount = 1000
 ): CompositeKeySummary => {
   console.log(`  ${arm} n=${n}: generating ${n} IDs...`)
 
@@ -614,7 +629,7 @@ if (import.meta.main) {
   console.log(`=== Task C: SQLite B-tree index benchmark (N=${n}) ===`)
 
   console.log(
-    "Sortable IDs (timestamp-prefixed) should keep the primary-key B-tree tighter than random IDs.\n",
+    "Sortable IDs (timestamp-prefixed) should keep the primary-key B-tree tighter than random IDs.\n"
   )
 
   console.log(
@@ -626,7 +641,7 @@ if (import.meta.main) {
       "freelist",
       "bytes/row",
       "integrity",
-    ].join("\t"),
+    ].join("\t")
   )
 
   const results = gens.map(([label, gen]) => {
@@ -653,7 +668,7 @@ if (import.meta.main) {
         r.bytesPerRow.toFixed(2),
 
         integrityText,
-      ].join("\t"),
+      ].join("\t")
     )
 
     return r
@@ -671,19 +686,19 @@ if (import.meta.main) {
 
   console.log(
     `\nB-tree compactness: pages/row range ${minPPR.toFixed(5)}..${maxPPR.toFixed(5)} ` +
-      `(order-independent: leaf packing depends on N and key size, not insertion order).`,
+      `(order-independent: leaf packing depends on N and key size, not insertion order).`
   )
 
   console.log(
     `All IDs: integrity ok, freelist 0 (no fragmentation). Fastest bulk insert: ${fastest} ` +
       `(${maxThroughput.toFixed(0)} rows/s). Sortable IDs (v7, ulid-v8) match/exceed random ` +
-      `IDs on throughput while preserving insertion-time order for range scans.`,
+      `IDs on throughput while preserving insertion-time order for range scans.`
   )
 
   console.log(`\n=== Composite-key benchmark ===`)
 
   console.log(
-    "All arms WITHOUT ROWID (clustered PK). All arms use GenoID dbkey (timestamp-sorted). File-backed SQLite: I/O page-fault cost included.\n",
+    "All arms WITHOUT ROWID (clustered PK). All arms use GenoID dbkey (timestamp-sorted). File-backed SQLite: I/O page-fault cost included.\n"
   )
 
   // Config: [arm, nTrials, lookupCount]
@@ -708,7 +723,7 @@ if (import.meta.main) {
     const tmp = new Database(":memory:")
 
     tmp.run(
-      "CREATE TABLE t (shard INTEGER, id BLOB(16), val INTEGER, PRIMARY KEY (shard, id)) WITHOUT ROWID",
+      "CREATE TABLE t (shard INTEGER, id BLOB(16), val INTEGER, PRIMARY KEY (shard, id)) WITHOUT ROWID"
     )
 
     const plan = tmp
@@ -717,7 +732,7 @@ if (import.meta.main) {
 
     console.log(
       "  [diagnostic] composite (no index) lookup plan:",
-      JSON.stringify(plan),
+      JSON.stringify(plan)
     )
 
     tmp.run("CREATE INDEX idx_id ON t(id)")
@@ -728,7 +743,7 @@ if (import.meta.main) {
 
     console.log(
       "  [diagnostic] composite-indexed lookup plan:",
-      JSON.stringify(plan2),
+      JSON.stringify(plan2)
     )
 
     tmp.close()
@@ -745,13 +760,13 @@ if (import.meta.main) {
 
     const plan3 = tmp
       .query(
-        `EXPLAIN QUERY PLAN SELECT val FROM ids WHERE ${expressionIndexShardPredicate(3)}`,
+        `EXPLAIN QUERY PLAN SELECT val FROM ids WHERE ${expressionIndexShardPredicate(3)}`
       )
       .all()
 
     console.log(
       "  [diagnostic] expression-index shard-scan plan:",
-      JSON.stringify(plan3),
+      JSON.stringify(plan3)
     )
 
     tmp.close()
@@ -785,7 +800,7 @@ if (import.meta.main) {
       "CI95",
       "range ms",
       "CI95",
-    ].join("\t"),
+    ].join("\t")
   )
 
   for (let i = 0; i < configs.length; i += 1) {
@@ -810,7 +825,7 @@ if (import.meta.main) {
         r.rangeScanMs.mean.toFixed(2),
 
         `${r.rangeScanMs.ci95[0].toFixed(2)}–${r.rangeScanMs.ci95[1].toFixed(2)}`,
-      ].join("\t"),
+      ].join("\t")
     )
   }
 }

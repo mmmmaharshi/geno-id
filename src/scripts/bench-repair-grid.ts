@@ -1,16 +1,12 @@
 // Repair-distribution + range-clamp grid (future.md item 5): measured frequencies vs closed-form predictions.
 
 import { mkdirSync, writeFileSync } from "node:fs"
+import os from "node:os"
+import path from "node:path"
+import { pathToFileURL } from "node:url"
 
 import { mulberry32 } from "./shared/cli-utils.ts"
-
 import { nullValue } from "./shared/runtime-values.ts"
-
-import os from "node:os"
-
-import path from "node:path"
-
-import { pathToFileURL } from "node:url"
 
 const root = path.resolve(import.meta.dirname, "..", "..")
 
@@ -20,7 +16,7 @@ const { rangeClampMass } = (await import(
   rangeClampMass: (
     ell: number,
     min: number,
-    max: number,
+    max: number
   ) => {
     pMin: number
 
@@ -34,7 +30,7 @@ const N = Number(process.env.REPAIR_GRID_N ?? 200_000)
 
 const OUT = process.env.REPAIR_GRID_OUT ?? "results/repair-grid.json"
 
-const SEED = Math.trunc(Number(process.env.REPAIR_GRID_SEED ?? 0x9E_37_79_B9))
+const SEED = Math.trunc(Number(process.env.REPAIR_GRID_SEED ?? 0x9e_37_79_b9))
 
 interface GridCell {
   m: number
@@ -93,7 +89,7 @@ for (const ell of [3, 4, 8, 12, 16]) {
 
       const fibres = Array.from(
         { length: m },
-        (_, i) => Math.floor((space - 1 - i) / m) + 1,
+        (_, i) => Math.floor((space - 1 - i) / m) + 1
       )
 
       const predicted = fibres.map((c) => c / space)
@@ -142,7 +138,7 @@ for (const ell of [3, 4, 8, 12, 16]) {
       }
 
       console.log(
-        `  m=${m} l=${ell}: maxDev ${maxDev.toFixed(4)}pp chi2 ${chi.toFixed(1)} ${status}`,
+        `  m=${m} l=${ell}: maxDev ${maxDev.toFixed(4)}pp chi2 ${chi.toFixed(1)} ${status}`
       )
     }
   }
@@ -206,7 +202,7 @@ for (const [ell, min, max] of rangeTriples) {
   const maxDev =
     Math.max(
       Math.abs(measuredMin - predictedMin),
-      Math.abs(measuredMax - predictedMax),
+      Math.abs(measuredMax - predictedMax)
     ) * 100
 
   const pass = maxDev < TOL_PP
@@ -232,7 +228,7 @@ for (const [ell, min, max] of rangeTriples) {
   }
 
   console.log(
-    `  range ell=${ell} [${min},${max}]: maxDev ${maxDev.toFixed(4)}pp ${status}`,
+    `  range ell=${ell} [${min},${max}]: maxDev ${maxDev.toFixed(4)}pp ${status}`
   )
 }
 
@@ -273,11 +269,11 @@ mkdirSync(path.dirname(path.resolve(root, OUT)), { recursive: true })
 
 writeFileSync(
   path.resolve(root, OUT),
-  `${JSON.stringify(report, nullValue, 2)}\n`,
+  `${JSON.stringify(report, nullValue, 2)}\n`
 )
 
 console.log(
-  `\nwrote ${OUT} (${cells.length - failed.length}/${cells.length} fibre cells, ${rangeCells.length - rangeFailed.length}/${rangeCells.length} range cells pass)`,
+  `\nwrote ${OUT} (${cells.length - failed.length}/${cells.length} fibre cells, ${rangeCells.length - rangeFailed.length}/${rangeCells.length} range cells pass)`
 )
 
 if (failed.length > 0 || rangeFailed.length > 0) {

@@ -1,9 +1,7 @@
 /// <reference types="node" />
 
 import assert from "node:assert/strict"
-
 import path from "node:path"
-
 import { test } from "node:test"
 
 // The browser runner labelled each row with the requested engine but pinned
@@ -22,7 +20,7 @@ const mod = (await import(
   runBenchmark: (
     args: Readonly<Record<string, string | boolean>>,
 
-    options: Readonly<{ browser?: "chromium" | "firefox" | "webkit" }>,
+    options: Readonly<{ browser?: "chromium" | "firefox" | "webkit" }>
   ) => Promise<{
     browser: string
 
@@ -41,7 +39,7 @@ const mod = (await import(
 
   planPlaywrightWrite: (
     runCount: number,
-    outPath: string,
+    outPath: string
   ) => { write: boolean; message: string }
 
   startServer: () => Promise<{ close: () => Promise<void>; origin: string }>
@@ -106,13 +104,13 @@ void test(
             url: `${server.origin}/index.html`,
           },
 
-          { browser: engine },
+          { browser: engine }
         )
 
         assert.equal(
           output.browser,
           engine,
-          "the output must record the engine that was requested",
+          "the output must record the engine that was requested"
         )
 
         assert.match(
@@ -120,7 +118,7 @@ void test(
 
           MUST_MATCH[engine],
 
-          `expected a ${engine} user agent, got "${output.userAgent}"`,
+          `expected a ${engine} user agent, got "${output.userAgent}"`
         )
 
         assert.doesNotMatch(
@@ -128,23 +126,23 @@ void test(
 
           MUST_NOT_MATCH[engine],
 
-          `the ${engine} row reports a foreign engine user agent: "${output.userAgent}"`,
+          `the ${engine} row reports a foreign engine user agent: "${output.userAgent}"`
         )
 
         assert.deepEqual(
           output.browserErrors,
           [],
-          `${engine} must report no browser errors`,
+          `${engine} must report no browser errors`
         )
 
         assert.ok(
           output.results.length >= 6,
-          `${engine} produced ${output.results.length} result rows`,
+          `${engine} produced ${output.results.length} result rows`
         )
 
         assert.ok(
           output.collisions.length >= 6,
-          `${engine} produced ${output.collisions.length} collision rows`,
+          `${engine} produced ${output.collisions.length} collision rows`
         )
 
         assert.equal(
@@ -152,7 +150,7 @@ void test(
 
           "compiled-direct-v8",
 
-          `${engine} must record the production generation plan it ran`,
+          `${engine} must record the production generation plan it ran`
         )
 
         agents.push(output.userAgent)
@@ -170,7 +168,7 @@ void test(
 
       ENGINES.length,
 
-      `expected ${ENGINES.length} distinct user agents, got: ${agents.join(" | ")}`,
+      `expected ${ENGINES.length} distinct user agents, got: ${agents.join(" | ")}`
     )
-  },
+  }
 )

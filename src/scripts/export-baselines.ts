@@ -1,13 +1,12 @@
+import { writeFileSync } from "node:fs"
+import path from "node:path"
+
 import {
   TIMESTAMPED_FIXED,
   extractRandomBits,
   genPgUuidV8,
   genUlidV8,
 } from "./baselines.ts"
-
-import path from "node:path"
-
-import { writeFileSync } from "node:fs"
 
 const __dirname = import.meta.dirname
 
@@ -28,7 +27,7 @@ const TARGET_BITS = 1_550_000
 const exportBits = (
   label: string,
   fn: () => string,
-  fixed: [number, number][],
+  fixed: [number, number][]
 ): void => {
   let bits = ""
 

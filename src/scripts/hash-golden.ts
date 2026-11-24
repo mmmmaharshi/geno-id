@@ -1,7 +1,5 @@
 import { createHash } from "node:crypto"
-
 import fs from "node:fs"
-
 import path from "node:path"
 
 // Hashes the committed golden vectors and writes the manifest.
@@ -59,7 +57,7 @@ if (fs.existsSync(goldenDir)) {
     fs.writeFileSync(MANIFEST, `${lines.join("\n")}\n`)
 
     console.log(
-      `Wrote ${path.relative(root, MANIFEST)} (${files.length} vectors)`,
+      `Wrote ${path.relative(root, MANIFEST)} (${files.length} vectors)`
     )
   }
 } else {

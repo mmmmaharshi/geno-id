@@ -12,11 +12,10 @@
 
 /// <reference types="node" />
 
-import { benchRepeated, benchRepeatedAsync } from "../../dist/bench-core.js"
-
 import assert from "node:assert/strict"
-
 import { test } from "node:test"
+
+import { benchRepeated, benchRepeatedAsync } from "../../dist/bench-core.js"
 
 const makeId = (): string => "12345678-1234-8234-9234-123456789abc"
 
@@ -48,7 +47,7 @@ void test("benchRepeatedAsync returns repeated-trial statistics", async () => {
       return makeId()
     },
     1000,
-    5,
+    5
   )
 
   assert.equal(s.trials, 5)

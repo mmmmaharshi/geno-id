@@ -5,10 +5,9 @@
 //   Bun run docs:benchmarks
 
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs"
+import path from "node:path"
 
 import { need } from "../shared/need.ts"
-
-import path from "node:path"
 
 interface Environment {
   runtime: string

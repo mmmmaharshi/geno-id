@@ -1,7 +1,7 @@
-import { benchCompositeKeyArm } from "./bench-sqlite.ts"
+import { parentPort } from "node:worker_threads"
 
 import { need } from "../shared/need.ts"
-import { parentPort } from "node:worker_threads"
+import { benchCompositeKeyArm } from "./bench-sqlite.ts"
 
 type CompositeKeyArm = Parameters<typeof benchCompositeKeyArm>[0]
 
@@ -21,9 +21,9 @@ need(parentPort).on(
       msg.ids,
       msg.lookupCount,
       msg.trialIndex,
-      msg.totalTrials,
+      msg.totalTrials
     )
 
     need(parentPort).postMessage({ result, trialIndex: msg.trialIndex }, [])
-  },
+  }
 )

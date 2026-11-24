@@ -1,23 +1,17 @@
-import type { V8Field, V8Layout } from "../../dist/algo.js"
-import { andBits, shiftRightBits } from "../shared/bitwise.ts"
+import fs from "node:fs"
+import path from "node:path"
+import { performance } from "node:perf_hooks"
+import { pathToFileURL } from "node:url"
 
+import type { V8Field, V8Layout } from "../../dist/algo.js"
 import {
   benchSync,
   birthdayBound50,
   collisionTest,
 } from "../../dist/bench-core.js"
-
-import { nullValue, undefinedValue } from "./shared/runtime-values.ts"
-
-import fs from "node:fs"
-
+import { andBits, shiftRightBits } from "../shared/bitwise.ts"
 import { need } from "../shared/need.ts"
-
-import path from "node:path"
-
-import { pathToFileURL } from "node:url"
-
-import { performance } from "node:perf_hooks"
+import { nullValue, undefinedValue } from "./shared/runtime-values.ts"
 
 const __dirname = import.meta.dirname
 
@@ -28,14 +22,14 @@ const algo = (await import(
 )) as {
   genStructuredParent: (
     l: Readonly<V8Layout>,
-    mask: readonly number[],
+    mask: readonly number[]
   ) => Uint8Array
 
   composeStructured: (
     l: Readonly<V8Layout>,
     a: Readonly<Uint8Array>,
     b: Readonly<Uint8Array>,
-    fs: number,
+    fs: number
   ) => Uint8Array
 
   repairConstraints: (l: Readonly<V8Layout>, b: Uint8Array) => number
@@ -277,15 +271,15 @@ const e2 = (): E2Row[] => {
   console.log("\n=== E2: repair vs CSPRNG rejection (RQ2) ===")
 
   console.log(
-    "  each constrained field: 8 bits, allowed set size 4 -> per-field reject ratio 64x",
+    "  each constrained field: 8 bits, allowed set size 4 -> per-field reject ratio 64x"
   )
 
   console.log(
-    "  analytic rejection trials/UUID = 64^k  (repairs/UUID ~= k, O(k*8) ops)",
+    "  analytic rejection trials/UUID = 64^k  (repairs/UUID ~= k, O(k*8) ops)"
   )
 
   console.log(
-    "  k | GA repairs/UUID | rejection trials/UUID | GA ms/M | reject ms/M",
+    "  k | GA repairs/UUID | rejection trials/UUID | GA ms/M | reject ms/M"
   )
 
   const rows: E2Row[] = []
@@ -355,7 +349,7 @@ const e2 = (): E2Row[] => {
           for (const f of constrained) {
             if (
               !need(need(f.constraint).allowed).includes(
-                getFieldValue(bytes, f),
+                getFieldValue(bytes, f)
               )
             ) {
               ok = false
@@ -380,7 +374,7 @@ const e2 = (): E2Row[] => {
     }
 
     console.log(
-      `  ${k} | ${(totalRepairs / N_GA).toFixed(3).padStart(14)} | ${rjTrialsStr.padStart(19)} | ${gaMs.toFixed(0).padStart(8)} | ${rjMs.toFixed(0).padStart(9)}`,
+      `  ${k} | ${(totalRepairs / N_GA).toFixed(3).padStart(14)} | ${rjTrialsStr.padStart(19)} | ${gaMs.toFixed(0).padStart(8)} | ${rjMs.toFixed(0).padStart(9)}`
     )
 
     rows.push({
@@ -419,7 +413,7 @@ const e3e4e5 = (): E345Result => {
   const totalBits = randomFields.reduce((s, f) => s + f.length, 0)
 
   console.log(
-    `  theoretical 50% collision n (${totalBits} random bits): ${birthdayBound50(totalBits).toExponential(2)}`,
+    `  theoretical 50% collision n (${totalBits} random bits): ${birthdayBound50(totalBits).toExponential(2)}`
   )
 
   // Uniformity on random-field bits (reuse the canonical bit extractor)
@@ -445,7 +439,7 @@ const e3e4e5 = (): E345Result => {
   const maxDev = Math.max(...ones.map((o) => Math.abs(o / M - 0.5)))
 
   console.log(
-    `  uniformity: max |P(1)-0.5| over ${totalBits} random bits = ${maxDev.toFixed(4)} (PASS=${maxDev < 0.05})`,
+    `  uniformity: max |P(1)-0.5| over ${totalBits} random bits = ${maxDev.toFixed(4)} (PASS=${maxDev < 0.05})`
   )
 
   return {
@@ -481,11 +475,11 @@ const e6 = (): E6Result => {
   console.log(`  v4 native:            ${rV4.opsPerSec.toFixed(0)} ops/sec`)
 
   console.log(
-    `  GenoID (base, v8):    ${rBase.opsPerSec.toFixed(0)} ops/sec  (${(rV4.opsPerSec / rBase.opsPerSec).toFixed(1)}x slower)`,
+    `  GenoID (base, v8):    ${rBase.opsPerSec.toFixed(0)} ops/sec  (${(rV4.opsPerSec / rBase.opsPerSec).toFixed(1)}x slower)`
   )
 
   console.log(
-    `  GenoID-structured (${getStructuredGenerationMode()}): ${rGeno.opsPerSec.toFixed(0)} ops/sec  (${(rV4.opsPerSec / rGeno.opsPerSec).toFixed(1)}x slower vs v4, ${(rBase.opsPerSec / rGeno.opsPerSec).toFixed(1)}x vs base)`,
+    `  GenoID-structured (${getStructuredGenerationMode()}): ${rGeno.opsPerSec.toFixed(0)} ops/sec  (${(rV4.opsPerSec / rGeno.opsPerSec).toFixed(1)}x slower vs v4, ${(rBase.opsPerSec / rGeno.opsPerSec).toFixed(1)}x vs base)`
   )
 
   return {
@@ -507,7 +501,7 @@ const e6 = (): E6Result => {
 
 const e7 = (): E7Result => {
   console.log(
-    "\n=== E7: Single-parent ablation (RQ4: what does crossover add?) ===",
+    "\n=== E7: Single-parent ablation (RQ4: what does crossover add?) ==="
   )
 
   const layout = DBKEY_LAYOUT
@@ -529,11 +523,11 @@ const e7 = (): E7Result => {
   const rTwo = benchSync(() => genStructuredGenoID(layout), nSync)
 
   console.log(
-    `  production (${getStructuredGenerationMode()}): ${rTwo.opsPerSec.toFixed(0)} ops/sec`,
+    `  production (${getStructuredGenerationMode()}): ${rTwo.opsPerSec.toFixed(0)} ops/sec`
   )
 
   console.log(
-    `  pooled single-parent (ablation): ${rOne.opsPerSec.toFixed(0)} ops/sec  (${(rOne.opsPerSec / rTwo.opsPerSec).toFixed(2)}x vs production)`,
+    `  pooled single-parent (ablation): ${rOne.opsPerSec.toFixed(0)} ops/sec  (${(rOne.opsPerSec / rTwo.opsPerSec).toFixed(2)}x vs production)`
   )
 
   // Collisions (2M each)
@@ -544,7 +538,7 @@ const e7 = (): E7Result => {
 
   const cOne = collisionTest(
     () => genStructuredGenoIDSingleParent(layout),
-    nColl,
+    nColl
   )
 
   console.log(`  production collisions (n=${nColl}): ${cTwo}`)
@@ -610,9 +604,9 @@ const e7 = (): E7Result => {
 
       .map((f: Readonly<V8Field>, i: number) => ({ f, i }))
 
-      .filter(({ f }: { readonly  f: Readonly<V8Field> }) => f.type !== "random")
+      .filter(({ f }: { readonly f: Readonly<V8Field> }) => f.type !== "random")
 
-      .map(({ i }: { readonly  i: number }) => i)
+      .map(({ i }: { readonly i: number }) => i)
 
     const N = 500_000
 
@@ -647,17 +641,17 @@ const e7 = (): E7Result => {
     compositionViolations[label] = constraintFail
 
     console.log(
-      `  ${label} composition: ${structIdx.length * N} checks, 0 mismatches, ${constraintFail} violations (PASS=${constraintFail === 0})`,
+      `  ${label} composition: ${structIdx.length * N} checks, 0 mismatches, ${constraintFail} violations (PASS=${constraintFail === 0})`
     )
   }
 
   const totalViolations = Object.values(compositionViolations).reduce(
     (s, v) => s + v,
-    0,
+    0
   )
 
   console.log(
-    `  verdict: pooled single-parent matches the named production path on collision/uniformity/composition guarantees; throughput ${(rOne.opsPerSec / rTwo.opsPerSec).toFixed(2)}x of production`,
+    `  verdict: pooled single-parent matches the named production path on collision/uniformity/composition guarantees; throughput ${(rOne.opsPerSec / rTwo.opsPerSec).toFixed(2)}x of production`
   )
 
   return {
@@ -701,7 +695,7 @@ const evidencePath = path.resolve(root, "results", "structured-evidence.json")
 fs.writeFileSync(
   evidencePath,
   `${JSON.stringify(evidence, nullValue, 2)}\n`,
-  "utf8",
+  "utf8"
 )
 
 console.log(`Evidence written: ${evidencePath}`)

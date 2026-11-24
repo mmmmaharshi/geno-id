@@ -1,5 +1,4 @@
 import { writeBitsFile } from "./deno-io.ts"
-
 import { hexVal, genRawV8 } from "./export-bits.ts"
 
 const algo = (await import("../../../dist/algo.js")) as {
@@ -47,7 +46,7 @@ async function generateSamples(
 
   fn: () => string,
 
-  count: number,
+  count: number
 ): Promise<string> {
   let allBits = ""
 
@@ -57,9 +56,7 @@ async function generateSamples(
 
   const file = await writeBitsFile(`${label}.bits.txt`, allBits)
 
-  console.log(
-    `Wrote ${(allBits.length / 1000000).toFixed(1)}M bits to ${file}`,
-  )
+  console.log(`Wrote ${(allBits.length / 1000000).toFixed(1)}M bits to ${file}`)
 
   return file.toString()
 }

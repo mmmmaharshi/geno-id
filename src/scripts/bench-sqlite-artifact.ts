@@ -1,19 +1,14 @@
+import { Database } from "bun:sqlite"
+import { mkdirSync, writeFileSync } from "node:fs"
+import os from "node:os"
+import path from "node:path"
+
 import {
   benchCompositeKeyRepeated,
   expressionIndexShardPredicate,
 } from "./bench-sqlite.ts"
-
 import { gitSha, runtimeVersion } from "./shared/cli-utils.ts"
-
-import { mkdirSync, writeFileSync } from "node:fs"
-
-import { Database } from "bun:sqlite"
-
 import { nullValue } from "./shared/runtime-values.ts"
-
-import os from "node:os"
-
-import path from "node:path"
 
 type CompositeKeyArm = Parameters<typeof benchCompositeKeyRepeated>[0]
 
@@ -56,7 +51,7 @@ const queryPlans = (): Record<string, unknown> => {
   const db = new Database(":memory:")
 
   db.run(
-    "CREATE TABLE ids (shard INTEGER, id BLOB(16), val INTEGER, PRIMARY KEY (shard, id)) WITHOUT ROWID",
+    "CREATE TABLE ids (shard INTEGER, id BLOB(16), val INTEGER, PRIMARY KEY (shard, id)) WITHOUT ROWID"
   )
 
   const bare = db
@@ -74,14 +69,14 @@ const queryPlans = (): Record<string, unknown> => {
   const expr = new Database(":memory:")
 
   expr.run(
-    "CREATE TABLE ids (id BLOB(16) PRIMARY KEY, val INTEGER) WITHOUT ROWID",
+    "CREATE TABLE ids (id BLOB(16) PRIMARY KEY, val INTEGER) WITHOUT ROWID"
   )
 
   expr.run("CREATE INDEX idx_shard_expr ON ids((substr(hex(id),14,2)))")
 
   const exprScan = expr
     .query(
-      `EXPLAIN QUERY PLAN SELECT val FROM ids WHERE ${expressionIndexShardPredicate(3)}`,
+      `EXPLAIN QUERY PLAN SELECT val FROM ids WHERE ${expressionIndexShardPredicate(3)}`
     )
     .all({})
 
@@ -168,7 +163,7 @@ const report = {
 
         shardRangeScanMs: s.rangeScanMs,
       },
-    ]),
+    ])
   ),
 
   derived: {
@@ -243,7 +238,7 @@ mkdirSync(path.dirname(path.resolve(root, OUT)), { recursive: true })
 
 writeFileSync(
   path.resolve(root, OUT),
-  `${JSON.stringify(report, nullValue, 2)}\n`,
+  `${JSON.stringify(report, nullValue, 2)}\n`
 )
 
 console.log("\n=== Composite-key summary (mean of trials) ===")
@@ -257,7 +252,7 @@ console.log(
     "lookup us",
     "CI95",
     "range ms",
-  ].join("\t"),
+  ].join("\t")
 )
 
 for (const arm of ARMS) {
@@ -278,7 +273,7 @@ for (const arm of ARMS) {
       `${s.lookupUs.ci95[0].toFixed(2)}-${s.lookupUs.ci95[1].toFixed(2)}`,
 
       s.rangeScanMs.mean.toFixed(2),
-    ].join("\t"),
+    ].join("\t")
   )
 }
 

@@ -12,7 +12,7 @@ authors:
 repository-code: "https://github.com/mmmmaharshi/geno-id"
 license: MIT
 version: 1.28.4
-date-released: '2026-11-24'
+date-released: "2026-11-24"
 keywords:
   - UUID
   - RFC 9562

@@ -1,23 +1,17 @@
+import os from "node:os"
+import path from "node:path"
+import { pathToFileURL } from "node:url"
 import {
   Worker,
   isMainThread,
   parentPort,
   workerData,
 } from "node:worker_threads"
+
 import type { V8Layout } from "../../dist/algo.js"
-
 import { birthdayBound50 } from "../../dist/bench-core.js"
-
-import { genUlidV8 } from "./baselines.ts"
-
 import { need } from "../shared/need.ts"
-
-import os from "node:os"
-
-import path from "node:path"
-
-import { pathToFileURL } from "node:url"
-
+import { genUlidV8 } from "./baselines.ts"
 import { waitForWorkerMessage } from "./shared/pool.ts"
 
 // Task D: 100M-scale batched collision test.
@@ -174,7 +168,7 @@ export const collisionTestScaled = (
 
   n: number,
 
-  label = "ids",
+  label = "ids"
 ): ScaledCollisionResult => {
   const set = new Uuid128Set(n)
 
@@ -260,7 +254,7 @@ if (!isMainThread) {
 
   need(parentPort).postMessage(
     { collisions, n, tableMB } satisfies WorkerMsg,
-    [],
+    []
   )
 }
 
@@ -275,7 +269,7 @@ export const collisionTestScaledParallel = async (
 
   n: number,
 
-  opts: Readonly<{ workers?: number; label?: string }> = {},
+  opts: Readonly<{ workers?: number; label?: string }> = {}
 ): Promise<ScaledCollisionResult> => {
   const workers = opts.workers ?? Math.max(2, os.cpus().length)
 
@@ -292,7 +286,7 @@ export const collisionTestScaledParallel = async (
       const message = await waitForWorkerMessage<WorkerMsg>(w)
 
       return message
-    }),
+    })
   )
 
   const elapsed = performance.now() - start
@@ -322,7 +316,7 @@ const runScaled = async (
   mode: string,
   n: number,
   label: string,
-  syncMode: boolean,
+  syncMode: boolean
 ): Promise<ScaledCollisionResult> => {
   if (syncMode) {
     return collisionTestScaled(MODES[mode], n, label)
@@ -353,13 +347,13 @@ if (import.meta.main) {
   console.log(`=== Task D: ${n.toLocaleString()}-scale collision test ===`)
 
   console.log(
-    `Birthday bound (50% collision prob) for 122-bit entropy: ${birthdayBound50(122).toExponential(2)} IDs\n`,
+    `Birthday bound (50% collision prob) for 122-bit entropy: ${birthdayBound50(122).toExponential(2)} IDs\n`
   )
 
   console.log(
     ["Generator", "N", "collisions", "ms", "IDs/s", "table MB", "verdict"].join(
-      "\t",
-    ),
+      "\t"
+    )
   )
 
   const runs: ScaledCollisionResult[] = []
@@ -396,7 +390,7 @@ if (import.meta.main) {
         r.tableMB.toFixed(0),
 
         verdict,
-      ].join("\t"),
+      ].join("\t")
     )
 
     await runGenerator(index + 1)
@@ -413,7 +407,7 @@ if (import.meta.main) {
   }
 
   console.log(
-    `\n${summary}: all generators reported 0 collisions at N=${n.toLocaleString()}.`,
+    `\n${summary}: all generators reported 0 collisions at N=${n.toLocaleString()}.`
   )
 
   if (!allZero) {

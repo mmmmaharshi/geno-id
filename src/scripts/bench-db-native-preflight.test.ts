@@ -1,18 +1,15 @@
 /// <reference types="node" />
 
+import assert from "node:assert/strict"
+import { once } from "node:events"
+import net from "node:net"
+import { test } from "node:test"
+
 import {
   SERVER_ENV,
   serverTarget,
   unreachableMessage,
 } from "./bench-db-native-core.ts"
-
-import assert from "node:assert/strict"
-
-import net from "node:net"
-
-import { once } from "node:events"
-
-import { test } from "node:test"
 
 void test("the default postgres target is the documented localhost:5432", () => {
   assert.deepEqual(serverTarget("postgresql", {}), {
@@ -35,7 +32,7 @@ void test("env vars override the default target", () => {
       host: "db.internal",
 
       port: 6543,
-    },
+    }
   )
 
   assert.deepEqual(
@@ -47,7 +44,7 @@ void test("env vars override the default target", () => {
       host: "10.0.0.5",
 
       port: 3307,
-    },
+    }
   )
 })
 
@@ -56,13 +53,13 @@ void test("every engine documents the env vars that retarget the harness", () =>
     assert.match(
       SERVER_ENV[name],
       /HOST/u,
-      `${name} must document a host override`,
+      `${name} must document a host override`
     )
 
     assert.match(
       SERVER_ENV[name],
       /PORT/u,
-      `${name} must document a port override`,
+      `${name} must document a port override`
     )
   }
 })
@@ -139,7 +136,7 @@ const listen = async (): Promise<{
 const probe = async (
   host: string,
   port: number,
-  timeoutMs = 4000,
+  timeoutMs = 4000
 ): Promise<boolean> => {
   const socket = net.connect(port, host)
 

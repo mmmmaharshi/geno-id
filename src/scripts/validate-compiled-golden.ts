@@ -1,15 +1,11 @@
-import { andBits } from "../shared/bitwise.ts"
-
 import fs from "node:fs"
-
-import { need } from "../shared/need.ts"
-import { nullValue } from "./shared/runtime-values.ts"
-
 import path from "node:path"
-
 import { pathToFileURL } from "node:url"
 
+import { andBits } from "../shared/bitwise.ts"
+import { need } from "../shared/need.ts"
 import { readLines } from "./shared/read-lines.ts"
+import { nullValue } from "./shared/runtime-values.ts"
 
 const root = path.resolve(import.meta.dirname, "..", "..")
 
@@ -53,7 +49,7 @@ const validateUUID = (uuid: string, context: string): number => {
 
   if (
     !/^[0-9a-f]{8}-[0-9a-f]{4}-8[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u.test(
-      uuid,
+      uuid
     )
   ) {
     errors.push(`invalid v8 format`)
@@ -83,14 +79,13 @@ const constraintsHold = (
 
   fieldMap: ReadonlyMap<string, Field>,
 
-  constraints: Readonly<Record<string, (
-    val: number,
-    idx: number,
-  ) => string | null>>,
+  constraints: Readonly<
+    Record<string, (val: number, idx: number) => string | null>
+  >,
 
   name: string,
 
-  index: number,
+  index: number
 ): boolean => {
   for (const [fieldName, checkFn] of Object.entries(constraints)) {
     const field = fieldMap.get(fieldName)
@@ -118,10 +113,9 @@ const checkLayout = (
 
   name: string,
 
-  constraints: Readonly<Record<string, (
-    val: number,
-    idx: number,
-  ) => string | null>>,
+  constraints: Readonly<
+    Record<string, (val: number, idx: number) => string | null>
+  >
 ): { ok: number; errors: string[] } => {
   let ok = 0
 
@@ -137,10 +131,10 @@ const checkLayout = (
     if (validateUUID(uuid, `${name}[${i}]`) > 0) {
       const bytes = uuidToBytes(uuid)
 
-      const version = andBits(bytes[6], 0xF0)
+      const version = andBits(bytes[6], 0xf0)
 
       if (version === 0x80) {
-        const variant = andBits(bytes[8], 0xC0)
+        const variant = andBits(bytes[8], 0xc0)
 
         if (variant === 0x80) {
           if (constraintsHold(bytes, fieldMap, constraints, name, i)) {
@@ -148,12 +142,12 @@ const checkLayout = (
           }
         } else {
           console.error(
-            `  ${name}[${i}]: variant bits wrong: ${bytes[8].toString(16)}`,
+            `  ${name}[${i}]: variant bits wrong: ${bytes[8].toString(16)}`
           )
         }
       } else {
         console.error(
-          `  ${name}[${i}]: version nibble wrong: ${bytes[6].toString(16)}`,
+          `  ${name}[${i}]: version nibble wrong: ${bytes[6].toString(16)}`
         )
       }
     }
@@ -193,11 +187,11 @@ const dbkeyRes = checkLayout(
 
   "dbkey",
 
-  {},
+  {}
 )
 
 console.log(
-  `  v8 format + version/variant: ${dbkeyRes.ok}/${dbkeyRes.ok + dbkeyRes.errors.length} pass\n`,
+  `  v8 format + version/variant: ${dbkeyRes.ok}/${dbkeyRes.ok + dbkeyRes.errors.length} pass\n`
 )
 
 // Structural field check: extract shard from all UUIDs
@@ -225,7 +219,7 @@ for (let i = 0; i < dbkey.length; i += 1) {
 
   const ctr = Number(getFieldValue(b, ctrField))
 
-  if (ctr < prevCtr && !(prevCtr === 0xFF_FF && ctr === 0)) {
+  if (ctr < prevCtr && !(prevCtr === 0xff_ff && ctr === 0)) {
     if (ctrWrapCount < 3) {
       console.error(`  dbkey[${i}]: counter regressed ${prevCtr} → ${ctr}`)
     }
@@ -259,7 +253,7 @@ if (tsOk) {
 console.log(`  timestamp plausible: ${timestampStatus}\n`)
 
 const multitenant = readFile(
-  path.resolve(compiledDir, "compiled-multitenant.txt"),
+  path.resolve(compiledDir, "compiled-multitenant.txt")
 )
 
 console.log(`multitenant: ${multitenant.length} UUIDs`)
@@ -267,7 +261,7 @@ console.log(`multitenant: ${multitenant.length} UUIDs`)
 const mtField = need(MULTITENANT_LAYOUT.fields.find((f) => f.name === "tenant"))
 
 const regField = need(
-  MULTITENANT_LAYOUT.fields.find((f) => f.name === "region"),
+  MULTITENANT_LAYOUT.fields.find((f) => f.name === "region")
 )
 
 let tenantOk = 0
@@ -299,13 +293,13 @@ const mtSet = new Set(multitenant)
 console.log(`  collisions: ${multitenant.length - mtSet.size}\n`)
 
 const eventsourcing = readFile(
-  path.resolve(compiledDir, "compiled-eventsourcing.txt"),
+  path.resolve(compiledDir, "compiled-eventsourcing.txt")
 )
 
 console.log(`eventsourcing: ${eventsourcing.length} UUIDs`)
 
 const strField = need(
-  EVENTSOURCING_LAYOUT.fields.find((f) => f.name === "stream"),
+  EVENTSOURCING_LAYOUT.fields.find((f) => f.name === "stream")
 )
 
 const seqField = need(EVENTSOURCING_LAYOUT.fields.find((f) => f.name === "seq"))
@@ -327,7 +321,7 @@ for (const uuid of eventsourcing) {
 
   const seq = Number(getFieldValue(b, seqField))
 
-  if (seq < seqPrev && !(seqPrev === 0xFF_FF_FF && seq === 0)) {
+  if (seq < seqPrev && !(seqPrev === 0xff_ff_ff && seq === 0)) {
     seqRegressions += 1
   }
 

@@ -2,16 +2,13 @@
 
 /// <reference lib="es2023" />
 import assert from "node:assert/strict"
+import path from "node:path"
+import { test } from "node:test"
+import { pathToFileURL } from "node:url"
 
 import { fromAny } from "@total-typescript/shoehorn"
 
 import { need } from "../shared/need.ts"
-
-import path from "node:path"
-
-import { pathToFileURL } from "node:url"
-
-import { test } from "node:test"
 
 // Fibre-size theorem (§4.3 of the manuscript). Index-modulo repair maps a
 
@@ -60,12 +57,12 @@ const {
 
   compileLayout: (
     l: unknown,
-    poolSize?: number,
+    poolSize?: number
   ) => { source: string; fn: () => string }
 
   completeLayout: (
     name: string,
-    core: unknown[],
+    core: unknown[]
   ) => {
     name: string
     fields: {
@@ -112,7 +109,7 @@ const {
 
 const isExactlyUniformCompiled = (
   allowed: readonly number[],
-  ell: number,
+  ell: number
 ): boolean => 2 ** ell % allowed.length === 0
 
 // Sufficiency condition for exact uniformity on the pooled path, which
@@ -127,7 +124,7 @@ const isExactlyUniformCompiled = (
 
 const isExactlyUniformGuarded = (
   allowed: readonly number[],
-  ell: number,
+  ell: number
 ): boolean => {
   const m = allowed.length
 
@@ -148,7 +145,7 @@ const fibreSize = (index: number, m: number, ell: number): number =>
 const guardedFibreSize = (
   index: number,
   allowed: readonly number[],
-  ell: number,
+  ell: number
 ): number => {
   const m = allowed.length
 
@@ -176,7 +173,7 @@ const observedFibreMultiplicities = (
       readonly start: number
       readonly length: number
       readonly type: string
-      readonly constraint?: { readonly  allowed?: readonly number[] }
+      readonly constraint?: { readonly allowed?: readonly number[] }
     }[]
   }>,
 
@@ -184,7 +181,7 @@ const observedFibreMultiplicities = (
 
   allowed: readonly number[],
 
-  draws: number,
+  draws: number
 ): number[] => {
   const field = layout.fields.find((f) => f.name === fieldName)
 
@@ -206,7 +203,7 @@ const observedFibreMultiplicities = (
 
   assert.ok(
     allAdmissible,
-    `some admissible value never emitted: ${JSON.stringify([...counts])}`,
+    `some admissible value never emitted: ${JSON.stringify([...counts])}`
   )
 
   return [...counts.values()].toSorted((a, b) => b - a)
@@ -214,7 +211,7 @@ const observedFibreMultiplicities = (
 
 const predictedFibreMultiplicities = (
   allowed: readonly number[],
-  ell: number,
+  ell: number
 ): number[] =>
   allowed
     .map((_, i) => fibreSize(i, allowed.length, ell))
@@ -237,7 +234,7 @@ const assertProfile = (
   observed: readonly number[],
   predicted: readonly number[],
   draws: number,
-  ell: number,
+  ell: number
 ): void => {
   const scale = draws / 2 ** ell
 
@@ -252,7 +249,7 @@ const assertProfile = (
   assert.ok(
     worst <= 1,
 
-    `${label}: observed fibre profile [${observedScaled.map((c) => c.toFixed(2)).join(", ")}] != predicted [${predicted.join(", ")}] (max deviation ${worst.toFixed(2)} cells)`,
+    `${label}: observed fibre profile [${observedScaled.map((c) => c.toFixed(2)).join(", ")}] != predicted [${predicted.join(", ")}] (max deviation ${worst.toFixed(2)} cells)`
   )
 }
 
@@ -263,14 +260,14 @@ const assertFibreProfile = (
   fieldName: string,
   allowed: readonly number[],
   ell: number,
-  draws: number,
+  draws: number
 ): void => {
   const observed = observedFibreMultiplicities(
     gen,
     fromAny(layout),
     fieldName,
     allowed,
-    draws,
+    draws
   )
 
   assertProfile(
@@ -278,7 +275,7 @@ const assertFibreProfile = (
     observed,
     predictedFibreMultiplicities(allowed, ell),
     draws,
-    ell,
+    ell
   )
 }
 
@@ -295,14 +292,14 @@ assert.equal(dbkeyShard.length, 8)
 const assertGuardedFibreProfile = (
   label: string,
   gen: () => string,
-  draws: number,
+  draws: number
 ): void => {
   const observed = observedFibreMultiplicities(
     gen,
     DBKEY_LAYOUT,
     "shard",
     dbkeyAllowed,
-    draws,
+    draws
   )
 
   const predicted = dbkeyAllowed
@@ -330,7 +327,7 @@ void test("fibre theorem: dbkey shard predicted profile is (52,51,51,51,51) with
   assert.equal(
     fibreSize(0, 5, 8) + 4 * fibreSize(1, 5, 8),
     256,
-    "fibres must partition the 256 raw values",
+    "fibres must partition the 256 raw values"
   )
 })
 
@@ -354,22 +351,22 @@ void test("fibre theorem: multitenant tenant and region are exactly uniform on b
 
     assert.ok(
       isExactlyUniformCompiled(allowed, f.length),
-      `${name} must be exactly uniform on the compiled path`,
+      `${name} must be exactly uniform on the compiled path`
     )
 
     assert.ok(
       isExactlyUniformGuarded(allowed, f.length),
-      `${name} must be exactly uniform on the pooled path`,
+      `${name} must be exactly uniform on the pooled path`
     )
 
     const uniq = new Set(
-      allowed.map((_, i) => fibreSize(i, allowed.length, f.length)),
+      allowed.map((_, i) => fibreSize(i, allowed.length, f.length))
     )
 
     assert.equal(
       uniq.size,
       1,
-      `${name} predicted fibres must all be equal, got ${JSON.stringify([...uniq])}`,
+      `${name} predicted fibres must all be equal, got ${JSON.stringify([...uniq])}`
     )
   }
 })
@@ -387,9 +384,9 @@ void test(
       "shard",
       dbkeyAllowed,
       8,
-      DRAWS,
+      DRAWS
     )
-  },
+  }
 )
 
 void test(
@@ -399,9 +396,9 @@ void test(
     assertGuardedFibreProfile(
       "pooled dbkey",
       () => genStructuredGenoIDSingleParent(DBKEY_LAYOUT),
-      DRAWS,
+      DRAWS
     )
-  },
+  }
 )
 
 void test(
@@ -415,9 +412,9 @@ void test(
       "shard",
       dbkeyAllowed,
       8,
-      DRAWS,
+      DRAWS
     )
-  },
+  }
 )
 
 // The two shipped repair operators agree on every contiguous admissible
@@ -441,7 +438,7 @@ void test("fibre theorem: compiled and pooled paths agree on contiguous sets and
     assert.deepEqual(
       compiled,
       guarded,
-      `contiguous allowed=${JSON.stringify(allowed)} must give identical fibre profiles`,
+      `contiguous allowed=${JSON.stringify(allowed)} must give identical fibre profiles`
     )
   }
 
@@ -453,20 +450,20 @@ void test("fibre theorem: compiled and pooled paths agree on contiguous sets and
 
   assert.ok(
     isExactlyUniformCompiled([0, 2], 2),
-    "m | 2^ell makes the compiled path uniform regardless of the set",
+    "m | 2^ell makes the compiled path uniform regardless of the set"
   )
 
   assert.equal(
     isExactlyUniformGuarded([0, 2], 2),
     false,
-    "the pooled path needs one admissible value per residue class",
+    "the pooled path needs one admissible value per residue class"
   )
 
   assert.deepEqual(predictedFibreMultiplicities([0, 2], 2), [2, 2])
 
   assert.deepEqual(
     [0, 2].map((_, i) => guardedFibreSize(i, [0, 2], 2)),
-    [1, 3],
+    [1, 3]
   )
 })
 
@@ -523,7 +520,7 @@ void test(
     assert.ok(
       compiledRatio > 0.9 && compiledRatio < 1.1,
 
-      `compiled path must stay uniform on allowed=[0,2], observed ${compiledRatio.toFixed(2)}:1`,
+      `compiled path must stay uniform on allowed=[0,2], observed ${compiledRatio.toFixed(2)}:1`
     )
 
     const pooledRatio = tally(() => genStructuredGenoIDSingleParent(layout))
@@ -531,7 +528,7 @@ void test(
     assert.ok(
       pooledRatio > 2.4 && pooledRatio < 3.6,
 
-      `pooled path must show the ≈3:1 split on allowed=[0,2], observed ${pooledRatio.toFixed(2)}:1`,
+      `pooled path must show the ≈3:1 split on allowed=[0,2], observed ${pooledRatio.toFixed(2)}:1`
     )
-  },
+  }
 )

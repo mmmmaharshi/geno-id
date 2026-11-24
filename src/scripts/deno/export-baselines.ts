@@ -4,7 +4,6 @@ import {
   extractRandomBits,
   TIMESTAMPED_FIXED,
 } from "../baselines.ts"
-
 import { writeBitsFile } from "./deno-io.ts"
 
 // Export the RANDOM-PAYLOAD bit streams of the UUID-shaped baselines for NIST
@@ -20,7 +19,7 @@ const TARGET_BITS = 1_550_000
 async function exportBits(
   label: string,
   fn: () => string,
-  fixed: [number, number][],
+  fixed: [number, number][]
 ): Promise<void> {
   let bits = ""
 

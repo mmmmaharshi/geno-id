@@ -32,7 +32,7 @@ const randomBytes = (n: number): Uint8Array => {
 }
 
 const HEX: string[] = Array.from({ length: 256 }, (_, i) =>
-  i.toString(16).padStart(2, "0"),
+  i.toString(16).padStart(2, "0")
 )
 
 export const bytesToUuid = (b: Uint8Array): string => {
@@ -54,9 +54,9 @@ export const uuidToBytes = (uuid: string): Uint8Array => {
 }
 
 const forceV8 = (b: Uint8Array): void => {
-  b[6] = b[6] % 16 + 0x80
+  b[6] = (b[6] % 16) + 0x80
 
-  b[8] = b[8] % 64 + 0x80
+  b[8] = (b[8] % 64) + 0x80
 }
 
 // ---------------------------------------------------------------------------
@@ -73,11 +73,13 @@ const forceV8 = (b: Uint8Array): void => {
 
 const positiveMod = (value: bigint, modulus: bigint): bigint => {
   const remainder = value % modulus
-  if (remainder < 0n) {return remainder + modulus}
+  if (remainder < 0n) {
+    return remainder + modulus
+  }
   return remainder
 }
 
-const PG_KEY_BYTES = [0x9E, 0x37, 0x79, 0xB9, 0x7F, 0x4A]
+const PG_KEY_BYTES = [0x9e, 0x37, 0x79, 0xb9, 0x7f, 0x4a]
 
 const xorTimestamp = (value: bigint): bigint => {
   let result = 0n
@@ -92,7 +94,7 @@ const xorTimestamp = (value: bigint): bigint => {
 // 48-bit microsecond field (wraps past ~1979 epoch).
 
 export const genPgUuidV8 = (
-  nowUs: bigint = BigInt(Date.now()) * 1000n,
+  nowUs: bigint = BigInt(Date.now()) * 1000n
 ): string => {
   const ts = positiveMod(nowUs, 2n ** 48n)
 
@@ -108,11 +110,11 @@ export const genPgUuidV8 = (
 
   // Version 4
 
-  b[6] = b[6] % 16 + 0x40
+  b[6] = (b[6] % 16) + 0x40
 
   // RFC 9562 variant
 
-  b[8] = b[8] % 64 + 0x80
+  b[8] = (b[8] % 64) + 0x80
 
   return bytesToUuid(b)
 }
@@ -200,7 +202,7 @@ const BASE62 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 const KSUID_EPOCH = 1_400_000_000
 
 export const genKsuid = (
-  nowSec: number = Math.floor(Date.now() / 1000),
+  nowSec: number = Math.floor(Date.now() / 1000)
 ): string => {
   if (!Number.isInteger(nowSec)) {
     throw new RangeError("genKsuid: nowSec must be an integer")
@@ -252,7 +254,7 @@ export const genSnowflake = (
 
   nowMs: number = Date.now(),
 
-  epoch: bigint = SF_EPOCH,
+  epoch: bigint = SF_EPOCH
 ): string => {
   const ts = BigInt(nowMs) - epoch
 
@@ -260,7 +262,7 @@ export const genSnowflake = (
 
   const sequence = sfSeq % 4096n
 
-  const id = ts * (2n ** 22n) + worker + sequence
+  const id = ts * 2n ** 22n + worker + sequence
 
   sfSeq = (sfSeq + 1n) % 4096n
 
@@ -277,7 +279,7 @@ export const genSnowflake = (
 
 export const extractRandomBits = (
   uuid: string,
-  fixed: [number, number][],
+  fixed: [number, number][]
 ): number[] => {
   const b = uuidToBytes(uuid)
 

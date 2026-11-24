@@ -2,15 +2,6 @@
   "name": "@manohar_maharshi/genoid",
   "version": "1.28.4",
   "description": "GenoID — a declarative RFC 9562 v8 UUID library: GA-inspired pooled-CSPRNG generation plus structured layouts (shard, tenant, counter, timestamp) with constraint-guided repair, no rejection sampling",
-  "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    }
-  },
   "files": [
     "dist/index.js",
     "dist/index.d.ts",
@@ -20,6 +11,18 @@
     "README.md",
     "LICENSE"
   ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "bun check -p tsconfig.json && bun check -p tsconfig.scripts.json",
@@ -63,9 +66,6 @@
     "version-packages": "changeset version",
     "prepare": "husky"
   },
-  "lint-staged": {
-    "*.{ts,tsx}": "bunx oxlint --type-aware --fix ."
-  },
   "devDependencies": {
     "@changesets/cli": "^2.31.1",
     "@cloudflare/oxlint-config": "^0.2.0",
@@ -81,7 +81,7 @@
     "jsdom": "^29.1.1",
     "lint-staged": "^17.6.0",
     "mysql2": "^3.24.4",
-    "oxfmt": "^0.1.0",
+    "oxfmt": "^0.80.0",
     "oxlint": "^1.95.0",
     "oxlint-tsgolint": "^7.0.2008",
     "pg": "^8.23.0",
@@ -91,10 +91,10 @@
     "typescript": "7.0.2",
     "ultracite": "^8.3.1"
   },
+  "lint-staged": {
+    "*.{ts,tsx}": "bunx oxlint --type-aware --fix ."
+  },
   "engines": {
     "node": ">=22"
-  },
-  "publishConfig": {
-    "access": "public"
   }
 }

@@ -1,15 +1,12 @@
 #!/usr/bin/env node
+import { once } from "node:events"
+import fs from "node:fs"
+import http from "node:http"
+import path from "node:path"
+
 import { chromium, firefox, webkit } from "playwright"
 
 import { nullValue, undefinedValue } from "./shared/runtime-values.ts"
-
-import fs from "node:fs"
-
-import http from "node:http"
-
-import { once } from "node:events"
-
-import path from "node:path"
 
 type Browser = Awaited<ReturnType<typeof chromium.launch>>
 
@@ -117,7 +114,7 @@ const BROWSERS: BrowserName[] = ["chromium", "firefox", "webkit"]
 const ALLOWED_CONSOLE_ERRORS: RegExp[] = []
 
 const parseArgs = (
-  argv: readonly string[],
+  argv: readonly string[]
 ): Record<string, string | boolean> => {
   const args: Record<string, string | boolean> = {}
 
@@ -217,14 +214,14 @@ const makeLaunch = (browser: BrowserName): LaunchFn => {
 const toObjects = (
   headers: readonly string[],
 
-  rows: readonly  string[][],
+  rows: readonly string[][]
 ): Record<string, string>[] =>
   rows.map((r) => Object.fromEntries(headers.map((h, i) => [h, r[i]])))
 
 const runBenchmark = async (
   args: Readonly<Record<string, string | boolean>>,
 
-  { launch, browser = "chromium" }: Readonly<BenchOptions> = {},
+  { launch, browser = "chromium" }: Readonly<BenchOptions> = {}
 ): Promise<BenchOutput> => {
   // The launch function must follow the requested engine. Binding it as a
 
@@ -338,12 +335,12 @@ const runBenchmark = async (
 
       undefinedValue,
 
-      { timeout: 15_000 },
+      { timeout: 15_000 }
     )
 
     const setInput = async (
       id: string,
-      val: string | boolean | undefined,
+      val: string | boolean | undefined
     ): Promise<void> => {
       if (val === undefinedValue) {
         return
@@ -356,7 +353,7 @@ const runBenchmark = async (
           ;(el as HTMLInputElement).value = v
         },
 
-        String(val),
+        String(val)
       )
     }
 
@@ -398,14 +395,14 @@ const runBenchmark = async (
 
       undefinedValue,
 
-      { timeout },
+      { timeout }
     )
 
     const logText = await page.$eval(
       "#log",
 
       (el) =>
-        (el as unknown as { textContent: string | null }).textContent ?? "",
+        (el as unknown as { textContent: string | null }).textContent ?? ""
     )
 
     const scrapeTable = async (id: string): Promise<string[][]> => {
@@ -417,9 +414,9 @@ const runBenchmark = async (
               (
                 (td as unknown as { textContent: string | null }).textContent ??
                 ""
-              ).trim(),
-            ),
-          ),
+              ).trim()
+            )
+          )
       )
 
       return result
@@ -433,8 +430,8 @@ const runBenchmark = async (
             (
               (th as unknown as { textContent: string | null }).textContent ??
               ""
-            ).trim(),
-          ),
+            ).trim()
+          )
       )
 
       return result
@@ -483,19 +480,19 @@ const runBenchmark = async (
         nAsync: await page.$eval(
           "#nAsync",
 
-          (el: Readonly<Element>) => (el as unknown as HTMLInputElement).value,
+          (el: Readonly<Element>) => (el as unknown as HTMLInputElement).value
         ),
 
         nColl: await page.$eval(
           "#nColl",
 
-          (el: Readonly<Element>) => (el as unknown as HTMLInputElement).value,
+          (el: Readonly<Element>) => (el as unknown as HTMLInputElement).value
         ),
 
         nSync: await page.$eval(
           "#nSync",
 
-          (el: Readonly<Element>) => (el as unknown as HTMLInputElement).value,
+          (el: Readonly<Element>) => (el as unknown as HTMLInputElement).value
         ),
       },
 
@@ -518,7 +515,7 @@ const runBenchmark = async (
       }
 
       const shotPath = path.resolve(
-        `${outName.replace(/\.json$/u, "")}_${browser}_failure.png`,
+        `${outName.replace(/\.json$/u, "")}_${browser}_failure.png`
       )
 
       await page.screenshot({ fullPage: true, path: shotPath })
@@ -538,16 +535,16 @@ const assertRun = (output: Readonly<BenchOutput>): void => {
   const structured = output.results.find((r) =>
     (
       (r as Readonly<Record<string, string | undefined>>).Algorithm ?? ""
-    ).includes("GenoID-structured"),
+    ).includes("GenoID-structured")
   )
 
   const collisionFail = output.collisions.some(
-    (c) => Number(c["Collisions found"]) > 0,
+    (c) => Number(c["Collisions found"]) > 0
   )
 
   if (output.browserErrors.length > 0) {
     throw new Error(
-      `[${output.browser}] browserErrors: ${output.browserErrors.join("; ")}`,
+      `[${output.browser}] browserErrors: ${output.browserErrors.join("; ")}`
     )
   }
 
@@ -576,7 +573,7 @@ interface PlaywrightWritePlan {
 
 export const planPlaywrightWrite = (
   runCount: number,
-  outPath: string,
+  outPath: string
 ): PlaywrightWritePlan => {
   if (runCount === 0) {
     return {
@@ -608,9 +605,10 @@ const main = async (): Promise<void> => {
 
   const server = await startServer()
 
-  const runArgs = Object.fromEntries(
-    Object.entries(args),
-  ) as Record<string, string | boolean>
+  const runArgs = Object.fromEntries(Object.entries(args)) as Record<
+    string,
+    string | boolean
+  >
 
   if (typeof args.url !== "string" && typeof args.html !== "string") {
     runArgs.url = `${server.origin}/index.html`

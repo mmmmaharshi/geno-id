@@ -8,7 +8,11 @@ export default defineConfig({
   env: cloudflare.env,
   extends: [core, cloudflare, landmines, gdp],
   ignorePatterns: [
-    ...new Set([...core.ignorePatterns, ...cloudflare.ignorePatterns, "src/scripts/deno/**"]),
+    ...new Set([
+      ...core.ignorePatterns,
+      ...cloudflare.ignorePatterns,
+      "src/scripts/deno/**",
+    ]),
   ],
   jsPlugins: [...landmines.jsPlugins, ...gdp.jsPlugins],
   overrides: [

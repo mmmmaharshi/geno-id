@@ -9,7 +9,7 @@ export const sequence = (count: number): Iterable<number> => ({
 const visitSequential = async (
   index: number,
   count: number,
-  visit: (index: number) => Promise<void>,
+  visit: (index: number) => Promise<void>
 ): Promise<void> => {
   if (index >= count) {
     return
@@ -20,7 +20,7 @@ const visitSequential = async (
 
 export const forEachSequential = async (
   count: number,
-  visit: (index: number) => Promise<void>,
+  visit: (index: number) => Promise<void>
 ): Promise<void> => {
   await visitSequential(0, count, visit)
 }

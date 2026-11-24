@@ -1,12 +1,9 @@
 /// <reference types="node" />
 
 import assert from "node:assert/strict"
-
 import path from "node:path"
-
-import { pathToFileURL } from "node:url"
-
 import { test } from "node:test"
+import { pathToFileURL } from "node:url"
 
 // Pins the seeded RNG's actual contract: determinism only.
 
@@ -41,9 +38,9 @@ const fill = (seed0: number, seed1: number, n: number): Uint8Array => {
 }
 
 void test("seeded RNG: same seed produces identical bytes (golden-vector contract)", () => {
-  assert.deepEqual(fill(0xDE_AD, 0xBE_EF, 4096), fill(0xDE_AD, 0xBE_EF, 4096))
+  assert.deepEqual(fill(0xde_ad, 0xbe_ef, 4096), fill(0xde_ad, 0xbe_ef, 4096))
 })
 
 void test("seeded RNG: different seeds produce different bytes", () => {
-  assert.notDeepEqual(fill(0xDE_AD, 0xBE_EF, 256), fill(0xBE_EF, 0xDE_AD, 256))
+  assert.notDeepEqual(fill(0xde_ad, 0xbe_ef, 256), fill(0xbe_ef, 0xde_ad, 256))
 })

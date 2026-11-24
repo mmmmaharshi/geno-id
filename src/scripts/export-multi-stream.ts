@@ -1,10 +1,8 @@
-import type { V8Layout } from "../../dist/algo.js"
-
 import fs from "node:fs"
-
 import path from "node:path"
-
 import { pathToFileURL } from "node:url"
+
+import type { V8Layout } from "../../dist/algo.js"
 
 const __dirname = import.meta.dirname
 
@@ -63,17 +61,17 @@ for (const layout of layouts) {
     const filePath = path.resolve(
       root,
       "dist",
-      `struct-${layout.name}-s${s}.bits.txt`,
+      `struct-${layout.name}-s${s}.bits.txt`
     )
 
     fs.writeFileSync(filePath, all, "utf8")
 
     console.log(
-      `Wrote ${layout.name} stream ${s}: ${all.length} bits (${n} UUIDs)`,
+      `Wrote ${layout.name} stream ${s}: ${all.length} bits (${n} UUIDs)`
     )
   }
 }
 
 console.log(
-  `Done. ${STREAMS} streams x ${layouts.length} layouts = ${STREAMS * layouts.length} files.`,
+  `Done. ${STREAMS} streams x ${layouts.length} layouts = ${STREAMS * layouts.length} files.`
 )

@@ -70,7 +70,7 @@ const andNumber = (a: number, b: number): number => {
       AND_TABLE[tableByteAt(ua, 2) * BYTE + tableByteAt(ub, 2)] *
         (BYTE * BYTE) +
       AND_TABLE[tableByteAt(ua, 3) * BYTE + tableByteAt(ub, 3)] *
-        (BYTE * BYTE * BYTE),
+        (BYTE * BYTE * BYTE)
   )
 }
 
@@ -83,7 +83,7 @@ const xorNumber = (a: number, b: number): number => {
       XOR_TABLE[tableByteAt(ua, 2) * BYTE + tableByteAt(ub, 2)] *
         (BYTE * BYTE) +
       XOR_TABLE[tableByteAt(ua, 3) * BYTE + tableByteAt(ub, 3)] *
-        (BYTE * BYTE * BYTE),
+        (BYTE * BYTE * BYTE)
   )
 }
 
@@ -221,7 +221,7 @@ interface ShiftLeft {
 
 export const andBits: AndBits = function andBits(
   a: number | bigint,
-  b: number | bigint,
+  b: number | bigint
 ): number | bigint {
   if (typeof a === "bigint" || typeof b === "bigint") {
     return andBigInt(BigInt(a), BigInt(b))
@@ -231,7 +231,7 @@ export const andBits: AndBits = function andBits(
 
 export const orBits: AndBits = function orBits(
   a: number | bigint,
-  b: number | bigint,
+  b: number | bigint
 ): number | bigint {
   if (typeof a === "bigint" || typeof b === "bigint") {
     return orBigInt(BigInt(a), BigInt(b))
@@ -241,7 +241,7 @@ export const orBits: AndBits = function orBits(
 
 export const xorBits: AndBits = function xorBits(
   a: number | bigint,
-  b: number | bigint,
+  b: number | bigint
 ): number | bigint {
   if (typeof a === "bigint" || typeof b === "bigint") {
     return xorBigInt(BigInt(a), BigInt(b))
@@ -250,7 +250,7 @@ export const xorBits: AndBits = function xorBits(
 } as AndBits
 
 export const notBits: NotBits = function notBits(
-  a: number | bigint,
+  a: number | bigint
 ): number | bigint {
   if (typeof a === "bigint") {
     return notBigInt(a)
@@ -260,7 +260,7 @@ export const notBits: NotBits = function notBits(
 
 export const shiftLeftBits: ShiftLeft = function shiftLeftBits(
   a: number | bigint,
-  b: number | bigint,
+  b: number | bigint
 ): number | bigint {
   if (typeof a === "bigint" || typeof b === "bigint") {
     return shiftLeftBigInt(BigInt(a), BigInt(b))
@@ -270,7 +270,7 @@ export const shiftLeftBits: ShiftLeft = function shiftLeftBits(
 
 export const shiftRightBits: ShiftLeft = function shiftRightBits(
   a: number | bigint,
-  b: number | bigint,
+  b: number | bigint
 ): number | bigint {
   if (typeof a === "bigint" || typeof b === "bigint") {
     return shiftRightBigInt(BigInt(a), BigInt(b))
@@ -281,7 +281,7 @@ export const shiftRightBits: ShiftLeft = function shiftRightBits(
 export const shiftRightUnsignedBits: ShiftLeft =
   function shiftRightUnsignedBits(
     a: number | bigint,
-    b: number | bigint,
+    b: number | bigint
   ): number | bigint {
     if (typeof a === "bigint" || typeof b === "bigint") {
       return shiftRightUnsignedBigInt(BigInt(a), BigInt(b))

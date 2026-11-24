@@ -1,10 +1,9 @@
 /// <reference types="node" />
 
-import { benchAsyncBatched, collisionTestAsync } from "../../dist/bench-core.js"
-
 import assert from "node:assert/strict"
-
 import { test } from "node:test"
+
+import { benchAsyncBatched, collisionTestAsync } from "../../dist/bench-core.js"
 
 // WebKit resolves each awaited SubtleCrypto call in ~15 ms, so the original
 
@@ -12,7 +11,7 @@ import { test } from "node:test"
 
 // Timeout. The batched form must return an identical duplicate count.
 
-const deterministic = (values: readonly string[]): () => Promise<string> => {
+const deterministic = (values: readonly string[]): (() => Promise<string>) => {
   let i = 0
 
   return async (): Promise<string> => {
@@ -29,7 +28,7 @@ const unique = (n: number): string[] =>
 
 const withDuplicates = (
   values: readonly string[],
-  copies: number,
+  copies: number
 ): string[] => {
   const out: string[] = []
 
@@ -74,11 +73,11 @@ void test("an all-unique batch reports no collisions at any batch size", async (
       const count = await collisionTestAsync(
         deterministic(values),
         77,
-        batchSize,
+        batchSize
       )
 
       return count
-    }),
+    })
   )
 
   for (const [index, count] of counts.entries()) {

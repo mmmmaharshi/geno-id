@@ -1,6 +1,5 @@
-import path from "node:path"
-
 import { readFileSync } from "node:fs"
+import path from "node:path"
 
 const __dirname = import.meta.dirname
 

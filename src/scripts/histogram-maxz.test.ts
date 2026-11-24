@@ -1,14 +1,11 @@
 /// <reference types="node" />
 
-import { analyzeHistogram, maxzAnalysis } from "./histogram-maxz.ts"
-
 import assert from "node:assert/strict"
-
-import path from "node:path"
-
 import { readFileSync } from "node:fs"
-
+import path from "node:path"
 import test from "node:test"
+
+import { analyzeHistogram, maxzAnalysis } from "./histogram-maxz.ts"
 
 // Reads the archived histogram from disk: the test fails if the artifact
 
@@ -19,8 +16,8 @@ const root = path.resolve(import.meta.dirname, "..", "..")
 const committed = JSON.parse(
   readFileSync(
     path.join(root, "results", "shard-histogram-100m.maxz.json"),
-    "utf8",
-  ),
+    "utf8"
+  )
 ) as { cells: number; maxAbsZ: number }
 
 void test("maxzAnalysis: archived 10^8 cells are not significant after Bonferroni correction", () => {

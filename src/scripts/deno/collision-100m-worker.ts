@@ -3,7 +3,6 @@
 // Driven by `collision-100m.ts`, which fans the work across all cores.
 
 import { type V8Layout } from "../../algo.ts"
-
 import { genUlidV8 } from "../baselines.ts"
 
 const algo = (await import("../../../dist/algo.js")) as {

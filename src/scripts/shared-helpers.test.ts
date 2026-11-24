@@ -6,13 +6,11 @@
 
 /// <reference types="node" />
 
-import { genRawV8, hexVal } from "./shared/export-bits.ts"
-
 import assert from "node:assert/strict"
+import { test } from "node:test"
 
 import { mulberry32 } from "./shared/cli-utils.ts"
-
-import { test } from "node:test"
+import { genRawV8, hexVal } from "./shared/export-bits.ts"
 
 void test("mulberry32: deterministic stream pinned to known values", () => {
   const r = mulberry32(99)
@@ -46,7 +44,7 @@ void test("genRawV8: emits v8-formatted UUIDs", () => {
   for (let i = 0; i < 10; i += 1) {
     assert.match(
       genRawV8(),
-      /^[0-9a-f]{8}-[0-9a-f]{4}-8[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u,
+      /^[0-9a-f]{8}-[0-9a-f]{4}-8[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u
     )
   }
 })

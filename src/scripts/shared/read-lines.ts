@@ -14,6 +14,4 @@ export const splitLines = (text: string): string[] =>
     .map((l) => l.trim())
 
 export const readLines = (text: string): string[] =>
-  splitLines(text)
-
-    .filter((l) => l.length > 0)
+  splitLines(text).filter((l) => l.length > 0)

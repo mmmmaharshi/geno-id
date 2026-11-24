@@ -1,10 +1,8 @@
-import { parentPort, workerData } from "node:worker_threads"
-import { need } from "../shared/need.ts"
-
 import path from "node:path"
-
 import { pathToFileURL } from "node:url"
+import { parentPort, workerData } from "node:worker_threads"
 
+import { need } from "../shared/need.ts"
 import { runBattery } from "./stats-core.ts"
 
 // Worker: runs one randomness battery on a single CPU core. Driven by
