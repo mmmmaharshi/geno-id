@@ -108,6 +108,8 @@ GenoID is a TypeScript RFC 9562 v8 UUID library + CLI + browser benchmark. The p
 
 **Manuscript prose (paper.tex):** academic prose only — no code identifiers, commands, file paths, or version numbers in text, tables, captions, or figures. Describe layouts, harnesses, and archives in plain words (`layout declaration`, `rejection sweep`, `archived counts`); cite generator rows and environments by role (`structured generator`, `Env A`). Bibliography stays sequential with every `\cite` resolving. `bun run check:paper` must stay clean and `bun run evidence:verify` verified after any manuscript edit.
 
+**Implementation-independent reporting:** describe the method, not the build. The manuscript states algorithms, guarantees, and measured behavior; it never names functions, modules, commands, paths, toolchains, or versions. A reader reimplementing from the paper alone should need no repository knowledge — evidence traceability lives in the artifact map and archived files, not in prose.
+
 ## Build and Deployment
 
 - **Build:** `bun run build` → `dist/` (gitignored; rebuild after changing `src/algo.ts`/`src/benchmark.ts`/`src/bench-core.ts`).
