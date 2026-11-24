@@ -1,133 +1,272 @@
-// ===========================================================================
-// bench-db — zero-install database index-locality benchmark.
-//
-// Question: do time-ordered / structured UUID primary keys give better B-tree
-// index locality than random v4 — faster sustained inserts — and can GenoID's
-// declared fields answer a partition query straight from the key, with no
-// secondary index the other schemes must pay for?
-//
-// Zero external software: uses bun:sqlite (built into Bun). Two table modes
-// reproduce the two real-world index layouts:
-//   • clustered  (WITHOUT ROWID) → the PK *is* the B-tree — InnoDB-like; random
-//                                  keys reshuffle the clustered store.
-//   • secondary  (rowid table)   → the PK is a secondary B-tree — Postgres-like.
-//
-// HONEST SCOPE: the strong, reproducible signal here is INSERT THROUGHPUT
-// (random keys are markedly slower — matches the published ULID/Shopify result).
-// SQLite repacks pages aggressively, so final on-disk SIZE diverges far less
-// than InnoDB would in production; size is reported as secondary, and a native
-// Postgres/InnoDB run (or --engine=pglite) is the place for absolute size/split
-// numbers. Results are RELATIVE and instantly reproducible: `bun run bench-db`.
-//
-// Usage:
-//   bun run bench-db --rows=500000 --mode=clustered|secondary|both \
-//     --runs=3 --sample-every=100000 --cache-mb=16 --out=results/db-sqlite.json
-// ===========================================================================
+import { nullValue, undefinedValue } from "./shared/runtime-values.ts"
 
 import { Database } from "bun:sqlite"
+
+import { andBits } from "../shared/bitwise.ts"
+
 import fs from "node:fs"
-import os from "node:os"
-import path from "node:path"
-import { pathToFileURL } from "node:url"
+
 import { mulberry32 } from "./shared/cli-utils.ts"
+
+import { need } from "../shared/need.ts"
+
+import os from "node:os"
+
+import path from "node:path"
+
+import { pathToFileURL } from "node:url"
+
+// ===========================================================================
+
+// Bench-db — zero-install database index-locality benchmark.
+
+//
+
+// Question: do time-ordered / structured UUID primary keys give better B-tree
+
+// Index locality than random v4 — faster sustained inserts — and can GenoID's
+
+// Declared fields answer a partition query straight from the key, with no
+
+// Secondary index the other schemes must pay for?
+
+//
+
+// Zero external software: uses bun:sqlite (built into Bun). Two table modes
+
+// Reproduce the two real-world index layouts:
+
+//   • clustered  (WITHOUT ROWID) → the PK *is* the B-tree — InnoDB-like; random
+
+//                                  Keys reshuffle the clustered store.
+
+//   • secondary  (rowid table)   → the PK is a secondary B-tree — Postgres-like.
+
+//
+
+// HONEST SCOPE: the strong, reproducible signal here is INSERT THROUGHPUT
+
+// (random keys are markedly slower — matches the published ULID/Shopify result).
+
+// SQLite repacks pages aggressively, so final on-disk SIZE diverges far less
+
+// Than InnoDB would in production; size is reported as secondary, and a native
+
+// Postgres/InnoDB run (or --engine=pglite) is the place for absolute size/split
+
+// Numbers. Results are RELATIVE and instantly reproducible: `bun run bench-db`.
+
+//
+
+// Usage:
+
+//   Bun run bench-db --rows=500000 --mode=clustered|secondary|both \
+
+//     --runs=3 --sample-every=100000 --cache-mb=16 --out=results/db-sqlite.json
+
+// ===========================================================================
 
 // --- generators (built artifact + baselines) -------------------------------
 
 const root = path.resolve(import.meta.dirname, "..", "..")
-const algo = (await import(pathToFileURL(path.resolve(root, "dist/algo.js")).href)) as {
+
+const algo = (await import(
+  pathToFileURL(path.resolve(root, "dist/algo.js")).href
+)) as {
   genV4Native: () => string
+
   genV7: () => string
+
   genGenoID: () => string
+
   genStructuredGenoID: (l: unknown) => string
+
   completeLayout: (name: string, fields: unknown[]) => unknown
+
   uuidToBytes: (uuid: string) => Uint8Array
+
   DBKEY_LAYOUT: unknown
 }
+
 const { genPgUuidV8, genUlidV8 } = (await import(
   pathToFileURL(path.resolve(root, "src/scripts/baselines.ts")).href
 )) as { genPgUuidV8: () => string; genUlidV8: () => string }
 
 // Shard-leading layout: shard occupies byte 0, so rows for a given shard form a
-// contiguous PK range — a partition scan becomes a key range scan, no index.
+
+// Contiguous PK range — a partition scan becomes a key range scan, no index.
+
 // (Trades some time-insert-locality for query pruning — a choice fixed-layout
-// schemes cannot make; that trade-off is itself a result worth reporting.)
+
+// Schemes cannot make; that trade-off is itself a result worth reporting.)
+
 const SHARDFIRST_LAYOUT = algo.completeLayout("shardfirst", [
-  { constraint: { allowed: [1, 2, 3, 4, 5] }, length: 8, name: "shard", start: 0, type: "shard" },
+  {
+    constraint: { allowed: [1, 2, 3, 4, 5] },
+    length: 8,
+    name: "shard",
+    start: 0,
+    type: "shard",
+  },
+
   // 40-bit timestamp (bits 8–47) stops before the reserved v8 version nibble
-  // at bits 48–51; ~34-year ms range, ample for ordering within a shard.
+
+  // At bits 48–51; ~34-year ms range, ample for ordering within a shard.
+
   { length: 40, name: "timestamp", start: 8, type: "timestamp-ms" },
-  { constraint: { monotonic: true }, length: 16, name: "counter", start: 66, type: "counter" },
+
+  {
+    constraint: { monotonic: true },
+    length: 16,
+    name: "counter",
+    start: 66,
+    type: "counter",
+  },
 ])
 
 // 16-byte big-endian sequential counter — the ideal-locality lower bound.
+
 let _seq = 0
-function seqKey(): Uint8Array {
+
+const seqKey = (): Uint8Array => {
   const b = new Uint8Array(16)
-  let x = _seq += 1
+
+  let x = _seq
+
+  _seq += 1
+
+  x += 1
+
   for (let j = 15; j >= 8; j -= 1) {
-    b[j] = x & 0xff
+    b[j] = andBits(x, 0xFF)
+
     x = Math.floor(x / 256)
   }
+
   return b
 }
 
-interface Arm { name: string; key: () => Uint8Array }
+interface Arm {
+  name: string
+  key: () => Uint8Array
+}
+
 const ARMS: Arm[] = [
   { key: seqKey, name: "bigint_seq" },
+
   { key: () => algo.uuidToBytes(algo.genV4Native()), name: "uuid_v4" },
+
   { key: () => algo.uuidToBytes(algo.genV7()), name: "uuid_v7" },
+
   { key: () => algo.uuidToBytes(genPgUuidV8()), name: "pg_uuid_v8" },
+
   { key: () => algo.uuidToBytes(genUlidV8()), name: "ulid_v8" },
+
   { key: () => algo.uuidToBytes(algo.genGenoID()), name: "genoid_v8" },
-  { key: () => algo.uuidToBytes(algo.genStructuredGenoID(algo.DBKEY_LAYOUT)), name: "genoid_structured" },
-  { key: () => algo.uuidToBytes(algo.genStructuredGenoID(SHARDFIRST_LAYOUT)), name: "genoid_shardfirst" },
+
+  {
+    key: () => algo.uuidToBytes(algo.genStructuredGenoID(algo.DBKEY_LAYOUT)),
+    name: "genoid_structured",
+  },
+
+  {
+    key: () => algo.uuidToBytes(algo.genStructuredGenoID(SHARDFIRST_LAYOUT)),
+    name: "genoid_shardfirst",
+  },
 ]
 
 // --- CLI -------------------------------------------------------------------
 
-function arg(name: string, def: string): string {
+const arg = (name: string, def: string): string => {
   const hit = process.argv.find((a) => a.startsWith(`--${name}=`))
-  return hit ? hit.slice(name.length + 3) : def
+
+  if (typeof hit === "string") {
+    return hit.slice(name.length + 3)
+  }
+
+  return def
 }
+
 const ROWS = Number(arg("rows", "500000"))
+
 const RUNS = Number(arg("runs", "3"))
+
 const SAMPLE_EVERY = Number(arg("sample-every", "100000"))
+
 const CACHE_MB = Number(arg("cache-mb", "16"))
-// clustered | secondary | both
+
+// Clustered | secondary | both
+
 const MODE_ARG = arg("mode", "both")
+
 const BLOB_BYTES = Number(arg("blob-bytes", "64"))
+
 const OUT = arg("out", "results/db-sqlite.json")
 
 // --- seeded payload (identical across arms; only the PK differs) ------------
 
-
 // --- stats (mean + 95% CI, small-df Student t) -----------------------------
 
-const T95: Record<number, number> = { 1: 12.706, 2: 4.303, 3: 3.182, 4: 2.776, 5: 2.571, 6: 2.447, 7: 2.365, 8: 2.306, 9: 2.262 }
-function meanCI(xs: number[]): { mean: number; ci95: [number, number] } {
+const T95: Record<number, number> = {
+  1: 12.706,
+  2: 4.303,
+  3: 3.182,
+  4: 2.776,
+  5: 2.571,
+  6: 2.447,
+  7: 2.365,
+  8: 2.306,
+  9: 2.262,
+}
+
+const meanCI = (xs: readonly number[]): {
+  mean: number
+  ci95: [number, number]
+} => {
   const n = xs.length
+
   const m = xs.reduce((a, b) => a + b, 0) / n
-  if (n < 2) {return { ci95: [m, m], mean: m }}
+
+  if (n < 2) {
+    return { ci95: [m, m], mean: m }
+  }
+
   const sd = Math.sqrt(xs.reduce((a, x) => a + (x - m) ** 2, 0) / (n - 1))
-  const t = n - 1 >= 30 ? 1.96 : (T95[n - 1] ?? 1.96)
+
+  let t = 1.96
+
+  if (n - 1 < 30) {
+    t = T95[n - 1] ?? 1.96
+  }
+
   const margin = (t * sd) / Math.sqrt(n)
+
   return { ci95: [m - margin, m + margin], mean: m }
 }
 
 export interface MetricStats {
   mean: number
+
   ci95: [number, number]
 }
 
-export function aggregateReps(xs: number[]): MetricStats {
-  return meanCI(xs)
-}
+const fmtMetric = (m: MetricStats): string =>
+  `${m.mean.toFixed(2)} (95% CI ${m.ci95[0].toFixed(2)}–${m.ci95[1].toFixed(2)})`
 
-export function shardRangeKeys(shard: number): { lo: Uint8Array; hi: Uint8Array } {
+export const aggregateReps = (xs: number[]): MetricStats => meanCI(xs)
+
+export const shardRangeKeys = (shard: number): {
+  lo: Uint8Array
+  hi: Uint8Array
+} => {
   const lo = new Uint8Array(16)
+
   const hi = new Uint8Array(16)
+
   lo[0] = shard
+
   hi[0] = shard + 1
+
   return { hi, lo }
 }
 
@@ -135,222 +274,455 @@ export function shardRangeKeys(shard: number): { lo: Uint8Array; hi: Uint8Array 
 
 interface ArmRun {
   insertTotalRowsPerSec: number
+
   insertSeries: { atRows: number; rowsPerSec: number }[]
+
   pageCount: number
+
   pageBytes: number
+
   freePages: number
+
   pagesPerRow: number
+
   sampleKeys: Uint8Array[]
 }
 
-function ddl(mode: string): string {
-  return `CREATE TABLE IF NOT EXISTS t (id BLOB PRIMARY KEY, tenant INTEGER, ts INTEGER, payload BLOB)${mode === "clustered" ? " WITHOUT ROWID" : ""}`
+const ddl = (mode: string): string => {
+  let suffix = ""
+
+  if (mode === "clustered") {
+    suffix = " WITHOUT ROWID"
+  }
+
+  return `CREATE TABLE IF NOT EXISTS t (id BLOB PRIMARY KEY, tenant INTEGER, ts INTEGER, payload BLOB)${suffix}`
 }
 
-function runArm(arm: Arm, mode: string, dir: string): ArmRun {
+const runArm = (arm: Readonly<Arm>, mode: string, dir: string): ArmRun => {
   const file = path.join(dir, `${arm.name}-${mode}.db`)
-  try { fs.rmSync(file, { force: true }) } catch {
-    /* ignore */
+
+  try {
+    fs.rmSync(file, { force: true })
+  } catch {
+    /* Ignore */
   }
+
   const db = new Database(file)
-  db.exec(`PRAGMA page_size=4096; PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL; PRAGMA cache_size=${-CACHE_MB * 1024};`)
+
+  db.exec(
+    `PRAGMA page_size=4096; PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL; PRAGMA cache_size=${-CACHE_MB * 1024};`,
+  )
+
   db.exec(ddl(mode))
-  const insert = db.prepare("INSERT OR IGNORE INTO t (id, tenant, ts, payload) VALUES (?, ?, ?, ?)")
+
+  const insert = db.prepare(
+    "INSERT OR IGNORE INTO t (id, tenant, ts, payload) VALUES (?, ?, ?, ?)",
+  )
 
   const rng = mulberry32(42)
+
   const payload = new Uint8Array(BLOB_BYTES)
-  for (let i = 0; i < BLOB_BYTES; i += 1) {payload[i] = Math.trunc(rng() * 256)}
+
+  for (let i = 0; i < BLOB_BYTES; i += 1) {
+    payload[i] = Math.trunc(rng() * 256)
+  }
 
   const series: { atRows: number; rowsPerSec: number }[] = []
+
   const sampleKeys: Uint8Array[] = []
+
   const sampleStride = Math.max(1, Math.floor(ROWS / 5000))
+
   const BATCH = 10_000
+
   const t0 = process.hrtime.bigint()
+
   let lastT = t0
+
   let lastN = 0
 
   db.exec("BEGIN")
+
   for (let i = 0; i < ROWS; i += 1) {
     const id = arm.key()
+
     const tenant = Math.trunc(rng() * 5) + 1
+
     insert.run(id, tenant, i, payload)
-    if (i % sampleStride === 0 && sampleKeys.length < 5000) {sampleKeys.push(id)}
-    if ((i + 1) % BATCH === 0) { db.exec("COMMIT"); db.exec("BEGIN") }
+
+    if (i % sampleStride === 0 && sampleKeys.length < 5000) {
+      sampleKeys.push(id)
+    }
+
+    if ((i + 1) % BATCH === 0) {
+      db.exec("COMMIT")
+      db.exec("BEGIN")
+    }
+
     if ((i + 1) % SAMPLE_EVERY === 0) {
       const now = process.hrtime.bigint()
+
       const dt = Number(now - lastT) / 1e9
-      series.push({ atRows: i + 1, rowsPerSec: Math.round((i + 1 - lastN) / dt) })
-      lastT = now; lastN = i + 1
+
+      series.push({
+        atRows: i + 1,
+        rowsPerSec: Math.round((i + 1 - lastN) / dt),
+      })
+
+      lastT = now
+      lastN = i + 1
     }
   }
+
   db.exec("COMMIT")
+
   const total = ROWS / (Number(process.hrtime.bigint() - t0) / 1e9)
 
-  const pageCount = (db.query("PRAGMA page_count").get() as { page_count: number }).page_count
-  const pageSize = (db.query("PRAGMA page_size").get() as { page_size: number }).page_size
-  const freePages = (db.query("PRAGMA freelist_count").get() as { freelist_count: number }).freelist_count
+  const pageCount = (db.query("PRAGMA page_count").get() as {
+    page_count: number
+  }).page_count
+
+  const pageSize = (db.query("PRAGMA page_size").get() as { page_size: number })
+    .page_size
+
+  const freePages = (db.query("PRAGMA freelist_count").get() as {
+    freelist_count: number
+  }).freelist_count
 
   const out: ArmRun = {
     freePages,
+
     insertSeries: series,
+
     insertTotalRowsPerSec: Math.round(total),
+
     pageBytes: pageCount * pageSize,
+
     pageCount,
+
     pagesPerRow: Number((pageCount / ROWS).toFixed(4)),
+
     sampleKeys,
   }
+
   db.close()
-  try { fs.rmSync(file, { force: true }); fs.rmSync(`${file}-wal`, { force: true }); fs.rmSync(`${file}-shm`, { force: true }) } catch {
-    /* ignore */
+
+  try {
+    fs.rmSync(file, { force: true })
+    fs.rmSync(`${file}-wal`, { force: true })
+    fs.rmSync(`${file}-shm`, { force: true })
+  } catch {
+    /* Ignore */
   }
+
   return out
 }
 
 // --- point lookup + shard-prune experiment (one representative build) ------
+
 // Every read metric is repeated `reps` times and reported as
-// mean ± 95% CI, matching the insert-side methodology. Single-shot
-// reads are noise-dominated: the shardfirst point lookup swung
+
+// Mean ± 95% CI, matching the insert-side methodology. Single-shot
+
+// Reads are noise-dominated: the shardfirst point lookup swung
+
 // 72.8 -> 47.5 µs across unrepeated runs on this host.
 
-function readExperiments(dir: string, reps: number): {
+const readExperiments = (dir: string, reps: number): {
   pointLookup: Record<string, MetricStats>
+
   shard: {
     genoidRangeMs: MetricStats
+
     baselineNoIndexMs: MetricStats
+
     baselineIndexedMs: MetricStats
+
     baselineExtraIndexBytes: number
+
     genoidExtraIndexBytes: number
+
     matched: number
+
     total: number
+
     reps: number
   }
-} {
+} => {
   const pointLookup: Record<string, MetricStats> = {}
+
   const built: Record<string, Database> = {}
-  for (const armName of ["genoid_shardfirst", "uuid_v7", "genoid_structured", "uuid_v4"]) {
-    const arm = ARMS.find((a) => a.name === armName) as Arm
+
+  for (const armName of [
+    "genoid_shardfirst",
+    "uuid_v7",
+    "genoid_structured",
+    "uuid_v4",
+  ]) {
+    const arm = need(ARMS.find((a) => a.name === armName))
+
     const file = path.join(dir, `read-${armName}.db`)
-    try { fs.rmSync(file, { force: true }) } catch {
-      /* file may not exist */
+
+    try {
+      fs.rmSync(file, { force: true })
+    } catch {
+      /* File may not exist */
     }
+
     const db = new Database(file)
+
     db.exec(`PRAGMA page_size=4096; PRAGMA cache_size=${-CACHE_MB * 1024};`)
+
     db.exec(ddl("clustered"))
-    const insert = db.prepare("INSERT OR IGNORE INTO t (id, tenant, ts, payload) VALUES (?, ?, ?, ?)")
+
+    const insert = db.prepare(
+      "INSERT OR IGNORE INTO t (id, tenant, ts, payload) VALUES (?, ?, ?, ?)",
+    )
+
     const rng = mulberry32(42)
+
     const payload = new Uint8Array(BLOB_BYTES)
+
     const samples: Uint8Array[] = []
+
     const stride = Math.max(1, Math.floor(ROWS / 5000))
+
     db.exec("BEGIN")
+
     for (let i = 0; i < ROWS; i += 1) {
       const id = arm.key()
+
       insert.run(id, Math.trunc(rng() * 5) + 1, i, payload)
-      if (i % stride === 0 && samples.length < 5000) {samples.push(id)}
-      if ((i + 1) % 10_000 === 0) { db.exec("COMMIT"); db.exec("BEGIN") }
+
+      if (i % stride === 0 && samples.length < 5000) {
+        samples.push(id)
+      }
+
+      if ((i + 1) % 10_000 === 0) {
+        db.exec("COMMIT")
+        db.exec("BEGIN")
+      }
     }
+
     db.exec("COMMIT")
-    // point lookup: repeated probe set, mean ± 95% CI
+
+    // Point lookup: repeated probe set, mean ± 95% CI
+
     const q = db.prepare("SELECT tenant FROM t WHERE id = ?")
+
     const pointSamples: number[] = []
+
     for (let rep = 0; rep < reps; rep += 1) {
       const t0 = process.hrtime.bigint()
-      for (const k of samples) {q.get(k)}
-      pointSamples.push(Number((Number(process.hrtime.bigint() - t0) / 1e3) / samples.length))
+
+      for (const k of samples) {
+        q.get(k)
+      }
+
+      const elapsedNs = Number(process.hrtime.bigint() - t0)
+
+      pointSamples.push(elapsedNs / 1e3 / samples.length)
     }
+
     pointLookup[armName] = aggregateReps(pointSamples)
+
     built[armName] = db
   }
 
   // Shard-prune: "rows for partition 3".
+
   const K = 3
+
   const { lo, hi } = shardRangeKeys(K)
 
   // GenoID shard-first: PK range scan, no index, 0 extra bytes.
+
   const gdb = built.genoid_shardfirst
+
   const rangeSamples: number[] = []
+
   for (let rep = 0; rep < reps; rep += 1) {
     const s = process.hrtime.bigint()
+
     gdb.query("SELECT count(*) c FROM t WHERE id >= ? AND id < ?").get(lo, hi)
+
     rangeSamples.push(Number(process.hrtime.bigint() - s) / 1e6)
   }
+
   const genoidRange = aggregateReps(rangeSamples)
-  const matched = (gdb.query("SELECT count(*) c FROM t WHERE id >= ? AND id < ?").get(lo, hi) as { c: number }).c
+
+  const matched = (gdb
+    .query("SELECT count(*) c FROM t WHERE id >= ? AND id < ?")
+    .get(lo, hi) as { c: number }).c
+
   const total = (gdb.query("SELECT count(*) c FROM t").get() as { c: number }).c
 
   // Baseline (uuid_v7): partition lives only in the `tenant` column.
+
   const bdb = built.uuid_v7
-  const pagesBefore = (bdb.query("PRAGMA page_count").get() as { page_count: number }).page_count
+
+  const pagesBefore = (bdb.query("PRAGMA page_count").get() as {
+    page_count: number
+  }).page_count
+
   const noIdxSamples: number[] = []
+
   for (let rep = 0; rep < reps; rep += 1) {
     const s = process.hrtime.bigint()
+
     bdb.query("SELECT count(*) c FROM t WHERE tenant = ?").get(K)
+
     noIdxSamples.push(Number(process.hrtime.bigint() - s) / 1e6)
   }
+
   const baselineNoIndex = aggregateReps(noIdxSamples)
+
   bdb.exec("CREATE INDEX idx_tenant ON t(tenant)")
-  const pagesAfter = (bdb.query("PRAGMA page_count").get() as { page_count: number }).page_count
-  const pageSize = (bdb.query("PRAGMA page_size").get() as { page_size: number }).page_size
+
+  const pagesAfter = (bdb.query("PRAGMA page_count").get() as {
+    page_count: number
+  }).page_count
+
+  const pageSize = (bdb.query("PRAGMA page_size").get() as {
+    page_size: number
+  }).page_size
+
   const idxSamples: number[] = []
+
   for (let rep = 0; rep < reps; rep += 1) {
     const s = process.hrtime.bigint()
+
     bdb.query("SELECT count(*) c FROM t WHERE tenant = ?").get(K)
+
     idxSamples.push(Number(process.hrtime.bigint() - s) / 1e6)
   }
+
   const baselineIndexed = aggregateReps(idxSamples)
 
-  for (const db of Object.values(built)) {db.close()}
-  try { for (const f of fs.readdirSync(dir)) {if (f.startsWith("read-")) {fs.rmSync(path.join(dir, f), { force: true })}} } catch {
-    /* ignore */
+  for (const db of Object.values(built)) {
+    db.close()
+  }
+
+  try {
+    for (const f of fs.readdirSync(dir)) {
+      if (f.startsWith("read-")) {
+        fs.rmSync(path.join(dir, f), { force: true })
+      }
+    }
+  } catch {
+    /* Ignore */
   }
 
   return {
     pointLookup,
+
     shard: {
       baselineExtraIndexBytes: (pagesAfter - pagesBefore) * pageSize,
+
       baselineIndexedMs: baselineIndexed,
+
       baselineNoIndexMs: baselineNoIndex,
+
       genoidExtraIndexBytes: 0,
+
       genoidRangeMs: genoidRange,
+
       matched,
+
       reps,
+
       total,
     },
   }
 }
 
 // --- write-amplification: the insert tax to make partition queries fast -----
-// A non-structured key must carry a secondary index on the partition column to
-// answer "rows for partition k" quickly — and pay a B-tree write on EVERY
-// insert to maintain it. GenoID embeds the partition in the PK, so it needs no
-// such index: full insert throughput, zero index storage. This measures both.
 
-function loadForWriteAmp(arm: Arm, dir: string, withIndex: boolean, rows: number): { rowsPerSec: number; pageBytes: number } {
-  const file = path.join(dir, `wa-${arm.name}-${withIndex ? "idx" : "noidx"}.db`)
-  try { fs.rmSync(file, { force: true }) } catch {
-    /* ignore */
+// A non-structured key must carry a secondary index on the partition column to
+
+// Answer "rows for partition k" quickly — and pay a B-tree write on EVERY
+
+// Insert to maintain it. GenoID embeds the partition in the PK, so it needs no
+
+// Such index: full insert throughput, zero index storage. This measures both.
+
+const loadForWriteAmp = (
+  arm: Readonly<Arm>,
+  dir: string,
+  withIndex: boolean,
+  rows: number,
+): { rowsPerSec: number; pageBytes: number } => {
+  let indexSuffix = "noidx"
+
+  if (withIndex) {
+    indexSuffix = "idx"
   }
+
+  const file = path.join(dir, `wa-${arm.name}-${indexSuffix}.db`)
+
+  try {
+    fs.rmSync(file, { force: true })
+  } catch {
+    /* Ignore */
+  }
+
   const db = new Database(file)
-  db.exec(`PRAGMA page_size=4096; PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL; PRAGMA cache_size=${-CACHE_MB * 1024};`)
+
+  db.exec(
+    `PRAGMA page_size=4096; PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL; PRAGMA cache_size=${-CACHE_MB * 1024};`,
+  )
+
   db.exec(ddl("clustered"))
-  // maintained on every insert
-  if (withIndex) {db.exec("CREATE INDEX IF NOT EXISTS idx_tenant ON t(tenant)")}
-  const insert = db.prepare("INSERT OR IGNORE INTO t (id, tenant, ts, payload) VALUES (?, ?, ?, ?)")
+
+  // Maintained on every insert
+
+  if (withIndex) {
+    db.exec("CREATE INDEX IF NOT EXISTS idx_tenant ON t(tenant)")
+  }
+
+  const insert = db.prepare(
+    "INSERT OR IGNORE INTO t (id, tenant, ts, payload) VALUES (?, ?, ?, ?)",
+  )
+
   const rng = mulberry32(42)
+
   const payload = new Uint8Array(BLOB_BYTES)
+
   const t0 = process.hrtime.bigint()
+
   db.exec("BEGIN")
+
   for (let i = 0; i < rows; i += 1) {
     insert.run(arm.key(), Math.trunc(rng() * 5) + 1, i, payload)
-    if ((i + 1) % 10_000 === 0) { db.exec("COMMIT"); db.exec("BEGIN") }
+
+    if ((i + 1) % 10_000 === 0) {
+      db.exec("COMMIT")
+      db.exec("BEGIN")
+    }
   }
+
   db.exec("COMMIT")
-  const rowsPerSec = Math.round(rows / (Number(process.hrtime.bigint() - t0) / 1e9))
-  const pc = (db.query("PRAGMA page_count").get() as { page_count: number }).page_count
-  const ps = (db.query("PRAGMA page_size").get() as { page_size: number }).page_size
+
+  const rowsPerSec = Math.round(
+    rows / (Number(process.hrtime.bigint() - t0) / 1e9),
+  )
+
+  const pc = (db.query("PRAGMA page_count").get() as { page_count: number })
+    .page_count
+
+  const ps = (db.query("PRAGMA page_size").get() as { page_size: number })
+    .page_size
+
   db.close()
-  try { fs.rmSync(file, { force: true }); fs.rmSync(`${file}-wal`, { force: true }); fs.rmSync(`${file}-shm`, { force: true }) } catch {
-    /* ignore */
+
+  try {
+    fs.rmSync(file, { force: true })
+    fs.rmSync(`${file}-wal`, { force: true })
+    fs.rmSync(`${file}-shm`, { force: true })
+  } catch {
+    /* Ignore */
   }
+
   return { pageBytes: pc * ps, rowsPerSec }
 }
 
@@ -358,78 +730,186 @@ function loadForWriteAmp(arm: Arm, dir: string, withIndex: boolean, rows: number
 
 if (import.meta.main) {
   const READ_REPS = Number(arg("read-reps", "5"))
-  const modes = MODE_ARG === "both" ? ["clustered", "secondary"] : [MODE_ARG]
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "genoid-db-"))
 
-  const result: Record<string, unknown> = {
-    config: { blobBytes: BLOB_BYTES, cacheMb: CACHE_MB, readReps: READ_REPS, rows: ROWS, runs: RUNS, sampleEvery: SAMPLE_EVERY },
-    engine: "bun:sqlite",
-    hardware: { arch: os.arch(), cores: os.cpus().length, cpu: os.cpus()[0]?.model, memMB: Math.round(os.totalmem() / 1_048_576), platform: os.platform() },
-    modes: {},
-    note: "Relative index-locality benchmark. Headline = insert throughput (SQLite repacks pages, so on-disk size diverges less than production InnoDB). Anchor: uuid_v4 -> uuid_v7 insert speedup reproduces the published ULID result. Partition differentiator is STORAGE + WRITE-AMPLIFICATION, not read latency: GenoID answers a partition query from the PK with zero index (a range scan, slower than an indexed probe), while non-structured keys must carry a secondary index — paying its insert tax and storage (see writeAmplification). Read metrics are mean ± 95% CI over readReps repeated probe sets.",
-    sqliteVersion: (new Database(":memory:").query("SELECT sqlite_version() v").get() as { v: string }).v,
+  let modes = ["clustered", "secondary"]
+
+  if (MODE_ARG !== "both") {
+    modes = [MODE_ARG]
   }
 
-  console.log(`=== GenoID DB benchmark (bun:sqlite) — ${ROWS} rows × ${RUNS} runs ===`)
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "genoid-db-"))
+
+  const firstCpu = os.cpus().at(0)
+
+  let cpu: string | undefined = undefinedValue
+
+  if (firstCpu) {
+    cpu = firstCpu.model
+  }
+
+  const result: Record<string, unknown> = {
+    config: {
+      blobBytes: BLOB_BYTES,
+      cacheMb: CACHE_MB,
+      readReps: READ_REPS,
+      rows: ROWS,
+      runs: RUNS,
+      sampleEvery: SAMPLE_EVERY,
+    },
+
+    engine: "bun:sqlite",
+
+    hardware: {
+      arch: os.arch(),
+      cores: os.cpus().length,
+      cpu,
+      memMB: Math.round(os.totalmem() / 1_048_576),
+      platform: os.platform(),
+    },
+
+    modes: {},
+
+    note: "Relative index-locality benchmark. Headline = insert throughput (SQLite repacks pages, so on-disk size diverges less than production InnoDB). Anchor: uuid_v4 -> uuid_v7 insert speedup reproduces the published ULID result. Partition differentiator is STORAGE + WRITE-AMPLIFICATION, not read latency: GenoID answers a partition query from the PK with zero index (a range scan, slower than an indexed probe), while non-structured keys must carry a secondary index — paying its insert tax and storage (see writeAmplification). Read metrics are mean ± 95% CI over readReps repeated probe sets.",
+
+    sqliteVersion: (new Database(":memory:")
+      .query("SELECT sqlite_version() v")
+      .get() as { v: string }).v,
+  }
+
+  console.log(
+    `=== GenoID DB benchmark (bun:sqlite) — ${ROWS} rows × ${RUNS} runs ===`,
+  )
+
   for (const mode of modes) {
     const perArm: Record<string, unknown> = {}
+
     console.log(`\n[${mode}]  insert throughput (rows/s, mean ± 95% CI):`)
+
     for (const arm of ARMS) {
       _seq = 0
+
       const runs: ArmRun[] = []
-      for (let r = 0; r < RUNS; r += 1) { _seq = 0; runs.push(runArm(arm, mode, dir)) }
+
+      for (let r = 0; r < RUNS; r += 1) {
+        _seq = 0
+        runs.push(runArm(arm, mode, dir))
+      }
+
       const tp = meanCI(runs.map((r) => r.insertTotalRowsPerSec))
-      const last = runs.at(-1)!
+
+      const last = need(runs.at(-1))
+
       perArm[arm.name] = {
         freePages: last.freePages,
+
         insertSeries: last.insertSeries,
-        insertTotalRowsPerSec: { ci95: tp.ci95.map(Math.round), mean: Math.round(tp.mean) },
+
+        insertTotalRowsPerSec: {
+          ci95: tp.ci95.map((value) => Math.round(value)),
+          mean: Math.round(tp.mean),
+        },
+
         pageBytes: last.pageBytes,
+
         pagesPerRow: last.pagesPerRow,
       }
-      console.log(`  ${arm.name.padEnd(18)} ${Math.round(tp.mean).toString().padStart(9)}  CI[${Math.round(tp.ci95[0])}–${Math.round(tp.ci95[1])}]  ${last.pagesPerRow} pg/row`)
+
+      console.log(
+        `  ${arm.name.padEnd(18)} ${Math.round(tp.mean).toString().padStart(9)}  CI[${Math.round(tp.ci95[0])}–${Math.round(tp.ci95[1])}]  ${last.pagesPerRow} pg/row`,
+      )
     }
     ;(result.modes as Record<string, unknown>)[mode] = perArm
   }
 
-  const fmtMetric = (m: MetricStats) => `${m.mean.toFixed(2)} (95% CI ${m.ci95[0].toFixed(2)}–${m.ci95[1].toFixed(2)})`
+  console.log(
+    `\n[reads] point lookup + shard-prune differentiator (${READ_REPS} reps each, mean ± 95% CI):`,
+  )
 
-  console.log(`\n[reads] point lookup + shard-prune differentiator (${READ_REPS} reps each, mean ± 95% CI):`)
   _seq = 0
-  const reads = readExperiments(dir, READ_REPS)
-  result.reads = reads
-  for (const [armName, stats] of Object.entries(reads.pointLookup)) {
-    console.log(`  point lookup ${armName.padEnd(18)} ${fmtMetric(stats)} µs/op`)
-  }
-  console.log(`  shard=3 → GenoID PK-range scan ${fmtMetric(reads.shard.genoidRangeMs)}ms, 0 index bytes (matched ${reads.shard.matched}/${reads.shard.total} ≈ 1/5)`)
-  console.log(`           uuid_v7 no-index scan ${fmtMetric(reads.shard.baselineNoIndexMs)}ms`)
-  console.log(`           uuid_v7 +tenant-index (+${(reads.shard.baselineExtraIndexBytes / 1024).toFixed(0)}KB) ${fmtMetric(reads.shard.baselineIndexedMs)}ms — its insert tax below`)
 
-  console.log("\n[write-amplification] insert tax to make partition queries fast:")
+  const reads = readExperiments(dir, READ_REPS)
+
+  result.reads = reads
+
+  for (const [armName, stats] of Object.entries(reads.pointLookup)) {
+    console.log(
+      `  point lookup ${armName.padEnd(18)} ${fmtMetric(stats)} µs/op`,
+    )
+  }
+
+  console.log(
+    `  shard=3 → GenoID PK-range scan ${fmtMetric(reads.shard.genoidRangeMs)}ms, 0 index bytes (matched ${reads.shard.matched}/${reads.shard.total} ≈ 1/5)`,
+  )
+
+  console.log(
+    `           uuid_v7 no-index scan ${fmtMetric(reads.shard.baselineNoIndexMs)}ms`,
+  )
+
+  console.log(
+    `           uuid_v7 +tenant-index (+${(reads.shard.baselineExtraIndexBytes / 1024).toFixed(0)}KB) ${fmtMetric(reads.shard.baselineIndexedMs)}ms — its insert tax below`,
+  )
+
+  console.log(
+    "\n[write-amplification] insert tax to make partition queries fast:",
+  )
+
   const waRows = Math.min(ROWS, 300_000)
-  const v7Arm = ARMS.find((a) => a.name === "uuid_v7") as Arm
-  const gsArm = ARMS.find((a) => a.name === "genoid_shardfirst") as Arm
-  _seq = 0; const v7NoIdx = loadForWriteAmp(v7Arm, dir, false, waRows)
-  _seq = 0; const v7Idx = loadForWriteAmp(v7Arm, dir, true, waRows)
-  _seq = 0; const gsNoIdx = loadForWriteAmp(gsArm, dir, false, waRows)
-  const taxPct = Number((100 * (v7NoIdx.rowsPerSec - v7Idx.rowsPerSec) / v7NoIdx.rowsPerSec).toFixed(1))
+
+  const v7Arm = need(ARMS.find((a) => a.name === "uuid_v7"))
+
+  const gsArm = need(ARMS.find((a) => a.name === "genoid_shardfirst"))
+
+  _seq = 0
+  const v7NoIdx = loadForWriteAmp(v7Arm, dir, false, waRows)
+
+  _seq = 0
+  const v7Idx = loadForWriteAmp(v7Arm, dir, true, waRows)
+
+  _seq = 0
+  const gsNoIdx = loadForWriteAmp(gsArm, dir, false, waRows)
+
+  const taxPct = Number(
+    (
+      (100 * (v7NoIdx.rowsPerSec - v7Idx.rowsPerSec)) /
+      v7NoIdx.rowsPerSec
+    ).toFixed(1),
+  )
+
   result.writeAmplification = {
     baselineNoIndexRowsPerSec: v7NoIdx.rowsPerSec,
+
     baselineWithIndexRowsPerSec: v7Idx.rowsPerSec,
+
     genoidIndexBytes: 0,
+
     genoidRowsPerSec: gsNoIdx.rowsPerSec,
+
     indexBytes: v7Idx.pageBytes - v7NoIdx.pageBytes,
+
     insertTaxPct: taxPct,
+
     rows: waRows,
   }
-  console.log(`  uuid_v7  no-index ${v7NoIdx.rowsPerSec} → +tenant-index ${v7Idx.rowsPerSec} rows/s  (insert tax ${taxPct}%, +${((v7Idx.pageBytes - v7NoIdx.pageBytes) / 1024).toFixed(0)}KB storage)`)
-  console.log(`  genoid_shardfirst ${gsNoIdx.rowsPerSec} rows/s  (0 index — partition lives in the PK, no tax)`)
 
-  try { fs.rmSync(dir, { force: true, recursive: true }) } catch {
-    /* ignore */
+  console.log(
+    `  uuid_v7  no-index ${v7NoIdx.rowsPerSec} → +tenant-index ${v7Idx.rowsPerSec} rows/s  (insert tax ${taxPct}%, +${((v7Idx.pageBytes - v7NoIdx.pageBytes) / 1024).toFixed(0)}KB storage)`,
+  )
+
+  console.log(
+    `  genoid_shardfirst ${gsNoIdx.rowsPerSec} rows/s  (0 index — partition lives in the PK, no tax)`,
+  )
+
+  try {
+    fs.rmSync(dir, { force: true, recursive: true })
+  } catch {
+    /* Ignore */
   }
+
   const outPath = path.resolve(root, OUT)
+
   fs.mkdirSync(path.dirname(outPath), { recursive: true })
-  fs.writeFileSync(outPath, JSON.stringify(result, null, 2))
+
+  fs.writeFileSync(outPath, JSON.stringify(result, nullValue, 2))
+
   console.log(`\nWrote ${outPath}`)
 }

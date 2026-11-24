@@ -109,8 +109,9 @@ const id = compiled.fn()               // same format as genStructuredGenoID
 console.log(compiled.source)           // inspect the generated code
 ```
 
-The `compileLayout` call generates JavaScript source code from the layout declaration and compiles it with `new Function`.
-The compiled generator runs at ~10M ops/sec — slightly faster than the regular structured path (shared pool overhead adds ~5%).
+The `compileLayout` call precomputes field write plans and builds a specialized generator closure.
+It does not evaluate generated JavaScript, so it also works under a restrictive Content Security Policy.
+`compiled.source` remains available for inspection.
 
 ## What you can embed
 
@@ -225,7 +226,7 @@ const id = genStructuredGenoID(layout)
 
 Compile the layout into a specialized generator function.
 Returns `{ source, fn }`.
-`source` is the generated JavaScript code.
+`source` is an inspectable JavaScript representation of the layout plan.
 `fn()` returns a UUID string.
 
 ```ts

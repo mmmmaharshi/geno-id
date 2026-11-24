@@ -1,134 +1,236 @@
 // Consolidate every per-environment CI benchmark artifact into a single
-// markdown table (+ JSON) so all results live in one place and can be copied
-// in one go. Run by the `consolidate` CI job after the benchmark matrix.
+
+// Markdown table (+ JSON) so all results live in one place and can be copied
+
+// In one go. Run by the `consolidate` CI job after the benchmark matrix.
+
 //
+
 // The benchmark matrix uploads `bench-ci-results.json` per job; this script
-// scans the downloaded artifact directory for those files, merges them, and
-// renders one wide table (one column per environment).
+
+// Scans the downloaded artifact directory for those files, merges them, and
+
+// Renders one wide table (one column per environment).
+
+import type {
+  BenchEntry,
+  CIBenchmarkResult,
+  CollisionEntry,
+  ComparisonEntry,
+  EnvInfo,
+} from "./ci-result.ts"
+
+import { nullValue, undefinedValue } from "./shared/runtime-values.ts"
 
 import fs from "node:fs"
+
+import { need } from "../shared/need.ts"
+
 import path from "node:path"
-import type { BenchEntry, CIBenchmarkResult, CollisionEntry, ComparisonEntry, EnvInfo } from "./ci-result.ts"
 
-export function envLabel(e: EnvInfo): string {
-  if (e.runtime === "deno") {
-    const v = e.node.replace(/^deno-/u, "")
-    const osName = platformName(e.platform)
-    return `Deno ${v} (${osName})`
+const platformName = (platform: string): string => {
+  if (platform === "darwin") {
+    return "macOS"
   }
-  if (e.runtime !== "bun") {
-    const osName = platformName(e.platform)
-    return `Node ${e.node.split(".")[0]} (${osName})`
-  }
-  let os = "Windows"
-  if (e.platform === "linux") {os = "Ubuntu"}
-  else if (e.platform === "darwin" || e.platform === "macos") {os = "macOS"}
-  else if (e.platform === "windows") {os = "Windows"}
-  return `${os} (Bun)`
-}
 
-function platformName(platform: string): string {
-  if (platform === "darwin") {return "macOS"}
-  if (platform === "win32" || platform === "windows") {return "Windows"}
+  if (platform === "win32" || platform === "windows") {
+    return "Windows"
+  }
+
   return "Linux"
 }
 
-function platformRank(platform: string): number {
-  if (platform === "linux") {return 0}
-  if (platform === "darwin") {return 1}
-  if (platform === "win32" || platform === "windows") {return 2}
+export const envLabel = (e: EnvInfo): string => {
+  if (e.runtime === "deno") {
+    const v = e.node.replace(/^deno-/u, "")
+
+    const osName = platformName(e.platform)
+
+    return `Deno ${v} (${osName})`
+  }
+
+  if (e.runtime !== "bun") {
+    const osName = platformName(e.platform)
+
+    return `Node ${e.node.split(".")[0]} (${osName})`
+  }
+
+  let os = "Windows"
+
+  if (e.platform === "linux") {
+    os = "Ubuntu"
+  } else if (e.platform === "darwin" || e.platform === "macos") {
+    os = "macOS"
+  } else if (e.platform === "windows") {
+    os = "Windows"
+  }
+
+  return `${os} (Bun)`
+}
+
+const platformRank = (platform: string): number => {
+  if (platform === "linux") {
+    return 0
+  }
+
+  if (platform === "darwin") {
+    return 1
+  }
+
+  if (platform === "win32" || platform === "windows") {
+    return 2
+  }
+
   return 9
 }
 
-function rankEnv(e: EnvInfo): number {
+const rankEnv = (e: EnvInfo): number => {
   if (e.runtime === "deno") {
     return 20 + platformRank(e.platform)
   }
+
   if (e.runtime === "bun") {
     return { darwin: 1, linux: 0, win32: 2 }[e.platform] ?? 9
   }
-  return 10 + (Number.parseInt(e.node, 10) - 20) * 3 + platformRank(e.platform)
+
+  return 10 + (Math.trunc(Number(e.node)) - 20) * 3 + platformRank(e.platform)
 }
 
-function mops(x: number): string {
-  return `${(x / 1e6).toFixed(2)}M`
-}
+const mops = (x: number): string => `${(x / 1e6).toFixed(2)}M`
 
-function collectFiles(dir: string): string[] {
+const collectFiles = (dir: string): string[] => {
   const out: string[] = []
-  if (!fs.existsSync(dir)) {return out}
+
+  if (!fs.existsSync(dir)) {
+    return out
+  }
+
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const p = path.join(dir, entry.name)
-    if (entry.isDirectory()) {out.push(...collectFiles(p))}
-    else if (entry.name === "bench-ci-results.json") {out.push(p)}
+
+    if (entry.isDirectory()) {
+      out.push(...collectFiles(p))
+    } else if (entry.name === "bench-ci-results.json") {
+      out.push(p)
+    }
   }
+
   return out
 }
 
-export function renderConsolidated(results: CIBenchmarkResult[]): string {
+export const renderConsolidated = (results: CIBenchmarkResult[]): string => {
   const sorted = [...results].toSorted(
     (a, b) => rankEnv(a.environment) - rankEnv(b.environment),
   )
+
   if (sorted.length === 0) {
     return "## GenoID CI benchmark — consolidated\n\n_No benchmark artifacts found._\n"
   }
 
+  const firstBenchmark = sorted[0].benchmarks.at(0)
+
+  let trials = "?"
+
+  if (firstBenchmark !== undefinedValue) {
+    trials = String(firstBenchmark.trials)
+  }
+
   const cols = sorted.map((r) => envLabel(r.environment))
+
   const benchByName = new Map<string, BenchEntry[]>()
+
   for (const r of sorted) {
     for (const b of r.benchmarks) {
-      if (!benchByName.has(b.name)) {benchByName.set(b.name, [])}
-      benchByName.get(b.name)!.push(b)
+      if (!benchByName.has(b.name)) {
+        benchByName.set(b.name, [])
+      }
+
+      need(benchByName.get(b.name)).push(b)
     }
   }
+
   const collByName = new Map<string, CollisionEntry[]>()
+
   for (const r of sorted) {
     for (const c of r.collisions) {
-      if (!collByName.has(c.name)) {collByName.set(c.name, [])}
-      collByName.get(c.name)!.push(c)
+      if (!collByName.has(c.name)) {
+        collByName.set(c.name, [])
+      }
+
+      need(collByName.get(c.name)).push(c)
     }
   }
 
   let md = "## GenoID CI benchmark — consolidated\n\n"
-  md += `Merged from ${sorted.length} environment runs (mean of ${sorted[0].benchmarks[0]?.trials ?? "?"} repeated trials each).\n\n`
+
+  md += `Merged from ${sorted.length} environment runs (mean of ${trials} repeated trials each).\n\n`
 
   // Throughput table
+
   md += `| Algorithm | ${cols.join(" | ")} |\n`
+
   md += `|---|${cols.map(() => "---:").join("|")}|\n`
+
   for (const [name, entries] of benchByName) {
     const cells = entries.map((b) => mops(b.opsPerSec))
+
     md += `| ${name} | ${cells.join(" | ")} |\n`
   }
 
   // Collision table
+
   md += "\n### Collisions (PASS = 0 collisions)\n\n"
+
   md += `| Algorithm | ${cols.join(" | ")} |\n`
+
   md += `|---|${cols.map(() => "---:").join("|")}|\n`
+
   for (const [name, entries] of collByName) {
-    const cells = entries.map((c) => (c.collisions === 0 ? "PASS" : `${c.collisions}`))
+    const cells = entries.map((c) => {
+      let status = `${c.collisions}`
+
+      if (c.collisions === 0) {
+        status = "PASS"
+      }
+
+      return status
+    })
+
     md += `| ${name} | ${cells.join(" | ")} |\n`
   }
 
   // Pairwise comparisons
+
   const allComparisons = sorted.flatMap((r) => r.comparisons ?? [])
+
   if (allComparisons.length > 0) {
     const compByName = new Map<string, ComparisonEntry[]>()
+
     for (const c of allComparisons) {
-      if (!compByName.has(c.name)) {compByName.set(c.name, [])}
-      compByName.get(c.name)!.push(c)
+      if (!compByName.has(c.name)) {
+        compByName.set(c.name, [])
+      }
+
+      need(compByName.get(c.name)).push(c)
     }
+
     md += "\n### Pairwise comparisons\n\n"
+
     md += "| Comparison | ratio | p | d | faster |\n"
+
     for (const [name, entries] of compByName) {
       md += `| ${name} |`
+
       for (const c of entries) {
         md += ` ${c.ratio} | ${c.welchP} | ${c.cohensD} | ${c.faster} |`
       }
+
       md += "\n"
     }
   }
 
   // Known-artifact notes so the raw numbers are not misread as a GenoID defect.
+
   md +=
     "\n### Known issues\n\n" +
     "- **Node on Windows throughput:** schemes that call `crypto.getRandomValues` " +
@@ -137,8 +239,8 @@ export function renderConsolidated(results: CIBenchmarkResult[]): string {
     "artifact (BCryptGenRandom per-call overhead, not batched), not a GenoID defect. " +
     "Native `crypto.randomUUID()` (v4) and the pooled GenoID CSPRNG are unaffected, " +
     "which confirms the bottleneck is per-call `getRandomValues`, not the algorithm.\n" +
-    "- **Node 22 GenoID V8 deopt:** `genoid-structured` reaches only 12 -= 116% of " +
-    "`genoid-v8`'s rate on Node 22 (all three OSes), against 56 -= 194% on Bun and Deno. " +
+    "- **Node 22 GenoID V8 deopt:** `genoid-structured` reaches only 12--16% of " +
+    "`genoid-v8`'s rate on Node 22 (all three OSes), against 56--94% on Bun and Deno. " +
     "Both draw from the same pool, so the cause is a V8-version-specific " +
     "deoptimisation in the field-extraction/repair loop, not CSPRNG access. " +
     "Deno runs a newer V8 without the regression.\n"
@@ -146,32 +248,43 @@ export function renderConsolidated(results: CIBenchmarkResult[]): string {
   return md
 }
 
-function main(): void {
+const main = (): void => {
   const inputDir = process.argv[2] ?? "combined"
 
   fs.mkdirSync("dist", { recursive: true })
 
   const files = collectFiles(inputDir)
+
   const results = files.flatMap((f) => {
     try {
-      return [JSON.parse(fs.readFileSync(f, "utf-8")) as CIBenchmarkResult]
+      return [JSON.parse(fs.readFileSync(f, "utf8")) as CIBenchmarkResult]
     } catch {
       console.error(`Failed to parse ${f}, skipping`)
+
       return []
     }
   })
 
   const md = renderConsolidated(results)
+
   try {
-    fs.writeFileSync("dist/all-results.json", JSON.stringify(results, null, 2))
+    fs.writeFileSync(
+      "dist/all-results.json",
+      JSON.stringify(results, nullValue, 2),
+    )
+
     fs.writeFileSync("dist/all-summary.md", md)
   } catch (error) {
-    console.error(`Failed to write consolidate output: ${(error as Error).message}`)
+    console.error(
+      `Failed to write consolidate output: ${(error as Error).message}`,
+    )
   }
+
   console.log(`Merged ${results.length} environment runs.`)
 }
 
 // Run only when invoked directly (not when imported by tests).
+
 if (import.meta.main) {
   main()
 }

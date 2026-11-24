@@ -1,0 +1,402 @@
+{
+  "plugins": [
+    "eslint",
+    "typescript",
+    "unicorn",
+    "oxc",
+    "import",
+    "jsdoc",
+    "node",
+    "promise"
+  ],
+  "env": {
+    "browser": true,
+    "node": true
+  },
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error",
+    "pedantic": "error",
+    "perf": "error",
+    "style": "error",
+    "restriction": "error",
+    "nursery": "error"
+  },
+  "rules": {
+    "complexity": [
+      "error",
+      20
+    ],
+    "func-style": [
+      "error",
+      "expression",
+      {
+        "allowArrowFunctions": true
+      }
+    ],
+    "id-length": [
+      "error",
+      {
+        "min": 2,
+        "exceptions": [
+          "_",
+          "i",
+          "j",
+          "k",
+          "x",
+          "y",
+          "z",
+          "a",
+          "b",
+          "c",
+          "d",
+          "e",
+          "f",
+          "g",
+          "h",
+          "l",
+          "m",
+          "n",
+          "o",
+          "p",
+          "q",
+          "r",
+          "s",
+          "t",
+          "u",
+          "v",
+          "w"
+        ]
+      }
+    ],
+    "import/no-nodejs-modules": [
+      "error",
+      {
+        "allow": [
+          "assert",
+          "node:assert",
+          "buffer",
+          "node:buffer",
+          "child_process",
+          "node:child_process",
+          "cluster",
+          "node:cluster",
+          "crypto",
+          "node:crypto",
+          "dgram",
+          "node:dgram",
+          "diagnostics_channel",
+          "node:diagnostics_channel",
+          "dns",
+          "node:dns",
+          "domain",
+          "node:domain",
+          "events",
+          "node:events",
+          "fs",
+          "node:fs",
+          "http",
+          "node:http",
+          "http2",
+          "node:http2",
+          "https",
+          "node:https",
+          "module",
+          "node:module",
+          "net",
+          "node:net",
+          "os",
+          "node:os",
+          "path",
+          "node:path",
+          "perf_hooks",
+          "node:perf_hooks",
+          "process",
+          "node:process",
+          "punycode",
+          "node:punycode",
+          "querystring",
+          "node:querystring",
+          "readline",
+          "node:readline",
+          "repl",
+          "node:repl",
+          "stream",
+          "node:stream",
+          "string_decoder",
+          "node:string_decoder",
+          "sys",
+          "node:sys",
+          "test",
+          "node:test",
+          "timers",
+          "node:timers",
+          "tls",
+          "node:tls",
+          "trace_events",
+          "node:trace_events",
+          "tty",
+          "node:tty",
+          "url",
+          "node:url",
+          "util",
+          "node:util",
+          "v8",
+          "node:v8",
+          "vm",
+          "node:vm",
+          "wasi",
+          "node:wasi",
+          "worker_threads",
+          "node:worker_threads",
+          "zlib",
+          "node:zlib",
+          "sqlite",
+          "node:sqlite",
+          "node:assert/strict",
+          "node:fs/promises",
+          "node:timers/promises"
+        ]
+      }
+    ],
+    "max-depth": [
+      "error",
+      6
+    ],
+    "max-lines": [
+      "error",
+      5000
+    ],
+    "max-lines-per-function": [
+      "error",
+      400
+    ],
+    "max-params": [
+      "error",
+      10
+    ],
+    "max-statements": [
+      "error",
+      100
+    ],
+    "no-console": [
+      "error",
+      {
+        "allow": [
+          "log",
+          "info",
+          "warn",
+          "error",
+          "table",
+          "debug",
+          "trace"
+        ]
+      }
+    ],
+    "no-magic-numbers": [
+      "error",
+      {
+        "detectObjects": false,
+        "enforceConst": false,
+        "ignoreArrayIndexes": true,
+        "ignoreClassFieldInitialValues": true,
+        "ignoreDefaultValues": true,
+        "ignoreEnums": true,
+        "ignoreNumericLiteralTypes": true,
+        "ignoreReadonlyClassProperties": true,
+        "ignoreTypeIndexes": true,
+        "ignore": [
+          -1,
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          23,
+          24,
+          26,
+          30,
+          32,
+          33,
+          40,
+          48,
+          49,
+          50,
+          51,
+          64,
+          65,
+          80,
+          112,
+          120,
+          128,
+          255,
+          256,
+          1000,
+          1200,
+          50000,
+          65536,
+          2147483647,
+          2147483648,
+          4294967296,
+          1000000,
+          1.1774,
+          1.96
+        ]
+      }
+    ],
+    "no-underscore-dangle": [
+      "error",
+      {
+        "allow": [
+          "_fillRandom",
+          "_hasWebCrypto",
+          "_webCryptoFill",
+          "_noRngFill",
+          "_csprngBuf",
+          "_csprngPos",
+          "_poolMonoTick",
+          "_layoutTick",
+          "_spPool",
+          "_compiledGenCache",
+          "_layoutIdentities",
+          "_fieldWritePlans",
+          "_fieldByteMasks",
+          "_fieldMod",
+          "_structureKeyCache",
+          "_validated",
+          "_interpretLast",
+          "_wordTable",
+          "_leanFootprint",
+          "_genoPoolN",
+          "_genoPool",
+          "_genoStrs",
+          "_genoIdx",
+          "_child",
+          "_v7Rnd",
+          "_v7Bytes",
+          "_structPoolN"
+        ]
+      }
+    ],
+    "import/max-dependencies": [
+      "error",
+      30
+    ],
+    "node/no-sync": [
+      "error",
+      {
+        "allowAtRootLevel": true,
+        "ignores": [
+          "benchSync"
+        ]
+      }
+    ],
+    "no-void": [
+      "error",
+      {
+        "allowAsStatement": true
+      }
+    ],
+    "typescript/prefer-readonly-parameter-types": [
+      "error",
+      {
+        "checkParameterProperties": false,
+        "ignoreInferredTypes": true,
+        "treatMethodsAsReadonly": true,
+        "allow": [
+          "Array",
+          "ArrayBuffer",
+          "BigInt64Array",
+          "BigUint64Array",
+          "Map",
+          "Record",
+          "Set",
+          "SharedArrayBuffer",
+          "Uint8Array",
+          "Uint16Array",
+          "Uint32Array",
+          "Float64Array",
+          "WeakMap",
+          "WeakSet",
+          "Promise",
+          "() => void",
+          "WorkloadStats"
+        ]
+      }
+    ]
+  },
+  "ignorePatterns": [
+    "src/scripts/deno/**"
+  ],
+  "overrides": [
+    {
+      "files": [
+        "src/**/*.ts"
+      ],
+      "rules": {
+        "import/no-named-export": "off",
+        "import/no-relative-parent-imports": "off",
+        "import/exports-last": "off",
+        "import/group-exports": "off",
+        "oxc/no-async-await": "off",
+        "typescript/no-unsafe-type-assertion": "off",
+        "typescript/prefer-optional-chain": "off"
+      }
+    },
+    {
+      "files": [
+        "src/scripts/**/*.ts"
+      ],
+      "rules": {
+        "id-length": "off",
+        "no-magic-numbers": "off",
+        "node/no-process-env": "off",
+        "node/no-sync": "off",
+        "no-underscore-dangle": "off",
+        "typescript/prefer-readonly-parameter-types": "off"
+      }
+    },
+    {
+      "files": [
+        "*.config.ts"
+      ],
+      "rules": {
+        "import/no-default-export": "off",
+        "typescript/no-unsafe-call": "off",
+        "typescript/no-unsafe-argument": "off"
+      }
+    },
+    {
+      "files": [
+        "src/scripts/*.d.ts"
+      ],
+      "rules": {
+        "import/unambiguous": "off"
+      }
+    },
+    {
+      "files": [
+        "src/scripts/run-dieharder.ts"
+      ],
+      "rules": {
+        "typescript/strict-void-return": "off"
+      }
+    }
+  ],
+  "globals": {
+    "Bun": "readonly"
+  }
+}

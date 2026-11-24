@@ -1,184 +1,343 @@
-import fs from "node:fs"
-import os from "node:os"
-import path from "node:path"
-import { pathToFileURL } from "node:url"
+import type {
+  BenchEntry,
+  CIBenchmarkResult,
+  CollisionEntry,
+  ComparisonEntry,
+  EnvInfo,
+} from "./ci-result.ts"
+
+import { benchRepeated, collisionTest } from "../../dist/bench-core.js"
+
 import {
-  benchRepeated,
-  collisionTest,
-} from "../../dist/bench-core.js"
-import type { BenchStats } from "../../dist/bench-core.js"
-import { compareBench } from "./significance.ts"
-import {
+  genKsuid,
   genPgUuidV8,
+  genSnowflake,
   genUlid,
   genUlidV8,
-  genKsuid,
-  genSnowflake,
 } from "./baselines.ts"
-import type { CIBenchmarkResult, EnvInfo, BenchEntry, CollisionEntry, ComparisonEntry } from "./ci-result.ts"
+
+import { nullValue, undefinedValue } from "./shared/runtime-values.ts"
+
+import { compareBench } from "./significance.ts"
+
+import fs from "node:fs"
+
+import { need } from "../shared/need.ts"
+
+import os from "node:os"
+
+import path from "node:path"
+
+import { pathToFileURL } from "node:url"
+
+type BenchStats = ReturnType<typeof benchRepeated>
 
 const __dirname = import.meta.dirname
+
 const root = path.resolve(__dirname, "..", "..")
 
-const algo = await import(pathToFileURL(path.resolve(root, "dist/algo.js")).href)
-const { genV4Native, genV7, genMathRandom, genGenoID, genStructuredGenoID, DBKEY_LAYOUT, compileLayout } =
-  algo as {
-    genV4Native: () => string
-    genV7: () => string
-    genMathRandom: () => string
-    genGenoID: () => string
-    genStructuredGenoID: (layout: unknown) => string
-    DBKEY_LAYOUT: unknown
-    compileLayout: (layout: unknown) => { source: string; fn: () => string }
-  }
+const algo = (await import(
+  pathToFileURL(path.resolve(root, "dist/algo.js")).href
+)) as {
+  genV4Native: () => string
+
+  genV7: () => string
+
+  genMathRandom: () => string
+
+  genGenoID: () => string
+
+  genStructuredGenoID: (layout: unknown) => string
+
+  DBKEY_LAYOUT: unknown
+
+  compileLayout: (layout: unknown) => { source: string; fn: () => string }
+}
+
+const {
+  genV4Native,
+  genV7,
+  genMathRandom,
+  genGenoID,
+  genStructuredGenoID,
+  DBKEY_LAYOUT,
+  compileLayout,
+} = algo
 
 const genDbkey = (): string => genStructuredGenoID(DBKEY_LAYOUT)
-const genCompiled = compileLayout(DBKEY_LAYOUT as Parameters<typeof compileLayout>[0]).fn
 
-function collectEnv(): EnvInfo {
-  const isBun = (globalThis as { Bun?: unknown }).Bun !== undefined
+const genCompiled = compileLayout(DBKEY_LAYOUT).fn
+
+const collectEnv = (): EnvInfo => {
+  const bunVersion = process.versions.bun
+
+  let runtime = "node"
+
+  if (typeof bunVersion === "string") {
+    runtime = "bun"
+  }
+
+  const firstCpu = os.cpus().at(0)
+
+  let cpuModel = "unknown"
+
+  if (firstCpu) {
+    cpuModel = firstCpu.model
+  }
+
   return {
     arch: process.arch,
-    bun: process.versions.bun ?? null,
-    commitSha: process.env.GITHUB_SHA ?? undefined,
+
+    bun: bunVersion ?? nullValue,
+
+    commitSha: process.env.GITHUB_SHA ?? undefinedValue,
+
     cpuCount: os.cpus().length,
-    cpuModel: os.cpus()[0]?.model ?? "unknown",
+
+    cpuModel,
+
     node: process.versions.node,
+
     platform: process.platform,
-    runId: process.env.GITHUB_RUN_ID ?? undefined,
-    runtime: isBun ? "bun" : "node",
+
+    runId: process.env.GITHUB_RUN_ID ?? undefinedValue,
+
+    runtime,
+
     totalMemoryMB: Math.round(os.totalmem() / (1024 * 1024)),
   }
 }
 
 const nSync = 200_000
+
 const nColl = 1_000_000
+
 const TRIALS = 10
 
 // Native v4 is the reference every generator's significance is measured against
+
 // (the paper's "native baseline"). Welch t-test + Cohen's d vs this generator.
+
 const BASELINE = "v4-native"
 
 const specs: [string, () => string][] = [
   ["v4-native", genV4Native],
+
   ["v7-custom", genV7],
+
   ["genoid-v8", genGenoID],
+
   ["mathrandom", genMathRandom],
+
   ["pg-uuid-v8", genPgUuidV8],
+
   ["ulid", genUlid],
+
   ["ulid-v8", genUlidV8],
+
   ["ksuid", genKsuid],
+
   ["snowflake", genSnowflake],
+
   ["genoid-structured", genDbkey],
+
   ["genoid-compiled", genCompiled],
 ]
 
-function coll(name: string, fn: () => string): CollisionEntry {
-  return { collisions: collisionTest(fn, nColl), n: nColl, name }
-}
+const coll = (name: string, fn: () => string): CollisionEntry => ({
+  collisions: collisionTest(fn, nColl),
+  n: nColl,
+  name,
+})
 
 const env = collectEnv()
 
 // Pass 1: collect repeated-trial stats (with a warmup pass) for every generator.
+
 const statsByName = new Map<string, BenchStats>()
-for (const [name, fn] of specs) {statsByName.set(name, benchRepeated(fn, nSync, TRIALS))}
+
+for (const [name, fn] of specs) {
+  statsByName.set(name, benchRepeated(fn, nSync, TRIALS))
+}
 
 // Pass 2: build entries, each carrying a Welch t-test p-value + Cohen's d
-// against the baseline, so the artifact states statistical distinguishability
-// rather than leaving it to eyeballed point estimates.
+
+// Against the baseline, so the artifact states statistical distinguishability
+
+// Rather than leaving it to eyeballed point estimates.
+
 const baseStats = statsByName.get(BASELINE)
-if (!baseStats) {throw new Error(`baseline ${BASELINE} was not benchmarked`)}
+
+if (!baseStats) {
+  throw new Error(`baseline ${BASELINE} was not benchmarked`)
+}
+
 const benchmarks: BenchEntry[] = specs.map(([name]) => {
-  const r = statsByName.get(name) as BenchStats
+  const r = need(statsByName.get(name))
+
   const cmp = compareBench(r, baseStats)
+
   return {
     ci95: [Math.round(r.ci95[0]), Math.round(r.ci95[1])],
+
     cohensD: Number(cmp.d.toFixed(3)),
+
     cv: Number(r.cv.toFixed(4)),
+
     name,
+
     opsPerSec: Math.round(r.mean),
-    samples: r.samples.map(Math.round),
+
+    samples: r.samples.map((value) => Math.round(value)),
+
     std: Math.round(r.std),
+
     trials: r.trials,
+
     usPerOp: Number((1_000_000 / r.mean).toFixed(4)),
+
     welchDf: Number(cmp.df.toPrecision(4)),
+
     welchP: Number(cmp.p.toPrecision(3)),
+
     welchT: Number(cmp.t.toPrecision(4)),
   }
 })
 
 // Pairwise comparisons for the pairs the paper actually asserts.
+
 const comparisonPairs: [string, string, string][] = [
   ["structured-vs-pg-uuid-v8", "genoid-structured", "pg-uuid-v8"],
+
   ["structured-vs-ulid-v8", "genoid-structured", "ulid-v8"],
+
   ["compiled-vs-structured", "genoid-compiled", "genoid-structured"],
 ]
+
 const comparisons: ComparisonEntry[] = comparisonPairs.map(([name, a, b]) => {
-  const sa = statsByName.get(a) as BenchStats
-  const sb = statsByName.get(b) as BenchStats
+  const sa = need(statsByName.get(a))
+
+  const sb = need(statsByName.get(b))
+
   const cmp = compareBench(sa, sb)
+
+  let faster = b
+
+  if (sa.mean >= sb.mean) {
+    faster = a
+  }
+
   return {
     a,
+
     b,
+
     cohensD: Number(cmp.d.toFixed(3)),
-    faster: sa.mean >= sb.mean ? a : b,
+
+    faster,
+
     name,
+
     ratio: Number((sa.mean / sb.mean).toFixed(4)),
+
     welchDf: Number(cmp.df.toPrecision(4)),
+
     welchP: Number(cmp.p.toPrecision(3)),
+
     welchT: Number(cmp.t.toPrecision(4)),
   }
 })
 
 // NOTE: snowflake is intentionally excluded from the collision gate. It is a
+
 // 64-bit time+sequence ID (12-bit sequence that wraps within a millisecond),
-// not an entropy-based UUID — under tight-loop 1M generation it collides once
-// the sequence wraps, which is expected and not a defect. It stays in the speed
-// benchmark above. Only entropy-based / UUID-shaped generators are collision-tested.
+
+// Not an entropy-based UUID — under tight-loop 1M generation it collides once
+
+// The sequence wraps, which is expected and not a defect. It stays in the speed
+
+// Benchmark above. Only entropy-based / UUID-shaped generators are collision-tested.
+
 const collisions: CollisionEntry[] = [
   coll("v4-native", genV4Native),
+
   coll("v7-custom", genV7),
+
   coll("genoid-v8", genGenoID),
+
   coll("genoid-structured", genDbkey),
+
   coll("genoid-compiled", genCompiled),
+
   coll("mathrandom", genMathRandom),
+
   coll("pg-uuid-v8", genPgUuidV8),
+
   coll("ulid-v8", genUlidV8),
+
   coll("ulid", genUlid),
+
   coll("ksuid", genKsuid),
 ]
 
-const output: CIBenchmarkResult = { baselineName: BASELINE, benchmarks, collisions, comparisons, environment: env }
+const output: CIBenchmarkResult = {
+  baselineName: BASELINE,
+  benchmarks,
+  collisions,
+  comparisons,
+  environment: env,
+}
 
 console.log("=== GenoID CI benchmark ===")
-console.log("Environment:", JSON.stringify(env, null, 2))
-console.log(`\nBenchmarks (ops/sec, mean ± std, 95% CI; Welch p & Cohen's d vs ${BASELINE}):`)
+
+console.log("Environment:", JSON.stringify(env, nullValue, 2))
+
+console.log(
+  `\nBenchmarks (ops/sec, mean ± std, 95% CI; Welch p & Cohen's d vs ${BASELINE}):`,
+)
+
 for (const b of benchmarks) {
   console.log(
     `  ${b.name.padEnd(16)} ${b.opsPerSec.toString().padStart(10)} ± ${b.std
+
       .toString()
-      .padStart(8)}  CV=${b.cv}  CI[${b.ci95[0]}–${b.ci95[1]}]  p=${b.welchP}  d=${b.cohensD}`,
+
+      .padStart(
+        8,
+      )}  CV=${b.cv}  CI[${b.ci95[0]}–${b.ci95[1]}]  p=${b.welchP}  d=${b.cohensD}`,
   )
 }
+
 console.log("\nPairwise comparisons:")
+
 for (const c of comparisons) {
-  console.log(`  ${c.name.padEnd(28)} ratio=${c.ratio}  p=${c.welchP}  d=${c.cohensD}  faster=${c.faster}`)
+  console.log(
+    `  ${c.name.padEnd(28)} ratio=${c.ratio}  p=${c.welchP}  d=${c.cohensD}  faster=${c.faster}`,
+  )
 }
+
 console.log("\nCollisions:")
+
 for (const c of collisions) {
-  console.log(`  ${c.name.padEnd(14)} n=${c.n}  collisions=${c.collisions}  PASS=${c.collisions === 0}`)
+  console.log(
+    `  ${c.name.padEnd(14)} n=${c.n}  collisions=${c.collisions}  PASS=${c.collisions === 0}`,
+  )
 }
 
 const outPath = path.resolve(root, "dist/bench-ci-results.json")
+
 try {
-  fs.writeFileSync(outPath, JSON.stringify(output, null, 2))
+  fs.writeFileSync(outPath, JSON.stringify(output, nullValue, 2))
+
   console.log(`\nWrote ${outPath}`)
 } catch (error) {
   console.error(`Failed to write ${outPath}: ${(error as Error).message}`)
 }
 
 const anyCollision = collisions.some((c) => c.collisions > 0)
+
 if (anyCollision) {
   console.error("FAIL: collision detected in CI benchmark")
-  process.exit(1)
+
+  process.exitCode = 1
 }

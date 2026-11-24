@@ -1,101 +1,190 @@
-import path from "node:path"
 import fs from "node:fs"
+
+import { nullValue } from "./shared/runtime-values.ts"
+
+import path from "node:path"
+
 import { pathToFileURL } from "node:url"
 
 const __dirname = import.meta.dirname
+
 const root = path.resolve(__dirname, "..", "..")
 
-const algo = await import(pathToFileURL(path.resolve(root, "dist/algo.js")).href)
-const {
-  configureRandom,
-  createSeededRandom,
-  resetSeededState,
-  genStructuredGenoIDSingleParent,
-  compileLayout,
-  DBKEY_LAYOUT,
-  MULTITENANT_LAYOUT,
-  EVENTSOURCING_LAYOUT,
-  CONFORMANCE_LAYOUT,
-} = algo as {
+const algo = (await import(
+  pathToFileURL(path.resolve(root, "dist/algo.js")).href
+)) as {
   configureRandom: (fn: ((buf: Uint8Array) => void) | null) => void
+
   createSeededRandom: (s0: number, s1: number) => (buf: Uint8Array) => void
+
   resetSeededState: () => void
+
   genStructuredGenoIDSingleParent: (layout: unknown) => string
+
   compileLayout: (layout: unknown) => { source: string; fn: () => string }
+
   DBKEY_LAYOUT: unknown
+
   MULTITENANT_LAYOUT: unknown
+
   EVENTSOURCING_LAYOUT: unknown
+
   CONFORMANCE_LAYOUT: unknown
 }
 
+const {
+  configureRandom,
+
+  createSeededRandom,
+
+  resetSeededState,
+
+  genStructuredGenoIDSingleParent,
+
+  compileLayout,
+
+  DBKEY_LAYOUT,
+
+  MULTITENANT_LAYOUT,
+
+  EVENTSOURCING_LAYOUT,
+
+  CONFORMANCE_LAYOUT,
+} = algo
+
 const N = 1000
-const SEED0 = 0xde_ad_be_ef
-const SEED1 = 0x4f_15_f0_0d
+
+const SEED0 = 0xDE_AD_BE_EF
+
+const SEED1 = 0x4F_15_F0_0D
+
 const FIXED_TIME_MS = 1_700_000_000_000
 
 type Layout = unknown
 
-function emit(layout: Layout, name: string, gen: (l: Layout) => string, label: string): void {
+const emit = (
+  layout: Layout,
+  name: string,
+  gen: (l: Layout) => string,
+  label: string,
+): void => {
   resetSeededState()
+
   configureRandom(createSeededRandom(SEED0, SEED1))
+
   const origNow = Date.now
-  Date.now = () => FIXED_TIME_MS
+
+  Date.now = (): number => FIXED_TIME_MS
+
   const lines: string[] = []
-  for (let i = 0; i < N; i += 1) {lines.push(gen(layout))}
+
+  for (let i = 0; i < N; i += 1) {
+    lines.push(gen(layout))
+  }
+
   Date.now = origNow
-  const content = `${lines.join("\n")  }\n`
+
+  const content = `${lines.join("\n")}\n`
+
   const dir = path.resolve(root, "golden")
+
   fs.mkdirSync(dir, { recursive: true })
+
   const filePath = path.resolve(dir, `${name}.txt`)
+
   fs.writeFileSync(filePath, content)
+
   console.log(`  ${label}: wrote ${N} UUIDs to golden/${name}.txt`)
 }
 
 // Emit compiled golden vectors. The compiled function draws 16 CSPRNG bytes per
+
 // UUID — a different consumption pattern than the pool-based interpreted path
+
 // (34-byte STRUCT_ENTRY stride), so these ARE NOT byte-for-byte comparable to
-// the interpreted golden vectors. They serve as a deterministic check that the
-// compiled field-assembly logic is stable across runs (same input bytes → same
+
+// The interpreted golden vectors. They serve as a deterministic check that the
+
+// Compiled field-assembly logic is stable across runs (same input bytes → same
+
 // UUID) and are structurally validatable.
-function emitCompiled(layout: Layout, name: string, label: string): void {
+
+const emitCompiled = (layout: Layout, name: string, label: string): void => {
+  resetSeededState()
+
+  configureRandom(createSeededRandom(SEED0, SEED1))
+
   const compiled = compileLayout(layout)
-  const seededFill = createSeededRandom(SEED0, SEED1)
-  const cr = {
-    getRandomValues(buf: Uint8Array) {
-      seededFill(buf)
-    },
+
+  const originalNow = Date.now
+
+  try {
+    Date.now = (): number => FIXED_TIME_MS
+
+    const lines: string[] = []
+
+    for (let i = 0; i < N; i += 1) {
+      lines.push(compiled.fn())
+    }
+
+    const content = `${lines.join("\n")}\n`
+
+    const dir = path.resolve(root, "golden")
+
+    fs.mkdirSync(dir, { recursive: true })
+
+    const filePath = path.resolve(dir, `compiled-${name}.txt`)
+
+    fs.writeFileSync(filePath, content)
+
+    console.log(`  ${label}: wrote ${N} UUIDs to golden/compiled-${name}.txt`)
+  } finally {
+    Date.now = originalNow
+
+    configureRandom(nullValue)
   }
-  const factory = new Function("h", "w", "cr", compiled.source) as (
-    h: string[],
-    w: string[] | null,
-    cr: { getRandomValues: (buf: Uint8Array) => void },
-  ) => () => string
-  const cfn = factory(algo.HEX8, algo.wordTable(), cr)
-  const origNow = Date.now
-  Date.now = () => FIXED_TIME_MS
-  const lines: string[] = []
-  for (let i = 0; i < N; i += 1) {lines.push(cfn())}
-  Date.now = origNow
-  const content = `${lines.join("\n")  }\n`
-  const dir = path.resolve(root, "golden")
-  fs.mkdirSync(dir, { recursive: true })
-  const filePath = path.resolve(dir, `compiled-${name}.txt`)
-  fs.writeFileSync(filePath, content)
-  console.log(`  ${label}: wrote ${N} UUIDs to golden/compiled-${name}.txt`)
 }
 
 console.log("=== Golden vector export ===")
+
 console.log(`seed: (${SEED0}, ${SEED1}), n=${N}, fixed-time=${FIXED_TIME_MS}`)
 
-emit(DBKEY_LAYOUT, "dbkey-single-parent", genStructuredGenoIDSingleParent, "dbkey (single-parent)")
-emit(MULTITENANT_LAYOUT, "multitenant-single-parent", genStructuredGenoIDSingleParent, "multitenant (single-parent)")
-emit(EVENTSOURCING_LAYOUT, "eventsourcing-single-parent", genStructuredGenoIDSingleParent, "eventsourcing (single-parent)")
-emit(CONFORMANCE_LAYOUT, "conformance-single-parent", genStructuredGenoIDSingleParent, "conformance (single-parent)")
+emit(
+  DBKEY_LAYOUT,
+  "dbkey-single-parent",
+  genStructuredGenoIDSingleParent,
+  "dbkey (single-parent)",
+)
+
+emit(
+  MULTITENANT_LAYOUT,
+  "multitenant-single-parent",
+  genStructuredGenoIDSingleParent,
+  "multitenant (single-parent)",
+)
+
+emit(
+  EVENTSOURCING_LAYOUT,
+  "eventsourcing-single-parent",
+  genStructuredGenoIDSingleParent,
+  "eventsourcing (single-parent)",
+)
+
+emit(
+  CONFORMANCE_LAYOUT,
+  "conformance-single-parent",
+  genStructuredGenoIDSingleParent,
+  "conformance (single-parent)",
+)
 
 console.log("\n=== Compiled golden vectors (different CSPRNG consumption) ===")
+
 emitCompiled(DBKEY_LAYOUT, "dbkey", "dbkey compiled")
+
 emitCompiled(MULTITENANT_LAYOUT, "multitenant", "multitenant compiled")
+
 emitCompiled(EVENTSOURCING_LAYOUT, "eventsourcing", "eventsourcing compiled")
 
-configureRandom(null)
+configureRandom(nullValue)
+
 console.log("=== Done ===")

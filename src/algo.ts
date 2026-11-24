@@ -1,51 +1,64 @@
+import {
+  absentValue,
+  isArray,
+  isMissing,
+  isRecord,
+  need,
+  nullValue,
+} from "./shared/need.js"
+import {
+  shiftLeftBits,
+  shiftRightUnsignedBits,
+  xor32,
+  xorByte,
+} from "./shared/bitwise.js"
+
+export { and32, or32, xor32 } from "./shared/bitwise.js"
 // Single 256-entry byte->hex table. Replaces the two 65536-entry word tables
+
 // (HEX16 / HEX16_VIEW) that previously interned ~131k strings at import — far
-// past the heap budget of constrained MCUs (ESP8266 has ~40-80KB free). A
+
+// Past the heap budget of constrained MCUs (ESP8266 has ~40-80KB free). A
+
 // 16-bit word formats as HEX8[hi] + HEX8[lo], byte-identical to the old tables.
+
 // 256-entry byte->hex table. Always present (~256 tiny strings), it is the only
-// hex table a constrained host ("lean" footprint) ever allocates.
+
+// Hex table a constrained host ("lean" footprint) ever allocates.
+
 export const HEX8: string[] = Array.from({ length: 256 }, (_, i) =>
   i.toString(16).padStart(2, "0"),
 )
 
-// Integer bit-op replacements for the lint-clean build (no-bitwise rule).
-const UINT32_RANGE = 4_294_967_296
-const INT32_HALF_RANGE = 2_147_483_648
-const BITS_PER_BYTE = 8
-const BYTE_TABLE_SIZE = 65_536
-const BYTE_VALUE_RANGE = 256
-function toUint32(x: number): number { const m = Math.trunc(x) % UINT32_RANGE; return m < 0 ? m + UINT32_RANGE : m }
-function toInt32(x: number): number { const u = toUint32(x); return u >= INT32_HALF_RANGE ? u - UINT32_RANGE : u }
-function shiftRightUnsigned(x: number, n: number): number { return Math.trunc(toUint32(x) / 2 ** n) }
-function shiftLeft(x: number, n: number): number { return toInt32((toUint32(x) % 2 ** (32 - n)) * 2 ** n) }
-function xorBytes(a: number, b: number): number { let p = 1, r = 0, x = a, y = b; for (let i = 0; i < BITS_PER_BYTE; i += 1) { if (x % 2 !== y % 2) { r += p } x = Math.trunc(x / 2); y = Math.trunc(y / 2); p *= 2 } return r }
-function andBytes(a: number, b: number): number { let p = 1, r = 0, x = a, y = b; for (let i = 0; i < BITS_PER_BYTE; i += 1) { if (x % 2 === 1 && y % 2 === 1) { r += p } x = Math.trunc(x / 2); y = Math.trunc(y / 2); p *= 2 } return r }
-function buildByteTable(combine: (a: number, b: number) => number): Uint8Array { const t = new Uint8Array(BYTE_TABLE_SIZE); for (let i = 0; i < BYTE_TABLE_SIZE; i += 1) { t[i] = combine(Math.trunc(i / BYTE_VALUE_RANGE), i % BYTE_VALUE_RANGE) } return t }
-const XOR_TABLE = buildByteTable(xorBytes)
-const AND_TABLE = buildByteTable(andBytes)
-function tableByteAt(u: number, k: number): number { return Math.trunc(u / BYTE_VALUE_RANGE ** k) % BYTE_VALUE_RANGE }
-export function xor32(a: number, b: number): number { const ua = toUint32(a), ub = toUint32(b); return toInt32(XOR_TABLE[(ua % BYTE_VALUE_RANGE) * BYTE_VALUE_RANGE + (ub % BYTE_VALUE_RANGE)] + XOR_TABLE[tableByteAt(ua, 1) * BYTE_VALUE_RANGE + tableByteAt(ub, 1)] * BYTE_VALUE_RANGE + XOR_TABLE[tableByteAt(ua, 2) * BYTE_VALUE_RANGE + tableByteAt(ub, 2)] * 65_536 + XOR_TABLE[tableByteAt(ua, 3) * BYTE_VALUE_RANGE + tableByteAt(ub, 3)] * 16_777_216) }
-export function and32(a: number, b: number): number { const ua = toUint32(a), ub = toUint32(b); return toInt32(AND_TABLE[(ua % BYTE_VALUE_RANGE) * BYTE_VALUE_RANGE + (ub % BYTE_VALUE_RANGE)] + AND_TABLE[tableByteAt(ua, 1) * BYTE_VALUE_RANGE + tableByteAt(ub, 1)] * BYTE_VALUE_RANGE + AND_TABLE[tableByteAt(ua, 2) * BYTE_VALUE_RANGE + tableByteAt(ub, 2)] * 65_536 + AND_TABLE[tableByteAt(ua, 3) * BYTE_VALUE_RANGE + tableByteAt(ub, 3)] * 16_777_216) }
-export function or32(a: number, b: number): number { return toInt32(toUint32(xor32(a, b)) + toUint32(and32(a, b))) }
-function xorByte(a: number, b: number): number { return XOR_TABLE[a * BYTE_VALUE_RANGE + b] }
-function andByte(a: number, b: number): number { return AND_TABLE[a * BYTE_VALUE_RANGE + b] }
-function orByte(a: number, b: number): number { return xorByte(a, b) + andByte(a, b) }
-
 // Optional 65536-entry big-endian word->hex table (HEX8[hi] + HEX8[lo]). It is
+
 // ~2x faster to format with (8 lookups/UUID instead of 16) but costs ~131k
-// interned strings — far past an ESP8266's heap. It is therefore built LAZILY
-// on first use and can be disabled/freed via configureFootprint("lean") so a
-// constrained host never allocates it. Default is "fast" (build on demand).
-let _wordTable: string[] | null = null
+
+// Interned strings — far past an ESP8266's heap. It is therefore built LAZILY
+
+// On first use and can be disabled/freed via configureFootprint("lean") so a
+
+// Constrained host never allocates it. Default is "fast" (build on demand).
+
+let _wordTable: string[] | null = nullValue
+
 let _leanFootprint = false
 
-export function wordTable(): string[] | null {
-  if (_leanFootprint) {return null}
-  if (_wordTable === null) {
+export const wordTable = (): string[] | null => {
+  if (_leanFootprint) {
+    return nullValue
+  }
+
+  if (_wordTable === nullValue) {
     const w = Array.from<string>({ length: 65_536 })
-    for (let i = 0; i < 65_536; i += 1) {w[i] = HEX8[Math.trunc(i / 256)] + HEX8[i % 256]}
+
+    for (let i = 0; i < 65_536; i += 1) {
+      w[i] = HEX8[Math.trunc(i / 256)] + HEX8[i % 256]
+    }
+
     _wordTable = w
   }
+
   return _wordTable
 }
 
@@ -58,122 +71,186 @@ export function wordTable(): string[] | null {
  *                      heap-constrained hosts (ESP8266-class). Call it once,
  *                      before the first ID is generated.
  * Output is byte-identical in both modes — this trades memory for speed only.
+ *
+ * @param {"fast" | "lean"} mode - Formatting footprint: `fast` or `lean`.
  */
-export function configureFootprint(mode: "fast" | "lean"): void {
+
+export const configureFootprint = (mode: "fast" | "lean"): void => {
   if (mode === "lean") {
     _leanFootprint = true
-    _wordTable = null
+
+    _wordTable = nullValue
   } else {
     _leanFootprint = false
   }
 }
 
-export function toUuidString(b: Uint8Array): string {
-  if (b.length < 16) {throw new Error(`toUuidString: expected 16 bytes, got ${b.length}`)}
+const formatUuidBytes = (
+  b: Readonly<Uint8Array>,
+  w: string[] | null,
+  t: string[],
+  o = 0,
+): string => {
+  if (w) {
+    return `${w[b[o] * 256 + b[o + 1]]}${w[b[o + 2] * 256 + b[o + 3]]}-${w[b[o + 4] * 256 + b[o + 5]]}-${w[b[o + 6] * 256 + b[o + 7]]}-${w[b[o + 8] * 256 + b[o + 9]]}-${w[b[o + 10] * 256 + b[o + 11]]}${w[b[o + 12] * 256 + b[o + 13]]}${w[b[o + 14] * 256 + b[o + 15]]}`
+  }
+
+  return `${t[b[o]]}${t[b[o + 1]]}${t[b[o + 2]]}${t[b[o + 3]]}-${t[b[o + 4]]}${t[b[o + 5]]}-${t[b[o + 6]]}${t[b[o + 7]]}-${t[b[o + 8]]}${t[b[o + 9]]}-${t[b[o + 10]]}${t[b[o + 11]]}${t[b[o + 12]]}${t[b[o + 13]]}${t[b[o + 14]]}${t[b[o + 15]]}`
+}
+
+export const toUuidString = (b: Readonly<Uint8Array>): string => {
+  if (b.length < 16) {
+    throw new Error(`toUuidString: expected 16 bytes, got ${b.length}`)
+  }
+
   return formatUuidBytes(b, wordTable(), HEX8)
 }
 
-function formatUuidBytes(b: Uint8Array, w: string[] | null, t: string[], o = 0): string {
-  if (w) {
-    return (
-      `${w[(b[o] << 8) | b[o + 1]] + w[(b[o + 2] << 8) | b[o + 3]] 
-      }-${ 
-      w[(b[o + 4] << 8) | b[o + 5]] 
-      }-${ 
-      w[(b[o + 6] << 8) | b[o + 7]] 
-      }-${ 
-      w[(b[o + 8] << 8) | b[o + 9]] 
-      }-${ 
-      w[(b[o + 10] << 8) | b[o + 11]]  }${w[(b[o + 12] << 8) | b[o + 13]]  }${w[(b[o + 14] << 8) | b[o + 15]]}`
-    )
-  }
-  return (
-    `${t[b[o]] + t[b[o + 1]] + t[b[o + 2]] + t[b[o + 3]] 
-    }-${ 
-    t[b[o + 4]]  }${t[b[o + 5]] 
-    }-${ 
-    t[b[o + 6]]  }${t[b[o + 7]] 
-    }-${ 
-    t[b[o + 8]]  }${t[b[o + 9]] 
-    }-${ 
-    t[b[o + 10]]  }${t[b[o + 11]]  }${t[b[o + 12]]  }${t[b[o + 13]]  }${t[b[o + 14]]  }${t[b[o + 15]]}`
-  )
-}
-
-function waitForNextTick(lastTick: number): number {
+const waitForNextTick = (lastTick: number): number => {
   // §6.2 freeze-and-wait: stall until the clock advances past the last tick.
-  // Twin: genLayoutSource emits the same loop into compiled output (a `new
-  // Function` body cannot call this helper) — keep the two in sync.
+
+  // Twin: genLayoutSource emits the same loop into compiled output.
+
   while (Date.now() <= lastTick) {
-    // intentional busy-wait
+    // Intentional busy-wait
   }
+
   return Date.now()
 }
 
-export function genV4Native(): string {
-  return crypto.randomUUID()
-}
+export const genV4Native = (): string => crypto.randomUUID()
 
 // --- Injectable CSPRNG ------------------------------------------------------
+
 // Every GenoID entropy draw flows through this single sink. It defaults to Web
+
 // Crypto (crypto.getRandomValues) on Node/Deno/Bun/browsers. Hosts without Web
+
 // Crypto — ESP8266/ESP32 firmware, MicroPython, bare embedded runtimes — inject
-// a platform CSPRNG via configureRandom() before generating any ID. The entropy
-// contract is unchanged (fill the whole buffer with secure random bytes), so
-// output distribution and collision guarantees are identical; only the byte
-// source changes. On a host without Web Crypto, module import no longer eagerly
-// draws entropy (the pre-warms below are guarded), so importing never throws —
-// the first generate call after configureRandom() does the first fill.
+
+// A platform CSPRNG via configureRandom() before generating any ID. The entropy
+
+// Contract is unchanged (fill the whole buffer with secure random bytes), so
+
+// Output distribution and collision guarantees are identical; only the byte
+
+// Source changes. On a host without Web Crypto, module import no longer eagerly
+
+// Draws entropy (the pre-warms below are guarded), so importing never throws —
+
+// The first generate call after configureRandom() does the first fill.
+
 export type RandomFill = (buf: Uint8Array) => void
 
 const _hasWebCrypto =
   typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function"
 
 const _webCryptoFill: RandomFill = (buf) => {
-  // getRandomValues rejects SharedArrayBuffer-backed views; all GenoID buffers
-  // are ArrayBuffer-backed, so narrow the widened public Uint8Array type here.
+  // GetRandomValues rejects SharedArrayBuffer-backed views; all GenoID buffers
+
+  // Are ArrayBuffer-backed, so narrow the widened public Uint8Array type here.
+
   crypto.getRandomValues(buf as Uint8Array<ArrayBuffer>)
 }
 
 const _noRngFill: RandomFill = () => {
-  throw new Error(
+  throw new TypeError(
     "GenoID: no CSPRNG available — Web Crypto (crypto.getRandomValues) was not found on this host. " +
       "Call configureRandom(fn) with a platform CSPRNG (e.g. os.urandom on MicroPython, esp_fill_random on ESP-IDF) before generating IDs.",
   )
 }
 
-let _fillRandom: RandomFill = _hasWebCrypto ? _webCryptoFill : _noRngFill
+const defaultRandomFill = (): RandomFill => {
+  if (_hasWebCrypto) {
+    return _webCryptoFill
+  }
 
-function fillRandom(buf: Uint8Array): void {
+  return _noRngFill
+}
+
+let _fillRandom: RandomFill = defaultRandomFill()
+
+const fillRandom = (buf: Uint8Array): void => {
   _fillRandom(buf)
 }
 
-export function resetSeededState(): void {
+const _csprngBuf = new Uint8Array(256)
+
+let _csprngPos = _csprngBuf.length
+
+const _poolMonoTick = new Map<string, number>()
+
+const _layoutTick = new Map<string, number>()
+
+const _spPool = new Map<string, {
+  pool: Uint8Array<ArrayBuffer>
+  strs: string[]
+  idx: number
+  size: number
+}>()
+
+const _compiledGenCache = new Map<string, () => string>()
+
+const _layoutIdentities = new Map<string, string>()
+
+export const resetSeededState = (): void => {
   _csprngPos = _csprngBuf.length
+
   _poolMonoTick.clear()
+
   _layoutTick.clear()
+
   _spPool.clear()
+
   _compiledGenCache.clear()
+
   _layoutIdentities.clear()
 }
 
-export function createSeededRandom(seed0: number, seed1: number): RandomFill {
+export const createSeededRandom = (
+  seed0: number,
+  seed1: number,
+): RandomFill => {
   let s0 = Math.trunc(seed0)
+
   let s1 = Math.trunc(seed1)
+
   return (buf: Uint8Array): void => {
     let off = 0
+
     while (off < buf.length) {
       let t = s1
-      t = xor32(t, shiftLeft(t, 23))
-      t = xor32(t, shiftRightUnsigned(t, 17))
-      t ^= s0
-      t = xor32(t, shiftRightUnsigned(s0, 26))
+
+      t = xor32(t, shiftLeftBits(t, 23))
+
+      t = xor32(t, shiftRightUnsignedBits(t, 17))
+
+      t = xor32(t, s0)
+
+      t = xor32(t, shiftRightUnsignedBits(s0, 26))
+
       s0 = s1
+
       s1 = t
-      buf[off += 1] = s1 % 256
-      if (off < buf.length) {buf[off += 1] = shiftRightUnsigned(s1, 8) % 256}
-      if (off < buf.length) {buf[off += 1] = shiftRightUnsigned(s1, 16) % 256}
-      if (off < buf.length) {buf[off += 1] = shiftRightUnsigned(s1, 24) % 256}
+
+      buf[off] = s1 % 256
+
+      off += 1
+
+      if (off < buf.length) {
+        buf[off] = shiftRightUnsignedBits(s1, 8) % 256
+        off += 1
+      }
+
+      if (off < buf.length) {
+        buf[off] = shiftRightUnsignedBits(s1, 16) % 256
+        off += 1
+      }
+
+      if (off < buf.length) {
+        buf[off] = shiftRightUnsignedBits(s1, 24) % 256
+        off += 1
+      }
     }
   }
 }
@@ -188,169 +265,300 @@ export function createSeededRandom(seed0: number, seed1: number): RandomFill {
  * @example
  * // Embedded host bridge (bytes supplied by the platform RNG)
  * configureRandom((buf) => { for (let i = 0; i < buf.length; i += 1) buf[i] = platformRandomByte() })
+ *
+ * @param {RandomFill | null} fn - Platform CSPRNG, or `null` to restore the default.
  */
-export function configureRandom(fn: RandomFill | null): void {
-  if (fn === null) {
-    _fillRandom = _hasWebCrypto ? _webCryptoFill : _noRngFill
+
+export const configureRandom = (fn: RandomFill | null): void => {
+  if (fn === nullValue) {
+    _fillRandom = defaultRandomFill()
+
+    _compiledGenCache.clear()
+
     return
   }
+
   if (typeof fn !== "function") {
-    throw new TypeError("configureRandom: expected a function (buf: Uint8Array) => void, or null to reset")
+    throw new TypeError(
+      "configureRandom: expected a function (buf: Uint8Array) => void, or null to reset",
+    )
   }
+
   _fillRandom = fn
+
+  _compiledGenCache.clear()
 }
 
 const _v7Rnd = new Uint8Array(10)
+
 const _v7Bytes = new Uint8Array(16)
 
-export function genV7(): string {
+export const genV7 = (): string => {
   fillRandom(_v7Rnd)
+
   const ts = Date.now()
+
   const bytes = _v7Bytes
+
   bytes[0] = Math.trunc(ts / 2 ** 40) % 256
+
   bytes[1] = Math.trunc(ts / 2 ** 32) % 256
+
   bytes[2] = Math.trunc(ts / 2 ** 24) % 256
+
   bytes[3] = Math.trunc(ts / 2 ** 16) % 256
+
   bytes[4] = Math.trunc(ts / 2 ** 8) % 256
+
   bytes[5] = ts % 256
+
   bytes.set(_v7Rnd, 6)
-  bytes[6] = or32(and32(bytes[6], 0x0f), 0x70)
-  bytes[8] = or32(and32(bytes[8], 0x3f), 0x80)
+
+  bytes[6] = (bytes[6] % 16) + 0x70
+
+  bytes[8] = (bytes[8] % 64) + 0x80
+
   return toUuidString(bytes)
 }
 
-export function genMathRandom(): string {
-  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replaceAll(
+export const genMathRandom = (): string =>
+  "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replaceAll(
     /[xy]/gu,
+
     (c: string) => {
       const r = Math.trunc(Math.random() * 16)
-      const v = c === "x" ? r : or32(and32(r, 0x3), 0x8)
-      return v.toString(16)
+
+      let value = r
+
+      if (c !== "x") {
+        value = (r % 4) + 8
+      }
+
+      return value.toString(16)
     },
   )
+
+const digestSeed = async (seed: Readonly<Uint8Array>): Promise<ArrayBuffer> => {
+  try {
+    return await crypto.subtle.digest(
+      "SHA-256",
+      seed as Uint8Array<ArrayBuffer>,
+    )
+  } catch (error) {
+    throw new Error(
+      `genHashUUID: SubtleCrypto unavailable — ${(error as Error).message}`,
+      { cause: error },
+    )
+  }
 }
 
-export async function genHashUUID(): Promise<string> {
+export const genHashUUID = async (): Promise<string> => {
   const seed = new Uint8Array(32)
+
   fillRandom(seed)
-  let digest: ArrayBuffer
-  try {
-    digest = await crypto.subtle.digest("SHA-256", seed)
-  } catch (error) {
-    throw new Error(`genHashUUID: SubtleCrypto unavailable — ${(error as Error).message}`, { cause: error })
-  }
+
+  const digest = await digestSeed(seed)
+
   const bytes = new Uint8Array(digest).slice(0, 16)
-  bytes[6] = or32(and32(bytes[6], 0x0f), 0x50)
-  bytes[8] = or32(and32(bytes[8], 0x3f), 0x80)
+
+  bytes[6] = (bytes[6] % 16) + 0x50
+
+  bytes[8] = (bytes[8] % 64) + 0x80
+
   return toUuidString(bytes)
 }
 
 const GENO_ENTRY_BYTES = 34
+
 // Default pool sizes. Runtime-tunable via configurePools() so a constrained
-// host (e.g. an ESP8266 with ~40-80KB free heap) can trade batch size for RAM:
-// the simple pool holds GENO_ENTRY_BYTES*N bytes + N interned strings; each
-// structured layout holds STRUCT_ENTRY*N bytes + N strings. Shrinking N only
-// changes refill granularity — per-ID generation and emitted output are
-// byte-identical at any pool size.
+
+// Host (e.g. an ESP8266 with ~40-80KB free heap) can trade batch size for RAM:
+
+// The simple pool holds GENO_ENTRY_BYTES*N bytes + N interned strings; each
+
+// Structured layout holds STRUCT_ENTRY*N bytes + N strings. Shrinking N only
+
+// Changes refill granularity — per-ID generation and emitted output are
+
+// Byte-identical at any pool size.
+
 const GENO_POOL_DEFAULT = 256
+
 const STRUCT_POOL_DEFAULT = 1024
+
 let _genoPoolN = GENO_POOL_DEFAULT
+
 let _genoPool = new Uint8Array(GENO_ENTRY_BYTES * _genoPoolN)
+
 let _genoStrs = Array.from<string>({ length: _genoPoolN })
+
 let _genoIdx = _genoPoolN
+
 const _child = new Uint8Array(16)
 
-function refillGenoPool(): void {
-  const t = HEX8, w = wordTable(), g = _genoPool, e = GENO_ENTRY_BYTES
+const refillGenoPool = (): void => {
+  const e = GENO_ENTRY_BYTES,
+    g = _genoPool,
+    t = HEX8,
+    w = wordTable()
+
   fillRandom(g)
+
   for (let i = 0; i < _genoPoolN; i += 1) {
     const off = i * e
+
     const cut = g[off + 32] % 16
+
     const mutPos = g[off + 33] % 16
+
     let j = 0
-    for (; j < cut; j += 1) {_child[j] = g[off + j]}
-    for (; j < 16; j += 1) {_child[j] = g[off + 16 + j]}
-    _child[mutPos] = xor32(_child[mutPos], g[off + ((mutPos + 1) % 16)])
-    _child[6] = or32(and32(_child[6], 0x0f), 0x80)
-    _child[8] = or32(and32(_child[8], 0x3f), 0x80)
+
+    for (; j < cut; j += 1) {
+      _child[j] = g[off + j]
+    }
+
+    for (; j < 16; j += 1) {
+      _child[j] = g[off + 16 + j]
+    }
+
+    _child[mutPos] = xorByte(_child[mutPos], g[off + ((mutPos + 1) % 16)])
+
+    _child[6] = (_child[6] % 16) + 0x80
+
+    _child[8] = (_child[8] % 64) + 0x80
+
     const c = _child
+
     _genoStrs[i] = formatUuidBytes(c, w, t)
   }
+
   _genoIdx = 0
 }
 
 // Pre-warm the GenoID pool at module init so the first call is never cold.
-// Guarded: on a host without Web Crypto this would throw at import; there we
-// defer the first fill to the first genGenoID() (after configureRandom()), so
-// _genoIdx stays at _genoPoolN and the next call refills.
-if (_hasWebCrypto) {refillGenoPool()}
 
-export function genGenoID(): string {
+// Guarded: on a host without Web Crypto this would throw at import; there we
+
+// Defer the first fill to the first genGenoID() (after configureRandom()), so
+
+// _genoIdx stays at _genoPoolN and the next call refills.
+
+if (_hasWebCrypto) {
+  refillGenoPool()
+}
+
+export const genGenoID = (): string => {
   if (_genoIdx >= _genoPoolN) {
     refillGenoPool()
   }
+
+  const uuid = _genoStrs[_genoIdx]
+
   _genoIdx += 1
-  return _genoStrs[_genoIdx]
+  return uuid
 }
 
 // ---------- Structured RFC 9562 v8 composition framework ----------
-//
-// GenoID's GA operators are repurposed as a *composition + repair* framework:
-//   - crossover  = field-boundary composition operator (merges structured
-//                  fields from two complementary parents into one valid v8 UUID)
-//   - mutation   = constraint-repair operator (flips field bits to satisfy
-//                  per-field constraints without regenerating the whole UUID)
-// The version nibble (bits 48-51 = 0x8) and variant (bits 64-65 = 10xx) are
-// auto-forced at emit; layouts need not declare them.
 
-export type FieldType =
-  | "timestamp-ms"
-  | "timestamp-us"
-  | "counter"
-  | "shard"
-  | "node"
-  | "process"
-  | "fixed"
-  | "random"
+//
+
+// GenoID's GA operators are repurposed as a *composition + repair* framework:
+
+//   - crossover  = field-boundary composition operator (merges structured
+
+//                  Fields from two complementary parents into one valid v8 UUID)
+
+//   - mutation   = constraint-repair operator (flips field bits to satisfy
+
+//                  Per-field constraints without regenerating the whole UUID)
+
+// The version nibble (bits 48-51 = 0x8) and variant (bits 64-65 = 10xx) are
+
+// Auto-forced at emit; layouts need not declare them.
+
+export type FieldType = "timestamp-ms" | "timestamp-us" | "counter" | "shard" | "node" | "process" | "fixed" | "random"
 
 export interface V8FieldConstraint {
   allowed?: number[]
+
   min?: number
+
   max?: number
+
   monotonic?: boolean
 }
 
 export interface V8Field {
   name: string
-  // bit index, MSB-first, 0..127
+
+  // Bit index, MSB-first, 0..127
+
   start: number
-  // bits, > 0
+
+  // Bits, > 0
+
   length: number
+
   type: FieldType
+
   constraint?: V8FieldConstraint
-  // for "fixed"
+
+  // For "fixed"
+
   value?: number
 }
 
 export interface V8Layout {
   name: string
+
   fields: V8Field[]
 }
+
+type ReadonlyV8Constraint = Readonly<Omit<V8FieldConstraint, "allowed">> & {
+  readonly allowed?: readonly number[]
+}
+
+type ReadonlyV8Field = Readonly<Omit<V8Field, "constraint">> & {
+  readonly constraint?: ReadonlyV8Constraint
+}
+
+interface ReadonlyV8Layout {
+  readonly name: string
+
+  readonly fields: readonly ReadonlyV8Field[]
+}
+
+type DeepReadonly<Value,> = Value extends (...args: never[]) => unknown
+  ? Value
+  : Value extends readonly (infer Item)[]
+    ? readonly DeepReadonly<Item>[]
+    : Value extends object
+      ? { readonly [Key in keyof Value]: DeepReadonly<Value[Key]> }
+      : Value
+
+type ReadonlyAllocationField = DeepReadonly<BitAllocationField>
 
 export type WorkloadFieldRole = "partition" | "cluster" | "lookup"
 
 export interface WorkloadFieldProfile {
   name: string
+
   role: WorkloadFieldRole
+
   selectivity?: number
+
   skew?: number
+
   readWeight?: number
+
   writeWeight?: number
 }
 
 export interface DatabaseWorkloadProfile {
   readWeight: number
+
   writeWeight: number
+
   fields: WorkloadFieldProfile[]
 }
 
@@ -358,31 +566,42 @@ export type LayoutSchemaField = Omit<V8Field, "start"> & { start?: number }
 
 export interface LayoutSchema {
   name: string
+
   fields: LayoutSchemaField[]
 }
 
 export interface LayoutCompilerInput {
   schema: LayoutSchema
+
   workload: DatabaseWorkloadProfile
+
   /** Identifiers the layout must support without exceeding the collision target. */
+
   volume?: number
+
   /** Target probability of any collision at `volume`. Defaults to 1e-2. */
+
   collisionTarget?: number
 }
 
-export type LayoutCompilerErrorCode =
-  | "invalid-schema"
-  | "invalid-workload"
-  | "unknown-workload-field"
-  | "duplicate-workload-field"
-export class LayoutCompilerError extends Error {
-  readonly code: LayoutCompilerErrorCode
-  readonly field: string | undefined
+export type LayoutCompilerErrorCode = "invalid-schema" | "invalid-workload" | "unknown-workload-field" | "duplicate-workload-field"
 
-  constructor(code: LayoutCompilerErrorCode, message: string, field?: string) {
+export class LayoutCompilerError extends Error {
+  public readonly code: LayoutCompilerErrorCode
+
+  public readonly field: string | undefined
+
+  public constructor(
+    code: LayoutCompilerErrorCode,
+    message: string,
+    field?: string,
+  ) {
     super(message)
+
     this.name = "LayoutCompilerError"
+
     this.code = code
+
     this.field = field
   }
 }
@@ -391,14 +610,19 @@ export type ConstraintKind = "allowed-set" | "range" | "monotonic" | "fixed"
 
 export interface FieldSemantics {
   type: FieldType
+
   constraints: ConstraintKind[]
 }
 
 export interface RepairPolicy {
   name: "canonical-v1"
+
   allowedSet: "index-modulo"
+
   range: "clamp"
+
   monotonic: "stateful"
+
   fixed: "deterministic"
 }
 
@@ -406,299 +630,588 @@ export type StructuredGenerationMode = "compiled-direct-v8" | "single-parent-poo
 
 export interface GenerationPlan {
   name: "compiled-direct-v8"
+
   entropySource: "web-crypto"
+
   poolMode: "direct"
+
   repairMode: "canonical"
+
   fieldSemantics: Record<string, FieldSemantics>
 }
 
 export interface LayoutCostReport {
   objective: "hard-constraints-first"
+
   structuredBits: number
+
   randomBits: number
+
   requiredRandomBits: number
+
   collisionTarget: number
+
   collisionProbabilityAtVolume: number
+
   widthFloorsMet: boolean
+
   constrainedFields: number
+
   localityFields: number
+
   lookupFields: number
+
   readWeight: number
+
   writeWeight: number
 }
 
 export interface DatabaseLayoutCompilation {
   layout: V8Layout
+
   repairPolicy: RepairPolicy
+
   generationPlan: GenerationPlan
+
   costReport: LayoutCostReport
 }
 
 const MAX_FIELD_BITS = 48
+
 /** Default collision target for a compiled layout: 1% over 2M identifiers. */
+
 const DEFAULT_COLLISION_VOLUME = 2_000_000
+
 const DEFAULT_COLLISION_TARGET = 1e-2
 
-/** Distinct values a field can hold, or null when the domain is the whole width. */
-function fieldDomainSize(field: V8Field): number | null {
-  const c = field.constraint
-  if (c?.allowed && c.allowed.length > 0) {return c.allowed.length}
-  if (c?.min !== undefined && c?.max !== undefined) {return c.max - c.min + 1}
-  return null
+/**
+ * Distinct values a field can hold, or null when the domain is the whole width.
+ *
+ * @param {ReadonlyV8Field} field - Field whose constraint domain is measured.
+ * @returns {number | null} The domain size, or null for an unconstrained field.
+ */
+
+const fieldDomainSize = (field: ReadonlyV8Field): number | null => {
+  const { constraint } = field
+
+  if (isMissing(constraint)) {
+    return nullValue
+  }
+
+  if (constraint.allowed !== absentValue && constraint.allowed.length > 0) {
+    return constraint.allowed.length
+  }
+
+  if (constraint.min !== absentValue && constraint.max !== absentValue) {
+    return constraint.max - constraint.min + 1
+  }
+
+  return nullValue
 }
 
 const FIELD_TYPES = new Set<FieldType>([
   "timestamp-ms",
+
   "timestamp-us",
+
   "counter",
+
   "shard",
+
   "node",
+
   "process",
+
   "fixed",
+
   "random",
 ])
+
 const NIBBLE_BITS = new Set([48, 49, 50, 51, 64, 65])
 
 interface LayoutValidationFailure {
   message: string
+
   field: string
 }
 
-function validateLayoutStructure(
-  fields: readonly V8Field[],
+const validateLayoutStructure = (
+  fields: readonly ReadonlyV8Field[],
+
   layoutName: string,
+
   requireComplete: boolean,
-): LayoutValidationFailure | undefined {
+): LayoutValidationFailure | undefined => {
   const covered = Array.from<boolean>({ length: 128 }).fill(false)
+
   const names = new Set<string>()
+
   for (const field of fields) {
     if (names.has(field.name)) {
-      return { field: field.name, message: `layout ${layoutName}: field ${field.name} is declared more than once` }
+      return {
+        field: field.name,
+        message: `layout ${layoutName}: field ${field.name} is declared more than once`,
+      }
     }
+
     names.add(field.name)
-    if (!Number.isInteger(field.start) || !Number.isInteger(field.length) || field.start < 0) {
-      return { field: field.name, message: `layout ${layoutName}: field ${field.name} has invalid bounds` }
+
+    if (
+      !Number.isInteger(field.start) ||
+      !Number.isInteger(field.length) ||
+      field.start < 0
+    ) {
+      return {
+        field: field.name,
+        message: `layout ${layoutName}: field ${field.name} has invalid bounds`,
+      }
     }
+
     if (field.length <= 0) {
-      return { field: field.name, message: `layout ${layoutName}: field ${field.name} length<=0` }
+      return {
+        field: field.name,
+        message: `layout ${layoutName}: field ${field.name} length<=0`,
+      }
     }
+
     if (field.start + field.length > 128) {
-      return { field: field.name, message: `layout ${layoutName}: field ${field.name} out of range` }
+      return {
+        field: field.name,
+        message: `layout ${layoutName}: field ${field.name} out of range`,
+      }
     }
+
     if (field.type !== "random" && field.length > MAX_FIELD_BITS) {
       return {
         field: field.name,
+
         message: `layout ${layoutName}: structured field ${field.name} length ${field.length} > ${MAX_FIELD_BITS}`,
       }
     }
+
     for (let index = 0; index < field.length; index += 1) {
       const bit = field.start + index
+
       if (NIBBLE_BITS.has(bit)) {
         return {
           field: field.name,
+
           message: `layout ${layoutName}: field ${field.name} overlaps reserved v8 nibble bit ${bit}`,
         }
       }
+
       if (covered[bit]) {
-        return { field: field.name, message: `layout ${layoutName}: field ${field.name} overlaps another field` }
+        return {
+          field: field.name,
+          message: `layout ${layoutName}: field ${field.name} overlaps another field`,
+        }
       }
+
       covered[bit] = true
     }
   }
-  if (!requireComplete) {return undefined}
+
+  if (!requireComplete) {
+    return absentValue
+  }
+
   for (let index = 0; index < 128; index += 1) {
     if (!covered[index] && !NIBBLE_BITS.has(index)) {
-      return { field: `bit.${index}`, message: `layout ${layoutName}: bit ${index} not covered by any field` }
+      return {
+        field: `bit.${index}`,
+        message: `layout ${layoutName}: bit ${index} not covered by any field`,
+      }
     }
   }
-  return undefined
+
+  return absentValue
 }
 
-export function validateLayout(layout: V8Layout): void {
+export const validateLayout = (layout: ReadonlyV8Layout): void => {
   const failure = validateLayoutStructure(layout.fields, layout.name, true)
-  if (failure) {throw new Error(failure.message)}
+
+  if (failure) {
+    throw new Error(failure.message)
+  }
 }
 
-export function getFieldValue(bytes: Uint8Array, f: V8Field): bigint {
-  if (f.start + f.length > 128) {throw new Error(`getFieldValue: field ${f.name} exceeds 128-bit UUID`)}
-  let v = 0n
-  for (let i = 0; i < f.length; i += 1) {
-    const pos = f.start + i
-    const bitIdx = 7 - (pos & 7)
-    v = (v << 1n) | BigInt((bytes[pos >> 3] >> bitIdx) & 1)
+export const getFieldValue = (
+  bytes: Readonly<Uint8Array>,
+  field: ReadonlyV8Field,
+): bigint => {
+  if (field.start + field.length > 128) {
+    throw new Error(`getFieldValue: field ${field.name} exceeds 128-bit UUID`)
   }
-  return v
+
+  let value = 0n
+
+  const end = field.start + field.length
+
+  for (
+    let byte = Math.floor(field.start / 8);
+    byte < Math.ceil(end / 8);
+    byte += 1
+  ) {
+    const first = Math.max(field.start, byte * 8)
+
+    const last = Math.min(end - 1, byte * 8 + 7)
+
+    const shift = 7 - (last % 8)
+
+    const width = last - first + 1
+
+    const part = Math.floor(bytes[byte] / 2 ** shift) % 2 ** width
+
+    value = value * 2n ** BigInt(width) + BigInt(part)
+  }
+
+  return value
+}
+
+const readFieldNumber = (
+  bytes: Readonly<Uint8Array>,
+  field: ReadonlyV8Field,
+): number => {
+  let value = 0
+
+  const end = field.start + field.length
+
+  for (
+    let byte = Math.floor(field.start / 8);
+    byte < Math.ceil(end / 8);
+    byte += 1
+  ) {
+    const first = Math.max(field.start, byte * 8)
+
+    const last = Math.min(end - 1, byte * 8 + 7)
+
+    const shift = 7 - (last % 8)
+
+    const width = last - first + 1
+
+    const part = Math.floor(bytes[byte] / 2 ** shift) % 2 ** width
+
+    value = value * 2 ** width + part
+  }
+
+  return value
 }
 
 interface WritePlanEntry {
-  byte: number
-  clearMask: number
-  writeMask: number
-  divisor: number
-  bitOffset: number
+  readonly byte: number
+
+  readonly clearMask: number
+
+  readonly writeMask: number
+
+  readonly divisor: number
+
+  readonly bitOffset: number
+
+  readonly width: number
 }
 
-const _fieldWritePlans = new WeakMap<V8Field, WritePlanEntry[]>()
+const _fieldWritePlans = new WeakMap<ReadonlyV8Field, WritePlanEntry[]>()
 
-function computeWritePlan(f: V8Field): WritePlanEntry[] {
-  const s = f.start, l = f.length, e = s + l
+const computeWritePlan = (field: ReadonlyV8Field): WritePlanEntry[] => {
+  const end = field.start + field.length
+
   const entries: WritePlanEntry[] = []
-  for (let b = s >> 3; b < (e + 7) >> 3; b += 1) {
-    const first = Math.max(s, b << 3)
-    const last = Math.min(e - 1, (b << 3) | 7)
-    const n = last - first + 1
-    const bit2 = 7 - (last & 7)
-    const writeMask = ((1 << n) - 1) << bit2
+
+  for (
+    let byte = Math.floor(field.start / 8);
+    byte < Math.ceil(end / 8);
+    byte += 1
+  ) {
+    const first = Math.max(field.start, byte * 8)
+
+    const last = Math.min(end - 1, byte * 8 + 7)
+
+    const width = last - first + 1
+
+    const bitOffset = 7 - (last % 8)
+
+    const writeMask = (2 ** width - 1) * 2 ** bitOffset
+
     entries.push({
-      bitOffset: bit2,
-      byte: b,
-      clearMask: ~writeMask & 0xff,
-      divisor: 2 ** (e - 1 - last),
+      bitOffset,
+
+      byte,
+
+      clearMask: 255 - writeMask,
+
+      divisor: 2 ** (end - 1 - last),
+
+      width,
+
       writeMask,
     })
   }
+
   return entries
 }
 
-export function getFieldWritePlan(f: V8Field): WritePlanEntry[] {
-  let p = _fieldWritePlans.get(f)
-  if (p) {return p}
-  p = computeWritePlan(f)
-  _fieldWritePlans.set(f, p)
-  return p
+export const getFieldWritePlan = (field: ReadonlyV8Field): WritePlanEntry[] => {
+  let plan = _fieldWritePlans.get(field)
+
+  if (plan) {
+    return plan
+  }
+
+  plan = computeWritePlan(field)
+
+  _fieldWritePlans.set(field, plan)
+
+  return plan
 }
 
-function writeFieldValue(bytes: Uint8Array, f: V8Field, value: number): void {
-  if (f.start + f.length > 128) {throw new Error(`writeFieldValue: field ${f.name} exceeds 128-bit UUID`)}
-  const plan = getFieldWritePlan(f)
-  for (const e of plan) {
-    bytes[e.byte] = (bytes[e.byte] & e.clearMask) | ((Math.floor(value / e.divisor) << e.bitOffset) & e.writeMask)
+const writeFieldValue = (
+  bytes: Uint8Array,
+  field: ReadonlyV8Field,
+  value: number,
+): void => {
+  if (field.start + field.length > 128) {
+    throw new Error(`writeFieldValue: field ${field.name} exceeds 128-bit UUID`)
+  }
+
+  const plan = getFieldWritePlan(field)
+
+  for (const entry of plan) {
+    const shifted = Math.floor(value / entry.divisor)
+
+    const part = (shifted % 2 ** entry.width) * 2 ** entry.bitOffset
+
+    const upperShift = entry.bitOffset + entry.width
+
+    bytes[entry.byte] =
+      (bytes[entry.byte] % 2 ** entry.bitOffset) +
+      part +
+      Math.floor(bytes[entry.byte] / 2 ** upperShift) * 2 ** upperShift
   }
 }
 
 // Copy field `f` from `src` into `dst` bit-for-bit using only byte/bit
-// Number ops (no BigInt allocation). Used on the hot composition path where
-// fields can exceed 32 bits — this is what keeps crossover cheap.
-export function copyField(
-  dst: Uint8Array,
-  src: Uint8Array,
-  f: V8Field,
-): void {
-  if (f.start + f.length > 128) {throw new Error(`copyField: field ${f.name} exceeds 128-bit UUID`)}
-  const end = f.start + f.length
-  const startByte = f.start >> 3
-  const endByte = (end + 7) >> 3
-  const leadBits = f.start & 7
-  const trailBits = end & 7
 
-  // Leading partial byte
+// Number ops (no BigInt allocation). Used on the hot composition path where
+
+// Fields can exceed 32 bits — this is what keeps crossover cheap.
+
+const readBit = (bytes: Readonly<Uint8Array>, position: number): number =>
+  Math.floor(bytes[Math.floor(position / 8)] / 2 ** (7 - (position % 8))) % 2
+
+const writeBit = (bytes: Uint8Array, position: number, value: number): void => {
+  if (readBit(bytes, position) === value) {
+    return
+  }
+
+  const byte = Math.floor(position / 8)
+
+  const weight = 2 ** (7 - (position % 8))
+
+  const direction = Number(value === 1) * 2 - 1
+
+  bytes[byte] += weight * direction
+}
+
+export const copyField = (
+  dst: Uint8Array,
+
+  src: Readonly<Uint8Array>,
+
+  field: ReadonlyV8Field,
+): void => {
+  if (field.start + field.length > 128) {
+    throw new Error(`copyField: field ${field.name} exceeds 128-bit UUID`)
+  }
+
+  const end = field.start + field.length
+
+  const startByte = Math.floor(field.start / 8)
+
+  const endByte = Math.ceil(end / 8)
+
+  const leadBits = field.start % 8
+
+  const trailBits = end % 8
+
   if (leadBits !== 0) {
-    const count = Math.min(8 - leadBits, f.length)
-    for (let i = 0; i < count; i += 1) {
-      const pos = f.start + i
-      const bit = (src[pos >> 3] >> (7 - (pos & 7))) & 1
-      const dByte = pos >> 3
-      const dBit = 7 - (pos & 7)
-      if (bit) {dst[dByte] |= 1 << dBit}
-      else {dst[dByte] &= ~(1 << dBit)}
+    const count = Math.min(8 - leadBits, field.length)
+
+    for (let index = 0; index < count; index += 1) {
+      const position = field.start + index
+
+      writeBit(dst, position, readBit(src, position))
     }
   }
 
-  // Bulk-copy full middle bytes
-  const midStart = startByte + (leadBits === 0 ? 0 : 1)
-  const midEnd = endByte - (trailBits === 0 ? 0 : 1)
+  let midStart = startByte
+
+  if (leadBits !== 0) {
+    midStart += 1
+  }
+
+  let midEnd = endByte
+
+  if (trailBits !== 0) {
+    midEnd -= 1
+  }
+
   if (midEnd > midStart) {
     if (dst.buffer === src.buffer && dst.byteOffset !== src.byteOffset) {
-      for (let i = midStart; i < midEnd; i += 1) {dst[i] = src[i]}
+      for (let index = midStart; index < midEnd; index += 1) {
+        dst[index] = src[index]
+      }
     } else {
       dst.set(src.subarray(midStart, midEnd), midStart)
     }
   }
 
-  // Trailing partial byte
   if (trailBits !== 0) {
-    const startBitInField = f.length - trailBits
-    for (let i = startBitInField; i < f.length; i += 1) {
-      const pos = f.start + i
-      const bit = (src[pos >> 3] >> (7 - (pos & 7))) & 1
-      const dByte = pos >> 3
-      const dBit = 7 - (pos & 7)
-      if (bit) {dst[dByte] |= 1 << dBit}
-      else {dst[dByte] &= ~(1 << dBit)}
+    const startBitInField = field.length - trailBits
+
+    for (let index = startBitInField; index < field.length; index += 1) {
+      const position = field.start + index
+
+      writeBit(dst, position, readBit(src, position))
     }
   }
 }
 
-export function forceVersionVariant(bytes: Uint8Array): void {
-  if (bytes.length < 9) {throw new Error(`forceVersionVariant: expected ≥9 bytes, got ${bytes.length}`)}
-  bytes[6] = (bytes[6] & 0x0f) | 0x80
-  bytes[8] = or32(and32(bytes[8], 0x3f), 0x80)
+export const forceVersionVariant = (bytes: Uint8Array): void => {
+  if (bytes.length < 9) {
+    throw new Error(
+      `forceVersionVariant: expected ≥9 bytes, got ${bytes.length}`,
+    )
+  }
+
+  bytes[6] = (bytes[6] % 16) + 0x80
+
+  bytes[8] = (bytes[8] % 64) + 0x80
 }
 
 // Precomputed per-byte masks for a field (cached per V8Field). Each entry says
+
 // "within byte `byte`, these bits (mask) belong to this field." Used to assemble
-// a child UUID by masking+ORing parent bytes — replaces the per-bit copyField
-// loop on the composition hot path with a small fixed number of byte ops.
+
+// A child UUID by masking+ORing parent bytes — replaces the per-bit copyField
+
+// Loop on the composition hot path with a small fixed number of byte ops.
+
 interface ByteMask {
-  byte: number
-  mask: number
+  readonly byte: number
+
+  readonly mask: number
+
+  readonly shift: number
+
+  readonly width: number
 }
-const _fieldByteMasks = new WeakMap<V8Field, ByteMask[]>()
-function fieldByteMasks(f: V8Field): ByteMask[] {
+
+const _fieldByteMasks = new WeakMap<ReadonlyV8Field, ByteMask[]>()
+
+const fieldByteMasks = (f: ReadonlyV8Field): ByteMask[] => {
   let m = _fieldByteMasks.get(f)
-  if (m) {return m}
-  m = []
-  const {start} = f
-  const end = f.start + f.length
-  const endByte = (end + 7) >> 3
-  for (let b = start >> 3; b < endByte; b += 1) {
-    let mask = 0
-    for (let bit = 0; bit < 8; bit += 1) {
-      const pos = b * 8 + bit
-      if (pos >= start && pos < end) {mask |= 1 << (7 - bit)}
-    }
-    if (mask) {m.push({ byte: b, mask })}
+
+  if (m) {
+    return m
   }
+
+  m = []
+
+  const { start } = f
+
+  const end = f.start + f.length
+
+  const endByte = Math.ceil(end / 8)
+
+  for (let byte = Math.floor(start / 8); byte < endByte; byte += 1) {
+    let mask = 0
+
+    let width = 0
+
+    for (let bit = 0; bit < 8; bit += 1) {
+      const position = byte * 8 + bit
+
+      if (position >= start && position < end) {
+        mask += 2 ** (7 - bit)
+
+        width += 1
+      }
+    }
+
+    if (mask) {
+      m.push({ byte, mask, shift: 8 - width, width })
+    }
+  }
+
   _fieldByteMasks.set(f, m)
+
   return m
 }
 
-export function uuidToBytes(uuid: string): Uint8Array {
+export const uuidToBytes = (uuid: string): Uint8Array => {
   const h = uuid.replaceAll("-", "")
+
   if (!/^[0-9a-fA-F]{32}$/u.test(h)) {
     throw new Error(`uuidToBytes: invalid UUID hex string "${uuid}"`)
   }
+
   const b = new Uint8Array(16)
-  for (let j = 0; j < 16; j += 1) {b[j] = Number.parseInt(h.slice(j * 2, j * 2 + 2), 16)}
+
+  for (let j = 0; j < 16; j += 1) {
+    b[j] = Number.parseInt(h.slice(j * 2, j * 2 + 2), 16)
+  }
+
   return b
 }
 
 // Extract only the layout's `random`-type bits from a UUID, as an ordered
+
 // "0/1" string (field order, MSB-first per byte). Used for NIST bit-stream
-// export; the canonical home keeps layout-aware extraction in one place.
-export function uuidToRandomBits(uuid: string, layout: V8Layout): string {
+
+// Export; the canonical home keeps layout-aware extraction in one place.
+
+export const uuidToRandomBits = (
+  uuid: string,
+  layout: ReadonlyV8Layout,
+): string => {
   const b = uuidToBytes(uuid)
+
   let bits = ""
+
   for (const f of layout.fields) {
-    if (f.type !== "random") {continue}
-    for (let bit = 0; bit < f.length; bit += 1) {
-      const pos = f.start + bit
-      bits += ((b[pos >> 3] >> (7 - (pos & 7))) & 1).toString()
+    if (f.type === "random") {
+      for (let bit = 0; bit < f.length; bit += 1) {
+        const pos = f.start + bit
+
+        bits += readBit(b, pos).toString()
+      }
     }
   }
+
   return bits
 }
 
 // Inverse of the structured generators: read each field's integer value from a
+
 // UUID string, keyed by field name. Uses `getFieldValue` (exact BigInt), so it
-// is safe for fields wider than 32 bits — the same path the truncation bug
-// lived on, now exercised by the test suite.
-export function readStructured(uuid: string, layout: V8Layout): Record<string, number> {
+
+// Is safe for fields wider than 32 bits — the same path the truncation bug
+
+// Lived on, now exercised by the test suite.
+
+export const readStructured = (
+  uuid: string,
+  layout: ReadonlyV8Layout,
+): Record<string, number> => {
   const b = uuidToBytes(uuid)
+
   const out: Record<string, number> = {}
+
   for (const f of layout.fields) {
-    out[f.name] = Number(getFieldValue(b, f))
+    out[f.name] = readFieldNumber(b, f)
   }
+
   return out
 }
 
@@ -706,131 +1219,337 @@ export function readStructured(uuid: string, layout: V8Layout): Record<string, n
  * Fill any gaps left by the caller's declared fields (including the reserved
  * v8 nibble bits) with `random`-type filler fields so the layout covers all
  * 128 UUID bits. Returns a new layout; the input is not mutated.
+ *
+ * @param {string} name - Name for the completed layout.
+ * @param {readonly ReadonlyV8Field[]} fields - Declared fields to preserve.
+ * @returns {V8Layout} A complete layout covering all 128 UUID bits.
  */
-export function completeLayout(name: string, fields: V8Field[]): V8Layout {
+
+export const completeLayout = (
+  name: string,
+  fields: readonly ReadonlyV8Field[],
+): V8Layout => {
   const covered = Array.from<boolean>({ length: 128 }).fill(false)
+
   for (const f of fields) {
-    for (let i = 0; i < f.length; i += 1) {covered[f.start + i] = true}
+    for (let i = 0; i < f.length; i += 1) {
+      covered[f.start + i] = true
+    }
   }
-  for (const i of NIBBLE_BITS) {covered[i] = true}
-  const out: V8Field[] = [...fields]
+
+  for (const i of NIBBLE_BITS) {
+    covered[i] = true
+  }
+
+  const out: V8Field[] = [...fields] as V8Field[]
+
   const usedNames = new Set(fields.map((field) => field.name))
+
   let i = 0
+
   while (i < 128) {
     if (covered[i]) {
       i += 1
-      continue
+    } else {
+      let j = i
+
+      while (j < 128 && !covered[j]) {
+        j += 1
+      }
+
+      let generatedName = `rand_${i}`
+
+      let suffix = 0
+
+      while (usedNames.has(generatedName)) {
+        generatedName = `rand_${i}_${(suffix += 1)}`
+      }
+
+      usedNames.add(generatedName)
+
+      out.push({ length: j - i, name: generatedName, start: i, type: "random" })
+
+      i = j
     }
-    let j = i
-    while (j < 128 && !covered[j]) {j += 1}
-    let generatedName = `rand_${i}`
-    let suffix = 0
-    while (usedNames.has(generatedName)) {generatedName = `rand_${i}_${suffix += 1}`}
-    usedNames.add(generatedName)
-    out.push({ length: j - i, name: generatedName, start: i, type: "random" })
-    i = j
   }
+
   return { fields: out, name }
 }
 
-function validateSchema(schema: LayoutSchema): void {
+const validateSchema = (schema: DeepReadonly<LayoutSchema>): void => {
   if (typeof schema.name !== "string" || schema.name.trim() === "") {
-    throw new LayoutCompilerError("invalid-schema", "schema name must be a non-empty string", "schema.name")
+    throw new LayoutCompilerError(
+      "invalid-schema",
+      "schema name must be a non-empty string",
+      "schema.name",
+    )
   }
+
   const names = new Set<string>()
+
   for (const [index, field] of schema.fields.entries()) {
     const path = `schema.fields[${index}]`
-    if (!field || typeof field !== "object") {
-      throw new LayoutCompilerError("invalid-schema", `${path} must be an object`, path)
+
+    const candidate: unknown = field
+
+    if (!isRecord(candidate)) {
+      throw new LayoutCompilerError(
+        "invalid-schema",
+        `${path} must be an object`,
+        path,
+      )
     }
+
     if (typeof field.name !== "string" || field.name.length === 0) {
-      throw new LayoutCompilerError("invalid-schema", `${path}.name must be non-empty`, `${path}.name`)
+      throw new LayoutCompilerError(
+        "invalid-schema",
+        `${path}.name must be non-empty`,
+        `${path}.name`,
+      )
     }
+
     if (names.has(field.name)) {
-      throw new LayoutCompilerError("invalid-schema", `${path}.name is declared more than once`, `${path}.name`)
+      throw new LayoutCompilerError(
+        "invalid-schema",
+        `${path}.name is declared more than once`,
+        `${path}.name`,
+      )
     }
+
     names.add(field.name)
+
     if (!FIELD_TYPES.has(field.type)) {
-      throw new LayoutCompilerError("invalid-schema", `${path}.type is unsupported`, `${path}.type`)
+      throw new LayoutCompilerError(
+        "invalid-schema",
+        `${path}.type is unsupported`,
+        `${path}.type`,
+      )
     }
   }
 }
 
-function validateSchemaConstraints(schema: LayoutSchema): void {
+const validateAllowedConstraint = (
+  constraint: ReadonlyV8Constraint,
+
+  path: string,
+
+  domainMax: number,
+): void => {
+  if (constraint.allowed === absentValue) {
+    return
+  }
+
+  if (!isArray(constraint.allowed)) {
+    throw new LayoutCompilerError(
+      "invalid-schema",
+      `${path}.constraint.allowed must be an array`,
+      `${path}.constraint.allowed`,
+    )
+  }
+
+  if (
+    constraint.allowed.length === 0 ||
+    constraint.allowed.some(
+      (value) => !Number.isInteger(value) || value < 0 || value > domainMax,
+    )
+  ) {
+    throw new LayoutCompilerError(
+      "invalid-schema",
+      `${path}.constraint.allowed must contain values in the field domain`,
+      `${path}.constraint.allowed`,
+    )
+  }
+}
+
+const validateRangeConstraint = (
+  constraint: ReadonlyV8Constraint,
+
+  path: string,
+
+  domainMax: number,
+): void => {
+  if (
+    constraint.min !== absentValue &&
+    (!Number.isInteger(constraint.min) ||
+      constraint.min < 0 ||
+      constraint.min > domainMax)
+  ) {
+    throw new LayoutCompilerError(
+      "invalid-schema",
+      `${path}.constraint.min must be in the field domain`,
+      `${path}.constraint.min`,
+    )
+  }
+
+  if (
+    constraint.max !== absentValue &&
+    (!Number.isInteger(constraint.max) ||
+      constraint.max < 0 ||
+      constraint.max > domainMax)
+  ) {
+    throw new LayoutCompilerError(
+      "invalid-schema",
+      `${path}.constraint.max must be in the field domain`,
+      `${path}.constraint.max`,
+    )
+  }
+
+  if (
+    constraint.min !== absentValue &&
+    constraint.max !== absentValue &&
+    constraint.min > constraint.max
+  ) {
+    throw new LayoutCompilerError(
+      "invalid-schema",
+      `${path}.constraint min must not exceed max`,
+      path,
+    )
+  }
+}
+
+const validateFieldConstraint = (
+  field: DeepReadonly<LayoutSchemaField>,
+
+  path: string,
+
+  domainMax: number,
+): void => {
+  const { constraint } = field
+
+  const rawConstraint: unknown = constraint
+
+  if (rawConstraint === absentValue) {
+    return
+  }
+
+  if (!isRecord(rawConstraint)) {
+    throw new LayoutCompilerError(
+      "invalid-schema",
+      `${path}.constraint must be an object`,
+      `${path}.constraint`,
+    )
+  }
+
+  const typedConstraint = rawConstraint as ReadonlyV8Constraint
+
+  validateAllowedConstraint(typedConstraint, path, domainMax)
+
+  validateRangeConstraint(typedConstraint, path, domainMax)
+
+  if (
+    typedConstraint.monotonic !== absentValue &&
+    typeof typedConstraint.monotonic !== "boolean"
+  ) {
+    throw new LayoutCompilerError(
+      "invalid-schema",
+      `${path}.constraint.monotonic must be boolean`,
+      `${path}.constraint.monotonic`,
+    )
+  }
+}
+
+const validateSchemaConstraints = (
+  schema: DeepReadonly<LayoutSchema>,
+): void => {
   for (const [index, field] of schema.fields.entries()) {
     const path = `schema.fields[${index}]`
-    const constraint = field.constraint as V8FieldConstraint | null | undefined
+
     const domainMax = 2 ** field.length - 1
-    if (constraint !== undefined && (constraint === null || typeof constraint !== "object")) {
-      throw new LayoutCompilerError("invalid-schema", `${path}.constraint must be an object`, `${path}.constraint`)
-    }
-    if (constraint !== undefined && constraint !== null) {
-      if (constraint.allowed !== undefined && !Array.isArray(constraint.allowed)) {
-        throw new LayoutCompilerError("invalid-schema", `${path}.constraint.allowed must be an array`, `${path}.constraint.allowed`)
-      }
-      if (
-        constraint.allowed !== undefined &&
-        (constraint.allowed.length === 0 || constraint.allowed.some((value) => !Number.isInteger(value) || value < 0 || value > domainMax))
-      ) {
-        throw new LayoutCompilerError("invalid-schema", `${path}.constraint.allowed must contain values in the field domain`, `${path}.constraint.allowed`)
-      }
-      if (constraint.min !== undefined && (!Number.isInteger(constraint.min) || constraint.min < 0 || constraint.min > domainMax)) {
-        throw new LayoutCompilerError("invalid-schema", `${path}.constraint.min must be in the field domain`, `${path}.constraint.min`)
-      }
-      if (constraint.max !== undefined && (!Number.isInteger(constraint.max) || constraint.max < 0 || constraint.max > domainMax)) {
-        throw new LayoutCompilerError("invalid-schema", `${path}.constraint.max must be in the field domain`, `${path}.constraint.max`)
-      }
-      if (constraint.min !== undefined && constraint.max !== undefined && constraint.min > constraint.max) {
-        throw new LayoutCompilerError("invalid-schema", `${path}.constraint min must not exceed max`, path)
-      }
-      if (constraint.monotonic !== undefined && typeof constraint.monotonic !== "boolean") {
-        throw new LayoutCompilerError("invalid-schema", `${path}.constraint.monotonic must be boolean`, `${path}.constraint.monotonic`)
-      }
-    }
-    if (field.type === "fixed" && (!Number.isInteger(field.value) || (field.value ?? -1) < 0 || (field.value ?? -1) > domainMax)) {
-      throw new LayoutCompilerError("invalid-schema", `${path}.value must be in the field domain`, `${path}.value`)
+
+    validateFieldConstraint(field, path, domainMax)
+
+    if (
+      field.type === "fixed" &&
+      (!Number.isInteger(field.value) ||
+        (field.value ?? -1) < 0 ||
+        (field.value ?? -1) > domainMax)
+    ) {
+      throw new LayoutCompilerError(
+        "invalid-schema",
+        `${path}.value must be in the field domain`,
+        `${path}.value`,
+      )
     }
   }
 }
 
-function assertNonnegative(
+const assertNonnegative = (
   value: number | undefined,
+
   code: LayoutCompilerErrorCode,
+
   field: string,
-): void {
-  if (value !== undefined && (!Number.isFinite(value) || value < 0)) {
-    throw new LayoutCompilerError(code, `${field} must be a finite non-negative number`, field)
+): void => {
+  if (value !== absentValue && (!Number.isFinite(value) || value < 0)) {
+    throw new LayoutCompilerError(
+      code,
+      `${field} must be a finite non-negative number`,
+      field,
+    )
   }
 }
 
-function constraintKinds(field: V8Field): ConstraintKind[] {
+const isMonotonic = (field: ReadonlyV8Field): boolean => {
+  const { constraint } = field
+
+  return !isMissing(constraint) && constraint.monotonic === true
+}
+
+const constraintKinds = (field: ReadonlyV8Field): ConstraintKind[] => {
   const constraints: ConstraintKind[] = []
-  if (field.constraint?.allowed !== undefined) {constraints.push("allowed-set")}
-  if (field.constraint?.min !== undefined || field.constraint?.max !== undefined) {
-    constraints.push("range")
+
+  const { constraint } = field
+
+  if (!isMissing(constraint)) {
+    if (constraint.allowed !== absentValue) {
+      constraints.push("allowed-set")
+    }
+
+    if (constraint.min !== absentValue || constraint.max !== absentValue) {
+      constraints.push("range")
+    }
+
+    if (constraint.monotonic === true) {
+      constraints.push("monotonic")
+    }
   }
-  if (field.constraint?.monotonic === true) {constraints.push("monotonic")}
-  if (field.type === "fixed") {constraints.push("fixed")}
+
+  if (field.type === "fixed") {
+    constraints.push("fixed")
+  }
+
   return constraints
 }
 
 /** One observed query: which fields it filtered and what it touched. */
+
 export interface WorkloadTraceEvent {
   op: "read" | "write"
+
   kind: "point" | "range" | "scan"
+
   /** Equality-filter field → value. */
+
   filters?: Record<string, string | number>
+
   /** Rows matched (pairs with scanned for selectivity). */
+
   matched?: number
+
   /** Rows scanned (pairs with matched for selectivity). */
+
   scanned?: number
 }
 
 export interface InferredWorkload {
   profile: DatabaseWorkloadProfile
+
   /** Per-field access counts — the Smith weights for planBitAllocation. */
+
   weights: Record<string, number>
+
   /** Per-field distinct filter values observed — a cardinality lower bound. */
+
   cardinalities: Record<string, number>
 }
 
@@ -841,770 +1560,1575 @@ export interface InferredWorkload {
  * matched/scanned over events carrying both; cardinality counts distinct
  * observed filter values. Unknown filter fields and empty traces throw.
  */
-export function inferWorkload(
-  trace: readonly WorkloadTraceEvent[],
-  schema: LayoutSchema,
-): InferredWorkload {
-  if (!Array.isArray(trace) || trace.length === 0) {
-    throw new LayoutCompilerError("invalid-workload", "workload trace must be a non-empty array")
-  }
-  const schemaFields = new Set(schema.fields.map((field) => field.name))
-  const weights: Record<string, number> = {}
-  const distinct: Record<string, Set<string | number>> = {}
-  const matched: Record<string, number> = {}
-  const scanned: Record<string, number> = {}
-  const ranged = new Set<string>()
-  const pointed = new Set<string>()
-  let reads = 0
-  let writes = 0
-  for (const [index, event] of trace.entries()) {
-    const path = `trace[${index}]`
-    if (event.op !== "read" && event.op !== "write") {
-      throw new LayoutCompilerError("invalid-workload", `${path}.op must be "read" or "write"`, path)
-    }
-    if (event.kind !== "point" && event.kind !== "range" && event.kind !== "scan") {
-      throw new LayoutCompilerError(
-        "invalid-workload",
-        `${path}.kind must be "point", "range", or "scan"`,
-        path,
-      )
-    }
-    if (event.op === "read") {reads += 1}
-    else {writes += 1}
-    const filters: Record<string, string | number> = event.filters ?? {}
-    for (const [name, value] of Object.entries(filters)) {
-      if (!schemaFields.has(name)) {
-        throw new LayoutCompilerError(
-          "unknown-workload-field",
-          `workload trace filters unknown field ${name}`,
-          name,
-        )
-      }
-      weights[name] = (weights[name] ?? 0) + 1
-      if (event.kind === "range") {ranged.add(name)}
-      else if (event.kind === "point") {pointed.add(name)}
-      if (!distinct[name]) {distinct[name] = new Set()}
-      distinct[name].add(value)
-      if (event.matched !== undefined && event.scanned !== undefined) {
-        if (event.matched < 0 || event.scanned <= 0 || event.matched > event.scanned) {
-          throw new LayoutCompilerError(
-            "invalid-workload",
-            `${path}: matched/scanned must satisfy 0 <= matched <= scanned, scanned > 0`,
-            path,
-          )
-        }
-        matched[name] = (matched[name] ?? 0) + event.matched
-        scanned[name] = (scanned[name] ?? 0) + event.scanned
-      }
-    }
-  }
-  if (reads + writes === 0) {
-    throw new LayoutCompilerError("invalid-workload", "workload trace must be a non-empty array")
-  }
-  const fields: WorkloadFieldProfile[] = schema.fields.map((field) => {
-    let role: WorkloadFieldProfile["role"] = "cluster"
-    if (ranged.has(field.name)) {role = "partition"}
-    else if (pointed.has(field.name)) {role = "lookup"}
-    const profile: WorkloadFieldProfile = { name: field.name, role }
-    if (scanned[field.name] !== undefined && scanned[field.name] > 0) {
-      profile.selectivity = matched[field.name] / scanned[field.name]
-    }
-    return profile
-  })
-  const cardinalities: Record<string, number> = {}
-  for (const field of schema.fields) {
-    cardinalities[field.name] = distinct[field.name]?.size ?? 1
-    weights[field.name] ??= 0
-  }
-  return { cardinalities, profile: { fields, readWeight: reads, writeWeight: writes }, weights }
+
+interface WorkloadStats {
+  weights: Map<string, number>
+
+  distinct: Map<string, Set<string | number>>
+
+  matched: Map<string, number>
+
+  scanned: Map<string, number>
+
+  ranged: Set<string>
+
+  pointed: Set<string>
+
+  reads: number
+
+  writes: number
 }
 
-function placeSchemaFields(
-  fields: readonly LayoutSchemaField[],
-  profiles: readonly WorkloadFieldProfile[],
-): V8Field[] {
-  const starts = Array.from<number | undefined>({ length: fields.length })
-  const usedBits = new Set<number>()
-  for (const [index, field] of fields.entries()) {
-    const path = `schema.fields[${index}]`
-    if (!Number.isInteger(field.length) || field.length <= 0) {
-      throw new LayoutCompilerError("invalid-schema", `${path}.length must be a positive integer`, `${path}.length`)
-    }
-    if (field.type !== "random" && field.length > MAX_FIELD_BITS) {
-      throw new LayoutCompilerError("invalid-schema", `${path}.length exceeds ${MAX_FIELD_BITS} bits`, `${path}.length`)
-    }
-    if (field.start !== undefined) {
-      if (!Number.isInteger(field.start) || field.start < 0 || field.start + field.length > 128) {
-        throw new LayoutCompilerError("invalid-schema", `${path}.start is outside the 128-bit UUID`, `${path}.start`)
-      }
-      starts[index] = field.start
-      for (let bit = field.start; bit < field.start + field.length; bit += 1) {usedBits.add(bit)}
-    }
-  }
-  const roles = new Map(profiles.map((profile) => [profile.name, profile.role]))
-  const roleRank = (role: WorkloadFieldRole | undefined): number => {
-    if (role === "partition" || role === "cluster") {return 0}
-    if (role === "lookup") {return 1}
-    return 2
-  }
-  const autoFields = fields
-    .map((field, index) => ({ field, index, rank: roleRank(roles.get(field.name)) }))
-    .filter((entry) => entry.field.start === undefined)
-  for (let index = 1; index < autoFields.length; index += 1) {
-    const entry = autoFields[index]
-    let position = index - 1
-    while (position >= 0 && (autoFields[position].rank > entry.rank || (autoFields[position].rank === entry.rank && autoFields[position].index > entry.index))) {
-      autoFields[position + 1] = autoFields[position]
-      position -= 1
-    }
-    autoFields[position + 1] = entry
-  }
-  for (const entry of autoFields) {
-    let start = 0
-    while (start < 128) {
-      let conflict = false
-      for (let index = 0; index < entry.field.length; index += 1) {
-        const bit = start + index
-        if (bit >= 128 || NIBBLE_BITS.has(bit) || usedBits.has(bit)) {
-          conflict = true
-          break
-        }
-      }
-      if (!conflict) {break}
-      start += 8
-    }
-    if (start + entry.field.length > 128) {
-      throw new LayoutCompilerError("invalid-schema", `field ${entry.field.name} does not fit in the UUID`, `schema.fields[${entry.index}]`)
-    }
-    starts[entry.index] = start
-    for (let index = 0; index < entry.field.length; index += 1) {usedBits.add(start + index)}
-  }
-  return fields.map((field, index) => {
-    const start = starts[index]
-    if (start === undefined) {
-      throw new LayoutCompilerError("invalid-schema", `field ${field.name} was not placed`, `schema.fields[${index}]`)
-    }
-    return { ...field, start }
-  })
-}
+const validateTraceEvent = (
+  event: DeepReadonly<WorkloadTraceEvent>,
+  path: string,
+): void => {
+  const { op: operation, kind } = event
 
-export function compileDatabaseLayout(input: LayoutCompilerInput): DatabaseLayoutCompilation {
-  if (!input || typeof input !== "object") {
-    throw new LayoutCompilerError("invalid-schema", "compiler input must be an object")
-  }
-  const { schema, workload } = input
-  if (!schema || typeof schema.name !== "string" || !Array.isArray(schema.fields)) {
-    throw new LayoutCompilerError("invalid-schema", "schema must contain a name and fields array")
-  }
-  validateSchema(schema)
-  if (!workload || !Array.isArray(workload.fields) || workload.fields.length === 0) {
-    throw new LayoutCompilerError("invalid-workload", "workload must contain at least one field")
-  }
-  if (typeof workload.readWeight !== "number") {
-    throw new LayoutCompilerError("invalid-workload", "workload.readWeight must be a number", "workload.readWeight")
-  }
-  if (typeof workload.writeWeight !== "number") {
-    throw new LayoutCompilerError("invalid-workload", "workload.writeWeight must be a number", "workload.writeWeight")
-  }
-  assertNonnegative(workload.readWeight, "invalid-workload", "workload.readWeight")
-  assertNonnegative(workload.writeWeight, "invalid-workload", "workload.writeWeight")
-  if (workload.readWeight + workload.writeWeight === 0) {
+  const operationValue: unknown = operation
+
+  const kindValue: unknown = kind
+
+  if (operationValue !== "read" && operationValue !== "write") {
     throw new LayoutCompilerError(
       "invalid-workload",
-      "workload must have a positive readWeight or writeWeight",
+      `${path}.op must be "read" or "write"`,
+      path,
+    )
+  }
+
+  if (kindValue !== "point" && kindValue !== "range" && kindValue !== "scan") {
+    throw new LayoutCompilerError(
+      "invalid-workload",
+      `${path}.kind must be "point", "range", or "scan"`,
+      path,
+    )
+  }
+}
+
+const recordWorkloadFilter = (
+  name: string,
+
+  value: string | number,
+
+  event: DeepReadonly<WorkloadTraceEvent>,
+
+  path: string,
+
+  schemaFields: ReadonlySet<string>,
+
+  stats: WorkloadStats,
+): void => {
+  if (!schemaFields.has(name)) {
+    throw new LayoutCompilerError(
+      "unknown-workload-field",
+      `workload trace filters unknown field ${name}`,
+      name,
+    )
+  }
+
+  stats.weights.set(name, (stats.weights.get(name) ?? 0) + 1)
+
+  if (event.kind === "range") {
+    stats.ranged.add(name)
+  } else if (event.kind === "point") {
+    stats.pointed.add(name)
+  }
+
+  let distinct = stats.distinct.get(name)
+
+  if (distinct === absentValue) {
+    distinct = new Set<string | number>()
+
+    stats.distinct.set(name, distinct)
+  }
+
+  distinct.add(value)
+
+  if (event.matched === absentValue || event.scanned === absentValue) {
+    return
+  }
+
+  if (
+    event.matched < 0 ||
+    event.scanned <= 0 ||
+    event.matched > event.scanned
+  ) {
+    throw new LayoutCompilerError(
+      "invalid-workload",
+
+      `${path}: matched/scanned must satisfy 0 <= matched <= scanned, scanned > 0`,
+
+      path,
+    )
+  }
+
+  stats.matched.set(name, (stats.matched.get(name) ?? 0) + event.matched)
+
+  stats.scanned.set(name, (stats.scanned.get(name) ?? 0) + event.scanned)
+}
+
+const recordWorkloadEvent = (
+  event: DeepReadonly<WorkloadTraceEvent>,
+
+  path: string,
+
+  schemaFields: ReadonlySet<string>,
+
+  stats: WorkloadStats,
+): void => {
+  validateTraceEvent(event, path)
+
+  if (event.op === "read") {
+    stats.reads += 1
+  } else {
+    stats.writes += 1
+  }
+
+  for (const [name, value] of Object.entries(event.filters ?? {})) {
+    recordWorkloadFilter(name, value, event, path, schemaFields, stats)
+  }
+}
+
+export const inferWorkload = (
+  trace: readonly DeepReadonly<WorkloadTraceEvent>[],
+
+  schema: DeepReadonly<LayoutSchema>,
+): InferredWorkload => {
+  if (!isArray(trace) || trace.length === 0) {
+    throw new LayoutCompilerError(
+      "invalid-workload",
+      "workload trace must be a non-empty array",
     )
   }
 
   const schemaFields = new Set(schema.fields.map((field) => field.name))
-  const seenWorkloadFields = new Set<string>()
-  for (const profile of workload.fields) {
-    if (!profile || typeof profile.name !== "string" || profile.name.length === 0) {
-      throw new LayoutCompilerError("invalid-workload", "workload field name must be non-empty")
-    }
-    if (seenWorkloadFields.has(profile.name)) {
-      throw new LayoutCompilerError(
-        "duplicate-workload-field",
-        `workload field ${profile.name} is declared more than once`,
-        profile.name,
-      )
-    }
-    seenWorkloadFields.add(profile.name)
-    if (!schemaFields.has(profile.name)) {
-      throw new LayoutCompilerError(
-        "unknown-workload-field",
-        `workload field ${profile.name} is not present in the schema`,
-        profile.name,
-      )
-    }
-    if (
-      profile.role !== "partition" &&
-      profile.role !== "cluster" &&
-      profile.role !== "lookup"
-    ) {
-      throw new LayoutCompilerError(
-        "invalid-workload",
-        `workload field ${profile.name} has an unsupported role`,
-        profile.name,
-      )
-    }
-    if (
-      profile.selectivity !== undefined &&
-      (!Number.isFinite(profile.selectivity) || profile.selectivity < 0 || profile.selectivity > 1)
-    ) {
-      throw new LayoutCompilerError(
-        "invalid-workload",
-        `workload field ${profile.name}.selectivity must be between 0 and 1`,
-        profile.name,
-      )
-    }
-    assertNonnegative(profile.skew, "invalid-workload", `${profile.name}.skew`)
-    assertNonnegative(profile.readWeight, "invalid-workload", `${profile.name}.readWeight`)
-    assertNonnegative(profile.writeWeight, "invalid-workload", `${profile.name}.writeWeight`)
+
+  const stats: WorkloadStats = {
+    distinct: new Map(),
+
+    matched: new Map(),
+
+    pointed: new Set(),
+
+    ranged: new Set(),
+
+    reads: 0,
+
+    scanned: new Map(),
+
+    weights: new Map(),
+
+    writes: 0,
   }
 
-  const layout = completeLayout(schema.name, placeSchemaFields(schema.fields, workload.fields))
-  const layoutFailure = validateLayoutStructure(layout.fields, layout.name, true)
-  if (layoutFailure) {
-    const schemaIndex = schema.fields.findIndex((field) => field.name === layoutFailure.field)
-    const field = schemaIndex === -1 ? layoutFailure.field : `schema.fields[${schemaIndex}]`
-    throw new LayoutCompilerError("invalid-schema", layoutFailure.message, field)
+  for (const [index, event] of trace.entries()) {
+    recordWorkloadEvent(event, `trace[${index}]`, schemaFields, stats)
   }
-  validateSchemaConstraints(schema)
 
-  const fieldSemantics: Record<string, FieldSemantics> = {}
-  const structuredBits = new Set<number>()
-  const widthFloors: { field: string; declaredBits: number; floor: number; domain: number }[] = []
-  for (const field of layout.fields) {
-    fieldSemantics[field.name] = { constraints: constraintKinds(field), type: field.type }
-    if (field.type !== "random") {
-      for (let bit = field.start; bit < field.start + field.length; bit += 1) {
-        structuredBits.add(bit)
-      }
+  if (stats.reads + stats.writes === 0) {
+    throw new LayoutCompilerError(
+      "invalid-workload",
+      "workload trace must be a non-empty array",
+    )
+  }
+
+  const fields: WorkloadFieldProfile[] = schema.fields.map((field) => {
+    let role: WorkloadFieldProfile["role"] = "cluster"
+
+    if (stats.ranged.has(field.name)) {
+      role = "partition"
+    } else if (stats.pointed.has(field.name)) {
+      role = "lookup"
     }
-    const domain = fieldDomainSize(field)
-    if (domain !== null && field.type !== "random") {
-      widthFloors.push({
-        declaredBits: field.length,
-        domain,
-        field: field.name,
-        floor: minBitsForCardinality(domain),
-      })
+
+    const profile: WorkloadFieldProfile = { name: field.name, role }
+
+    const scanned = stats.scanned.get(field.name)
+
+    const matched = stats.matched.get(field.name) ?? 0
+
+    if (scanned !== absentValue && scanned > 0) {
+      profile.selectivity = matched / scanned
+    }
+
+    return profile
+  })
+
+  const cardinalities: Record<string, number> = {}
+
+  const weights: Record<string, number> = {}
+
+  for (const [name, weight] of stats.weights) {
+    weights[name] = weight
+  }
+
+  for (const field of schema.fields) {
+    const distinct = stats.distinct.get(field.name)
+
+    let cardinality = 1
+
+    if (distinct !== absentValue) {
+      cardinality = distinct.size
+    }
+
+    cardinalities[field.name] = cardinality
+
+    if (!stats.weights.has(field.name)) {
+      weights[field.name] = 0
     }
   }
-  const widthFloorsMet = widthFloors.every((entry) => entry.declaredBits >= entry.floor)
-
-  const volumeTarget = input.volume ?? DEFAULT_COLLISION_VOLUME
-  const tau = input.collisionTarget ?? DEFAULT_COLLISION_TARGET
-  const requiredRandomBits = minRandomBitsForCollisionBudget(volumeTarget, tau)
 
   return {
-    costReport: {
-      collisionProbabilityAtVolume: collisionProbabilityUpperBound(
-        volumeTarget,
-        128 - NIBBLE_BITS.size - structuredBits.size,
-      ),
-      collisionTarget: tau,
-      constrainedFields: layout.fields.filter((field) => constraintKinds(field).length > 0).length,
-      localityFields: workload.fields.filter(
-        (field) => field.role === "partition" || field.role === "cluster",
-      ).length,
-      lookupFields: workload.fields.filter((field) => field.role === "lookup").length,
-      objective: "hard-constraints-first",
-      randomBits: 128 - NIBBLE_BITS.size - structuredBits.size,
-      readWeight: workload.readWeight,
-      requiredRandomBits,
-      structuredBits: structuredBits.size,
-      widthFloorsMet,
-      writeWeight: workload.writeWeight,
-    },
-    generationPlan: {
-      entropySource: "web-crypto",
-      fieldSemantics,
-      name: "compiled-direct-v8",
-      poolMode: "direct",
-      repairMode: "canonical",
-    },
-    layout,
-    repairPolicy: {
-      allowedSet: "index-modulo",
-      fixed: "deterministic",
-      monotonic: "stateful",
-      name: "canonical-v1",
-      range: "clamp",
-    },
+    cardinalities,
+
+    profile: { fields, readWeight: stats.reads, writeWeight: stats.writes },
+
+    weights,
   }
 }
 
-// ---------------------------------------------------------------------------
-// Bit allocation.
-//
-// Choosing where a declared field sits inside a fixed-length identifier is a
-// single-timeline scheduling problem: each field is a job, its length is the
-// processing time, its end offset is the completion time, and the objective
-// is to keep the fields a query actually filters on as close to the front of
-// the key as possible. Weighted completion time on one machine is solved by
-// Smith's rule (1956): order by non-increasing weight / length. The shipped
-// planner instead ordered by workload role rank, which is not optimal for
-// that objective.
-// ---------------------------------------------------------------------------
+const roleRank = (role: WorkloadFieldRole | undefined): number => {
+  if (role === "partition" || role === "cluster") {
+    return 0
+  }
 
-/** Locality class: lower sorts earlier in the key. */
-export type LocalityClass = "partition" | "cluster" | "lookup" | "opaque"
+  if (role === "lookup") {
+    return 1
+  }
 
-function localityRank(locality: LocalityClass | undefined): number {
-  if (locality === "partition") {return 0}
-  if (locality === "cluster") {return 1}
-  if (locality === "lookup") {return 2}
-  return 3
+  return 2
 }
 
-export interface BitAllocationField {
-  name: string
-  /** Distinct values that must be representable. */
-  cardinality: number
-  /** Weight of the queries this field filters, i.e. the cost of burying it. */
-  weight: number
-  locality?: LocalityClass
-  /** Offset granularity in bits. 8 keeps the field byte-extractable. */
-  align?: 1 | 4 | 8
-  /** Forces offset 0 (timestamp / monotonic prefix). */
-  leading?: boolean
+const findAutoFieldStart = (
+  field: DeepReadonly<LayoutSchemaField>,
+
+  index: number,
+
+  usedBits: Set<number>,
+): number => {
+  let start = 0
+
+  while (start < 128) {
+    let conflict = false
+
+    for (let bit = start; bit < start + field.length; bit += 1) {
+      if (bit >= 128 || NIBBLE_BITS.has(bit) || usedBits.has(bit)) {
+        conflict = true
+
+        break
+      }
+    }
+
+    if (!conflict) {
+      return start
+    }
+
+    start += 8
+  }
+
+  throw new LayoutCompilerError(
+    "invalid-schema",
+    `field ${field.name} does not fit in the UUID`,
+    `schema.fields[${index}]`,
+  )
 }
 
-export interface BitAllocationInput {
-  budget?: number
-  fields: readonly BitAllocationField[]
-  volume?: number
-  collisionTarget?: number
-  minRandomBits?: number
+const placeSchemaFields = (
+  fields: readonly DeepReadonly<LayoutSchemaField>[],
+
+  profiles: readonly DeepReadonly<WorkloadFieldProfile>[],
+): V8Field[] => {
+  const starts = Array.from<number | undefined>({ length: fields.length })
+
+  const usedBits = new Set<number>()
+
+  for (const [index, field] of fields.entries()) {
+    const path = `schema.fields[${index}]`
+
+    if (!Number.isInteger(field.length) || field.length <= 0) {
+      throw new LayoutCompilerError(
+        "invalid-schema",
+        `${path}.length must be a positive integer`,
+        `${path}.length`,
+      )
+    }
+
+    if (field.type !== "random" && field.length > MAX_FIELD_BITS) {
+      throw new LayoutCompilerError(
+        "invalid-schema",
+        `${path}.length exceeds ${MAX_FIELD_BITS} bits`,
+        `${path}.length`,
+      )
+    }
+
+    if (field.start !== absentValue) {
+      if (
+        !Number.isInteger(field.start) ||
+        field.start < 0 ||
+        field.start + field.length > 128
+      ) {
+        throw new LayoutCompilerError(
+          "invalid-schema",
+          `${path}.start is outside the 128-bit UUID`,
+          `${path}.start`,
+        )
+      }
+
+      starts[index] = field.start
+
+      for (let bit = field.start; bit < field.start + field.length; bit += 1) {
+        usedBits.add(bit)
+      }
+    }
+  }
+
+  const roles = new Map(profiles.map((profile) => [profile.name, profile.role]))
+
+  const autoFields = fields
+
+    .map((field, index) => ({
+      field,
+      index,
+      rank: roleRank(roles.get(field.name)),
+    }))
+
+    .filter((entry) => entry.field.start === absentValue)
+
+  for (let index = 1; index < autoFields.length; index += 1) {
+    const entry = autoFields[index]
+
+    let position = index - 1
+
+    while (
+      position >= 0 &&
+      (autoFields[position].rank > entry.rank ||
+        (autoFields[position].rank === entry.rank &&
+          autoFields[position].index > entry.index))
+    ) {
+      autoFields[position + 1] = autoFields[position]
+
+      position -= 1
+    }
+
+    autoFields[position + 1] = entry
+  }
+
+  for (const entry of autoFields) {
+    const start = findAutoFieldStart(entry.field, entry.index, usedBits)
+
+    starts[entry.index] = start
+
+    for (let index = 0; index < entry.field.length; index += 1) {
+      usedBits.add(start + index)
+    }
+  }
+
+  return fields.map((field, index) => {
+    const start = starts[index]
+
+    if (start === absentValue) {
+      throw new LayoutCompilerError(
+        "invalid-schema",
+        `field ${field.name} was not placed`,
+        `schema.fields[${index}]`,
+      )
+    }
+
+    const placedField = Object.assign(
+      Object.create(Object.prototype) as LayoutSchemaField,
+      field,
+    )
+
+    placedField.start = start
+
+    return placedField as V8Field
+  })
 }
 
-export interface AllocatedField {
-  name: string
-  cardinality: number
-  weight: number
-  locality: LocalityClass
-  align: 1 | 4 | 8
-  minBits: number
-  bits: number
-  offset: number
-  slackBits: number
-  /** weight / bits, the Smith-rule key. */
-  priority: number
-}
-
-export interface BitAllocationPlan {
-  fields: AllocatedField[]
-  filler: { offset: number; bits: number }[]
-  structuredBits: number
-  randomBits: number
-  requiredRandomBits: number
-  feasible: boolean
-  reason?: string
-  /** Sum of weight x end-offset; the scheduling objective, lower is better. */
-  weightedDepth: number
-  /** weightedDepth of the rank-ordered (pre-Smith) allocation, for the gap. */
-  weightedDepthRankOrder: number
-  algorithm: "smith-rule"
-}
-
-export function minBitsForCardinality(cardinality: number): number {
+export const minBitsForCardinality = (cardinality: number): number => {
   if (!Number.isInteger(cardinality) || cardinality < 1) {
-    throw new RangeError(`minBitsForCardinality: cardinality must be a positive integer, got ${cardinality}`)
+    throw new RangeError(
+      `minBitsForCardinality: cardinality must be a positive integer, got ${cardinality}`,
+    )
   }
+
   return Math.max(1, Math.ceil(Math.log2(cardinality)))
 }
 
-/** Upper bound on P(at least one collision) for n ids drawn from 2^r values. */
-export function collisionProbabilityUpperBound(n: number, randomBits: number): number {
-  if (n <= 1) {return 0}
+/** Upper bound on P(at least one collision) for n ids drawn from 2^r values.
+ *
+ * @param {number} n - Number of identifiers drawn.
+ * @param {number} randomBits - Random bits available per identifier.
+ * @returns {number} Upper bound on collision probability.
+ */
+
+export const collisionProbabilityUpperBound = (
+  n: number,
+  randomBits: number,
+): number => {
+  if (n <= 1) {
+    return 0
+  }
+
   const exponent = (n * (n - 1)) / (2 * 2 ** (randomBits + 1))
+
   return 1 - Math.exp(-exponent)
 }
 
 /**
  * Smallest r whose collision bound is at most `target` for `volume` ids.
  * Closed form: 2^r >= n(n-1) / (4 ln(1/(1-target))).
+ *
+ * @param {number} volume - Number of identifiers expected.
+ * @param {number} target - Collision probability target.
+ * @returns {number} Smallest sufficient random-bit count.
  */
-export function minRandomBitsForCollisionBudget(volume: number, target: number): number {
+
+export const minRandomBitsForCollisionBudget = (
+  volume: number,
+  target: number,
+): number => {
   if (!Number.isInteger(volume) || volume < 1) {
-    throw new RangeError(`minRandomBitsForCollisionBudget: volume must be a positive integer, got ${volume}`)
+    throw new RangeError(
+      `minRandomBitsForCollisionBudget: volume must be a positive integer, got ${volume}`,
+    )
   }
+
   if (!(target > 0 && target < 1)) {
-    throw new RangeError(`minRandomBitsForCollisionBudget: target must be in (0,1), got ${target}`)
+    throw new RangeError(
+      `minRandomBitsForCollisionBudget: target must be in (0,1), got ${target}`,
+    )
   }
-  const closed = Math.log2((volume * (volume - 1)) / (4 * -Math.log(1 - target)))
+
+  const closed = Math.log2(
+    (volume * (volume - 1)) / (4 * -Math.log(1 - target)),
+  )
+
   let r = Math.max(0, Math.ceil(closed))
-  while (collisionProbabilityUpperBound(volume, r) > target) {r += 1}
-  while (r > 0 && collisionProbabilityUpperBound(volume, r - 1) <= target) {r -= 1}
+
+  while (collisionProbabilityUpperBound(volume, r) > target) {
+    r += 1
+  }
+
+  while (r > 0 && collisionProbabilityUpperBound(volume, r - 1) <= target) {
+    r -= 1
+  }
+
   return r
 }
 
-function fits(offset: number, bits: number, used: Set<number>): boolean {
-  for (let b = offset; b < offset + bits; b += 1) {
-    if (NIBBLE_BITS.has(b) || b >= 128 || used.has(b)) {return false}
+const validateWorkloadProfile = (
+  profile: DeepReadonly<WorkloadFieldProfile>,
+
+  schemaFields: ReadonlySet<string>,
+
+  seen: Set<string>,
+): void => {
+  const candidate: unknown = profile
+
+  if (
+    !isRecord(candidate) ||
+    typeof candidate.name !== "string" ||
+    candidate.name.length === 0
+  ) {
+    throw new LayoutCompilerError(
+      "invalid-workload",
+      "workload field name must be non-empty",
+    )
   }
+
+  if (seen.has(profile.name)) {
+    throw new LayoutCompilerError(
+      "duplicate-workload-field",
+
+      `workload field ${profile.name} is declared more than once`,
+
+      profile.name,
+    )
+  }
+
+  seen.add(profile.name)
+
+  if (!schemaFields.has(profile.name)) {
+    throw new LayoutCompilerError(
+      "unknown-workload-field",
+
+      `workload field ${profile.name} is not present in the schema`,
+
+      profile.name,
+    )
+  }
+
+  const { role: configuredRole } = profile
+
+  const role: unknown = configuredRole
+
+  if (role !== "partition" && role !== "cluster" && role !== "lookup") {
+    throw new LayoutCompilerError(
+      "invalid-workload",
+
+      `workload field ${profile.name} has an unsupported role`,
+
+      profile.name,
+    )
+  }
+
+  if (
+    profile.selectivity !== absentValue &&
+    (!Number.isFinite(profile.selectivity) ||
+      profile.selectivity < 0 ||
+      profile.selectivity > 1)
+  ) {
+    throw new LayoutCompilerError(
+      "invalid-workload",
+
+      `workload field ${profile.name}.selectivity must be between 0 and 1`,
+
+      profile.name,
+    )
+  }
+
+  assertNonnegative(profile.skew, "invalid-workload", `${profile.name}.skew`)
+
+  assertNonnegative(
+    profile.readWeight,
+    "invalid-workload",
+    `${profile.name}.readWeight`,
+  )
+
+  assertNonnegative(
+    profile.writeWeight,
+    "invalid-workload",
+    `${profile.name}.writeWeight`,
+  )
+}
+
+const validateWorkload = (
+  workload: DeepReadonly<DatabaseWorkloadProfile>,
+  schemaFields: ReadonlySet<string>,
+): void => {
+  const seen = new Set<string>()
+
+  for (const profile of workload.fields) {
+    validateWorkloadProfile(profile, schemaFields, seen)
+  }
+}
+
+const validateCompilerInput = (
+  input: DeepReadonly<LayoutCompilerInput>,
+): void => {
+  if (!isRecord(input)) {
+    throw new LayoutCompilerError(
+      "invalid-schema",
+      "compiler input must be an object",
+    )
+  }
+
+  const { schema, workload } = input
+
+  const rawSchema: unknown = schema
+
+  const rawWorkload: unknown = workload
+
+  if (
+    !isRecord(rawSchema) ||
+    typeof rawSchema.name !== "string" ||
+    !isArray(rawSchema.fields)
+  ) {
+    throw new LayoutCompilerError(
+      "invalid-schema",
+      "schema must contain a name and fields array",
+    )
+  }
+
+  if (
+    !isRecord(rawWorkload) ||
+    !isArray(rawWorkload.fields) ||
+    rawWorkload.fields.length === 0
+  ) {
+    throw new LayoutCompilerError(
+      "invalid-workload",
+      "workload must contain at least one field",
+    )
+  }
+
+  if (typeof workload.readWeight !== "number") {
+    throw new LayoutCompilerError(
+      "invalid-workload",
+      "workload.readWeight must be a number",
+      "workload.readWeight",
+    )
+  }
+
+  if (typeof workload.writeWeight !== "number") {
+    throw new LayoutCompilerError(
+      "invalid-workload",
+      "workload.writeWeight must be a number",
+      "workload.writeWeight",
+    )
+  }
+
+  assertNonnegative(
+    workload.readWeight,
+    "invalid-workload",
+    "workload.readWeight",
+  )
+
+  assertNonnegative(
+    workload.writeWeight,
+    "invalid-workload",
+    "workload.writeWeight",
+  )
+
+  if (workload.readWeight + workload.writeWeight === 0) {
+    throw new LayoutCompilerError(
+      "invalid-workload",
+      "workload must have a positive readWeight or writeWeight",
+    )
+  }
+}
+
+export const compileDatabaseLayout = (
+  input: DeepReadonly<LayoutCompilerInput>,
+): DatabaseLayoutCompilation => {
+  validateCompilerInput(input)
+
+  const { schema, workload } = input
+
+  validateSchema(schema)
+
+  const schemaFields = new Set(schema.fields.map((field) => field.name))
+
+  validateWorkload(workload, schemaFields)
+
+  const layout = completeLayout(
+    schema.name,
+    placeSchemaFields(schema.fields, workload.fields),
+  )
+
+  const layoutFailure = validateLayoutStructure(
+    layout.fields,
+    layout.name,
+    true,
+  )
+
+  if (layoutFailure) {
+    const schemaIndex = schema.fields.findIndex(
+      (field) => field.name === layoutFailure.field,
+    )
+
+    const { field: failedField } = layoutFailure
+
+    let field = failedField
+
+    if (schemaIndex !== -1) {
+      field = `schema.fields[${schemaIndex}]`
+    }
+
+    throw new LayoutCompilerError(
+      "invalid-schema",
+      layoutFailure.message,
+      field,
+    )
+  }
+
+  validateSchemaConstraints(schema)
+
+  const fieldSemantics: Record<string, FieldSemantics> = {}
+
+  const structuredBits = new Set<number>()
+
+  const widthFloors: {
+    field: string
+    declaredBits: number
+    floor: number
+    domain: number
+  }[] = []
+
+  for (const field of layout.fields) {
+    fieldSemantics[field.name] = {
+      constraints: constraintKinds(field),
+      type: field.type,
+    }
+
+    if (field.type !== "random") {
+      for (let bit = field.start; bit < field.start + field.length; bit += 1) {
+        structuredBits.add(bit)
+      }
+    }
+
+    const domain = fieldDomainSize(field)
+
+    if (domain !== nullValue && field.type !== "random") {
+      widthFloors.push({
+        declaredBits: field.length,
+
+        domain,
+
+        field: field.name,
+
+        floor: minBitsForCardinality(domain),
+      })
+    }
+  }
+
+  const widthFloorsMet = widthFloors.every(
+    (entry) => entry.declaredBits >= entry.floor,
+  )
+
+  const volumeTarget = input.volume ?? DEFAULT_COLLISION_VOLUME
+
+  const tau = input.collisionTarget ?? DEFAULT_COLLISION_TARGET
+
+  const requiredRandomBits = minRandomBitsForCollisionBudget(volumeTarget, tau)
+
+  return {
+    costReport: {
+      collisionProbabilityAtVolume: collisionProbabilityUpperBound(
+        volumeTarget,
+
+        128 - NIBBLE_BITS.size - structuredBits.size,
+      ),
+
+      collisionTarget: tau,
+
+      constrainedFields: layout.fields.filter(
+        (field) => constraintKinds(field).length > 0,
+      ).length,
+
+      localityFields: workload.fields.filter(
+        (field) => field.role === "partition" || field.role === "cluster",
+      ).length,
+
+      lookupFields: workload.fields.filter((field) => field.role === "lookup")
+        .length,
+
+      objective: "hard-constraints-first",
+
+      randomBits: 128 - NIBBLE_BITS.size - structuredBits.size,
+
+      readWeight: workload.readWeight,
+
+      requiredRandomBits,
+
+      structuredBits: structuredBits.size,
+
+      widthFloorsMet,
+
+      writeWeight: workload.writeWeight,
+    },
+
+    generationPlan: {
+      entropySource: "web-crypto",
+
+      fieldSemantics,
+
+      name: "compiled-direct-v8",
+
+      poolMode: "direct",
+
+      repairMode: "canonical",
+    },
+
+    layout,
+
+    repairPolicy: {
+      allowedSet: "index-modulo",
+
+      fixed: "deterministic",
+
+      monotonic: "stateful",
+
+      name: "canonical-v1",
+
+      range: "clamp",
+    },
+  }
+}
+
+// ---------------------------------------------------------------------------
+
+// Bit allocation.
+
+//
+
+// Choosing where a declared field sits inside a fixed-length identifier is a
+
+// Single-timeline scheduling problem: each field is a job, its length is the
+
+// Processing time, its end offset is the completion time, and the objective
+
+// Is to keep the fields a query actually filters on as close to the front of
+
+// The key as possible. Weighted completion time on one machine is solved by
+
+// Smith's rule (1956): order by non-increasing weight / length. The shipped
+
+// Planner instead ordered by workload role rank, which is not optimal for
+
+// That objective.
+
+// ---------------------------------------------------------------------------
+
+/** Locality class: lower sorts earlier in the key. */
+
+export type LocalityClass = "partition" | "cluster" | "lookup" | "opaque"
+
+const localityRank = (locality: LocalityClass | undefined): number => {
+  if (locality === "partition") {
+    return 0
+  }
+
+  if (locality === "cluster") {
+    return 1
+  }
+
+  if (locality === "lookup") {
+    return 2
+  }
+
+  return 3
+}
+
+export interface BitAllocationField {
+  name: string
+
+  /** Distinct values that must be representable. */
+
+  cardinality: number
+
+  /** Weight of the queries this field filters, i.e. the cost of burying it. */
+
+  weight: number
+
+  locality?: LocalityClass
+
+  /** Offset granularity in bits. 8 keeps the field byte-extractable. */
+
+  align?: 1 | 4 | 8
+
+  /** Forces offset 0 (timestamp / monotonic prefix). */
+
+  leading?: boolean
+}
+
+export interface BitAllocationInput {
+  budget?: number
+
+  fields: readonly BitAllocationField[]
+
+  volume?: number
+
+  collisionTarget?: number
+
+  minRandomBits?: number
+}
+
+export interface AllocatedField {
+  name: string
+
+  cardinality: number
+
+  weight: number
+
+  locality: LocalityClass
+
+  align: 1 | 4 | 8
+
+  minBits: number
+
+  bits: number
+
+  offset: number
+
+  slackBits: number
+
+  /** Weight / bits, the Smith-rule key. */
+
+  priority: number
+}
+
+export interface BitAllocationPlan {
+  fields: AllocatedField[]
+
+  filler: { offset: number; bits: number }[]
+
+  structuredBits: number
+
+  randomBits: number
+
+  requiredRandomBits: number
+
+  feasible: boolean
+
+  reason?: string
+
+  /** Sum of weight x end-offset; the scheduling objective, lower is better. */
+
+  weightedDepth: number
+
+  /** WeightedDepth of the rank-ordered (pre-Smith) allocation, for the gap. */
+
+  weightedDepthRankOrder: number
+
+  algorithm: "smith-rule"
+}
+
+const fits = (offset: number, bits: number, used: Set<number>): boolean => {
+  for (let b = offset; b < offset + bits; b += 1) {
+    if (NIBBLE_BITS.has(b) || b >= 128 || used.has(b)) {
+      return false
+    }
+  }
+
   return true
 }
 
-/** Stable sort by a comparator, matching the insertion sort the planner already uses. */
-function sortBy<T>(items: readonly T[], compare: (a: T, b: T) => number): T[] {
+/**
+ * Stable sort by a comparator, matching the insertion sort the planner already uses.
+ *
+ * @param {readonly Item[]} items - Values to sort.
+ * @param {(left: Item, right: Item) => number} compare - Sort comparator.
+ * @returns {Item[]} A stably sorted copy.
+ */
+
+const sortBy = <Item,>(
+  items: readonly Item[],
+  compare: (left: Item, right: Item) => number,
+): Item[] => {
   const out = [...items]
+
   for (let index = 1; index < out.length; index += 1) {
     const entry = out[index]
+
     let position = index - 1
+
     while (position >= 0 && compare(out[position], entry) > 0) {
       out[position + 1] = out[position]
+
       position -= 1
     }
+
     out[position + 1] = entry
   }
+
   return out
 }
 
-/** Rank order, the pre-Smith rule the shipped planner used. */
-function byLocalityRank(fields: readonly BitAllocationField[]): BitAllocationField[] {
-  return sortBy(fields, (a, b) => {
-    const ra = localityRank(a.locality)
-    const rb = localityRank(b.locality)
-    if (ra !== rb) {return ra - rb}
-    return minBitsForCardinality(b.cardinality) - minBitsForCardinality(a.cardinality)
-  })
-}
+/**
+ * Rank order, the pre-Smith rule the shipped planner used.
+ *
+ * @param {readonly ReadonlyAllocationField[]} fields - Fields to rank.
+ * @returns {ReadonlyAllocationField[]} Fields in rank order.
+ */
 
-function pack(
-  order: readonly BitAllocationField[],
-): {
-  placed: { field: BitAllocationField; offset: number }[]
+const byLocalityRank = (
+  fields: readonly ReadonlyAllocationField[],
+): ReadonlyAllocationField[] =>
+  sortBy(fields, (a, b) => {
+    const ra = localityRank(a.locality)
+
+    const rb = localityRank(b.locality)
+
+    if (ra !== rb) {
+      return ra - rb
+    }
+
+    return (
+      minBitsForCardinality(b.cardinality) -
+      minBitsForCardinality(a.cardinality)
+    )
+  })
+
+const pack = (order: readonly ReadonlyAllocationField[]): {
+  placed: { field: ReadonlyAllocationField; offset: number }[]
+
   filler: { offset: number; bits: number }[]
+
   used: Set<number>
-} {
+} => {
   const used = new Set<number>()
-  const placed: { field: BitAllocationField; offset: number }[] = []
+
+  const placed: { field: ReadonlyAllocationField; offset: number }[] = []
+
   for (const field of order) {
     const bits = minBitsForCardinality(field.cardinality)
+
     const align = field.align ?? 8
-    let offset = field.leading === true ? 0 : -1
+
+    let offset = -1
+
+    if (field.leading === true) {
+      offset = 0
+    }
+
     if (offset === -1) {
       for (let candidate = 0; candidate + bits <= 128; candidate += align) {
         if (fits(candidate, bits, used)) {
           offset = candidate
+
           break
         }
       }
     }
+
     if (offset === -1 || !fits(offset, bits, used) || offset + bits > 128) {
       throw new RangeError(`field ${field.name} does not fit in the UUID`)
     }
-    for (let b = offset; b < offset + bits; b += 1) {used.add(b)}
+
+    for (let b = offset; b < offset + bits; b += 1) {
+      used.add(b)
+    }
+
     placed.push({ field, offset })
   }
+
   const filler: { offset: number; bits: number }[] = []
+
   let cursor = 0
+
   while (cursor < 128) {
     if (used.has(cursor) || NIBBLE_BITS.has(cursor)) {
       cursor += 1
-      continue
+    } else {
+      let end = cursor
+
+      while (end < 128 && !used.has(end) && !NIBBLE_BITS.has(end)) {
+        end += 1
+      }
+
+      if (end - cursor > 0) {
+        filler.push({ bits: end - cursor, offset: cursor })
+      }
+
+      cursor = end
     }
-    let end = cursor
-    while (end < 128 && !used.has(end) && !NIBBLE_BITS.has(end)) {end += 1}
-    if (end - cursor > 0) {filler.push({ bits: end - cursor, offset: cursor })}
-    cursor = end
   }
+
   return { filler, placed, used }
 }
 
-function depthOf(order: readonly { field: BitAllocationField; offset: number }[]): number {
+const depthOf = (
+  order: readonly {
+    readonly field: ReadonlyAllocationField
+    readonly offset: number
+  }[],
+): number => {
   let total = 0
+
   for (const entry of order) {
-    total += entry.field.weight * (entry.offset + minBitsForCardinality(entry.field.cardinality))
+    total +=
+      entry.field.weight *
+      (entry.offset + minBitsForCardinality(entry.field.cardinality))
   }
+
   return total
 }
 
-export function planBitAllocation(input: BitAllocationInput): BitAllocationPlan {
-  if (!input || !Array.isArray(input.fields) || input.fields.length === 0) {
+const validateAllocationField = (field: ReadonlyAllocationField): void => {
+  const candidate: unknown = field
+
+  if (
+    !isRecord(candidate) ||
+    typeof candidate.name !== "string" ||
+    candidate.name.length === 0
+  ) {
+    throw new RangeError(
+      "planBitAllocation: every field needs a non-empty name",
+    )
+  }
+
+  if (!Number.isInteger(field.cardinality) || field.cardinality < 1) {
+    throw new RangeError(
+      `planBitAllocation: ${field.name}.cardinality must be a positive integer`,
+    )
+  }
+
+  if (!Number.isFinite(field.weight) || field.weight < 0) {
+    throw new RangeError(
+      `planBitAllocation: ${field.name}.weight must be a finite non-negative number`,
+    )
+  }
+
+  const { align } = field
+
+  const alignment: unknown = align
+
+  if (
+    alignment !== absentValue &&
+    alignment !== 1 &&
+    alignment !== 4 &&
+    alignment !== 8
+  ) {
+    throw new RangeError(
+      `planBitAllocation: ${field.name}.align must be 1, 4, or 8`,
+    )
+  }
+}
+
+const compareSmithFields = (
+  a: ReadonlyAllocationField,
+  b: ReadonlyAllocationField,
+): number => {
+  const pa = a.weight / minBitsForCardinality(a.cardinality)
+
+  const pb = b.weight / minBitsForCardinality(b.cardinality)
+
+  if (pb !== pa) {
+    return pb - pa
+  }
+
+  const ra = localityRank(a.locality)
+
+  const rb = localityRank(b.locality)
+
+  if (ra !== rb) {
+    return ra - rb
+  }
+
+  return a.name.localeCompare(b.name)
+}
+
+const allocationFailure = (
+  reason: string,
+
+  budget: number,
+
+  required: number,
+
+  structuredBits: number,
+): BitAllocationPlan => ({
+  algorithm: "smith-rule",
+
+  feasible: false,
+
+  fields: [],
+
+  filler: [],
+
+  randomBits: 0,
+
+  reason,
+
+  requiredRandomBits: required,
+
+  structuredBits,
+
+  weightedDepth: Number.POSITIVE_INFINITY,
+
+  weightedDepthRankOrder: Number.POSITIVE_INFINITY,
+})
+
+export const planBitAllocation = (
+  input: DeepReadonly<BitAllocationInput>,
+): BitAllocationPlan => {
+  if (!isRecord(input)) {
     throw new RangeError("planBitAllocation: fields must be a non-empty array")
   }
-  const budget = input.budget ?? 122
+
+  if (!isArray(input.fields) || input.fields.length === 0) {
+    throw new RangeError("planBitAllocation: fields must be a non-empty array")
+  }
+
+  const { fields } = input
+
+  const UUID_RANDOM_BITS = 122
+
+  const budget = input.budget ?? UUID_RANDOM_BITS
+
   if (!Number.isInteger(budget) || budget < 1) {
-    throw new RangeError(`planBitAllocation: budget must be a positive integer, got ${budget}`)
-  }
-  for (const field of input.fields) {
-    if (!field || typeof field.name !== "string" || field.name.length === 0) {
-      throw new RangeError("planBitAllocation: every field needs a non-empty name")
-    }
-    if (!Number.isInteger(field.cardinality) || field.cardinality < 1) {
-      throw new RangeError(`planBitAllocation: ${field.name}.cardinality must be a positive integer`)
-    }
-    if (!Number.isFinite(field.weight) || field.weight < 0) {
-      throw new RangeError(`planBitAllocation: ${field.name}.weight must be a finite non-negative number`)
-    }
-    if (field.align !== undefined && field.align !== 1 && field.align !== 4 && field.align !== 8) {
-      throw new RangeError(`planBitAllocation: ${field.name}.align must be 1, 4, or 8`)
-    }
+    throw new RangeError(
+      `planBitAllocation: budget must be a positive integer, got ${budget}`,
+    )
   }
 
-  const required = input.minRandomBits ??
-    (input.volume !== undefined && input.collisionTarget !== undefined
-      ? minRandomBitsForCollisionBudget(input.volume, input.collisionTarget)
-      : 0)
+  for (const field of fields) {
+    validateAllocationField(field)
+  }
 
-  const floors = new Map(input.fields.map((f) => [f.name, minBitsForCardinality(f.cardinality)]))
+  let required = 0
+
+  if (input.volume !== absentValue && input.collisionTarget !== absentValue) {
+    required = minRandomBitsForCollisionBudget(
+      input.volume,
+      input.collisionTarget,
+    )
+  }
+
+  required = input.minRandomBits ?? required
+
+  const floors = new Map(
+    fields.map((f) => [f.name, minBitsForCardinality(f.cardinality)]),
+  )
+
   const totalFloor = [...floors.values()].reduce((a, b) => a + b, 0)
 
   if (totalFloor > budget) {
-    return {
-      algorithm: "smith-rule",
-      feasible: false,
-      fields: [],
-      filler: [],
-      randomBits: 0,
-      reason:
-        `structured floors total ${totalFloor} bits against a ${budget}-bit budget; ` +
+    return allocationFailure(
+      `structured floors total ${totalFloor} bits against a ${budget}-bit budget; ` +
         `reduce cardinalities or drop ${totalFloor - budget} bits of declared structure`,
-      requiredRandomBits: required,
-      structuredBits: totalFloor,
-      weightedDepth: Number.POSITIVE_INFINITY,
-      weightedDepthRankOrder: Number.POSITIVE_INFINITY,
-    }
+
+      budget,
+
+      required,
+
+      totalFloor,
+    )
   }
+
   if (totalFloor + required > budget) {
-    return {
-      algorithm: "smith-rule",
-      feasible: false,
-      fields: [],
-      filler: [],
-      randomBits: 0,
-      reason:
-        `the collision budget needs ${required} random bits but only ${budget - totalFloor} remain ` +
+    return allocationFailure(
+      `the collision budget needs ${required} random bits but only ${budget - totalFloor} remain ` +
         `after ${totalFloor} bits of declared structure`,
-      requiredRandomBits: required,
-      structuredBits: totalFloor,
-      weightedDepth: Number.POSITIVE_INFINITY,
-      weightedDepthRankOrder: Number.POSITIVE_INFINITY,
-    }
+
+      budget,
+
+      required,
+
+      totalFloor,
+    )
   }
 
   // Smith's rule: non-increasing weight / length, ties broken by locality
-  // class then name so the allocation is deterministic.
-  const smith = sortBy(input.fields, (a, b) => {
-    const pa = a.weight / minBitsForCardinality(a.cardinality)
-    const pb = b.weight / minBitsForCardinality(b.cardinality)
-    if (pb !== pa) {return pb - pa}
-    const ra = localityRank(a.locality)
-    const rb = localityRank(b.locality)
-    if (ra !== rb) {return ra - rb}
-    return a.name.localeCompare(b.name)
-  })
+
+  // Class then name so the allocation is deterministic.
+
+  const smith = sortBy(fields, compareSmithFields)
+
   const leading = smith.filter((f) => f.leading === true)
+
   const rest = smith.filter((f) => f.leading !== true)
+
   const order = [...leading, ...rest]
 
-  let placed: { field: BitAllocationField; offset: number }[]
-  let filler: { offset: number; bits: number }[]
-  let used: Set<number>
-  let ranked: ReturnType<typeof pack>
-  try {
-    ;({ placed, filler, used } = pack(order))
-    ranked = pack(byLocalityRank(input.fields))
-  } catch (error) {
+  const tryPackPlans = (): {
+    ok: true
+    packed: ReturnType<typeof pack>
+    ranked: ReturnType<typeof pack>
+  } | { ok: false; reason: string } => {
+    try {
+      return {
+        ok: true,
+        packed: pack(order),
+        ranked: pack(byLocalityRank(fields)),
+      }
+    } catch (error) {
+      return { ok: false, reason: (error as Error).message }
+    }
+  }
+
+  const plans = tryPackPlans()
+
+  if (!plans.ok) {
     return {
       algorithm: "smith-rule",
+
       feasible: false,
+
       fields: [],
+
       filler: [],
+
       randomBits: 0,
-      reason: (error as Error).message,
+
+      reason: plans.reason,
+
       requiredRandomBits: required,
+
       structuredBits: totalFloor,
+
       weightedDepth: Number.POSITIVE_INFINITY,
+
       weightedDepthRankOrder: Number.POSITIVE_INFINITY,
     }
   }
 
-  const allocated: AllocatedField[] = placed.map((entry) => {
-    const minBits = minBitsForCardinality(entry.field.cardinality)
+  const { packed, ranked } = plans
+
+  const { placed, filler, used } = packed
+
+  const allocated: AllocatedField[] = placed.map(({ field, offset }) => {
+    const minBits = minBitsForCardinality(field.cardinality)
+
+    const { align = 8, cardinality, locality = "opaque", weight } = field
+
     return {
-      align: entry.field.align ?? 8,
+      align,
+
       bits: minBits,
-      cardinality: entry.field.cardinality,
-      locality: entry.field.locality ?? "opaque",
+
+      cardinality,
+
+      locality,
+
       minBits,
-      name: entry.field.name,
-      offset: entry.offset,
-      priority: entry.field.weight / minBits,
+
+      name: field.name,
+
+      offset,
+
+      priority: weight / minBits,
+
       slackBits: 0,
-      weight: entry.field.weight,
+
+      weight,
     }
   })
 
   const structuredBits = used.size
+
   const randomBits = filler.reduce((sum, run) => sum + run.bits, 0)
 
   return {
     algorithm: "smith-rule",
+
     feasible: true,
+
     fields: allocated,
+
     filler,
+
     randomBits,
+
     requiredRandomBits: required,
+
     structuredBits,
+
     weightedDepth: depthOf(placed),
+
     weightedDepthRankOrder: depthOf(ranked.placed),
   }
 }
 
-const _csprngBuf = new Uint8Array(256)
 // Position starts at the end so csprngInt() triggers the first fillRandom()
-// refill lazily. Only pre-fill eagerly when Web Crypto is present (embedded
-// hosts inject their CSPRNG via configureRandom() before the first draw).
-let _csprngPos = _csprngBuf.length
+
+// Refill lazily. Only pre-fill eagerly when Web Crypto is present (embedded
+
+// Hosts inject their CSPRNG via configureRandom() before the first draw).
+
 if (_hasWebCrypto) {
   fillRandom(_csprngBuf)
+
   _csprngPos = 0
 }
 
 // Entropy source abstraction for structured-field population. The pool refill
-// path reuses the ALREADY-CSPRNG pool bytes (one getRandomValues per 256 IDs)
-// instead of issuing a fresh syscall per field — same entropy, no per-field
-// syscall. genStructuredParent (no pool) falls back to the csprng buffer.
+
+// Path reuses the ALREADY-CSPRNG pool bytes (one getRandomValues per 256 IDs)
+
+// Instead of issuing a fresh syscall per field — same entropy, no per-field
+
+// Syscall. genStructuredParent (no pool) falls back to the csprng buffer.
+
 type Rng = () => number
 
-const _fieldMod = new WeakMap<V8Field, number>()
+const _fieldMod = new WeakMap<ReadonlyV8Field, number>()
 
-function fieldMod(f: V8Field): number {
+const fieldMod = (f: ReadonlyV8Field): number => {
   let m = _fieldMod.get(f)
-  if (m === undefined) {
-    m = f.length < 32 ? 1 << f.length : 2 ** f.length
+
+  if (m === absentValue) {
+    m = 2 ** f.length
+
     _fieldMod.set(f, m)
   }
+
   return m
 }
 
-// All structured field values fit in a Number (< 2^53; validateLayout caps
-// structured fields at 48 bits), so plain Number arithmetic is exact and far
-// cheaper than BigInt on the generation hot path.
-// Only computes values for timestamp fields and fixed fields. Counter, shard,
-// node, and process fields are left as CSPRNG bytes and handled by the
-// repairConstraints pass (Algorithm 1), which applies index-modulo for
-// allowed constraints. Monotonic counters are tick-keyed (see refillSingleParentPool
-// and the compiled prologue in genLayoutSource).
-function structuredValue(layout: V8Layout, f: V8Field, _rng: Rng, now?: number): number {
-  const mod = fieldMod(f)
-  const tick = now ?? currentTick(layout)
-  switch (f.type) {
-    case "timestamp-ms": {
-      return tick % mod
-    }
-    case "timestamp-us": {
-      return (tick * 1000) % mod
-    }
-    default: {
-      return 0
-    }
-  }
-}
-
 // Layout caches are keyed by canonical structure key, not layout name.
-const _structureKeyCache = new WeakMap<V8Layout, string>()
-const _layoutIdentities = new Map<string, string>()
+
+const _structureKeyCache = new WeakMap<ReadonlyV8Layout, string>()
 
 // Canonical key of a layout's field structure. The key is the canonical
-// string itself: hashing it would add collision risk for no benefit,
-// since Map handles string keys directly.
-export function layoutStructureKey(layout: V8Layout): string {
+
+// String itself: hashing it would add collision risk for no benefit,
+
+// Since Map handles string keys directly.
+
+export const layoutStructureKey = (layout: ReadonlyV8Layout): string => {
   let k = _structureKeyCache.get(layout)
-  if (k === undefined) {
-    k = JSON.stringify(layout.fields.map((f) => [
-      f.name,
-      f.start,
-      f.length,
-      f.type,
-      f.constraint?.allowed ?? null,
-      f.constraint?.min ?? null,
-      f.constraint?.max ?? null,
-      f.constraint?.monotonic ?? null,
-      f.value ?? null,
-    ]))
+
+  if (k === absentValue) {
+    k = JSON.stringify(
+      layout.fields.map((f) => {
+        const { constraint } = f
+
+        let allowed: readonly number[] | null = nullValue
+
+        let minimum: number | null = nullValue
+
+        let maximum: number | null = nullValue
+
+        let monotonic: boolean | null = nullValue
+
+        if (!isMissing(constraint)) {
+          allowed = constraint.allowed ?? nullValue
+
+          minimum = constraint.min ?? nullValue
+
+          maximum = constraint.max ?? nullValue
+
+          monotonic = constraint.monotonic ?? nullValue
+        }
+
+        return [
+          f.name,
+
+          f.start,
+
+          f.length,
+
+          f.type,
+
+          allowed,
+
+          minimum,
+
+          maximum,
+
+          monotonic,
+
+          f.value ?? nullValue,
+        ]
+      }),
+    )
+
     _structureKeyCache.set(layout, k)
   }
+
   return k
 }
 
-function assertLayoutIdentity(layout: V8Layout): string {
+const assertLayoutIdentity = (layout: ReadonlyV8Layout): string => {
   const key = layoutStructureKey(layout)
+
   const seen = _layoutIdentities.get(layout.name)
-  if (seen === undefined) {
+
+  if (seen === absentValue) {
     _layoutIdentities.set(layout.name, key)
   } else if (seen !== key) {
     throw new Error(
       `layout "${layout.name}": field structure differs from the previously registered layout "${layout.name}" (registered ${seen.slice(0, 120)} vs new ${key.slice(0, 120)})`,
     )
   }
+
   return key
 }
 
 // Resolve a layout's monotonic tick (RFC 9562 §6.2): the wall clock
-// clamped to the last tick ever emitted for this layout. A backwards
-// clock therefore yields the previous tick — never a regressing
-// timestamp — and an advancing clock advances the stored tick.
-function currentTick(layout: V8Layout): number {
+
+// Clamped to the last tick ever emitted for this layout. A backwards
+
+// Clock therefore yields the previous tick — never a regressing
+
+// Timestamp — and an advancing clock advances the stored tick.
+
+const currentTick = (layout: ReadonlyV8Layout): number => {
   const now = Date.now()
+
   const structureKey = assertLayoutIdentity(layout)
+
   const last = _layoutTick.get(structureKey)
-  if (last !== undefined && now < last) {return last}
+
+  if (last !== absentValue && now < last) {
+    return last
+  }
+
   _layoutTick.set(structureKey, now)
+
   return now
+}
+
+// All structured field values fit in a Number (< 2^53; validateLayout caps
+
+// Structured fields at 48 bits), so plain Number arithmetic is exact and far
+
+// Cheaper than BigInt on the generation hot path.
+
+const structuredValue = (
+  layout: ReadonlyV8Layout,
+  f: ReadonlyV8Field,
+  _rng: Rng,
+  now?: number,
+): number => {
+  const mod = fieldMod(f)
+
+  const tick = now ?? currentTick(layout)
+
+  switch (f.type) {
+    case "timestamp-ms": {
+      return tick % mod
+    }
+
+    case "timestamp-us": {
+      return (tick * 1000) % mod
+    }
+
+    case "counter":
+    case "fixed":
+    case "node":
+    case "process":
+    case "random":
+    case "shard": {
+      return 0
+    }
+
+    default: {
+      return 0
+    }
+  }
 }
 
 const _validated = new Set<string>()
 
-function ensureValidated(layout: V8Layout): void {
+const ensureValidated = (layout: ReadonlyV8Layout): void => {
   const structureKey = assertLayoutIdentity(layout)
+
   if (!_validated.has(structureKey)) {
     validateLayout(layout)
+
     _validated.add(structureKey)
   }
 }
 
 // Populate timestamp and fixed fields. Counter, shard, node, process, and
-// random fields are left as CSPRNG bytes; repairConstraints (called after this)
-// handles all constraint satisfaction via index-modulo. `now`, when given, is
-// the caller-resolved monotonic tick (RFC 9562 §6.2); otherwise the tick is
-// resolved here via currentTick().
-function applyStructuredFields(
-  bytes: Uint8Array,
-  layout: V8Layout,
-  _mask?: number[],
-  _rng?: Rng,
-  now?: number,
-): void {
-  const {fields} = layout
-  for (const f of fields) {
-    if (f.type === "fixed") {writeFieldValue(bytes, f, f.value ?? 0)}
-    else if (f.type === "timestamp-ms" || f.type === "timestamp-us") {
-      writeFieldValue(bytes, f, structuredValue(layout, f, _rng ?? (() => 0), now))
-    }
-    // counter, shard, node, process, random — stay as CSPRNG bytes
-  }
-}
 
-/**
- * Build one valid v8 UUID parent. Fields whose index is in `mask` are
- * populated per their declared type; all other fields receive CSPRNG bytes.
- */
-export function genStructuredParent(
-  layout: V8Layout,
-  mask: number[],
-): Uint8Array {
-  ensureValidated(layout)
-  const bytes = new Uint8Array(16)
-  fillRandom(bytes)
-  applyStructuredFields(bytes, layout, mask)
-  repairConstraints(layout, bytes)
-  forceVersionVariant(bytes)
-  return bytes
+// Random fields are left as CSPRNG bytes; repairConstraints (called after this)
+
+// Handles all constraint satisfaction via index-modulo. `now`, when given, is
+
+// The caller-resolved monotonic tick (RFC 9562 §6.2); otherwise the tick is
+
+// Resolved here via currentTick().
+
+const applyStructuredFields = (
+  bytes: Uint8Array,
+
+  layout: ReadonlyV8Layout,
+
+  _mask?: readonly number[],
+
+  _rng?: Rng,
+
+  now?: number,
+): void => {
+  const { fields } = layout
+
+  for (const f of fields) {
+    if (f.type === "fixed") {
+      writeFieldValue(bytes, f, f.value ?? 0)
+    } else if (f.type === "timestamp-ms" || f.type === "timestamp-us") {
+      writeFieldValue(
+        bytes,
+        f,
+        structuredValue(layout, f, _rng ?? ((): number => 0), now),
+      )
+    }
+
+    // Counter, shard, node, process, random — stay as CSPRNG bytes
+  }
 }
 
 /**
@@ -1613,52 +3137,100 @@ export function genStructuredParent(
  * parentB (0). Because each structured field lives in exactly one parent,
  * the child inherits every structured field from one source — no field is
  * ever split across parents.
+ *
+ * @param {ReadonlyV8Layout} layout - Structured field layout.
+ * @param {Readonly<Uint8Array>} parentA - First parent UUID bytes.
+ * @param {Readonly<Uint8Array>} parentB - Second parent UUID bytes.
+ * @param {number} fieldSelect - Bit mask selecting each field's parent.
+ * @returns {Uint8Array} Composed child UUID bytes.
  */
-export function composeStructured(
-  layout: V8Layout,
-  parentA: Uint8Array,
-  parentB: Uint8Array,
+
+export const composeStructured = (
+  layout: ReadonlyV8Layout,
+
+  parentA: Readonly<Uint8Array>,
+
+  parentB: Readonly<Uint8Array>,
+
   fieldSelect: number,
-): Uint8Array {
+): Uint8Array => {
   ensureValidated(layout)
+
   const child = new Uint8Array(16)
+
   for (const [fi, f] of layout.fields.entries()) {
-    const takeA = ((fieldSelect >> fi) & 1) === 1
-    copyField(child, takeA ? parentA : parentB, f)
+    const takeA = Math.floor(fieldSelect / 2 ** fi) % 2 === 1
+
+    let parent = parentB
+
+    if (takeA) {
+      parent = parentA
+    }
+
+    copyField(child, parent, f)
   }
+
   forceVersionVariant(child)
+
   return child
 }
 
 // RFC 9562 §6.2 monotonicity state for the interpreted structured
-// paths. `_layoutTick` is the last tick ever emitted per layout —
-// timestamp fields clamp to max(clock, last tick), so a backwards
-// clock re-emits the previous tick instead of regressing the sort
-// order. `_poolMonoTick` holds each monotonic counter field's global
-// incrementing value; it is reseeded from the CSPRNG only when it
-// exhausts, and only after the clock has advanced past the layout
-// tick (freeze-and-wait), so a reseed never shares a timestamp with
-// the previous UUID: the (timestamp, counter) pair is non-decreasing
-// in emission order.
-const _layoutTick = new Map<string, number>()
-const _poolMonoTick = new Map<string, number>()
+
+// Paths. `_layoutTick` is the last tick ever emitted per layout —
+
+// Timestamp fields clamp to max(clock, last tick), so a backwards
+
+// Clock re-emits the previous tick instead of regressing the sort
+
+// Order. `_poolMonoTick` holds each monotonic counter field's global
+
+// Incrementing value; it is reseeded from the CSPRNG only when it
+
+// Exhausts, and only after the clock has advanced past the layout
+
+// Tick (freeze-and-wait), so a reseed never shares a timestamp with
+
+// The previous UUID: the (timestamp, counter) pair is non-decreasing
+
+// In emission order.
 
 // Clipped [min,max] endpoint masses: P(min)=(lo+1)/2^ell, P(max)=(2^ell-hi)/2^ell.
-export function rangeClampMass(ell: number, min: number, max: number): {
+
+export const rangeClampMass = (ell: number, min: number, max: number): {
   pMin: number
+
   pMax: number
+
   pInterior: number
+
   pinned: number
-} {
+} => {
   const space = 2 ** ell
+
   const lo = Math.max(0, min)
+
   const hi = Math.min(space - 1, max)
+
   return {
     pInterior: 1 / space,
+
     pMax: (space - hi) / space,
+
     pMin: (lo + 1) / space,
+
     pinned: (lo + (space - 1 - hi)) / space,
   }
+}
+
+const pickFromAllowed = (allowed: readonly number[], byte: number): number => {
+  const n = allowed.length
+
+  if (n === 1) {
+    return allowed[0]
+  }
+
+  return allowed[byte % n]
 }
 
 /**
@@ -1668,141 +3240,249 @@ export function rangeClampMass(ell: number, min: number, max: number): {
  *
  * Monotonic fields are handled by the pool refill path's tick-keyed
  * counter logic before this is called.
+ *
+ * @param {ReadonlyV8Layout} layout - Structured field layout.
+ * @param {Uint8Array} bytes - UUID bytes to repair in place.
+ * @returns {number} Number of fields repaired.
  */
-export function repairConstraints(layout: V8Layout, bytes: Uint8Array): number {
+
+export const repairConstraints = (
+  layout: ReadonlyV8Layout,
+  bytes: Uint8Array,
+): number => {
   let repairs = 0
+
   for (const f of layout.fields) {
-    const c = f.constraint
-    if (!c) {continue}
-    let v = Number(getFieldValue(bytes, f))
-    let changed = false
-    if (c.allowed && c.allowed.length > 0 && !c.allowed.includes(v)) {
-      v = pickFromAllowed(c.allowed, v)
-      changed = true
-    }
-    if (c.min !== undefined && v < c.min) { v = c.min; changed = true }
-    if (c.max !== undefined && v > c.max) { v = c.max; changed = true }
-    if (changed) {
-      writeFieldValue(bytes, f, v)
-      repairs += 1
+    const { constraint: c } = f
+
+    if (!isMissing(c)) {
+      let v = readFieldNumber(bytes, f)
+
+      let changed = false
+
+      if (c.allowed && c.allowed.length > 0 && !c.allowed.includes(v)) {
+        v = pickFromAllowed(c.allowed, v)
+
+        changed = true
+      }
+
+      if (c.min !== absentValue && v < c.min) {
+        v = c.min
+        changed = true
+      }
+
+      if (c.max !== absentValue && v > c.max) {
+        v = c.max
+        changed = true
+      }
+
+      if (changed) {
+        writeFieldValue(bytes, f, v)
+
+        repairs += 1
+      }
     }
   }
+
   return repairs
 }
 
+/**
+ * Build one valid v8 UUID parent. Fields whose index is in `mask` are
+ * populated per their declared type; all other fields receive CSPRNG bytes.
+ *
+ * @param {ReadonlyV8Layout} layout - Structured field layout.
+ * @param {readonly number[]} mask - Field indices to populate.
+ * @returns {Uint8Array} Valid v8 parent UUID bytes.
+ */
+
+export const genStructuredParent = (
+  layout: ReadonlyV8Layout,
+
+  mask: readonly number[],
+): Uint8Array => {
+  ensureValidated(layout)
+
+  const bytes = new Uint8Array(16)
+
+  fillRandom(bytes)
+
+  applyStructuredFields(bytes, layout, mask)
+
+  repairConstraints(layout, bytes)
+
+  forceVersionVariant(bytes)
+
+  return bytes
+}
+
 let _structPoolN = STRUCT_POOL_DEFAULT
+
 const STRUCT_ENTRY = 34
 
-const _spPool = new Map<string, { pool: Uint8Array<ArrayBuffer>; strs: string[]; idx: number; size: number }>()
+interface SingleParentPool {
+  pool: Uint8Array<ArrayBuffer>
 
-function refillSingleParentPool(layout: V8Layout): void {
-  const w = wordTable(), t = HEX8, size = _structPoolN
-  const structureKey = layoutStructureKey(layout)
-  let entry = _spPool.get(structureKey)
-  let pool: Uint8Array<ArrayBuffer>
-  let strs: string[]
+  strs: string[]
+
+  idx: number
+
+  size: number
+}
+
+const ensureSingleParentPool = (
+  structureKey: string,
+  size: number,
+): SingleParentPool => {
+  const entry = _spPool.get(structureKey)
+
   if (entry && entry.pool.length >= STRUCT_ENTRY * size) {
-    ({ pool, strs } = entry)
-    strs.length = size
-  } else {
-    pool = new Uint8Array(STRUCT_ENTRY * size)
-    strs = Array.from<string>({ length: size })
-    _spPool.set(structureKey, { idx: 0, pool, size, strs })
+    entry.strs.length = size
+
+    return entry
   }
+
+  const pool = new Uint8Array(STRUCT_ENTRY * size)
+
+  const strs = Array.from<string>({ length: size })
+
+  const created: SingleParentPool = { idx: 0, pool, size, strs }
+
+  _spPool.set(structureKey, created)
+
+  return created
+}
+
+const refillSingleParentPool = (layout: ReadonlyV8Layout): void => {
+  const size = _structPoolN,
+    t = HEX8,
+    w = wordTable()
+
+  const structureKey = layoutStructureKey(layout)
+
+  const { pool, strs } = ensureSingleParentPool(structureKey, size)
+
   fillRandom(pool)
+
   for (let n = 0; n < size; n += 1) {
     const off = n * STRUCT_ENTRY
+
     const buf = pool.subarray(off, off + 16)
+
     // RFC 9562 §6.2: resolve this entry's tick once. The same
-    // clamped tick drives the timestamp field and every monotonic
-    // counter, so a counter reseed only ever accompanies a
-    // strictly larger timestamp.
+
+    // Clamped tick drives the timestamp field and every monotonic
+
+    // Counter, so a counter reseed only ever accompanies a
+
+    // Strictly larger timestamp.
+
     let now = Date.now()
+
     const lastTick = _layoutTick.get(structureKey)
-    if (lastTick !== undefined && now < lastTick) {
+
+    if (lastTick !== absentValue && now < lastTick) {
       now = lastTick
     } else {
       _layoutTick.set(structureKey, now)
     }
+
     for (const f of layout.fields) {
-      if (!f.constraint?.monotonic) {continue}
-      const key = `${structureKey  }:${  f.name}`
-      const reseedRange = 2 ** (f.length - 1)
-      const maxCtr = 2 ** f.length - 1
-      let ctr = _poolMonoTick.get(key)
-      if (ctr === undefined) {
-        ctr = Number(getFieldValue(buf, f)) % reseedRange
-      } else if (ctr >= maxCtr) {
-        // Counter exhausted. A wrap is only sortable with a
-        // strictly larger timestamp — freeze generation until the
-        // clock advances past the last tick (RFC 9562 §6.2).
-        if (lastTick !== undefined && now <= lastTick) {
-          now = waitForNextTick(lastTick)
-          _layoutTick.set(structureKey, now)
+      const { constraint } = f
+
+      if (!isMissing(constraint) && constraint.monotonic === true) {
+        const key = `${structureKey}:${f.name}`
+
+        const reseedRange = 2 ** (f.length - 1)
+
+        const maxCtr = 2 ** f.length - 1
+
+        let ctr = _poolMonoTick.get(key)
+
+        if (ctr === absentValue) {
+          ctr = readFieldNumber(buf, f) % reseedRange
+        } else if (ctr >= maxCtr) {
+          // Counter exhausted. A wrap is only sortable with a
+
+          // Strictly larger timestamp — freeze generation until the
+
+          // Clock advances past the last tick (RFC 9562 §6.2).
+
+          if (lastTick !== absentValue && now <= lastTick) {
+            now = waitForNextTick(lastTick)
+
+            _layoutTick.set(structureKey, now)
+          }
+
+          ctr = readFieldNumber(buf, f) % reseedRange
+        } else {
+          ctr = (ctr + 1) % (maxCtr + 1)
         }
-        ctr = Number(getFieldValue(buf, f)) % reseedRange
-      } else {
-        ctr = (ctr + 1) & maxCtr
+
+        _poolMonoTick.set(key, ctr)
+
+        writeFieldValue(buf, f, ctr)
       }
-      _poolMonoTick.set(key, ctr)
-      writeFieldValue(buf, f, ctr)
     }
-    applyStructuredFields(buf, layout, undefined, undefined, now)
+
+    applyStructuredFields(buf, layout, absentValue, absentValue, now)
+
     forceVersionVariant(buf)
+
     repairConstraints(layout, buf)
+
     const c = buf
+
     strs[n] = formatUuidBytes(c, w, t)
   }
-  entry = _spPool.get(structureKey)!
+
+  const entry = need(_spPool.get(structureKey))
+
   entry.idx = 0
 }
 
-export function genStructuredGenoIDSingleParent(layout: V8Layout): string {
+export const genStructuredGenoIDSingleParent = (
+  layout: ReadonlyV8Layout,
+): string => {
   ensureValidated(layout)
+
   const structureKey = layoutStructureKey(layout)
+
   let p = _spPool.get(structureKey)
+
   if (!p || p.idx >= p.size) {
     refillSingleParentPool(layout)
-    p = _spPool.get(structureKey)!
-  }
-  p.idx += 1
-  return p.strs[p.idx]
-}
 
-// Cache for compiled structured generators (per layout structure).
-const _compiledGenCache = new Map<string, () => string>()
+    p = need(_spPool.get(structureKey))
+  }
+
+  p.idx += 1
+  return p.strs[p.idx - 1]
+}
 
 /**
- * Production API: compiles the layout into a specialized generator (~8x
- * faster than the generic pooled path). Falls back to single-parent pool
- * if the runtime blocks `new Function` (CSP).
+ * Production API: compiles the layout into specialized closure-based writers
+ * (~8x faster than the generic pooled path). Injected RNGs use the single-parent
+ * pool instead.
+ *
+ * @returns {StructuredGenerationMode} The active structured generation mode.
  */
-export function getStructuredGenerationMode(): StructuredGenerationMode {
-  return _fillRandom === _webCryptoFill && _hasWebCrypto ? "compiled-direct-v8" : "single-parent-pooled"
-}
 
-export function genStructuredGenoID(input: V8Layout | DatabaseLayoutCompilation): string {
-  const layout = "layout" in input ? input.layout : input
-  ensureValidated(layout)
-  if (getStructuredGenerationMode() === "compiled-direct-v8") {
-    const structureKey = layoutStructureKey(layout)
-    const fn = _compiledGenCache.get(structureKey)
-    if (fn) {return fn()}
-    try {
-      const compiled = compileLayout(layout, 256)
-      _compiledGenCache.set(structureKey, compiled.fn)
-      return compiled.fn()
-    } catch {
-      // Compiled path unavailable (CSP). Fall through to pooled path below.
-    }
+export const getStructuredGenerationMode = (): StructuredGenerationMode => {
+  if (_fillRandom === _webCryptoFill && _hasWebCrypto) {
+    return "compiled-direct-v8"
   }
-  return genStructuredGenoIDSingleParent(layout)
+
+  return "single-parent-pooled"
 }
 
 export interface PoolConfig {
   /** Simple genGenoID() pool size (IDs generated per CSPRNG refill). Default 256. */
+
   simplePoolSize?: number
+
   /** Per-layout genStructuredGenoID() pool size. Default 1024. */
+
   structuredPoolSize?: number
 }
 
@@ -1823,189 +3503,391 @@ export interface PoolConfig {
  * @example
  * // ESP8266-class budget: tiny pools
  * configurePools({ simplePoolSize: 16, structuredPoolSize: 8 })
+ *
+ * @param {PoolConfig} cfg - Pool sizes to apply.
  */
-export function configurePools(cfg: PoolConfig): void {
-  if (cfg.simplePoolSize !== undefined) {
+
+export const configurePools = (cfg: Readonly<PoolConfig>): void => {
+  if (cfg.simplePoolSize !== absentValue) {
     const n = cfg.simplePoolSize
+
     if (!Number.isInteger(n) || n < 1) {
-      throw new Error(`configurePools: simplePoolSize must be a positive integer, got ${n}`)
+      throw new Error(
+        `configurePools: simplePoolSize must be a positive integer, got ${n}`,
+      )
     }
+
     _genoPoolN = n
+
     _genoPool = new Uint8Array(GENO_ENTRY_BYTES * n)
+
     _genoStrs = Array.from<string>({ length: n })
-    // force a refill on the next genGenoID()
+
+    // Force a refill on the next genGenoID().
+
     _genoIdx = n
   }
-  if (cfg.structuredPoolSize !== undefined) {
+
+  if (cfg.structuredPoolSize !== absentValue) {
     const n = cfg.structuredPoolSize
+
     if (!Number.isInteger(n) || n < 1) {
-      throw new Error(`configurePools: structuredPoolSize must be a positive integer, got ${n}`)
+      throw new Error(
+        `configurePools: structuredPoolSize must be a positive integer, got ${n}`,
+      )
     }
+
     _structPoolN = n
-    // rebuilt lazily at the new size, per layout
+
+    // Rebuilt lazily at the new size, per layout.
+
     _spPool.clear()
   }
 }
 
-/** Current effective pool sizes — useful for tests and memory budgeting. */
-export function getPoolConfig(): { simplePoolSize: number; structuredPoolSize: number } {
-  return { simplePoolSize: _genoPoolN, structuredPoolSize: _structPoolN }
-}
+/** Current effective pool sizes — useful for tests and memory budgeting.
+ *
+ * @returns {{ simplePoolSize: number; structuredPoolSize: number }} Effective pool sizes.
+ */
 
-function pickFromAllowed(allowed: number[], byte: number): number {
-  const n = allowed.length
-  if (n === 1) {return allowed[0]}
-  return allowed[byte % n]
-}
+export const getPoolConfig = (): {
+  simplePoolSize: number
+  structuredPoolSize: number
+} => ({ simplePoolSize: _genoPoolN, structuredPoolSize: _structPoolN })
 
 // ---------------------------------------------------------------------------
-// Phase 1: Layout compiler — V8Layout → straight-line JS function.
+
+// Phase 1: Layout compiler — V8Layout to closure-based field writers.
+
 // ---------------------------------------------------------------------------
 
 export interface CompiledLayout {
   source: string
+
   fn: () => string
 }
 
-function genFieldReadExpr(f: V8Field, buf = "b"): string {
+const genFieldReadExpr = (f: ReadonlyV8Field, buf = "b"): string => {
   const bm = fieldByteMasks(f)
+
   const parts: { expr: string; nbits: number }[] = []
+
   for (let i = bm.length - 1; i >= 0; i -= 1) {
     const mk = bm[i]
+
     const byteStart = mk.byte * 8
+
     const fieldEnd = f.start + f.length - 1
+
     const fEnd = Math.min(fieldEnd, byteStart + 7)
+
     const nbits = fEnd - Math.max(f.start, byteStart) + 1
-    const rshift = 7 - (fEnd & 7)
+
+    const rshift = 7 - (fEnd % 8)
+
     let expr = `(${buf}[${mk.byte}]&${mk.mask})`
-    if (rshift > 0) {expr = `(${expr}>>>${rshift})`}
+
+    if (rshift > 0) {
+      expr = `(${expr}>>>${rshift})`
+    }
+
     parts.push({ expr, nbits })
   }
-  if (parts.length === 0) {return "0"}
-  let result = parts.at(-1)!.expr
+
+  if (parts.length === 0) {
+    return "0"
+  }
+
+  let result = need(parts.at(-1)).expr
+
   for (let i = parts.length - 2; i >= 0; i -= 1) {
-    const factor = 1 << parts[i].nbits
+    const factor = 2 ** parts[i].nbits
+
     result = `((${result})*${factor}+(${parts[i].expr}))`
   }
+
   return result
 }
 
-function genValueExpr(f: V8Field, mod: number, bm: ByteMask[], raw?: boolean, buf = "b", batchNow = false): string {
-   const pow2 = mod > 0 && (mod & (mod - 1)) === 0 && mod <= 0x7F_FF_FF_FF
-   const ts = batchNow ? "_now" : "Date.now()"
+const genTimestampExpr = (
+  f: ReadonlyV8Field,
+  mod: number,
+  raw: boolean,
+  batchNow: boolean,
+): string => {
+  let timestamp = "Date.now()"
+
+  if (batchNow) {
+    timestamp = "_now"
+  }
+
+  const microseconds = f.type === "timestamp-us"
+
+  if (raw) {
+    if (microseconds) {
+      return `(now*1000)%${mod}`
+    }
+
+    return `now%${mod}`
+  }
+
+  let value = timestamp
+
+  if (microseconds) {
+    value = `(${timestamp}*1000)`
+  }
+
+  const pow2 =
+    mod > 0 && Number.isInteger(Math.log2(mod)) && mod <= 0x7F_FF_FF_FF
+
+  if (pow2) {
+    return `${value}&${mod - 1}`
+  }
+
+  return `${value}%${mod}`
+}
+
+const genCounterExpr = (mod: number, raw: boolean): string => {
+  if (raw) {
+    return `ctr%${mod}`
+  }
+
+  const pow2 =
+    mod > 0 && Number.isInteger(Math.log2(mod)) && mod <= 0x7F_FF_FF_FF
+
+  if (pow2) {
+    return `(_ctr += 1)&${mod - 1}`
+  }
+
+  return `(_ctr += 1)%${mod}`
+}
+
+const genSelectorExpr = (
+  f: ReadonlyV8Field,
+  mod: number,
+  bm: readonly ByteMask[],
+  buf: string,
+): string => {
+  const { constraint } = f
+
+  let allowed: readonly number[] | undefined = absentValue
+
+  if (!isMissing(constraint)) {
+    const { allowed: configuredAllowed } = constraint
+    allowed = configuredAllowed
+  }
+
+  if (allowed !== absentValue && allowed.length > 0) {
+    if (allowed.length === 1) {
+      return `${allowed[0]}`
+    }
+
+    let randomByte = 15
+
+    if (bm.length > 0) {
+      randomByte = need(bm.at(-1)).byte
+    }
+
+    return `[${allowed.join(",")}][${buf}[${randomByte}]%${allowed.length}]`
+  }
+
+  const firstByte = bm[0].byte
+
+  let secondByte = firstByte
+
+  if (bm.length > 1) {
+    secondByte = bm[1].byte
+  }
+
+  return `((${buf}[${firstByte}]<<8|${buf}[${secondByte}])%${mod})`
+}
+
+const genValueExpr = (
+  f: ReadonlyV8Field,
+  mod: number,
+  bm: readonly ByteMask[],
+  raw?: boolean,
+  buf = "b",
+  batchNow = false,
+): string => {
   switch (f.type) {
-    case "timestamp-ms": {
-      if (raw) {return `now%${mod}`}
-      return pow2 ? `${ts}&${mod - 1}` : `${ts}%${mod}`
-    }
+    case "timestamp-ms":
     case "timestamp-us": {
-      if (raw) {return `(now*1000)%${mod}`}
-      return pow2 ? `(${ts}*1000)&${mod - 1}` : `(${ts}*1000)%${mod}`
+      return genTimestampExpr(f, mod, raw === true, batchNow)
     }
+
     case "counter": {
-      if (raw) {return `ctr%${mod}`}
-      return pow2 ? `(_ctr += 1)&${mod - 1}` : `(_ctr += 1)%${mod}`
+      return genCounterExpr(mod, raw === true)
     }
+
     case "shard":
     case "node":
     case "process": {
-      const a = f.constraint?.allowed
-      if (a && a.length > 0) {
-        if (a.length === 1) {return `${a[0]}`}
-        const rndByte = bm.length > 0 ? bm.at(-1)!.byte : 15
-        return `[${a.join(",")}][${buf}[${rndByte}]%${a.length}]`
-      }
-      return `((${buf}[${bm[0].byte}]<<8|${buf}[${bm.length > 1 ? bm[1].byte : bm[0].byte}])%${mod})`
+      return genSelectorExpr(f, mod, bm, buf)
     }
+
     case "fixed": {
       return `${f.value ?? 0}`
     }
+
+    case "random": {
+      return "0"
+    }
+
     default: {
       return "0"
     }
   }
 }
 
-function emitFieldWrite(wp: WritePlanEntry[], lines: string[], varName = "v", mod = 0, buf = "b"): void {
+const emitFieldWrite = (
+  wp: readonly WritePlanEntry[],
+  lines: readonly string[],
+  varName = "v",
+  mod = 0,
+  buf = "b",
+): void => {
   const useArith = mod > 2 ** 32
-  lines.push(
+
+  const output = lines as string[]
+
+  output.push(
     ...wp.map((e) => {
       const s = Math.round(Math.log2(e.divisor))
+
       const lshift = e.bitOffset
-      const srcPart = useArith
-        ? `((${varName}/${2 ** s})<<${lshift}&${e.writeMask})`
-        : `((${varName}>>>${s}<<${lshift})&${e.writeMask})`
+
+      let srcPart = `((${varName}>>>${s}<<${lshift})&${e.writeMask})`
+
+      if (useArith) {
+        srcPart = `((${varName}/${2 ** s})<<${lshift}&${e.writeMask})`
+      }
+
       return `${buf}[${e.byte}]=(${buf}[${e.byte}]&${e.clearMask})|${srcPart};`
     }),
   )
 }
 
 // Single format expression shared by the raw and pooled compiled emitters.
+
 // The generated function receives byte table `h` and optional word table `w`.
+
 const COMPILED_FMT_EXPR =
   'w?w[(b[0]<<8)|b[1]]+w[(b[2]<<8)|b[3]]+"-"+w[(b[4]<<8)|b[5]]+"-"+w[(b[6]<<8)|b[7]]+"-"+w[(b[8]<<8)|b[9]]+"-"+w[(b[10]<<8)|b[11]]+w[(b[12]<<8)|b[13]]+w[(b[14]<<8)|b[15]]:h[b[0]]+h[b[1]]+h[b[2]]+h[b[3]]+"-"+h[b[4]]+h[b[5]]+"-"+h[b[6]]+h[b[7]]+"-"+h[b[8]]+h[b[9]]+"-"+h[b[10]]+h[b[11]]+h[b[12]]+h[b[13]]+h[b[14]]+h[b[15]]'
 
-function genLayoutSource(layout: V8Layout, raw: boolean, poolSize = 0): string {
+const poolfy = (s: string): string => s.replaceAll("b[", "_bp[_o+")
+
+const emitMonotonicClamp = (
+  target: readonly string[],
+  field: ReadonlyV8Field,
+): void => {
+  const output = target as string[]
+
+  output.push(
+    `{const lk="${field.name}";const lv=_last[lk];if(lv!==undefined&&rv<lv){rv=lv;}_last[lk]=rv;}`,
+  )
+}
+
+const genLayoutSource = (
+  layout: ReadonlyV8Layout,
+  raw: boolean,
+  poolSize = 0,
+): string => {
   const fieldMeta = layout.fields.map((f) => {
     const wp = computeWritePlan(f)
+
     const bm = fieldByteMasks(f)
+
     const mod = fieldMod(f)
-    const c = f.constraint
+
+    const { constraint: c } = f
 
     return { bm, c, f, mod, wp }
   })
 
   const lines: string[] = []
+
   const fieldLines: string[] = []
 
   // RFC 9562 §6.2 state for compiled generators: `_tick` is the
-  // last tick ever emitted (timestamp fields clamp to
-  // max(clock, _tick)) and `_mctr` holds each monotonic counter
-  // field's global incrementing value. Both live in the compiled
-  // closure, so every compiled generator instance owns an
-  // independent monotonic clock. The raw layout takes the clock
-  // and counter as caller-supplied parameters and opts out.
+
+  // Last tick ever emitted (timestamp fields clamp to
+
+  // Max(clock, _tick)) and `_mctr` holds each monotonic counter
+
+  // Field's global incrementing value. Both live in the compiled
+
+  // Closure, so every compiled generator instance owns an
+
+  // Independent monotonic clock. The raw layout takes the clock
+
+  // And counter as caller-supplied parameters and opts out.
+
   const needsTick =
     !raw &&
     fieldMeta.some(
       (m) =>
         m.f.type === "timestamp-ms" ||
         m.f.type === "timestamp-us" ||
-        (m.f.type === "counter" && m.f.constraint?.monotonic === true),
+        (m.f.type === "counter" && isMonotonic(m.f)),
     )
 
   if (raw) {
     lines.push("const _last={};", "return function(b,now,ctr){")
   } else if (poolSize > 0) {
     lines.push("let _ctr=0;")
-    if (needsTick) {lines.push("let _tick=0;const _mctr={};")}
-    const hasMono = fieldMeta.some((m) => m.f.constraint?.monotonic)
-    if (hasMono) {lines.push("const _last={};")}
-    lines.push(`const _bp=new Uint8Array(${poolSize * 16});`, `const _p=new Array(${poolSize});`, `let _pi=${poolSize};`, "return function(){")
-    lines.push(`if(_pi>=${poolSize}){`, "cr.getRandomValues(_bp);", `for(_pi=0;_pi<${poolSize};_pi += 1){const _o=_pi*16;`)
+
+    if (needsTick) {
+      lines.push("let _tick=0;const _mctr={};")
+    }
+
+    const hasMono = fieldMeta.some((m) => isMonotonic(m.f))
+
+    if (hasMono) {
+      lines.push("const _last={};")
+    }
+
+    lines.push(
+      `const _bp=new Uint8Array(${poolSize * 16});`,
+      `const _p=new Array(${poolSize});`,
+      `let _pi=${poolSize};`,
+      "return function(){",
+      `if(_pi>=${poolSize}){`,
+      "cr.getRandomValues(_bp);",
+      `for(_pi=0;_pi<${poolSize};_pi += 1){const _o=_pi*16;`,
+    )
   } else {
     lines.push("const b=new Uint8Array(16);let _ctr=0;")
-    if (needsTick) {lines.push("let _tick=0;const _mctr={};")}
-    const hasMono = fieldMeta.some((m) => m.f.constraint?.monotonic)
-    if (hasMono) {lines.push("const _last={};")}
+
+    if (needsTick) {
+      lines.push("let _tick=0;const _mctr={};")
+    }
+
+    const hasMono = fieldMeta.some((m) => isMonotonic(m.f))
+
+    if (hasMono) {
+      lines.push("const _last={};")
+    }
+
     lines.push("return function(){", "cr.getRandomValues(b);")
   }
 
-  const emitFieldBlock = (target: string[]) => {
-    // RFC 9562 §6.2 prologue, emitted once per invocation (per
-    // pool entry in pooled mode): resolve the tick and every
-    // monotonic counter BEFORE any field is written, so the
-    // reseed that ends an exhausted counter run always accompanies
-    // a strictly larger timestamp — the (timestamp, counter) pair
-    // is non-decreasing in emission order.
-    if (needsTick) {
-      target.push("let _now=Date.now();")
-      for (const m of fieldMeta) {
-        const {f} = m
-        if (f.type !== "counter" || f.constraint?.monotonic !== true) {continue}
+  const emitCounterPrologue = (target: readonly string[]): void => {
+    if (!needsTick) {
+      return
+    }
+
+    const output = target as string[]
+
+    output.push("let _now=Date.now();")
+
+    for (const { f } of fieldMeta) {
+      if (f.type === "counter" && isMonotonic(f)) {
         const reseedMask = 2 ** (f.length - 1) - 1
+
         const maxCtr = 2 ** f.length - 1
-        target.push(
+
+        output.push(
           `{const lk=${JSON.stringify(f.name)};let c=_mctr[lk];const rs=(${genFieldReadExpr(f)})&${reseedMask};` +
             `if(c===undefined){c=rs}` +
             `else if(c>=${maxCtr}){if(_now<=_tick){while(Date.now()<=_tick){};_now=Date.now()};c=rs}` +
@@ -2013,190 +3895,618 @@ function genLayoutSource(layout: V8Layout, raw: boolean, poolSize = 0): string {
             `_mctr[lk]=c}`,
         )
       }
-      target.push("if(_now<_tick){_now=_tick}else{_tick=_now}")
     }
-    for (const m of fieldMeta) {
-      const { f, wp, bm, mod, c } = m
-      if (f.type === "random") {continue}
 
-      // oxlint-disable-next-line branches-sharing-code
-      if (f.type === "shard" || f.type === "node" || f.type === "process") {
-        if (!c || (!c.allowed && c.min === undefined && c.max === undefined && !c.monotonic)) {continue}
-        const rx = genFieldReadExpr(f)
-        target.push("{")
-        if (c.allowed && c.allowed.length > 0) {
-          target.push(`const rv=${JSON.stringify(c.allowed)}[${rx}%${c.allowed.length}];`)
-        } else {
-          target.push(`let rv=${rx};`)
-        }
-        if (c.min !== undefined) {target.push(`if(rv<${c.min})rv=${c.min};`)}
-        if (c.max !== undefined) {target.push(`if(rv>${c.max})rv=${c.max};`)}
-        if (c.monotonic) {
-          target.push(
-            `{const lk="${f.name}";const lv=_last[lk];if(lv!==undefined&&rv<lv){rv=lv;}_last[lk]=rv;}`,
-          )
-        }
-        emitFieldWrite(wp, target, "rv", mod)
-        target.push("}")
-      } else {
-        // Monotonic counters are resolved by the §6.2
-        // prologue (tick-keyed increment with freeze-and-
-        // wait) — except in raw mode, where the caller
-        // owns the clock and counter and the value-clamp
-        // below applies. Every other field draws its
-        // value straight from its layout expression, with
-        // `_now` the resolved tick.
-        const monoCounter =
-          !raw && f.type === "counter" && c?.monotonic === true
-        const vx = monoCounter
-          ? `_mctr[${JSON.stringify(f.name)}]`
-          : genValueExpr(f, mod, bm, raw, "b", true)
-        target.push("{")
-        let varName = "v"
-        if (c && (c.min !== undefined || c.max !== undefined || (c.monotonic && !monoCounter))) {
-          target.push(`let rv=${vx};`)
-          if (c.min !== undefined) {target.push(`if(rv<${c.min})rv=${c.min};`)}
-          if (c.max !== undefined) {target.push(`if(rv>${c.max})rv=${c.max};`)}
-          if (c.monotonic && !monoCounter) {
-            target.push(
-              `{const lk="${f.name}";const lv=_last[lk];if(lv!==undefined&&rv<lv){rv=lv;}_last[lk]=rv;}`,
-            )
-          }
-          varName = "rv"
-        } else {
-          target.push(`const v=${vx};`)
-        }
-        emitFieldWrite(wp, target, varName, mod)
-        target.push("}")
-      }
-    }
-    target.push("b[6]=(b[6]&0x0f)|0x80;b[8]=(b[8]&0x3f)|0x80;")
+    output.push("if(_now<_tick){_now=_tick}else{_tick=_now}")
   }
 
-  // oxlint-disable-next-line branches-sharing-code
+  const emitSelectorField = (
+    field: ReadonlyV8Field,
+
+    writePlan: readonly WritePlanEntry[],
+
+    mod: number,
+
+    constraint: ReadonlyV8Constraint | undefined,
+
+    target: readonly string[],
+  ): void => {
+    if (isMissing(constraint)) {
+      return
+    }
+
+    const { allowed } = constraint
+
+    const hasAllowed = allowed !== absentValue && allowed.length > 0
+
+    const monotonic = constraint.monotonic === true
+
+    if (
+      !hasAllowed &&
+      constraint.min === absentValue &&
+      constraint.max === absentValue &&
+      !monotonic
+    ) {
+      return
+    }
+
+    const output = target as string[]
+
+    const readExpr = genFieldReadExpr(field)
+
+    output.push("{")
+
+    if (allowed !== absentValue && allowed.length > 0) {
+      output.push(
+        `const rv=${JSON.stringify(allowed)}[${readExpr}%${allowed.length}];`,
+      )
+    } else {
+      output.push(`let rv=${readExpr};`)
+    }
+
+    if (constraint.min !== absentValue) {
+      output.push(`if(rv<${constraint.min})rv=${constraint.min};`)
+    }
+
+    if (constraint.max !== absentValue) {
+      output.push(`if(rv>${constraint.max})rv=${constraint.max};`)
+    }
+
+    if (monotonic) {
+      emitMonotonicClamp(target, field)
+    }
+
+    emitFieldWrite(writePlan, target, "rv", mod)
+
+    output.push("}")
+  }
+
+  const emitValueField = (
+    field: ReadonlyV8Field,
+
+    writePlan: readonly WritePlanEntry[],
+
+    masks: readonly ByteMask[],
+
+    mod: number,
+
+    constraint: ReadonlyV8Constraint | undefined,
+
+    target: readonly string[],
+  ): void => {
+    const monoCounter = !raw && field.type === "counter" && isMonotonic(field)
+
+    let valueExpr = genValueExpr(field, mod, masks, raw, "b", true)
+
+    if (monoCounter) {
+      valueExpr = `_mctr[${JSON.stringify(field.name)}]`
+    }
+
+    const output = target as string[]
+
+    output.push("{")
+
+    if (
+      !isMissing(constraint) &&
+      (constraint.min !== absentValue ||
+        constraint.max !== absentValue ||
+        (constraint.monotonic === true && !monoCounter))
+    ) {
+      output.push(`let rv=${valueExpr};`)
+
+      if (constraint.min !== absentValue) {
+        output.push(`if(rv<${constraint.min})rv=${constraint.min};`)
+      }
+
+      if (constraint.max !== absentValue) {
+        output.push(`if(rv>${constraint.max})rv=${constraint.max};`)
+      }
+
+      if (constraint.monotonic === true && !monoCounter) {
+        emitMonotonicClamp(target, field)
+      }
+
+      emitFieldWrite(writePlan, target, "rv", mod)
+    } else {
+      output.push(`const v=${valueExpr};`)
+
+      emitFieldWrite(writePlan, target, "v", mod)
+    }
+
+    output.push("}")
+  }
+
+  const emitFieldBlock = (target: readonly string[]): void => {
+    // Resolve the tick and monotonic counters before writing any field so a
+
+    // Counter reseed always accompanies a strictly larger timestamp.
+
+    emitCounterPrologue(target)
+
+    for (const { c, f, mod, wp, bm } of fieldMeta) {
+      if (f.type !== "random") {
+        if (f.type === "shard" || f.type === "node" || f.type === "process") {
+          emitSelectorField(f, wp, mod, c, target)
+        } else {
+          emitValueField(f, wp, bm, mod, c, target)
+        }
+      }
+    }
+
+    const output = target as string[]
+
+    output.push("b[6]=(b[6]&0x0f)|0x80;b[8]=(b[8]&0x3f)|0x80;")
+  }
+
   if (raw || poolSize === 0) {
     emitFieldBlock(lines)
+
     lines.push(`return ${COMPILED_FMT_EXPR};`, "};")
   } else {
     // Pooled: emit field + format into fieldLines, then substitute b[ → b[_o+
+
     emitFieldBlock(fieldLines)
-    const poolfy = (s: string) => s.replaceAll("b[", "_bp[_o+")
-    lines.push(...fieldLines.map((l) => `  ${  poolfy(l)}`), `  _p[_pi]=${poolfy(COMPILED_FMT_EXPR)};`, "}_pi=0;}", "return _p[_pi += 1];")
-    lines.push("};")
+
+    lines.push(
+      ...fieldLines.map((l) => `  ${poolfy(l)}`),
+      `  _p[_pi]=${poolfy(COMPILED_FMT_EXPR)};`,
+      "}_pi=0;}",
+      "return _p[_pi++];",
+      "};",
+    )
   }
 
   return lines.join("\n")
 }
 
-export function compileLayout(layout: V8Layout, poolSize = 0): CompiledLayout {
+interface CompiledField {
+  readonly field: ReadonlyV8Field
+
+  readonly masks: readonly ByteMask[]
+
+  readonly mod: number
+
+  readonly writePlan: readonly WritePlanEntry[]
+}
+
+const selectorValue = (
+  field: ReadonlyV8Field,
+  bytes: Readonly<Uint8Array>,
+): number => {
+  const value = readFieldNumber(bytes, field)
+
+  const { constraint } = field
+
+  let allowed: readonly number[] | undefined = absentValue
+
+  if (!isMissing(constraint)) {
+    const { allowed: configuredAllowed } = constraint
+    allowed = configuredAllowed
+  }
+
+  if (allowed !== absentValue && allowed.length > 0) {
+    return pickFromAllowed(allowed, value)
+  }
+
+  return value
+}
+
+const createCompiledWriter = (layout: ReadonlyV8Layout, raw: boolean): (
+  bytes: Uint8Array,
+  now: number,
+  ctr: number,
+) => string => {
+  const fields: CompiledField[] = layout.fields.map((field) => ({
+    field,
+
+    masks: fieldByteMasks(field),
+
+    mod: fieldMod(field),
+
+    writePlan: computeWritePlan(field),
+  }))
+
+  const needsTick =
+    !raw &&
+    fields.some(
+      ({ field }) =>
+        field.type === "timestamp-ms" ||
+        field.type === "timestamp-us" ||
+        (field.type === "counter" && isMonotonic(field)),
+    )
+
+  let counter = 0
+
+  let tick = 0
+
+  const monotonicCounters = new Map<string, number>()
+
+  const lastValues = new Map<string, number>()
+
+  const resolveTick = (
+    bytes: Readonly<Uint8Array>,
+    initialNow: number,
+  ): number => {
+    let now = initialNow
+
+    if (!needsTick) {
+      return now
+    }
+
+    for (const { field } of fields) {
+      if (field.type === "counter" && isMonotonic(field)) {
+        const reseedMask = 2 ** (field.length - 1) - 1
+
+        const maxCounter = 2 ** field.length - 1
+
+        let value = monotonicCounters.get(field.name)
+
+        const seed = readFieldNumber(bytes, field) % (reseedMask + 1)
+
+        if (value === absentValue) {
+          value = seed
+        } else if (value >= maxCounter) {
+          if (now <= tick) {
+            now = waitForNextTick(tick)
+          }
+
+          value = seed
+        } else {
+          value = (value + 1) % (maxCounter + 1)
+        }
+
+        monotonicCounters.set(field.name, value)
+      }
+    }
+
+    if (now < tick) {
+      return tick
+    }
+
+    tick = now
+
+    return tick
+  }
+
+  const baseValue = (
+    { field, mod }: Readonly<CompiledField>,
+    bytes: Readonly<Uint8Array>,
+    now: number,
+    ctr: number,
+  ): number => {
+    switch (field.type) {
+      case "timestamp-ms": {
+        return now % mod
+      }
+
+      case "timestamp-us": {
+        return (now * 1000) % mod
+      }
+
+      case "counter": {
+        if (raw) {
+          return ctr % mod
+        }
+
+        if (isMonotonic(field)) {
+          return need(monotonicCounters.get(field.name))
+        }
+
+        counter += 1
+
+        return counter % mod
+      }
+
+      case "fixed": {
+        return field.value ?? 0
+      }
+
+      case "shard":
+      case "node":
+      case "process":
+      case "random": {
+        return selectorValue(field, bytes)
+      }
+
+      default: {
+        return selectorValue(field, bytes)
+      }
+    }
+  }
+
+  const constrainValue = (
+    meta: Readonly<CompiledField>,
+    value: number,
+    skipMonotonic: boolean,
+  ): number => {
+    const { constraint } = meta.field
+
+    if (isMissing(constraint)) {
+      return value
+    }
+
+    let result = value
+
+    if (constraint.min !== absentValue && result < constraint.min) {
+      result = constraint.min
+    }
+
+    if (constraint.max !== absentValue && result > constraint.max) {
+      result = constraint.max
+    }
+
+    if (constraint.monotonic === true && !skipMonotonic) {
+      const last = lastValues.get(meta.field.name)
+
+      if (last !== absentValue && result < last) {
+        result = last
+      }
+
+      lastValues.set(meta.field.name, result)
+    }
+
+    return result
+  }
+
+  return (bytes: Uint8Array, now: number, ctr: number): string => {
+    let resolvedNow = now
+
+    if (!raw) {
+      resolvedNow = resolveTick(bytes, now)
+    }
+
+    for (const meta of fields) {
+      const { field } = meta
+
+      if (field.type !== "random") {
+        const monoCounter =
+          !raw && field.type === "counter" && isMonotonic(field)
+
+        const value = constrainValue(
+          meta,
+          baseValue(meta, bytes, resolvedNow, ctr),
+          monoCounter,
+        )
+
+        writeFieldValue(bytes, field, value)
+      }
+    }
+
+    forceVersionVariant(bytes)
+
+    return formatUuidBytes(bytes, wordTable(), HEX8)
+  }
+}
+
+export const compileLayout = (
+  layout: ReadonlyV8Layout,
+  poolSize = 0,
+): CompiledLayout => {
   const source = genLayoutSource(layout, false, poolSize)
 
-  let fn: () => string = () => {
-    throw new Error(
-      `compileLayout(${layout.name}): failed to create Function from generated source.\n${source}`,
-    )
-  }
-  try {
-    const factory = new Function("h", "w", "cr", source) as (
-      h: string[],
-      w: string[] | null,
-      cr: { getRandomValues: (b: Uint8Array) => void },
-    ) => () => string
-    fn = factory(HEX8, wordTable(), globalThis.crypto as { getRandomValues: (b: Uint8Array) => void })
-  } catch {
-    // fn stays as throw wrapper
+  const write = createCompiledWriter(layout, false)
+
+  if (!(poolSize > 0)) {
+    const bytes = new Uint8Array(16)
+
+    return {
+      fn: () => {
+        fillRandom(bytes)
+
+        return write(bytes, Date.now(), 0)
+      },
+
+      source,
+    }
   }
 
-  return { fn, source }
+  if (!Number.isInteger(poolSize)) {
+    throw new RangeError(
+      `compileLayout: poolSize must be a positive integer, got ${poolSize}`,
+    )
+  }
+
+  const pool = new Uint8Array(poolSize * 16)
+
+  const strings = Array.from<string>({ length: poolSize })
+
+  let index = poolSize
+
+  return {
+    fn: () => {
+      if (index >= poolSize) {
+        fillRandom(pool)
+
+        for (let i = 0; i < poolSize; i += 1) {
+          strings[i] = write(pool.subarray(i * 16, i * 16 + 16), Date.now(), 0)
+        }
+
+        index = 0
+      }
+
+      const value = strings[index]
+
+      index += 1
+
+      return value
+    },
+
+    source,
+  }
 }
 
 export interface CompiledRawLayout {
   source: string
+
   fn: (b: Uint8Array, now: number, ctr: number) => string
 }
 
-export function compileRawLayout(layout: V8Layout): CompiledRawLayout {
+export const compileRawLayout = (
+  layout: ReadonlyV8Layout,
+): CompiledRawLayout => {
   const source = genLayoutSource(layout, true)
 
-  let fn: (b: Uint8Array, now: number, ctr: number) => string = () => {
-    throw new Error(
-      `compileRawLayout(${layout.name}): failed to create Function from generated source.\n${source}`,
-    )
-  }
-  try {
-    const factory = new Function("h", "w", source) as (
-      h: string[],
-      w: string[] | null,
-    ) => (b: Uint8Array, now: number, ctr: number) => string
-    fn = factory(HEX8, wordTable())
-  } catch {
-    // fn stays as throw wrapper
+  const write = createCompiledWriter(layout, true)
+
+  return { fn: (bytes, now, ctr) => write(bytes, now, ctr), source }
+}
+
+/**
+ * Production API: compiles the layout into specialized field writers.
+ * Injected RNGs use the single-parent pool instead.
+ *
+ * @param {ReadonlyV8Layout | object} input - Layout or compiled layout description to generate from.
+ * @returns {string} A structured UUIDv8 string.
+ */
+
+export const genStructuredGenoID = (
+  input: ReadonlyV8Layout | { readonly  layout: ReadonlyV8Layout },
+): string => {
+  let layout = input as ReadonlyV8Layout
+
+  if ("layout" in input) {
+    const { layout: compiledLayout } = input
+    layout = compiledLayout
   }
 
-  return { fn, source }
+  ensureValidated(layout)
+
+  if (getStructuredGenerationMode() === "compiled-direct-v8") {
+    const structureKey = layoutStructureKey(layout)
+
+    const fn = _compiledGenCache.get(structureKey)
+
+    if (fn) {
+      return fn()
+    }
+
+    try {
+      const compiled = compileLayout(layout, 256)
+
+      _compiledGenCache.set(structureKey, compiled.fn)
+
+      return compiled.fn()
+    } catch {
+      // Compiled writer unavailable. Fall through to the pooled path.
+    }
+  }
+
+  return genStructuredGenoIDSingleParent(layout)
 }
 
 const _interpretLast = new Map<string, number>()
 
-export function interpretRawLayout(
-  layout: V8Layout,
-  raw: Uint8Array,
+const rawFieldValue = (
+  field: ReadonlyV8Field,
+  bytes: Readonly<Uint8Array>,
   now: number,
   ctr: number,
-): string {
+): number => {
+  switch (field.type) {
+    case "timestamp-ms": {
+      return now % fieldMod(field)
+    }
+
+    case "timestamp-us": {
+      return (now * 1000) % fieldMod(field)
+    }
+
+    case "counter": {
+      return ctr % fieldMod(field)
+    }
+
+    case "fixed": {
+      return field.value ?? 0
+    }
+
+    case "shard":
+    case "node":
+    case "process":
+    case "random": {
+      return selectorValue(field, bytes)
+    }
+
+    default: {
+      return selectorValue(field, bytes)
+    }
+  }
+}
+
+const applyInterpretedConstraint = (
+  field: ReadonlyV8Field,
+
+  value: number,
+
+  structureKey: string,
+): number => {
+  const { constraint } = field
+
+  if (isMissing(constraint)) {
+    return value
+  }
+
+  let result = value
+
+  if (constraint.min !== absentValue && result < constraint.min) {
+    result = constraint.min
+  }
+
+  if (constraint.max !== absentValue && result > constraint.max) {
+    result = constraint.max
+  }
+
+  if (constraint.monotonic === true) {
+    const key = `${structureKey}:${field.name}`
+
+    const last = _interpretLast.get(key)
+
+    if (last !== absentValue && result < last) {
+      result = last
+    }
+
+    _interpretLast.set(key, result)
+  }
+
+  return result
+}
+
+export const interpretRawLayout = (
+  layout: ReadonlyV8Layout,
+
+  raw: Uint8Array,
+
+  now: number,
+
+  ctr: number,
+): string => {
   const structureKey = assertLayoutIdentity(layout)
+
   const b = new Uint8Array(16)
-  if (raw) {
+
+  if (!isMissing(raw)) {
     let i = 0
+
     for (const v of raw) {
-      if (i >= 16) {break}
-      b[i += 1] = v
+      if (i >= 16) {
+        break
+      }
+
+      b[i] = v
+
+      i += 1
     }
   }
 
   for (const f of layout.fields) {
-    if (f.type === "random") {continue}
-    const c = f.constraint
-    let rv: number
+    if (f.type !== "random") {
+      const value = applyInterpretedConstraint(
+        f,
+        rawFieldValue(f, b, now, ctr),
+        structureKey,
+      )
 
-    switch (f.type) {
-      case "timestamp-ms": {
-        rv = now % fieldMod(f)
-        break
-      }
-      case "timestamp-us": {
-        rv = (now * 1000) % fieldMod(f)
-        break
-      }
-      case "counter": {
-        rv = ctr % fieldMod(f)
-        break
-      }
-      case "fixed": {
-        rv = f.value ?? 0
-        break
-      }
-      default: {
-        rv = Number(getFieldValue(b, f))
-        if (c && c.allowed && c.allowed.length > 0) {
-          rv = pickFromAllowed(c.allowed, rv)
-        }
-        break
-      }
+      writeFieldValue(b, f, value)
     }
-
-    if (c) {
-      if (c.min !== undefined && rv < c.min) {rv = c.min}
-      if (c.max !== undefined && rv > c.max) {rv = c.max}
-      if (c.monotonic) {
-        const key = `${structureKey  }:${  f.name}`
-        const lv = _interpretLast.get(key)
-        if (lv !== undefined && rv < lv) {rv = lv}
-        _interpretLast.set(key, rv)
-      }
-    }
-
-    writeFieldValue(b, f, rv)
   }
 
   forceVersionVariant(b)
@@ -2205,32 +4515,77 @@ export function interpretRawLayout(
 }
 
 // ---------------------------------------------------------------------------
+
 // Canonical structured layouts (single source of truth).
+
 //
+
 // These are the layouts used across the benchmark/export/research scripts and
-// the browser runner. They are defined once here — the module that owns
+
+// The browser runner. They are defined once here — the module that owns
+
 // `completeLayout` and the structured framework — so every consumer imports
-// the identical object instead of re-declaring it inline (the dbkey layout was
-// previously copy-pasted into 11 sites).
+
+// The identical object instead of re-declaring it inline (the dbkey layout was
+
+// Previously copy-pasted into 11 sites).
+
 // ---------------------------------------------------------------------------
 
 /** 48-bit timestamp + 8-bit shard (1-5) + 16-bit monotonic counter. */
+
 export const DBKEY_LAYOUT: V8Layout = completeLayout("dbkey", [
   { length: 48, name: "timestamp", start: 0, type: "timestamp-ms" },
-  { constraint: { allowed: [1, 2, 3, 4, 5] }, length: 8, name: "shard", start: 52, type: "shard" },
-  { constraint: { monotonic: true }, length: 16, name: "counter", start: 66, type: "counter" },
+
+  {
+    constraint: { allowed: [1, 2, 3, 4, 5] },
+    length: 8,
+    name: "shard",
+    start: 52,
+    type: "shard",
+  },
+
+  {
+    constraint: { monotonic: true },
+    length: 16,
+    name: "counter",
+    start: 66,
+    type: "counter",
+  },
 ])
 
 /** 12-bit tenant (1-8) + 8-bit region (1-4). */
+
 export const MULTITENANT_LAYOUT: V8Layout = completeLayout("multitenant", [
-  { constraint: { allowed: [1, 2, 3, 4, 5, 6, 7, 8] }, length: 12, name: "tenant", start: 0, type: "shard" },
-  { constraint: { allowed: [1, 2, 3, 4] }, length: 8, name: "region", start: 52, type: "shard" },
+  {
+    constraint: { allowed: [1, 2, 3, 4, 5, 6, 7, 8] },
+    length: 12,
+    name: "tenant",
+    start: 0,
+    type: "shard",
+  },
+
+  {
+    constraint: { allowed: [1, 2, 3, 4] },
+    length: 8,
+    name: "region",
+    start: 52,
+    type: "shard",
+  },
 ])
 
 /** 16-bit stream node + 24-bit monotonic sequence. */
+
 export const EVENTSOURCING_LAYOUT: V8Layout = completeLayout("eventsourcing", [
   { length: 16, name: "stream", start: 0, type: "node" },
-  { constraint: { monotonic: true }, length: 24, name: "seq", start: 66, type: "counter" },
+
+  {
+    constraint: { monotonic: true },
+    length: 24,
+    name: "seq",
+    start: 66,
+    type: "counter",
+  },
 ])
 
 /**
@@ -2241,8 +4596,17 @@ export const EVENTSOURCING_LAYOUT: V8Layout = completeLayout("eventsourcing", [
  * (clamped, not remapped) and a `fixed` field (a constant written at
  * composition time, carrying no entropy at all).
  */
+
 export const CONFORMANCE_LAYOUT: V8Layout = completeLayout("conformance", [
-  { constraint: { max: 4999, min: 100 }, length: 12, name: "window", start: 0, type: "shard" },
+  {
+    constraint: { max: 4999, min: 100 },
+    length: 12,
+    name: "window",
+    start: 0,
+    type: "shard",
+  },
+
   { length: 4, name: "kind", start: 12, type: "fixed", value: 9 },
+
   { length: 40, name: "wide", start: 66, type: "random" },
 ])

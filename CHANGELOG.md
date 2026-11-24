@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.28.4] - 2026-11-24
+
+### Summary
+
+**Lint and correctness stabilization: every project-plugin rule is enabled, structured compilation no longer evaluates generated JavaScript, and pool cursors keep their original post-increment behavior.**
+
+### Highlights
+
+- 🧹 **All-rule lint.** Type-aware oxlint enables all 539 rules from the project's eight plugins. Context-specific exceptions are documented in `docs/agents/lint-policy.md`; inline suppressions are forbidden.
+- 🛡️ **CSP-safe compiler.** `compileLayout` builds specialized closures instead of calling `new Function`. Generated source remains available for inspection.
+- 🐛 **Boundary bugs fixed.** Simple, structured, compiled, and Deno ablation pools no longer skip slot zero or emit `undefined` at refill boundaries. Seeded RNG and raw-layout byte offsets are restored.
+- ⚡ **Hot paths simplified.** Field reads and writes use direct arithmetic. The bitwise lookup tables now live in one shared module.
+- 📦 **Package manifest repaired.** Published tarballs include `dist/shared/`, so the new runtime imports resolve for consumers.
+
+### Breaking Changes
+
+- None.
+
+### Upgrade Guide
+
+- Update to `1.28.4`. Public function signatures and UUID output formats stay unchanged.
+
+### Known Issues
+
+- Deno ports remain outside oxlint and the scripts typecheck. CI checks them with Deno.
+- Benchmark throughput remains host-bound. This patch does not change the frozen manuscript tables.
+
+### Dependencies Updated
+
+- Added `oxlint-tsgolint` as a development dependency for type-aware lint rules.
+
 ## [1.28.3] - 2026-11-21
 
 ### Summary

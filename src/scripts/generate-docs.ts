@@ -1,34 +1,95 @@
 // Generates docs/benchmarks.md from archived artifacts. Numbers are read
-// from disk, never written by hand — rerun after any evidence refresh:
-//   bun run docs:benchmarks
+
+// From disk, never written by hand — rerun after any evidence refresh:
+
+//   Bun run docs:benchmarks
+
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs"
+
+import { need } from "../shared/need.ts"
+
 import path from "node:path"
 
-const root = path.resolve(import.meta.dirname, "..", "..")
-const read = (rel: string) => JSON.parse(readFileSync(path.join(root, rel), "utf-8"))
-const M = (n: number) => `${(n / 1e6).toFixed(2)  }M`
+interface Environment {
+  runtime: string
 
-const all = read("results/all-results.json")
-const rows = Object.values(all as Record<string, { environment: { runtime: string; platform: string }; benchmarks: { name: string; opsPerSec: number }[] }>)
+  platform: string
+
+  runId: string
+
+  commitSha: string
+}
+
+interface Benchmark {
+  name: string
+
+  opsPerSec: number
+}
+
+interface AllResults {
+  environment: Environment
+
+  benchmarks: Benchmark[]
+}
+
+interface Portability {
+  structuredOverBase: number
+
+  structuredOverBaseCI95: number[]
+
+  trials: number
+
+  n: number
+}
+
+interface Maxz {
+  maxAbsZ: number
+
+  bonferroniP: number
+
+  verdict: string
+}
+
+const root = path.resolve(import.meta.dirname, "..", "..")
+
+const read = (rel: string): unknown =>
+  JSON.parse(readFileSync(path.join(root, rel), "utf8")) as unknown
+
+const formatMillions = (n: number): string => `${(n / 1e6).toFixed(2)}M`
+
+const all = read("results/all-results.json") as Record<string, AllResults>
+
+const rows = Object.values(all)
+
   .map((e) => {
     const ops: Record<string, number> = {}
-    for (const b of e.benchmarks) {ops[b.name] = b.opsPerSec}
+
+    for (const b of e.benchmarks) {
+      ops[b.name] = b.opsPerSec
+    }
+
     const env = `${e.environment.runtime}/${e.environment.platform}`
-    return `| ${env} | ${M(ops["genoid-structured"])} | ${(ops["genoid-structured"] / ops["pg-uuid-v8"]).toFixed(1)}x | ${(ops["genoid-structured"] / ops["ulid-v8"]).toFixed(1)}x | ${(ops["genoid-structured"] / ops["genoid-v8"]).toFixed(2)}x |`
+
+    return `| ${env} | ${formatMillions(ops["genoid-structured"])} | ${(ops["genoid-structured"] / ops["pg-uuid-v8"]).toFixed(1)}x | ${(ops["genoid-structured"] / ops["ulid-v8"]).toFixed(1)}x | ${(ops["genoid-structured"] / ops["genoid-v8"]).toFixed(2)}x |`
   })
-const runId = (Object.values(all as Record<string, { environment: { runId: string; commitSha: string } }>)[0].environment)
+
+const runId = need(Object.values(all)[0]).environment
 
 let port = "n/a"
+
 try {
-  const p = read("results/node-portability.json")
+  const p = read("results/node-portability.json") as Portability
+
   port = `${p.structuredOverBase.toFixed(2)} (95% CI [${p.structuredOverBaseCI95.map((x: number) => x.toFixed(2)).join(", ")}], n=${p.trials * p.n} UUIDs)`
 } catch {
   // Artifact absent on fresh clones; the portability row reads n/a.
 }
 
 let maxz = "n/a"
+
 try {
-  const m = read("results/shard-histogram-100m.maxz.json")
+  const m = read("results/shard-histogram-100m.maxz.json") as Maxz
+
   maxz = `max|z|=${m.maxAbsZ.toFixed(3)}, Bonferroni p=${m.bonferroniP.toFixed(3)} (${m.verdict})`
 } catch {
   // Artifact absent on fresh clones; the uniformity row reads n/a.
@@ -55,6 +116,9 @@ Structured/base throughput on modern V8: ${port}. Source: \`results/node-portabi
 
 100M-draw fibre max-|z|: ${maxz}. Source: \`results/shard-histogram-100m.maxz.json\`.
 `
+
 mkdirSync(path.join(root, "docs"), { recursive: true })
+
 writeFileSync(path.join(root, "docs", "benchmarks.md"), md)
+
 console.log("wrote docs/benchmarks.md")

@@ -1,8 +1,4 @@
+import config from "./oxlint.rules.json" with { type: "json" }
 import { defineConfig } from "oxlint"
-import core from "ultracite/oxlint/core"
 
-export default defineConfig({
-  extends: [core],
-  ignorePatterns: [...core.ignorePatterns, "src/scripts/deno/**"],
-  rules: {},
-})
+export default defineConfig(config)

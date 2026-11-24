@@ -1,27 +1,35 @@
 import {
+  DBKEY_LAYOUT,
+  genGenoID,
+  genHashUUID,
+  genMathRandom,
+  genStructuredGenoID,
   genV4Native,
   genV7,
-  genMathRandom,
-  genHashUUID,
-  genGenoID,
-  genStructuredGenoID,
   getStructuredGenerationMode,
-  DBKEY_LAYOUT,
 } from "./algo.js"
-import { benchRepeated, benchRepeatedAsync, birthdayBound50, collisionTest, collisionTestAsync } from './bench-core.js';
-import type { BenchStats } from './bench-core.js';
+import { absentValue, need } from "./shared/need.js"
+import {
+  benchRepeated,
+  benchRepeatedAsync,
+  birthdayBound50,
+  collisionTest,
+  collisionTestAsync,
+} from "./bench-core.js"
 
-interface AlgoEntry {
-  key: string
-  name: string
-  fn: () => string | Promise<string>
-  async: boolean
-  entropy: number
-  source: string
-  secLabel: string
+interface AlgoMetadata {
+  readonly key: string
+  readonly name: string
+  readonly entropy: number
+  readonly source: string
+  readonly secLabel: string
 }
 
-const ALGOS: AlgoEntry[] = [
+type AlgoEntry =
+  | (AlgoMetadata & { readonly  async: false; readonly  fn: () => string })
+  | (AlgoMetadata & { readonly  async: true; readonly  fn: () => Promise<string> })
+
+const ALGOS: readonly AlgoEntry[] = [
   {
     async: false,
     entropy: 122,
@@ -80,38 +88,90 @@ const ALGOS: AlgoEntry[] = [
   },
 ]
 
-async function copyToClipboard(
+const queryButton = (selector: string): HTMLButtonElement | null =>
+  document.querySelector<HTMLButtonElement>(selector)
+
+const queryDiv = (selector: string): HTMLDivElement | null =>
+  document.querySelector<HTMLDivElement>(selector)
+
+const queryInput = (selector: string): HTMLInputElement | null =>
+  document.querySelector<HTMLInputElement>(selector)
+
+const queryPre = (selector: string): HTMLPreElement | null =>
+  document.querySelector<HTMLPreElement>(selector)
+
+const queryTable = (selector: string): HTMLTableElement | null =>
+  document.querySelector<HTMLTableElement>(selector)
+
+const queryTableSection = (selector: string): HTMLTableSectionElement | null =>
+  document.querySelector<HTMLTableSectionElement>(selector)
+
+const requireElement = <ElementType extends Element,>(
+  element: ElementType | null,
+): ElementType => {
+  if (element === null) {
+    throw new TypeError("required benchmark element is missing")
+  }
+  return element
+}
+
+interface ClipboardButton {
+  readonly textContent: string | null
+  readonly disabled: boolean
+}
+
+const cellText = (cell: { readonly  textContent: string | null }): string =>
+  cell.textContent ?? ""
+
+const copyToClipboard = async (
   text: string,
-  btn: HTMLButtonElement,
-): Promise<void> {
+  btn: Readonly<ClipboardButton>,
+): Promise<void> => {
   await navigator.clipboard.writeText(text)
-  const orig = btn.textContent
-  btn.textContent = "Copied!"
-  btn.disabled = true
+  const button = btn as HTMLButtonElement
+  const originalText = button.textContent
+  button.textContent = "Copied!"
+  button.disabled = true
   setTimeout(() => {
-    btn.textContent = orig
-    btn.disabled = false
+    button.textContent = originalText
+    button.disabled = false
   }, 1200)
 }
 
-async function copyTableToClipboard(tableId: string, btn: HTMLButtonElement): Promise<void> {
-  const table = document.querySelector(`#${tableId}`) as HTMLTableElement
-  const rows = [...table.querySelectorAll("tr")].map((tr) =>
-    [...tr.children].map((cell) => (cell.textContent ?? "").trim()).join("\t"),
+const copyTableToClipboard = async (
+  tableId: string,
+  btn: Readonly<ClipboardButton>,
+): Promise<void> => {
+  const table = requireElement(queryTable(`#${tableId}`))
+  const rows = [...table.querySelectorAll("tr")].map((row) =>
+    [...row.children].map((cell) => cellText(cell).trim()).join("\t"),
   )
   await copyToClipboard(rows.join("\n"), btn)
 }
 
-async function showSamples(): Promise<void> {
-  const box = document.querySelector("#samples") as HTMLDivElement
-  if (!box) {return}
+const showSamples = async (): Promise<void> => {
+  const box = queryDiv("#samples")
+  if (!box) {
+    return
+  }
   box.innerHTML = "Loading samples..."
   try {
+    const values = await Promise.all(
+      ALGOS.map(async (algo: Readonly<AlgoEntry>) => {
+        if (algo.async) {
+          const value = await algo.fn()
+          return value
+        }
+        return algo.fn()
+      }),
+    )
     let html = ""
-    for (const a of ALGOS) {
-      const val = a.async ? await a.fn() : a.fn() as string
-      const escaped = val.replaceAll('\\', "\\\\").replaceAll('\'', "\\'")
-      html += `<div><b>${a.name}:</b> <code>${val}</code> <button onclick="copyToClipboard('${escaped}', this)">Copy</button></div>`
+    for (const [index, algo] of ALGOS.entries()) {
+      const value = values[index]
+      const escaped = value
+        .replaceAll("\\", String.raw`\\`)
+        .replaceAll("'", String.raw`\'`)
+      html += `<div><b>${algo.name}:</b> <code>${value}</code> <button onclick="copyToClipboard('${escaped}', this)">Copy</button></div>`
     }
     box.innerHTML = html
   } catch (error) {
@@ -119,143 +179,190 @@ async function showSamples(): Promise<void> {
   }
 }
 
-function log(msg: string): void {
-  const el = document.querySelector("#log") as HTMLPreElement
-  if (!el) {return}
-  el.textContent += `${msg  }\n`
-  el.scrollTop = el.scrollHeight
+const log = (message: string): void => {
+  const element = queryPre("#log")
+  if (!element) {
+    return
+  }
+  element.textContent += `${message}\n`
+  element.scrollTop = element.scrollHeight
 }
 
-function fmt(x: number): string {
-  if (x > 1e6) {return x.toExponential(3)}
-  return x.toLocaleString(undefined, { maximumFractionDigits: 1 })
+const DEFAULT_LOCALE: string | undefined = absentValue
+
+const fmt = (value: number): string => {
+  if (value > 1e6) {
+    return value.toExponential(3)
+  }
+  return value.toLocaleString(DEFAULT_LOCALE, { maximumFractionDigits: 1 })
 }
 
 // Repeated trials per generator so the in-browser table can show a 95% CI
-// instead of a single-run point estimate (matches the Node-side benchmark).
+// Instead of a single-run point estimate (matches the Node-side benchmark).
 const TRIALS = 10
+const ASYNC_COLLISION_BATCH_SIZE = 100
 
-async function runAll(): Promise<void> {
-  const btn = document.querySelector("#runBtn") as HTMLButtonElement
-  if (!btn) {return}
-  const origLabel = btn.textContent
-  btn.disabled = true
-  btn.textContent = "Running..."
-  const logEl = document.querySelector("#log") as HTMLPreElement
-  if (logEl) {logEl.textContent = ""}
+type BenchStats = ReturnType<typeof benchRepeated>
+
+const measureAlgorithm = async (
+  algo: Readonly<AlgoEntry>,
+  syncCount: number,
+  asyncCount: number,
+): Promise<BenchStats> => {
+  if (algo.async) {
+    const result = await benchRepeatedAsync(algo.fn, asyncCount, TRIALS)
+    return result
+  }
+  return benchRepeated(algo.fn, syncCount, TRIALS)
+}
+
+const testCollisions = async (
+  algo: Readonly<AlgoEntry>,
+  count: number,
+): Promise<number> => {
+  if (algo.async) {
+    const collisions = await collisionTestAsync(algo.fn, count, ASYNC_COLLISION_BATCH_SIZE)
+    return collisions
+  }
+  return collisionTest(algo.fn, count)
+}
+
+const runAll = async (): Promise<void> => {
+  const button = queryButton("#runBtn")
+  if (!button) {
+    return
+  }
+  const originalLabel = button.textContent
+  button.disabled = true
+  button.textContent = "Running..."
+  const logElement = queryPre("#log")
+  if (logElement) {
+    logElement.textContent = ""
+  }
   // The evidence artifact must name the production path this run used, so
-  // a reader can tell a compiled run from a lower-level or injected one.
+  // A reader can tell a compiled run from a lower-level or injected one.
   const plan = getStructuredGenerationMode()
-  const planEl = document.querySelector("#planLabel") as HTMLDivElement
-  if (planEl) {planEl.textContent = `Generation plan: ${plan}`}
-  const nSync = Number.parseInt(
-    (document.querySelector("#nSync") as HTMLInputElement).value,
-    10,
-  )
-  const nAsync = Number.parseInt(
-    (document.querySelector("#nAsync") as HTMLInputElement).value,
-    10,
-  )
-  const nColl = Number.parseInt(
-    (document.querySelector("#nColl") as HTMLInputElement).value,
-    10,
-  )
+  const planElement = queryDiv("#planLabel")
+  if (planElement) {
+    planElement.textContent = `Generation plan: ${plan}`
+  }
+  const syncInput = requireElement(queryInput("#nSync"))
+  const asyncInput = requireElement(queryInput("#nAsync"))
+  const collisionInput = requireElement(queryInput("#nColl"))
+  const syncCount = Math.trunc(Number(syncInput.value))
+  const asyncCount = Math.trunc(Number(asyncInput.value))
+  const collisionCount = Math.trunc(Number(collisionInput.value))
 
-  const results: Record<string, BenchStats> = {}
+  const results = new Map<string, BenchStats>()
   try {
-    for (const a of ALGOS) {
-      btn.textContent = `Running... (speed: ${a.name})`
-      log(`Benchmarking ${a.name} (n=${a.async ? nAsync : nSync}, ${TRIALS} trials)...`)
-      const r = a.async
-        ? await benchRepeatedAsync(a.fn as () => Promise<string>, nAsync, TRIALS)
-        : benchRepeated(a.fn as () => string, nSync, TRIALS)
-      results[a.key] = r
+    const runAlgorithm = async (index: number): Promise<void> => {
+      if (index >= ALGOS.length) {
+        return
+      }
+      const algo = ALGOS[index]
+      button.textContent = `Running... (speed: ${algo.name})`
+      let iterations = syncCount
+      if (algo.async) {
+        iterations = asyncCount
+      }
+      log(`Benchmarking ${algo.name} (n=${iterations}, ${TRIALS} trials)...`)
+      const result = await measureAlgorithm(algo, syncCount, asyncCount)
+      results.set(algo.key, result)
       log(
-        `  -> ${fmt(r.mean)} ± ${fmt(r.std)} ops/sec (95% CI ${fmt(r.ci95[0])}–${fmt(r.ci95[1])})`,
+        `  -> ${fmt(result.mean)} ± ${fmt(result.std)} ops/sec (95% CI ${fmt(result.ci95[0])}–${fmt(result.ci95[1])})`,
       )
+      await runAlgorithm(index + 1)
     }
+    await runAlgorithm(0)
   } catch (error) {
     log(`Error during speed benchmark: ${(error as Error).message}`)
-    btn.textContent = origLabel
-    btn.disabled = false
+    button.textContent = originalLabel
+    button.disabled = false
     return
   }
 
-  const tbody = document.querySelector(
-    "#resultsTable tbody",
-  ) as HTMLTableSectionElement
-  if (tbody) {
-    tbody.innerHTML = ""
-    for (const a of ALGOS) {
-      const r = results[a.key]
-      const tr = document.createElement("tr")
-      tr.innerHTML = `<td>${a.name}</td>
-      <td>${fmt(r.mean)} ± ${fmt(r.std)}</td>
-      <td>${((1e6 / r.mean)).toFixed(3)} µs</td>
-      <td>${fmt(r.ci95[0])}–${fmt(r.ci95[1])}</td>
-      <td>${a.entropy}</td>
-      <td>${a.source}</td>
-      <td>${a.secLabel}</td>`
-      tbody.append(tr)
+  const tableBody = queryTableSection("#resultsTable tbody")
+  if (tableBody) {
+    tableBody.replaceChildren()
+    for (const algo of ALGOS) {
+      const result = need(results.get(algo.key))
+      const row = document.createElement("tr")
+      row.innerHTML = `<td>${algo.name}</td>
+    <td>${fmt(result.mean)} ± ${fmt(result.std)}</td>
+    <td>${(1e6 / result.mean).toFixed(3)} µs</td>
+    <td>${fmt(result.ci95[0])}–${fmt(result.ci95[1])}</td>
+    <td>${algo.entropy}</td>
+    <td>${algo.source}</td>
+    <td>${algo.secLabel}</td>`
+      tableBody.append(row)
     }
   }
 
-  log(`Running collision test, n=${nColl} per algorithm...`)
+  log(`Running collision test, n=${collisionCount} per algorithm...`)
   try {
-    const collTbody = document.querySelector(
-      "#collTable tbody",
-    ) as HTMLTableSectionElement
-    if (collTbody) {
-      collTbody.innerHTML = ""
-      for (const a of ALGOS) {
-        btn.textContent = `Running... (collisions: ${a.name})`
-        const n = a.async ? Math.min(nColl, 50_000) : nColl
-        const colls = a.async
-          ? await collisionTestAsync(a.fn as () => Promise<string>, n)
-          : collisionTest(a.fn as () => string, n)
-        const bound = birthdayBound50(a.entropy)
-        const tr = document.createElement("tr")
-        tr.innerHTML = `<td>${a.name}</td><td>${n.toLocaleString()}${
-          a.async ? " (reduced, async cost)" : ""
-        }</td><td>${colls}</td><td>${fmt(bound)}</td>`
-        collTbody.append(tr)
-        log(`  ${a.name}: ${colls} collisions in ${n.toLocaleString()} samples`)
+    const collisionBody = queryTableSection("#collTable tbody")
+    if (collisionBody) {
+      collisionBody.replaceChildren()
+      const runCollision = async (index: number): Promise<void> => {
+        if (index >= ALGOS.length) {
+          return
+        }
+        const algo = ALGOS[index]
+        button.textContent = `Running... (collisions: ${algo.name})`
+        let count = collisionCount
+        if (algo.async) {
+          count = Math.min(collisionCount, 50_000)
+        }
+        const collisions = await testCollisions(algo, count)
+        const bound = birthdayBound50(algo.entropy)
+        let countLabel = count.toLocaleString()
+        if (algo.async) {
+          countLabel += " (reduced, async cost)"
+        }
+        const row = document.createElement("tr")
+        row.innerHTML = `<td>${algo.name}</td><td>${countLabel}</td><td>${collisions}</td><td>${fmt(bound)}</td>`
+        collisionBody.append(row)
+        log(
+          `  ${algo.name}: ${collisions} collisions in ${count.toLocaleString()} samples`,
+        )
+        await runCollision(index + 1)
       }
+      await runCollision(0)
     }
   } catch (error) {
     log(`Error during collision test: ${(error as Error).message}`)
-    btn.textContent = origLabel
-    btn.disabled = false
+    button.textContent = originalLabel
+    button.disabled = false
     return
   }
 
   log("Done.")
 
   // Labeled native-baseline throughput callout: makes the "native v4 is slow
-  // inside a JS engine" observation visible as a number rather than prose.
-  const v4r = results["v4"]
-  const poolR = results["geno"]
-  const stR = results["geno-struct"]
-  if (v4r && poolR && stR) {
-    const v4 = v4r.mean
-    const pool = poolR.mean
-    const st = stR.mean
-    const box = document.querySelector("#nativeCallout") as HTMLDivElement
+  // Inside a JS engine, this observation is visible as a number rather than prose.
+  const v4Result = results.get("v4")
+  const poolResult = results.get("geno")
+  const structuredResult = results.get("geno-struct")
+  if (v4Result && poolResult && structuredResult) {
+    const v4 = v4Result.mean
+    const pool = poolResult.mean
+    const structured = structuredResult.mean
+    const box = queryDiv("#nativeCallout")
     if (box) {
       box.innerHTML = `<p>Native baseline throughput (this browser engine):
-        <b>v4 = ${fmt(v4)} ops/s</b>.
-        GenoID pool = ${fmt(pool)} ops/s (${fmt(pool / v4)}× faster than native v4).
-        GenoID-structured = ${fmt(st)} ops/s (${fmt(v4 / st)}× slower than native v4 in-browser).
-        The native <code>crypto.randomUUID</code> call is comparatively slow inside a JS engine,
-        which compresses the apparent cost of the structured framework.</p>`
+      <b>v4 = ${fmt(v4)} ops/s</b>.
+      GenoID pool = ${fmt(pool)} ops/s (${fmt(pool / v4)}× faster than native v4).
+      GenoID-structured = ${fmt(structured)} ops/s (${fmt(v4 / structured)}× slower than native v4 in-browser).
+      The native <code>crypto.randomUUID</code> call is comparatively slow inside a JS engine,
+      which compresses the apparent cost of the structured framework.</p>`
     }
     log(
-      `Native baseline: v4=${fmt(v4)} ops/s, GenoID pool=${fmt(pool)} ops/s (${fmt(pool / v4)}x faster), structured=${fmt(st)} ops/s (${fmt(v4 / st)}x slower vs v4).`,
+      `Native baseline: v4=${fmt(v4)} ops/s, GenoID pool=${fmt(pool)} ops/s (${fmt(pool / v4)}x faster), structured=${fmt(structured)} ops/s (${fmt(v4 / structured)}x slower vs v4).`,
     )
   }
 
-  btn.textContent = origLabel
-  btn.disabled = false
+  button.textContent = originalLabel
+  button.disabled = false
 }
 
 interface BenchmarkGlobals {
@@ -264,11 +371,17 @@ interface BenchmarkGlobals {
   copyTableToClipboard: typeof copyTableToClipboard
 }
 
-export function init(host?: Window & typeof globalThis): void {
-  const w = host ?? (typeof window === "undefined" ? undefined : window)
-  if (!w) {return}
-  showSamples()
-  const globals = w as Window & typeof globalThis & BenchmarkGlobals
+export const init = (host?: Readonly<object>): void => {
+  const browserWindow = Reflect.get(
+    globalThis,
+    "window",
+  ) as Window & typeof globalThis | undefined
+  const targetWindow = host ?? browserWindow
+  if (!targetWindow) {
+    return
+  }
+  void showSamples()
+  const globals = targetWindow as Window & typeof globalThis & BenchmarkGlobals
   globals.runAll = runAll
   globals.copyToClipboard = copyToClipboard
   globals.copyTableToClipboard = copyTableToClipboard

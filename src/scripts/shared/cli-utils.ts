@@ -1,32 +1,66 @@
+import {
+  andBits,
+  orBits,
+  shiftRightUnsignedBits,
+  xorBits,
+} from "../../shared/bitwise.ts"
 // Cross-cutting helpers shared by scripts/*.ts CLIs (provenance, runtime
-// labels, seeded RNG). Each function here previously existed as 2-3
-// byte-identical copies; this module is the single home. Side-effect free on
-// import so tests can use it without running any CLI.
+
+// Labels, seeded RNG). Each function here previously existed as 2-3
+
+// Byte-identical copies; this module is the single home. Side-effect free on
+
+// Import so tests can use it without running any CLI.
+
 import { execFileSync } from "node:child_process"
 
 // Commit SHA of the working tree, or "unknown" when git is unavailable
+
 // (release tarballs, PATH-less CI). Pass the repo root explicitly.
-export function gitSha(root: string): string {
+
+export const gitSha = (root: string): string => {
   try {
-    return execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf-8" }).trim()
+    return execFileSync("git", ["rev-parse", "HEAD"], {
+      cwd: root,
+      encoding: "utf8",
+    }).trim()
   } catch {
     return "unknown"
   }
 }
 
-// Runtime label for artifact environment blocks.
-export function runtimeVersion(): string {
+// Artifact runtime label for environment blocks.
+
+export const runtimeVersion = (): string => {
   const bun = (globalThis as { Bun?: { version: string } }).Bun
-  return bun ? `Bun ${bun.version}` : `Node ${process.version}`
+
+  if (bun) {
+    return `Bun ${bun.version}`
+  }
+
+  return `Node ${process.version}`
 }
 
-// Deterministic xorshift32 stream for seeded experiments.
-export function mulberry32(seed: number): () => number {
-  let a = Math.trunc(seed)
+// Seeded xorshift32 stream for deterministic experiments.
+
+export const mulberry32 = (seed: number): () => number => {
+  let a = andBits(seed, 0xFF_FF_FF_FF)
+
   return () => {
-    a = Math.trunc((a + 0x6d_2b_79_f5))
-    let t = Math.imul(a ^ (a >>> 15), a | 1)
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
-    return Math.trunc(t) / 4_294_967_296
+    a = andBits(a + 0x6D_2B_79_F5, 0xFF_FF_FF_FF)
+
+    let t = Math.imul(xorBits(a, shiftRightUnsignedBits(a, 15)), orBits(a, 1))
+
+    const factor = Math.imul(
+      xorBits(t, shiftRightUnsignedBits(t, 7)),
+      orBits(t, 61),
+    )
+
+    t = xorBits(t, t + factor)
+
+    return (
+      shiftRightUnsignedBits(xorBits(t, shiftRightUnsignedBits(t, 14)), 0) /
+      4_294_967_296
+    )
   }
 }

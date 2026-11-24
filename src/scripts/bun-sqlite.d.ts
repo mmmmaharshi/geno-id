@@ -1,20 +1,17 @@
-// Ambient type shim for `bun:sqlite`.
-//
-// bun:sqlite is provided by the Bun runtime but is not on the node type path
-// (tsconfig.scripts pins types to ["node"]). Declaring it in an ambient .d.ts
-// (not inside a module) makes the script typecheck without pulling in @types/bun.
-
 declare module "bun:sqlite" {
   export class Database {
-    constructor(filename: string, options?: { readonly?: boolean })
-    exec(sql: string): void
-    run(sql: string, ...params: unknown[]): unknown
-    query<T = Record<string, unknown>>(sql: string): {
-      get: (...params: unknown[]) => T
-      all: (...params: unknown[]) => T[]
-      run: (...params: unknown[]) => unknown
+    public constructor(filename: string, options?: { readonly?: boolean })
+    public exec(sql: string): void
+    public run(sql: string, ...params: readonly unknown[]): unknown
+    public query<Type = Record<string, unknown>,>(sql: string): {
+      get: (...params: readonly unknown[]) => Type
+      all: (...params: readonly unknown[]) => Type[]
+      run: (...params: readonly unknown[]) => unknown
     }
-    prepare(sql: string): { run: (...params: unknown[]) => unknown; get: (...params: unknown[]) => unknown }
-    close(): void
+    public prepare(sql: string): {
+      run: (...params: readonly unknown[]) => unknown
+      get: (...params: readonly unknown[]) => unknown
+    }
+    public close(): void
   }
 }

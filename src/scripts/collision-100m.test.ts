@@ -1,61 +1,96 @@
 // Task D: 100M-scale batched collision test.
+
 //
+
 // The shared `collisionTest` keeps every ID in a Set<string>, which cannot hold
+
 // 100M entries in memory. This test exercises `collisionTestScaled`, an exact
-// dedup built on a compact open-addressing 128-bit hash set, and proves:
+
+// Dedup built on a compact open-addressing 128-bit hash set, and proves:
+
 //   1. every production generator yields 0 collisions at scale (2M here), and
+
 //   2. the detector actually catches real duplicates (sanity check).
 
-import assert from "node:assert/strict"
-import { pathToFileURL } from "node:url"
-import path from "node:path"
-import { test } from "node:test"
-// oxlint false-positive: does not track `import type` usage inside `as` casts.
-// oxlint-disable-next-line no-unused-vars
+/// <reference types="node" />
+
+import { DBKEY_LAYOUT, collisionTestScaled } from "./collision-100m.ts"
+
 import type { V8Layout } from "../../dist/algo.js"
 
-import { collisionTestScaled, DBKEY_LAYOUT } from "./collision-100m.ts"
+import assert from "node:assert/strict"
+
+import path from "node:path"
+
+import { pathToFileURL } from "node:url"
+
+import { test } from "node:test"
 
 const root = path.resolve(import.meta.dirname, "..", "..")
+
 const algo = (await import(
   pathToFileURL(path.resolve(root, "dist/algo.js")).href
 )) as {
   genV4Native: () => string
+
   genV7: () => string
+
   genGenoID: () => string
-  genStructuredGenoID: (l: V8Layout) => string
+
+  genStructuredGenoID: (l: Readonly<V8Layout>) => string
 }
 
 const N = 1_000_000
 
 const GENERATORS = [
   ["v4-native", algo.genV4Native],
+
   ["genoid-v8", algo.genGenoID],
+
   ["v7", algo.genV7],
-  ["genoid-structured", () => algo.genStructuredGenoID(DBKEY_LAYOUT)],
+
+  ["genoid-structured", (): string => algo.genStructuredGenoID(DBKEY_LAYOUT)],
 ] as const
 
-function assertNoCollisions(label: string, gen: () => string): void {
+const assertNoCollisions = (label: string, gen: () => string): void => {
   const r = collisionTestScaled(gen, N)
+
   assert.equal(r.collisions, 0, `${label} should have 0 collisions at N=${N}`)
-  assert.ok(r.tableMB > 0 && r.tableMB < 1024, `${label} table memory should be bounded`)
+
+  assert.ok(
+    r.tableMB > 0 && r.tableMB < 1024,
+    `${label} table memory should be bounded`,
+  )
 }
+
+const pending: Promise<void>[] = []
 
 for (const [label, gen] of GENERATORS) {
-  test(`Task D: ${label} produces 0 collisions at N=${N}`, () => {
-    assertNoCollisions(label, gen)
-  })
+  pending.push(
+    test(`Task D: ${label} produces 0 collisions at N=${N}`, () => {
+      assertNoCollisions(label, gen)
+    }),
+  )
 }
 
-test("Task D: detector catches real duplicates (sanity check)", () => {
+await Promise.all(pending)
+
+void test("Task D: detector catches real duplicates (sanity check)", () => {
   let t = 0
-  const fixed = () => {
+
+  const fixed = (): string => {
     const parity = t % 2 === 0
+
     t += 1
-    return parity
-      ? "00000000-0000-8000-8000-000000000000"
-      : "11111111-1111-8000-8000-111111111111"
+
+    if (parity) {
+      return "00000000-0000-8000-8000-000000000000"
+    }
+
+    return "11111111-1111-8000-8000-111111111111"
   }
+
   const r = collisionTestScaled(fixed, 2000)
+
   assert.equal(r.collisions, 2000 - 2, "two unique values among 2000 inserts")
 })

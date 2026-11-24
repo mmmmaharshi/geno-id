@@ -1,18 +1,22 @@
+import type { Browser } from "playwright"
+import { JSDOM } from "jsdom"
+import { setTimeout as delay } from "node:timers/promises"
 import fs from "node:fs"
 import path from "node:path"
 import { pathToFileURL } from "node:url"
-import { JSDOM } from "jsdom"
-import type { Browser, LaunchOptions } from "playwright"
 
 const __dirname = import.meta.dirname
 const root = path.resolve(__dirname, "..", "..")
 
 interface MockPage {
-  $$eval: <T>(selector: string, fn: (els: Element[]) => T) => Promise<T>
+  $$eval: <T,>(
+    selector: string,
+    fn: (els: readonly Readonly<Element>[]) => T,
+  ) => Promise<T>
   $eval: <T,>(
     selector: string,
-    fn: (el: Element, ...args: unknown[]) => T,
-    ...args: unknown[]
+    fn: (el: Readonly<Element>, ...args: readonly unknown[]) => T,
+    ...args: readonly unknown[]
   ) => Promise<T>
   evaluate: <T>(fn: () => T) => Promise<T>
   goto: (_url: string, _opts?: unknown) => Promise<void>
@@ -21,7 +25,7 @@ interface MockPage {
   waitForFunction: (
     fn: () => boolean,
     _arg?: unknown,
-    opts?: { timeout?: number },
+    opts?: Readonly<{ timeout?: number }>,
   ) => Promise<boolean>
 }
 
@@ -30,10 +34,9 @@ interface MockBrowser {
   newPage: () => Promise<MockPage>
 }
 
-async function makeMockBrowser(): Promise<MockBrowser> {
+const makeMockBrowser = async (): Promise<MockBrowser> => {
   const htmlPath = path.join(root, "index.html")
-  const html = fs.readFileSync(htmlPath, "utf-8")
-
+  const html = fs.readFileSync(htmlPath, "utf8")
   const dom = new JSDOM(html, {
     runScripts: "outside-only",
     url: `file://${htmlPath}`,
@@ -42,24 +45,35 @@ async function makeMockBrowser(): Promise<MockBrowser> {
   const nodeCrypto = (await import("node:crypto")) as unknown as {
     webcrypto: Crypto
   }
-  if (!window.crypto || !window.crypto.subtle) {
+  const browserWindow = window as unknown as {
+    crypto?: { subtle?: SubtleCrypto }
+    performance?: Performance
+  }
+  const browserCrypto = browserWindow.crypto
+  let installCrypto = false
+  if (!browserCrypto) {
+    installCrypto = true
+  } else if (!browserCrypto.subtle) {
+    installCrypto = true
+  }
+  if (installCrypto) {
     Object.defineProperty(window, "crypto", {
       configurable: true,
       value: nodeCrypto.webcrypto,
     })
   }
-  if (!window.performance) {
+  if (!browserWindow.performance) {
+    const perfHooks = await import("node:perf_hooks")
     Object.defineProperty(window, "performance", {
       configurable: true,
-      value: (await import("node:perf_hooks")).performance,
+      value: perfHooks.performance,
     })
   }
 
   const benchmarkUrl = pathToFileURL(path.join(root, "dist/benchmark.js")).href
   const benchModule = (await import(benchmarkUrl)) as {
-    init: (host: Window & typeof globalThis) => void
+    init: (host: Readonly<object>) => void
   }
-
   Object.defineProperty(globalThis, "document", {
     configurable: true,
     value: window.document,
@@ -68,58 +82,79 @@ async function makeMockBrowser(): Promise<MockBrowser> {
     configurable: true,
     value: window,
   })
-
-  benchModule.init(window as unknown as Window & typeof globalThis)
+  benchModule.init(window)
 
   const page: MockPage = {
-    async $$eval<T,>(selector: string, fn: (els: Element[]) => T): Promise<T> {
-      const els = [...window.document.querySelectorAll(selector)]
-      return fn(els)
-    },
-    async $eval<T,>(
+    $$eval: async <T,>(
       selector: string,
-      fn: (el: Element, ...args: unknown[]) => T,
-      ...args: unknown[]
-    ): Promise<T> {
-      const el = window.document.querySelector(selector)!
-      return fn(el, ...args)
+      fn: (els: readonly Readonly<Element>[]) => T,
+    ): Promise<T> => {
+      const result = await Promise.resolve(
+        fn([...window.document.querySelectorAll(selector)]),
+      )
+      return result
     },
-    // runBenchmark triggers runAll via page.evaluate(setTimeout(runAll)); the
-    // scheduled macrotask fires while waitForFunction polls for "Done.".
-    async evaluate<T,>(fn: () => T): Promise<T> {
-      return fn()
+    $eval: async <T,>(
+      selector: string,
+      fn: (el: Readonly<Element>, ...args: readonly unknown[]) => T,
+      ...args: readonly unknown[]
+    ): Promise<T> => {
+      const element = window.document.querySelector(selector)
+      if (!element) {
+        throw new Error(`mock page missing ${selector}`)
+      }
+      const result = await Promise.resolve(fn(element, ...args))
+      return result
     },
-    async goto(): Promise<void> {},
-    on(): void {},
-    async screenshot(): Promise<void> {},
-    async waitForFunction(
+    evaluate: async <T>(fn: () => T): Promise<T> => {
+      const result = await Promise.resolve(fn())
+      return result
+    },
+    goto: async (): Promise<void> => {
+      await Promise.resolve()
+    },
+    on: (): void => {
+      // Noop
+    },
+    screenshot: async (): Promise<void> => {
+      await Promise.resolve()
+    },
+    waitForFunction: async (
       fn: () => boolean,
       _arg?: unknown,
-      opts: { timeout?: number } = {},
-    ): Promise<boolean> {
-      const timeout = opts.timeout || 30_000
+      opts: Readonly<{ timeout?: number }> = {},
+    ): Promise<boolean> => {
+      const timeout = opts.timeout ?? 30_000
       const start = Date.now()
-      while (true) {
-        if (fn()) {return true}
-        if (Date.now() - start > timeout)
-          {throw new Error("waitForFunction timed out")}
-        if ((globalThis as any).Bun?.sleep) { await (globalThis as any).Bun.sleep(10) } else { const _end = Date.now() + 10; while (Date.now() < _end) {} }
+      const poll = async (): Promise<boolean> => {
+        if (fn()) {
+          return true
+        }
+        if (Date.now() - start > timeout) {
+          throw new Error("waitForFunction timed out")
+        }
+        await delay(10)
+        return poll()
       }
+      const result = await poll()
+      return result
     },
   }
 
-  const browser: MockBrowser = {
-    async close(): Promise<void> {},
-    async newPage(): Promise<MockPage> {
-      return page
+  return {
+    close: async (): Promise<void> => {
+      await Promise.resolve()
+    },
+    newPage: async (): Promise<MockPage> => {
+      const result = await Promise.resolve(page)
+      return result
     },
   }
-
-  return browser
 }
 
 const { runBenchmark } = await import("./playwright.js")
-;(async () => {
+
+const main = async (): Promise<void> => {
   const args: Record<string, string> = {
     "n-async": "200",
     "n-coll": "5000",
@@ -127,10 +162,10 @@ const { runBenchmark } = await import("./playwright.js")
     out: "/tmp/dry_run_results.json",
   }
   const output = await runBenchmark(args, {
-    launch: (async (_opts: LaunchOptions) =>
-      makeMockBrowser()) as unknown as (
-      opts: LaunchOptions,
-    ) => Promise<Browser>,
+    launch: async (_opts: object): Promise<Browser> => {
+      const browser = await makeMockBrowser()
+      return browser as unknown as Browser
+    },
   })
 
   console.log("OK: runBenchmark completed via mocked browser.")
@@ -144,8 +179,8 @@ const { runBenchmark } = await import("./playwright.js")
   console.log("sample results[0]:", JSON.stringify(output.results[0]))
   console.log("sample collisions[0]:", JSON.stringify(output.collisions[0]))
 
-  const namesResults = output.results.map((r) => r["Algorithm"])
-  const namesColl = output.collisions.map((r) => r["Algorithm"])
+  const namesResults = output.results.map((r) => r.Algorithm)
+  const namesColl = output.collisions.map((r) => r.Algorithm)
   const expectedNames = [
     "crypto.randomUUID (v4)",
     "UUIDv7 (custom, RFC 9562)",
@@ -166,10 +201,15 @@ const { runBenchmark } = await import("./playwright.js")
     !namesMatch
   ) {
     console.error("DRY RUN FAILED — see checks above")
-    process.exit(1)
+    process.exitCode = 1
+    return
   }
   console.log("\nDRY RUN PASSED.")
-})().catch((error: Error) => {
+}
+
+try {
+  await main()
+} catch (error) {
   console.error("DRY RUN THREW:", error)
-  process.exit(1)
-})
+  process.exitCode = 1
+}

@@ -1,69 +1,150 @@
-import { test } from "node:test"
-import assert from "node:assert/strict"
-import { pathToFileURL } from "node:url"
-import path from "node:path"
+/// <reference types="node" />
 
-// oxlint false-positive: it does not track `import type` usage inside `as` casts.
-// oxlint-disable-next-line no-unused-vars
+/// <reference lib="es2023" />
+
 import type { V8Field, V8Layout } from "../../dist/algo.js"
 
+import { andBits, shiftRightBits } from "../shared/bitwise.ts"
+
+import assert from "node:assert/strict"
+
+import path from "node:path"
+
+import { pathToFileURL } from "node:url"
+import { test } from "node:test"
+
+interface ReadonlyV8Field {
+  readonly name: string
+
+  readonly start: number
+
+  readonly length: number
+
+  readonly type: V8Field["type"]
+
+  readonly value?: number
+
+  readonly constraint?: {
+    readonly allowed?: readonly number[]
+
+    readonly min?: number
+
+    readonly max?: number
+
+    readonly monotonic?: boolean
+  }
+}
+
+interface ReadonlyV8Layout {
+  readonly name: string
+
+  readonly fields: readonly ReadonlyV8Field[]
+}
+
 const __dirname = import.meta.dirname
+
 const root = path.resolve(__dirname, "..", "..")
-const algo = await import(pathToFileURL(path.resolve(root, "dist/algo.js")).href)
+
+const algo: unknown = await import(
+  pathToFileURL(path.resolve(root, "dist/algo.js")).href
+)
+
 const {
   completeLayout,
+
   readStructured,
+
   genStructuredGenoID,
+
   uuidToBytes,
+
   DBKEY_LAYOUT,
 } = algo as {
-  completeLayout: (name: string, core: V8Field[]) => V8Layout
-  readStructured: (uuid: string, layout: V8Layout) => Record<string, number>
-  genStructuredGenoID: (l: V8Layout) => string
+  completeLayout: (name: string, core: readonly ReadonlyV8Field[]) => V8Layout
+
+  readStructured: (
+    uuid: string,
+    layout: ReadonlyV8Layout,
+  ) => Record<string, number>
+
+  genStructuredGenoID: (l: ReadonlyV8Layout) => string
+
   uuidToBytes: (uuid: string) => Uint8Array
-  DBKEY_LAYOUT: V8Layout
+
+  DBKEY_LAYOUT: ReadonlyV8Layout
 }
 
 // Independent uuid<->bytes codec (does NOT use algo) so expected values are
-// derived from an external source of truth, not recomputed by the code under test.
-function bytesToUuid(b: Uint8Array): string {
+
+// Derived from an external source of truth, not recomputed by the code under test.
+
+const bytesToUuid = (b: Readonly<Uint8Array>): string => {
   const h = [...b].map((x) => x.toString(16).padStart(2, "0")).join("")
+
   return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20, 32)}`
 }
 
-test("readStructured returns each field's integer value from a crafted UUID", () => {
+void test("readStructured returns each field's integer value from a crafted UUID", () => {
   const layout = completeLayout("one", [
     { length: 16, name: "x", start: 0, type: "random" },
   ])
+
   const bytes = new Uint8Array(16)
+
   bytes[0] = 0x12
+
   bytes[1] = 0x34
+
   const got = readStructured(bytesToUuid(bytes), layout)
+
   assert.equal(got.x, 0x12_34)
 })
 
-test("readStructured reads full >32-bit fields (regression guard for truncation)", () => {
+void test("readStructured reads full >32-bit fields (regression guard for truncation)", () => {
   const layout = completeLayout("wide", [
     { length: 40, name: "big", start: 0, type: "random" },
   ])
+
   const bytes = new Uint8Array(16)
+
   bytes[0] = 0x01
+
   bytes[1] = 0x00
-  bytes[2] = 0xab
-  bytes[3] = 0xcd
-  bytes[4] = 0xef
+
+  bytes[2] = 0xAB
+
+  bytes[3] = 0xCD
+
+  bytes[4] = 0xEF
+
   const got = readStructured(bytesToUuid(bytes), layout)
+
   // 0x0100ABCDEF = 4306226671; a 32-bit truncation would yield 0x00ABCDEF.
-  assert.equal(got.big, 0x01_00_ab_cd_ef)
+
+  assert.equal(got.big, 0x01_00_AB_CD_EF)
 })
 
-test("readStructured keys match field names and respect constraints on real UUIDs", () => {
+void test("readStructured keys match field names and respect constraints on real UUIDs", () => {
   const layout = DBKEY_LAYOUT
+
   const uuid = genStructuredGenoID(layout)
+
   const got = readStructured(uuid, layout)
-  assert.deepEqual(Object.keys(got).toSorted(), layout.fields.map((f) => f.name).toSorted())
+
+  assert.deepEqual(
+    Object.keys(got).toSorted(),
+    layout.fields.map((f) => f.name).toSorted(),
+  )
+
   assert.ok([1, 2, 3, 4, 5].includes(got.shard))
+
   assert.ok(Number.isInteger(got.counter) && got.counter >= 0)
-  // version nibble must be 8 (RFC 9562 v8)
-  assert.equal((uuidToBytes(uuid)[6] >> 4) & 0xf, 8)
+
+  // Version nibble must be 8 (RFC 9562 v8)
+
+  const bytes = uuidToBytes(uuid)
+
+  const versionBits = shiftRightBits(bytes[6], 4)
+
+  assert.equal(andBits(versionBits, 0xF), 8)
 })
