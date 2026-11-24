@@ -10,6 +10,7 @@ authors:
     family-names: Ouku
     orcid: "https://orcid.org/0000-0002-3907-4501"
 repository-code: "https://github.com/mmmmaharshi/geno-id"
+doi: 10.5281/zenodo.24507837
 license: MIT
 version: 1.29.0
 date-released: "2026-11-24"
