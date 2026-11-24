@@ -36,7 +36,7 @@ GenoID is a TypeScript RFC 9562 v8 UUID library + CLI + browser benchmark. The p
 
 `src/scripts/bench.ts` holds extra GenoID variants (Fast v1–v3) used in development; the browser ships only `genGenoID`. `src/bench-core.ts` is the shared harness used by both `src/benchmark.ts` (browser) and `src/scripts/bench.ts` (Node).
 
-**Key tech:** Bun (runtime/build/test/lint/typecheck/publish), Node 22+ (CI), Deno 2.9.3 (CI-only research runtime), Playwright (browser benchmark), oxlint + oxlint-tsgolint, changesets.
+**Key tech:** Bun (runtime/build/test/lint/typecheck/publish), Node 22+ (CI), Deno 2.9.3 (CI-only research runtime), Playwright (browser benchmark), oxlint + tsrs, changesets.
 
 ## Setup Commands
 
@@ -50,7 +50,7 @@ GenoID is a TypeScript RFC 9562 v8 UUID library + CLI + browser benchmark. The p
 | Command | What | Time | Requires |
 |---|---|---|---|
 | `bun run build` | Compile TypeScript to `dist/` | ~5s | `bun install` |
-| `bun run lint` | Type-aware oxlint; all rules from the project plugins | varies | `bun install` |
+| `bun run lint` | Type-aware oxlint with Ultracite, Cloudflare, landmines, and gdp presets | varies | `bun install` |
 | `bun run lint:fix` | Auto-fix type-aware lint issues | varies | `bun install` |
 | `bun run typecheck` | Typecheck root + scripts tsconfigs | ~10s | `bun install` |
 | `bun run test` | Run all unit tests (`src/scripts/*.test.ts`, `--parallel`) | ~2min (browser engines) | `bun install` |
@@ -94,7 +94,7 @@ GenoID is a TypeScript RFC 9562 v8 UUID library + CLI + browser benchmark. The p
 
 ## Code Style
 
-- **Lint/format:** `bun run lint` runs type-aware oxlint with every rule from the project plugins. Read `docs/agents/lint-policy.md` before changing lint scope or context overrides. Inline suppressions stay forbidden. `bun run lint:fix` auto-fixes.
+- **Lint/format:** `bun run lint` runs type-aware oxlint with Ultracite, `@cloudflare/oxlint-config`, landmines, and gdp. Read `docs/agents/lint-policy.md` before changing lint scope or context overrides. Inline suppressions stay forbidden. `bun run lint:fix` auto-fixes.
 - **No comments unless asked** (project convention).
 - **File org:** `src/algo.ts` (pure, no DOM/I/O) + `src/bench-core.ts` (harness) + `src/scripts/*` (Node/Deno entry points, dynamically import `dist/*.js`).
 - **Imports/exports:** `src/scripts/*.ts` dynamically import the compiled `dist/algo.js` directly — no shim.

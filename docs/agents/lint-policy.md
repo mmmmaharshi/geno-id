@@ -2,27 +2,28 @@
 
 ## Scope
 
-`bun run lint` runs oxlint with TypeScript information. It enables all 539 rules from the project's eight plugins. The base configuration disables no rule.
+`bun run lint` runs type-aware oxlint through [`tsrs`](https://oxc.rs/blog/2026-11-17/faster-type-aware-linting-with-tsrs). The config extends `ultracite/oxlint/core`, `@cloudflare/oxlint-config`, `ultracite/oxlint/landmines`, and `ultracite/oxlint/gdp`.
 
-The Deno ports stay outside oxlint and the scripts typecheck. CI checks them with Deno.
+`@interfere/landmines` stays at `0.1.1`: later releases removed the `/structure`, `/style`, `/testing`, and `/types` subpaths the Ultracite preset imports.
+
+Deno ports stay outside oxlint and the scripts typecheck. `src/scripts/deno/**` is ignored; CI checks the ports with Deno.
 
 ## Context overrides
 
-Some rules conflict with a deliberate project contract. The configuration changes these rules only in the listed context.
+The presets cover the project. These narrow overrides keep the existing public and benchmark contracts.
 
 | Context | Rules | Reason |
 |---|---|---|
-| `src/**/*.ts` | `import/no-named-export`, `import/no-relative-parent-imports`, `import/exports-last`, `import/group-exports` | The library exposes named ESM exports and keeps each domain next to its implementation. |
-| `src/**/*.ts` | `oxc/no-async-await` | WebCrypto, workers, timers, and database drivers require async functions. |
-| `src/**/*.ts` | `typescript/no-unsafe-type-assertion` | Dynamic `dist` imports, test fixtures, and overloaded helper boundaries need explicit narrowing. |
-| `src/**/*.ts` | `typescript/prefer-optional-chain` | The restriction rule `oxc/no-optional-chaining` stays enabled, so explicit null checks are the project convention. |
-| `src/scripts/**/*.ts` | `id-length`, `no-magic-numbers`, `no-underscore-dangle` | Benchmark fixtures, counters, and bit masks are clearer with short names and literal values. |
-| `src/scripts/**/*.ts` | `node/no-process-env`, `node/no-sync`, `typescript/prefer-readonly-parameter-types` | CLI configuration, deterministic artifact writes, and mutable benchmark inputs are deliberate. |
-| `src/scripts/*.d.ts` | `import/unambiguous` | Ambient module declarations stay script-shaped so TypeScript registers `bun:sqlite`. |
+| `**/*.ts` | `typescript/array-type` | The project uses `T[]` and `readonly T[]`; the preset defaults to `Array<T>`. |
+| `src/**/*.ts` | `typescript/no-unsafe-type-assertion`, `gdp-ts/no-type-assertion` | Dynamic `dist` imports, test fixtures, and overloaded helper boundaries need explicit narrowing. |
+| `src/**/*.ts` | `landmines-style/no-comments`, `landmines-types/no-explicit-return-types` | The project keeps explanatory comments and declares public return types. |
+| `src/**/*.ts` | `quality/*` | Benchmark and CLI boundaries parse generated JSON and SQLite rows; these custom quality rules assume fully typed application boundaries. |
+| `src/**/*.ts` | `unicorn/consistent-function-scoping`, `one-var` | Generator closures stay next to their state, and grouped declarations match the benchmark code. |
+| `src/**/*.test.ts` | `landmines-structure/colocated-tests`, `landmines-testing/no-flake-masking`, `landmines-testing/no-test-doubles` | Tests live centrally in `src/scripts`, use explicit timeouts on CPU-heavy invariants, and inject clocks and browser launchers. |
+| `src/scripts/evidence-fixture.ts` | `landmines-structure/test-file-names` | This is a fixture generator script, not test data. |
+| `src/scripts/**/*.ts`, `src/benchmark.ts` | `no-console` | CLI and browser benchmark entry points report results through stdout. |
 | `src/scripts/run-dieharder.ts` | `typescript/strict-void-return` | Node's `execFile` overload returns a child process while its callback API reports completion through the callback. |
-| `*.config.ts` | `import/no-default-export`, `typescript/no-unsafe-call`, `typescript/no-unsafe-argument` | Oxlint and oxfmt require a default config export and load these files outside the source tsconfig. |
-
-The Node built-in module allowlist covers the CLI and test imports. The numeric ignore list covers UUID bit widths, masks, statistical constants, and benchmark sizes. The readonly-parameter allowlist covers mutable buffers, collections, and the workload accumulator. New numeric literals outside that list still fail. Size limits stay enabled at 5,000 lines per file and 400 lines per function.
+| `*.config.ts` | `typescript/no-unsafe-call` | Oxlint and oxfmt load these files outside the source tsconfig. |
 
 ## Inline suppressions
 
