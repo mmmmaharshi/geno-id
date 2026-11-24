@@ -106,6 +106,8 @@ GenoID is a TypeScript RFC 9562 v8 UUID library + CLI + browser benchmark. The p
 
 **Docs stay with code:** the change that adds a feature or fixes behavior updates its docs in the same commit — README numbers from the frozen artifact (never memory), CITATION.cff version/date on release, paper tables from archived results. A docs-only follow-up commit is a miss, not a workflow.
 
+**Manuscript prose (paper.tex):** academic prose only — no code identifiers, commands, file paths, or version numbers in text, tables, captions, or figures. Describe layouts, harnesses, and archives in plain words (`layout declaration`, `rejection sweep`, `archived counts`); cite generator rows and environments by role (`structured generator`, `Env A`). Bibliography stays sequential with every `\cite` resolving. `bun run check:paper` must stay clean and `bun run evidence:verify` verified after any manuscript edit.
+
 ## Build and Deployment
 
 - **Build:** `bun run build` → `dist/` (gitignored; rebuild after changing `src/algo.ts`/`src/benchmark.ts`/`src/bench-core.ts`).
