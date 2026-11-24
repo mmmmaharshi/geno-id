@@ -74,7 +74,7 @@ Whether embedding an ordered key pays off is itself conditional, and an external
     \item Validation across per-field uniformity at $10^8$ scale (matching the closed-form $m/2^\ell$ bound to within $0.012$ percentage points, consistent with the $0.004$ pp binomial sampling noise at $n=10^8$), NIST and dieharder batteries, and multi-runtime throughput benchmarks, with limitations disclosed openly.
 \end{itemize}
 
-\noindent\textbf{Organization.} Section~\ref{sec:related-work} positions the work against identifier standards, sortable schemes, steganographic generators, and constrained-generation lineage. Section~\ref{sec:design} presents the layout abstraction and pooled architecture, and Section~\ref{sec:repair} the repair pass with its correctness argument. Section~\ref{sec:applications} works through the deployment question, when structure belongs in the key, with sharded, multi-tenant, and event-sourced designs, and Section~\ref{sec:formal} proves the complexity, entropy, and uniformity claims with the bit-allocation compiler. Section~\ref{sec:security} gives the entropy accounting and threat model, and Section~\ref{sec:evaluation} reports composition correctness, repair cost, randomness quality, and throughput with the methodology that keeps each claim refutable. Section~\ref{sec:validity} discusses validity and limits, and Section~\ref{sec:conclusion} concludes.
+\noindent\textbf{Organization.} Section~\ref{sec:related-work} positions the work against identifier standards, sortable schemes, steganographic generators, and constrained-generation lineage. Section~\ref{sec:constant-change} records the one durable principle, and Section~\ref{sec:design} asks whether a GenoID architecture exists, answering with the layout abstraction and pooled generation. Section~\ref{sec:repair} gives the repair pass with its correctness argument. Section~\ref{sec:applications} works through the deployment question, when structure belongs in the key, with sharded, multi-tenant, and event-sourced designs, and Section~\ref{sec:formal} proves the complexity, entropy, and uniformity claims with the bit-allocation compiler. Section~\ref{sec:security} gives the entropy accounting and threat model, and Section~\ref{sec:evaluation} reports composition correctness, repair cost, randomness quality, and throughput with the methodology that keeps each claim refutable. Section~\ref{sec:validity} discusses validity and limits, and Section~\ref{sec:conclusion} concludes.
 
 \section{Related Work}
 \label{sec:related-work}
@@ -97,7 +97,14 @@ Embedding is not the only route to locality. CockroachDB hash-shards indexes to 
 
 On throughput, prior work amortizes CSPRNG draws via pooling~\cite{12}, and a major PostgreSQL release ships a native time-ordered function~\cite{13}; GenoID adopts the same principle with a 256-entry pool.
 
-\section{Design}
+\section{Constant Change}
+\label{sec:constant-change}
+
+In searching for identifier architectural principles, remember that technical change is continuous in the data-systems industry, and GenoID reflects it. Shipped layouts are a snapshot, not dogma: field widths, admissible sets, and workload weights all move as deployments grow. Principles that seemed inviolable a few years ago are deprecated today, and principles that seem sacred today will be deprecated tomorrow. The principle of constant change is perhaps the only principle that should survive indefinitely.
+
+The purpose of this document is therefore not to lay down dogma about how identifiers should be designed, or even about how they should fit together. Rather, it is to convey guidelines found useful in the past that may be useful to those declaring new layouts or evaluating such designs. A resharding migration has a fixed shape: version the layout name across generations, never reuse a bare name, and run readers that accept both generations while writers emit the new one, tracking the fraction of old-generation keys as the migration metric and retiring the old reader when it reaches zero.
+
+\section{Is there a GenoID Architecture?}
 \label{sec:design}
 Think of a UUID's 122 free bits as a form with labeled blanks: timestamp, shard from a small set, monotonic counter. GenoID lets a developer declare that form once and fills every blank correctly on every call.
 
@@ -132,15 +139,15 @@ That declaration is the complete specification: no generation code is written pe
 \label{fig:layout}
 \end{figure}
 
-\subsection{Design principles}
+\subsection{General design issues}
 \label{sec:principles}
-Four principles guide the framework. First, the framework accepts constant change. Shipped layouts are a snapshot, not dogma, so versioned layout names and a dual-read window carry migrations (Section~\ref{sec:why-embed}). Second, a small spanning set of rules suffices. Field offsets, lengths, and admissible sets generate many application keys without per-layout generation code (Section~\ref{sec:layout}). Third, placement follows the boundary the key must cross. When an identifier crosses a boundary that carries one value, structure belongs in the key itself (Section~\ref{sec:why-embed}). Fourth, running code is the evidence. The Rust port and golden vectors, not the prose specification, establish executability (Section~\ref{sec:cross-lang}). These principles guide design and add no new claim; they are not an invariant reference model.
+Heterogeneity is inevitable and must be supported by design: one shared repair pass serves every declared layout, from session tokens to distributed database keys. If there are several ways of doing the same thing, choose one: a single layout declaration replaces per-layout generation code. All designs must scale readily to very many identifiers per site and to many millions of sites. Performance and cost count alongside functionality; the repair pass costs $O(k)$ regardless of the drawn value. Keep it simple: when in doubt, declare the narrower field. Modularity holds: the layout declaration, the pooled generator, and the repair pass vary independently. In many cases it is better to adopt an almost complete layout now than to wait for a perfect one. Avoid options wherever possible. Be strict when emitting and tolerant when reading: every emitted value satisfies its declared constraints, and readers accept both layout generations during migration. Circular dependencies are avoided: routing never depends on a lookup the routing itself must populate. And perhaps most important: nothing gets standardised until there are multiple instances of running code -- the cross-language port and golden vectors, not the prose specification, establish executability. These principles guide design and add no new claim; they are not an invariant reference model.
 
 \subsection{Implementation: pooled CSPRNG generation}
 \label{sec:pooled-gen}
 A 256-entry pool is populated from the OS CSPRNG on first use and
 refilled in full when exhausted. Each call draws one 128-bit value from
-the pool; the single shared repair pass pass
+the pool; the single shared repair pass
 (Algorithm~\ref{alg:repair}) then fixes any constrained field that falls
 outside its admissible set.
 
@@ -214,7 +221,7 @@ No redraw.}
 \label{fig:pipeline}
 \end{figure}
 
-\section{Applications}
+\section{Field and layout issues}
 \label{sec:applications}
 Each use case below declares one layout and reads one field; no
 generation code is written per application.
@@ -635,7 +642,7 @@ collision avoidance at this budget. The comparison isolates what each structure 
 buys SQL prunability and counter-ordered bursts; microshard buys a fixed
 layout with zero-lookup routing, at the price of birthday-bound bursts.
 
-\section{Security Analysis}
+\section{Confidentiality and Authentication}
 \label{sec:security}
 
 The OS CSPRNG is assumed reliable, matching RFC~9562 \S8. Every GenoID pool refill is seeded from it. The analysis considers passive observers, state compromise, structure inference, and collision attacks.
