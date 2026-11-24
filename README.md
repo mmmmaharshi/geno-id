@@ -181,14 +181,14 @@ const events = Array.from({ length: 100 }, () => genStructuredGenoID(eventLayout
 
 ## Performance
 
-GenoID is faster than other structured UUID generators.
-The compiled variant is near-native speed.
+Structured generation costs throughput against native v4.
+The compiled variant stays close to the structured path.
 
 | Generator | Ops/sec (Bun, macOS CI) | Collisions (n=1M) | NIST |
 |---|---|---|---|
-| v4-native | 19.35 M | 0 | — |
-| genoid-v8 (unstructured) | 2.65 M | 0 | — |
-| **genoid-compiled (dbkey)** | **2.22 M** | **0** | **15/15** |
+| v4-native | 18.03 M | 0 | — |
+| genoid-v8 (unstructured) | 2.93 M | 0 | — |
+| **genoid-compiled (dbkey)** | **1.02 M** | **0** | **15/15** |
 
 Full table across 3 runtimes × 3 operating systems (nine CI environments): run `bun run bench-ci`.
 

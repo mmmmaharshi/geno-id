@@ -42,7 +42,7 @@
     },
     "sec_throughput": {
       "section": "Throughput (Section 5.5)",
-      "claim": "genoid-structured ahead of the closest structured prior art in every environment of the nine-job matrix, typically mid-single-digit multiples but host-dependent, exact per-environment ratios tabulated from the frozen artifact (all 18 comparisons p<1e-6)",
+      "claim": "genoid-structured ahead of pg_uuid_v8 in eight of nine environments and of ulid-v8 in seven, by 1.1-2.7x where it leads, with macOS hosts behind; exact per-environment ratios tabulated from the refreshed artifact; all 18 comparisons p<0.05, 16 below 1e-6",
       "artifact": "results/all-results.json",
       "generated": [
         "dist/bench-ci-results.json",
