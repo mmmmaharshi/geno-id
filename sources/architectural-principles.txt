@@ -1,0 +1,327 @@
+GenoID Working Paper                                M. Maharshi, Editor
+Category: Informational                                      J. Ouku
+                                                        November 2026
+
+
+                Architectural Principles of GenoID
+
+Status of This Memo
+
+   This memo provides information for the identifier community.  This memo
+   does not specify an Internet standard of any kind.  Distribution of
+   this memo is unlimited.
+
+Abstract
+
+   Structured identifiers have grown in evolutionary fashion from modest
+   beginnings, rather than from a Grand Plan. While this process of
+   evolution is one of the main reasons for the technology's success, it
+   nevertheless seems useful to record a snapshot of the current
+   principles of GenoID composition. This is intended for general
+   guidance and general interest, and is in no way intended to be a
+   formal or invariant reference model.
+
+Table of Contents
+
+      1. Constant Change..............................................1
+      2. Is there a GenoID Architecture?..............................2
+      3. General Design Issues........................................4
+      4. Field and layout issues......................................5
+      5. External Issues..............................................6
+      6. Related to Confidentiality and Authentication................6
+      Acknowledgements................................................7
+      References......................................................7
+      Security Considerations.........................................8
+      Authors' Addresses..............................................8
+
+1. Constant Change
+
+   In searching for identifier architectural principles, we must remember
+   that technical change is continuous in the data-systems industry.
+   GenoID reflects this. Over the years since the first random
+   identifiers, various measures of identifier use have increased by
+   factors between 100 (insert throughput) and 1000000 (fleet-wide
+   issuance). In this environment, some architectural principles
+   inevitably change. Principles that seemed inviolable a few years ago
+   are deprecated today. Principles that seem sacred today will be
+   deprecated tomorrow. The principle of constant change is perhaps the
+   only principle of GenoID that should survive indefinitely.
+
+   The purpose of this document is not, therefore, to lay down dogma
+   about how identifiers should be designed, or even about how they
+   should fit together. Rather, it is to convey various guidelines
+   that have been found useful in the past, and that may be useful to
+   those designing new layouts or evaluating such designs.
+
+   A good analogy for the development of GenoID is that of constantly
+   renewing the individual streets and buildings of a city, rather than
+   razing the city and rebuilding it. The architectural principles
+   therefore aim to provide a framework for creating cooperation and
+   standards, as a small "spanning set" of rules that generates a
+   large, varied and evolving space of keys.
+
+   Some current technical triggers for change include the limits to the
+   scaling of random primary keys, the fact that partitioned databases
+   and multi-tenant services present fundamentally new challenges, and
+   the need for routing guarantees in the commercial data layer.
+
+   As Lord Kelvin stated in 1895, "Heavier-than-air flying machines are
+   impossible." We would be foolish to imagine that the principles
+   listed below are more than a snapshot of our current understanding.
+
+2. Is there a GenoID Architecture?
+
+   2.1 Many members of the identifier community would argue that there
+   is no architecture, but only a tradition, which was not written down
+   for the first years (or at least not by its authors).  However, in
+   very general terms, the community believes that the goal is
+   routability, the tool is the version 8 payload, and the intelligence
+   is end to end rather than hidden in the registry.
+
+   The current exponential growth of structured keys seems to show that
+   routability is its own reward, and is more valuable than any
+   individual application such as sharding or tenant isolation.  This
+   routability requires technical cooperation between service
+   providers, and flourishes in the increasingly liberal and
+   competitive commercial data environment.
+
+   The key to global routability is the layout declaration.  The key to
+   exploiting this declaration over diverse stores providing global
+   routability is the "end to end argument".
+
+   2.2 It is generally felt that in an ideal situation there should be
+   one, and only one, repair pass at the generation level.  This allows
+   for uniform and relatively seamless operations in a competitive,
+   multi-vendor, multi-provider data layer.  There can of course be
+   multiple layouts to satisfy different requirements at other levels,
+   and there are many successful examples of large private fleets with
+   multiple key formats in use.
+
+   In practice, there are at least two reasons why more than one layout
+   might be in use in the public data layer. Firstly, there can be a
+   need for gradual transition from one generation of layout to
+   another.  Secondly, fundamentally new requirements might lead to a
+   fundamentally new layout.
+
+   The generation level must be independent of the storage medium and
+   storage addressing.  This approach allows GenoID to exploit any new
+   digital storage technology of any kind, and to decouple its field
+   mechanisms from the hardware. It allows GenoID to be the easy way
+   to interconnect fundamentally different storage media, and to offer
+   a single platform for a wide variety of data infrastructure
+   applications and services.
+
+   2.3 It is also generally felt that end-to-end functions can best be
+   realised by end-to-end identifiers.
+
+   The end-to-end argument is discussed in depth in [Saltzer].  The
+   basic argument is that, as a first principle, certain required end-
+   to-end functions can only be performed correctly by the end-systems
+   themselves. A specific case is that any registry, however carefully
+   designed, will be subject to failures of lookup at some
+   statistically determined rate. The best way to cope with this is to
+   accept it, and give responsibility for the routability of the key to
+   the end systems. Another specific case is end-to-end ordering.
+
+   To quote from [Saltzer], "The function in question can completely and
+   correctly be implemented only with the knowledge and help of the
+   application standing at the endpoints of the communication system.
+   Therefore, providing that questioned function as a feature of the
+   communication system itself is not possible. (Sometimes an incomplete
+   version of the function provided by the communication system may be
+   useful as a performance enhancement.")
+
+   This principle has important consequences if we require applications
+   to survive partial registry failures. An end-to-end identifier
+   design should not rely on the maintenance of state (i.e. information
+   about the state of the end-to-end communication) inside the
+   registry. Such state should be maintained only in the endpoints, in
+   such a way that the state can only be destroyed when the endpoint
+   itself breaks (known as fate-sharing). An immediate consequence of
+   this is that self-describing keys are better than classical lookup
+   keys.  The registry's job is to store records as efficiently and
+   flexibly as possible.  Everything else should be done at the
+   fringes.
+
+   To perform its services, the generator maintains some state
+   information: pools, tick counters, layout caches, and the like.
+   This state must be self-healing; adaptive procedures or protocols
+   must exist to derive and maintain that state, and change it when
+   the workload or activity of the fleet changes. The volume of this
+   state must be minimized, and the loss of the state must not result
+   in more than a temporary denial of service given that entropy
+   exists.  Manually configured state must be kept to an absolute
+   minimum.
+
+   2.4 Fortunately, nobody owns the identifier space, there is no
+   centralized control, and nobody can turn it off. Its evolution
+   depends on rough consensus about technical proposals, and on running
+   code.  Engineering feed-back from real implementations is more
+   important than any architectural principles.
+
+3. General Design Issues
+
+   3.1 Heterogeneity is inevitable and must be supported by design.
+   Multiple types of hardware must be allowed for, e.g. processors
+   differing by at least 3 orders of magnitude, various computer word
+   lengths, and hosts ranging from memory-starved microcontrollers up
+   to massively parallel clusters. Multiple types of application key
+   must be allowed for, ranging from the simplest such as session
+   tokens up to the most complex such as distributed database keys.
+
+   3.2 If there are several ways of doing the same thing, choose one.
+   If a previous design, in the identifier context or elsewhere, has
+   successfully solved the same problem, choose the same solution
+   unless there is a good technical reason not to.  Duplication of the
+   same generation functionality should be avoided as far as possible,
+   without of course using this argument to reject improvements.
+
+   3.3 All designs must scale readily to very many identifiers per
+   site and to many millions of sites.
+
+   3.4 Performance and cost must be considered as well as functionality.
+
+   3.5 Keep it simple. When in doubt during design, choose the simplest
+   solution.
+
+   3.6 Modularity is good. If you can keep things separate, do so.
+
+   3.7 In many cases it is better to adopt an almost complete solution
+   now, rather than to wait until a perfect solution can be found.
+
+   3.8 Avoid options and parameters whenever possible.  Any options and
+   parameters should be configured or negotiated dynamically rather
+   than manually.
+
+   3.9 Be strict when emitting and tolerant when reading.
+   Implementations must follow specifications precisely when emitting to
+   the fleet, and tolerate faulty input from the fleet. When in doubt,
+   discard faulty input silently, without returning an error message
+   unless this is required by the specification.
+
+   3.10 Be parsimonious with unsolicited identifiers, especially
+   broadcasts.
+
+   3.11 Circular dependencies must be avoided.
+
+      For example, routing must not depend on look-ups in the tenant
+      directory, since the updating of tenant directories depends on
+      successful routing.
+
+   3.12 Objects should be self describing (include type and length),
+   within reasonable limits. Only field codes assigned by the layout
+   registry may be used.
+
+   3.13 All specifications should use the same terminology and
+   notation, and the same bit- and byte-order convention.
+
+   3.14 And perhaps most important: Nothing gets standardised until
+   there are multiple instances of running code.
+
+4. Field and layout issues
+
+   4.1 Avoid any design that requires field values to be hard coded or
+   stored on non-volatile storage (except of course where this is an
+   essential requirement as in a shard map or configuration server).
+   In general, user applications should use layouts rather than raw
+   offsets.
+
+   4.2 A single layout structure should be used.
+
+   4.3 Public (i.e. widely visible) field values should be in
+   case-independent ASCII.  Specifically, this refers to tenant names,
+   and to key elements that are transmitted in text format.
+
+   4.4 Identifiers must be unambiguous (unique within any scope where
+   they may appear).
+
+   4.5 Upper layer protocols must be able to identify end-points
+   unambiguously. In practice today, this means that keys must be the
+   same at start and finish of transmission.
+
+5. External Issues
+
+   5.1 Prefer unpatented technology, but if the best technology is
+   patented and is available to all at reasonable terms, then
+   incorporation of patented technology is acceptable.
+
+   5.2 The existence of export controls on some aspects of identifier
+   technology is only of secondary importance in choosing which
+   technology to adopt into the standards. All of the technology
+   required to implement identifier standards can be fabricated in each
+   country, so world wide deployment of identifier technology does not
+   depend on its exportability from any particular country or
+   countries.
+
+   5.3 Any implementation which does not include all of the required
+   components cannot claim conformance with the standard.
+
+   5.4 Designs should be fully international, with support for
+   localisation (adaptation to local character sets). In particular,
+   there should be a uniform approach to character set tagging for
+   information content.
+
+6. Related to Confidentiality and Authentication
+
+   6.1 All designs must fit into the fleet security architecture.
+
+   6.2 It is highly desirable that identifier carriers protect the
+   privacy and authenticity of all keys, but this is not a requirement
+   of the architecture.  Confidentiality and authentication are the
+   responsibility of end users and must be implemented in the protocols
+   used by the end users. Endpoints should not depend on the
+   confidentiality or integrity of the carriers. Carriers may choose to
+   provide some level of protection, but this is secondary to the
+   primary responsibility of the end users to protect themselves.
+
+   6.3 Wherever a cryptographic algorithm is called for in a layout,
+   the layout should be designed to permit alternative algorithms to
+   be used and the specific algorithm employed in a particular
+   implementation should be explicitly labeled. Official labels for
+   algorithms are to be recorded by the layout registry.
+
+   (It can be argued that this principle could be generalised beyond
+   the security area.)
+
+   6.4 In choosing algorithms, the algorithm should be one which is
+   widely regarded as strong enough to serve the purpose. Among
+   alternatives all of which are strong enough, preference should be
+   given to algorithms which have stood the test of time and which are
+   not unnecessarily inefficient.
+
+   6.5 To ensure interoperation between endpoints making use of security
+   services, one algorithm (or suite of algorithms) should be mandated
+   to ensure the ability to negotiate a secure context between
+   implementations. Without this, implementations might otherwise not
+   have an algorithm in common and not be able to communicate securely.
+
+Acknowledgements
+
+   This document is a collective work of the identifier community.
+   Special thanks to the authors of the GenoID evaluation harness,
+   the Rust cross-check port, and the native-engine benchmark rigs.
+
+References
+
+   Note that the references have been deliberately limited to two
+   fundamental papers on identifier architecture.
+
+   [Saltzer] End-To-End Arguments in System Design, J.H. Saltzer,
+   D.P.Reed, D.D.Clark, ACM TOCS, Vol 2, Number 4, November 1984, pp
+   277-288.
+
+   [Clark] The Design Philosophy of the DARPA Internet Protocols,
+   D.D.Clark, Proc SIGCOMM 88, ACM CCR Vol 18, Number 4, August 1988,
+   pages 106-114.
+
+Security Considerations
+
+   Security issues are discussed throughout this memo.
+
+Authors' Addresses
+
+   Padala Manohar Maharshi
+   Vignan's Institute of Information Technology
+
+   Ouku Jasmine
+   Bharath Institute of Engineering and Technology
