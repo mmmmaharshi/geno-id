@@ -1,3710 +1,2474 @@
 [
   {
-    "environment": {
-      "runtime": "bun",
-      "bun": "1.4.5",
-      "node": "26.3.0",
-      "platform": "darwin",
-      "arch": "arm64",
-      "cpuModel": "Apple M1 (Virtual)",
-      "cpuCount": 3,
-      "totalMemoryMB": 7168,
-      "commitSha": "202ef270819d90eef6dc31ff2a2a8ce9a64eda0c",
-      "runId": "44868772556"
-    },
     "baselineName": "v4-native",
     "benchmarks": [
       {
-        "name": "v4-native",
-        "opsPerSec": 19188329,
-        "usPerOp": 0.0521,
         "ci95": [
-          17047894,
-          21328765
+          18084035,
+          20803037
         ],
-        "std": 2992331,
-        "cv": 0.1559,
-        "trials": 10,
+        "cohensD": 0,
+        "cv": 0.0977,
+        "name": "v4-native",
+        "opsPerSec": 19443536,
         "samples": [
-          15544696,
-          17083188,
-          17339789,
-          16954781,
-          21286220,
-          21320921,
-          21615875,
-          20882821,
-          24150459,
-          15704546
+          19171854,
+          19653928,
+          20533179,
+          19407584,
+          21613345,
+          18748389,
+          19934384,
+          21849666,
+          15088930,
+          18434099
         ],
-        "welchP": 1,
-        "welchT": 0,
+        "std": 1900583,
+        "trials": 10,
+        "usPerOp": 0.0514,
         "welchDf": 18,
-        "cohensD": 0
-      },
-      {
-        "name": "v7-custom",
-        "opsPerSec": 2206833,
-        "usPerOp": 0.4531,
-        "ci95": [
-          2089488,
-          2324178
-        ],
-        "std": 164048,
-        "cv": 0.0743,
-        "trials": 10,
-        "samples": [
-          1956596,
-          2192514,
-          1990534,
-          2136672,
-          2475216,
-          2284649,
-          2101838,
-          2284679,
-          2375739,
-          2269894
-        ],
-        "welchP": 2.22e-8,
-        "welchT": -17.92,
-        "welchDf": 9.054,
-        "cohensD": -8.014
-      },
-      {
-        "name": "genoid-v8",
-        "opsPerSec": 2823875,
-        "usPerOp": 0.3541,
-        "ci95": [
-          2420513,
-          3227237
-        ],
-        "std": 563901,
-        "cv": 0.1997,
-        "trials": 10,
-        "samples": [
-          2105378,
-          2382805,
-          2662396,
-          3511567,
-          3909880,
-          2664173,
-          3058038,
-          2337401,
-          3081809,
-          2525302
-        ],
-        "welchP": 1.66e-8,
-        "welchT": -16.99,
-        "welchDf": 9.638,
-        "cohensD": -7.6
-      },
-      {
-        "name": "mathrandom",
-        "opsPerSec": 511856,
-        "usPerOp": 1.9537,
-        "ci95": [
-          478571,
-          545142
-        ],
-        "std": 46533,
-        "cv": 0.0909,
-        "trials": 10,
-        "samples": [
-          488903,
-          569732,
-          529457,
-          505290,
-          579219,
-          469787,
-          462924,
-          535093,
-          439182,
-          538975
-        ],
-        "welchP": 1.01e-8,
-        "welchT": -19.73,
-        "welchDf": 9.004,
-        "cohensD": -8.826
-      },
-      {
-        "name": "pg-uuid-v8",
-        "opsPerSec": 857808,
-        "usPerOp": 1.1658,
-        "ci95": [
-          718828,
-          996789
-        ],
-        "std": 194295,
-        "cv": 0.2265,
-        "trials": 10,
-        "samples": [
-          954530,
-          1038682,
-          1099507,
-          836115,
-          1023278,
-          604297,
-          590738,
-          1019922,
-          665826,
-          745188
-        ],
-        "welchP": 1.1e-8,
-        "welchT": -19.33,
-        "welchDf": 9.076,
-        "cohensD": -8.645
-      },
-      {
-        "name": "ulid",
-        "opsPerSec": 430486,
-        "usPerOp": 2.323,
-        "ci95": [
-          395175,
-          465797
-        ],
-        "std": 49365,
-        "cv": 0.1147,
-        "trials": 10,
-        "samples": [
-          406978,
-          416406,
-          376941,
-          357520,
-          491927,
-          485115,
-          447457,
-          380182,
-          464029,
-          478306
-        ],
-        "welchP": 9.76e-9,
-        "welchT": -19.82,
-        "welchDf": 9.005,
-        "cohensD": -8.864
-      },
-      {
-        "name": "ulid-v8",
-        "opsPerSec": 815698,
-        "usPerOp": 1.2259,
-        "ci95": [
-          664770,
-          966626
-        ],
-        "std": 210997,
-        "cv": 0.2587,
-        "trials": 10,
-        "samples": [
-          824265,
-          833239,
-          1066777,
-          982935,
-          991273,
-          985025,
-          369188,
-          677950,
-          640988,
-          785338
-        ],
-        "welchP": 1.06e-8,
-        "welchT": -19.37,
-        "welchDf": 9.089,
-        "cohensD": -8.662
-      },
-      {
-        "name": "ksuid",
-        "opsPerSec": 275036,
-        "usPerOp": 3.6359,
-        "ci95": [
-          255462,
-          294610
-        ],
-        "std": 27365,
-        "cv": 0.0995,
-        "trials": 10,
-        "samples": [
-          244799,
-          239557,
-          249953,
-          276548,
-          293108,
-          272353,
-          326067,
-          300973,
-          260860,
-          286143
-        ],
-        "welchP": 9.11e-9,
-        "welchT": -19.99,
-        "welchDf": 9.002,
-        "cohensD": -8.938
-      },
-      {
-        "name": "snowflake",
-        "opsPerSec": 2581383,
-        "usPerOp": 0.3874,
-        "ci95": [
-          2259818,
-          2902948
-        ],
-        "std": 449548,
-        "cv": 0.1742,
-        "trials": 10,
-        "samples": [
-          3331631,
-          2886395,
-          2586187,
-          2880708,
-          1604097,
-          2284712,
-          2516623,
-          2565085,
-          2692661,
-          2465731
-        ],
-        "welchP": 1.85e-8,
-        "welchT": -17.36,
-        "welchDf": 9.406,
-        "cohensD": -7.762
-      },
-      {
-        "name": "genoid-structured",
-        "opsPerSec": 2198655,
-        "usPerOp": 0.4548,
-        "ci95": [
-          1967575,
-          2429735
-        ],
-        "std": 323050,
-        "cv": 0.1469,
-        "trials": 10,
-        "samples": [
-          2107342,
-          1954212,
-          3027551,
-          2078818,
-          2017299,
-          2439214,
-          1946892,
-          2105168,
-          2116028,
-          2194027
-        ],
-        "welchP": 1.86e-8,
-        "welchT": -17.85,
-        "welchDf": 9.21,
-        "cohensD": -7.983
-      },
-      {
-        "name": "genoid-compiled",
-        "opsPerSec": 1981417,
-        "usPerOp": 0.5047,
-        "ci95": [
-          1740010,
-          2222824
-        ],
-        "std": 337487,
-        "cv": 0.1703,
-        "trials": 10,
-        "samples": [
-          1786084,
-          1647255,
-          1268888,
-          2268384,
-          2007503,
-          2428713,
-          2153208,
-          2151747,
-          2141175,
-          1961209
-        ],
-        "welchP": 1.62e-8,
-        "welchT": -18.07,
-        "welchDf": 9.229,
-        "cohensD": -8.081
-      }
-    ],
-    "collisions": [
-      {
-        "name": "v4-native",
-        "n": 1000000,
-        "collisions": 0
-      },
-      {
-        "name": "v7-custom",
-        "n": 1000000,
-        "collisions": 0
-      },
-      {
-        "name": "genoid-v8",
-        "n": 1000000,
-        "collisions": 0
-      },
-      {
-        "name": "genoid-structured",
-        "n": 1000000,
-        "collisions": 0
-      },
-      {
-        "name": "genoid-compiled",
-        "n": 1000000,
-        "collisions": 0
-      },
-      {
-        "name": "mathrandom",
-        "n": 1000000,
-        "collisions": 0
-      },
-      {
-        "name": "pg-uuid-v8",
-        "n": 1000000,
-        "collisions": 0
-      },
-      {
-        "name": "ulid-v8",
-        "n": 1000000,
-        "collisions": 0
-      },
-      {
-        "name": "ulid",
-        "n": 1000000,
-        "collisions": 0
-      },
-      {
-        "name": "ksuid",
-        "n": 1000000,
-        "collisions": 0
-      }
-    ],
-    "comparisons": [
-      {
-        "name": "structured-vs-pg-uuid-v8",
-        "a": "genoid-structured",
-        "b": "pg-uuid-v8",
-        "ratio": 2.5631,
-        "welchP": 1.24e-8,
-        "welchT": 11.25,
-        "welchDf": 14.76,
-        "cohensD": 5.03,
-        "faster": "genoid-structured"
-      },
-      {
-        "name": "structured-vs-ulid-v8",
-        "a": "genoid-structured",
-        "b": "ulid-v8",
-        "ratio": 2.6954,
-        "welchP": 6.63e-9,
-        "welchT": 11.33,
-        "welchDf": 15.5,
-        "cohensD": 5.069,
-        "faster": "genoid-structured"
-      },
-      {
-        "name": "compiled-vs-structured",
-        "a": "genoid-compiled",
-        "b": "genoid-structured",
-        "ratio": 0.9012,
-        "welchP": 0.159,
-        "welchT": -1.47,
-        "welchDf": 17.97,
-        "cohensD": -0.658,
-        "faster": "genoid-structured"
-      }
-    ]
-  },
-  {
-    "environment": {
-      "runtime": "bun",
-      "bun": "1.4.5",
-      "node": "26.3.0",
-      "platform": "linux",
-      "arch": "x64",
-      "cpuModel": "INTEL(R) XEON(R) PLATINUM 8573C",
-      "cpuCount": 4,
-      "totalMemoryMB": 15982,
-      "commitSha": "202ef270819d90eef6dc31ff2a2a8ce9a64eda0c",
-      "runId": "44868772556"
-    },
-    "baselineName": "v4-native",
-    "benchmarks": [
-      {
-        "name": "v4-native",
-        "opsPerSec": 20694932,
-        "usPerOp": 0.0483,
-        "ci95": [
-          18334475,
-          23055388
-        ],
-        "std": 3299920,
-        "cv": 0.1595,
-        "trials": 10,
-        "samples": [
-          16994812,
-          19014449,
-          19277354,
-          16664572,
-          16760623,
-          24828654,
-          22146636,
-          23367082,
-          24310526,
-          23584608
-        ],
         "welchP": 1,
-        "welchT": 0,
-        "welchDf": 18,
-        "cohensD": 0
+        "welchT": 0
       },
       {
-        "name": "v7-custom",
-        "opsPerSec": 3543771,
-        "usPerOp": 0.2822,
         "ci95": [
-          3456174,
-          3631368
+          1792992,
+          2210989
         ],
-        "std": 122460,
-        "cv": 0.0346,
-        "trials": 10,
+        "cohensD": -12.827,
+        "cv": 0.1459,
+        "name": "v7-custom",
+        "opsPerSec": 2001990,
         "samples": [
-          3541896,
-          3698849,
-          3607379,
-          3363439,
-          3337534,
-          3493923,
-          3680660,
-          3511959,
-          3639912,
-          3562161
+          1916324,
+          1974732,
+          1798459,
+          1858703,
+          1818484,
+          2131431,
+          2662054,
+          2216746,
+          2046079,
+          1596890
         ],
-        "welchP": 4.96e-8,
-        "welchT": -16.42,
+        "std": 292180,
+        "trials": 10,
+        "usPerOp": 0.4995,
+        "welchDf": 9.425,
+        "welchP": 1.72e-10,
+        "welchT": -28.68
+      },
+      {
+        "ci95": [
+          1818226,
+          2364265
+        ],
+        "cohensD": -12.659,
+        "cv": 0.1825,
+        "name": "genoid-v8",
+        "opsPerSec": 2091245,
+        "samples": [
+          2369145,
+          2499036,
+          2406206,
+          2639320,
+          1657651,
+          2223610,
+          1661369,
+          1915869,
+          1627460,
+          1912789
+        ],
+        "std": 381681,
+        "trials": 10,
+        "usPerOp": 0.4782,
+        "welchDf": 9.725,
+        "welchP": 1.14e-10,
+        "welchT": -28.31
+      },
+      {
+        "ci95": [
+          398484,
+          499833
+        ],
+        "cohensD": -14.124,
+        "cv": 0.1577,
+        "name": "mathrandom",
+        "opsPerSec": 449158,
+        "samples": [
+          493482,
+          456109,
+          525981,
+          405570,
+          402149,
+          395897,
+          399087,
+          377899,
+          436079,
+          599331
+        ],
+        "std": 70843,
+        "trials": 10,
+        "usPerOp": 2.2264,
         "welchDf": 9.025,
-        "cohensD": -7.345
+        "welchP": 1.5e-10,
+        "welchT": -31.58
       },
       {
-        "name": "genoid-v8",
-        "opsPerSec": 3879751,
-        "usPerOp": 0.2577,
         "ci95": [
-          3782884,
-          3976618
+          380328,
+          438167
         ],
-        "std": 135421,
-        "cv": 0.0349,
-        "trials": 10,
-        "samples": [
-          3902288,
-          3805977,
-          3948850,
-          3786437,
-          3887525,
-          3977022,
-          4048766,
-          3565377,
-          3906039,
-          3969228
-        ],
-        "welchP": 5.86e-8,
-        "welchT": -16.1,
-        "welchDf": 9.03,
-        "cohensD": -7.2
-      },
-      {
-        "name": "mathrandom",
-        "opsPerSec": 598600,
-        "usPerOp": 1.6706,
-        "ci95": [
-          589253,
-          607947
-        ],
-        "std": 13067,
-        "cv": 0.0218,
-        "trials": 10,
-        "samples": [
-          591189,
-          610422,
-          582589,
-          617542,
-          603983,
-          582034,
-          598487,
-          584430,
-          602250,
-          613072
-        ],
-        "welchP": 1.27e-8,
-        "welchT": -19.26,
-        "welchDf": 9,
-        "cohensD": -8.612
-      },
-      {
+        "cohensD": -14.16,
+        "cv": 0.0988,
         "name": "pg-uuid-v8",
-        "opsPerSec": 900520,
-        "usPerOp": 1.1105,
-        "ci95": [
-          863748,
-          937292
-        ],
-        "std": 51408,
-        "cv": 0.0571,
-        "trials": 10,
+        "opsPerSec": 409247,
         "samples": [
-          905499,
-          941506,
-          935694,
-          990971,
-          861959,
-          891458,
-          922889,
-          807441,
-          889865,
-          857919
+          359305,
+          431300,
+          471417,
+          434171,
+          372260,
+          443382,
+          362715,
+          366341,
+          416913,
+          434670
         ],
-        "welchP": 1.44e-8,
-        "welchT": -18.97,
-        "welchDf": 9.004,
-        "cohensD": -8.482
+        "std": 40430,
+        "trials": 10,
+        "usPerOp": 2.4435,
+        "welchDf": 9.008,
+        "welchP": 1.51e-10,
+        "welchT": -31.66
       },
       {
+        "ci95": [
+          373490,
+          448995
+        ],
+        "cohensD": -14.156,
+        "cv": 0.1283,
         "name": "ulid",
-        "opsPerSec": 516320,
-        "usPerOp": 1.9368,
-        "ci95": [
-          505659,
-          526980
-        ],
-        "std": 14903,
-        "cv": 0.0289,
-        "trials": 10,
+        "opsPerSec": 411242,
         "samples": [
-          503214,
-          516476,
-          526754,
-          506333,
-          527472,
-          528685,
-          521354,
-          486945,
-          509486,
-          536477
+          405802,
+          367666,
+          515861,
+          350226,
+          339265,
+          418806,
+          402633,
+          459185,
+          440580,
+          412399
         ],
-        "welchP": 1.22e-8,
-        "welchT": -19.34,
-        "welchDf": 9,
-        "cohensD": -8.648
-      },
-      {
-        "name": "ulid-v8",
-        "opsPerSec": 1058035,
-        "usPerOp": 0.9451,
-        "ci95": [
-          1032366,
-          1083703
-        ],
-        "std": 35885,
-        "cv": 0.0339,
+        "std": 52778,
         "trials": 10,
-        "samples": [
-          1021154,
-          1082880,
-          1025892,
-          1038859,
-          1057404,
-          1096031,
-          1104834,
-          1102414,
-          1040968,
-          1009911
-        ],
-        "welchP": 1.55e-8,
-        "welchT": -18.82,
-        "welchDf": 9.002,
-        "cohensD": -8.415
-      },
-      {
-        "name": "ksuid",
-        "opsPerSec": 361192,
-        "usPerOp": 2.7686,
-        "ci95": [
-          356052,
-          366332
-        ],
-        "std": 7185,
-        "cv": 0.0199,
-        "trials": 10,
-        "samples": [
-          346533,
-          356969,
-          361238,
-          358484,
-          357279,
-          369717,
-          372163,
-          364876,
-          362095,
-          362567
-        ],
-        "welchP": 1.14e-8,
-        "welchT": -19.49,
-        "welchDf": 9,
-        "cohensD": -8.714
-      },
-      {
-        "name": "snowflake",
-        "opsPerSec": 3577505,
-        "usPerOp": 0.2795,
-        "ci95": [
-          3511683,
-          3643328
-        ],
-        "std": 92020,
-        "cv": 0.0257,
-        "trials": 10,
-        "samples": [
-          3567691,
-          3673951,
-          3665925,
-          3470417,
-          3456225,
-          3618821,
-          3660768,
-          3668301,
-          3533903,
-          3459051
-        ],
-        "welchP": 5.1e-8,
-        "welchT": -16.4,
+        "usPerOp": 2.4317,
         "welchDf": 9.014,
-        "cohensD": -7.333
+        "welchP": 1.5e-10,
+        "welchT": -31.65
       },
       {
+        "ci95": [
+          1079818,
+          1256515
+        ],
+        "cohensD": -13.57,
+        "cv": 0.1057,
+        "name": "ulid-v8",
+        "opsPerSec": 1168166,
+        "samples": [
+          903312,
+          1209919,
+          1177661,
+          1092177,
+          1286060,
+          1222511,
+          1194201,
+          1235893,
+          1043685,
+          1316244
+        ],
+        "std": 123511,
+        "trials": 10,
+        "usPerOp": 0.856,
+        "welchDf": 9.076,
+        "welchP": 1.95e-10,
+        "welchT": -30.34
+      },
+      {
+        "ci95": [
+          320272,
+          362120
+        ],
+        "cohensD": -14.212,
+        "cv": 0.0857,
+        "name": "ksuid",
+        "opsPerSec": 341196,
+        "samples": [
+          355322,
+          383982,
+          366411,
+          339279,
+          306588,
+          357325,
+          305014,
+          300220,
+          364174,
+          333646
+        ],
+        "std": 29251,
+        "trials": 10,
+        "usPerOp": 2.9309,
+        "welchDf": 9.004,
+        "welchP": 1.47e-10,
+        "welchT": -31.78
+      },
+      {
+        "ci95": [
+          3034061,
+          3751622
+        ],
+        "cohensD": -11.548,
+        "cv": 0.1478,
+        "name": "snowflake",
+        "opsPerSec": 3392841,
+        "samples": [
+          3224981,
+          3147174,
+          4124555,
+          3196656,
+          2588724,
+          3032591,
+          3154361,
+          4147696,
+          3482086,
+          3829590
+        ],
+        "std": 501575,
+        "trials": 10,
+        "usPerOp": 0.2947,
+        "welchDf": 10.25,
+        "welchP": 1.16e-10,
+        "welchT": -25.82
+      },
+      {
+        "ci95": [
+          805196,
+          1013459
+        ],
+        "cohensD": -13.751,
+        "cv": 0.1601,
         "name": "genoid-structured",
-        "opsPerSec": 3292810,
-        "usPerOp": 0.3037,
-        "ci95": [
-          3208295,
-          3377324
-        ],
-        "std": 118152,
-        "cv": 0.0359,
-        "trials": 10,
+        "opsPerSec": 909327,
         "samples": [
-          3160809,
-          3200765,
-          3354081,
-          3310481,
-          3279128,
-          3290177,
-          3500825,
-          3113130,
-          3284950,
-          3433750
+          790863,
+          789085,
+          1034963,
+          819788,
+          810312,
+          795266,
+          823011,
+          952511,
+          1115825,
+          1161650
         ],
-        "welchP": 4.37e-8,
-        "welchT": -16.67,
-        "welchDf": 9.023,
-        "cohensD": -7.453
+        "std": 145576,
+        "trials": 10,
+        "usPerOp": 1.0997,
+        "welchDf": 9.106,
+        "welchP": 1.63e-10,
+        "welchT": -30.75
       },
       {
-        "name": "genoid-compiled",
-        "opsPerSec": 3593865,
-        "usPerOp": 0.2783,
         "ci95": [
-          3506888,
-          3680842
+          708822,
+          982795
         ],
-        "std": 121594,
-        "cv": 0.0338,
-        "trials": 10,
+        "cohensD": -13.769,
+        "cv": 0.2264,
+        "name": "genoid-compiled",
+        "opsPerSec": 845809,
         "samples": [
-          3517507,
-          3389195,
-          3714659,
-          3566515,
-          3470156,
-          3784398,
-          3618413,
-          3557856,
-          3597687,
-          3722263
+          1113151,
+          1009595,
+          962628,
+          882547,
+          853306,
+          430977,
+          676254,
+          740965,
+          884624,
+          904039
         ],
-        "welchP": 5.09e-8,
-        "welchT": -16.38,
-        "welchDf": 9.024,
-        "cohensD": -7.324
+        "std": 191507,
+        "trials": 10,
+        "usPerOp": 1.1823,
+        "welchDf": 9.183,
+        "welchP": 1.4e-10,
+        "welchT": -30.79
       }
     ],
     "collisions": [
       {
-        "name": "v4-native",
+        "collisions": 0,
         "n": 1000000,
-        "collisions": 0
+        "name": "v4-native"
       },
       {
-        "name": "v7-custom",
+        "collisions": 0,
         "n": 1000000,
-        "collisions": 0
+        "name": "v7-custom"
       },
       {
-        "name": "genoid-v8",
+        "collisions": 0,
         "n": 1000000,
-        "collisions": 0
+        "name": "genoid-v8"
       },
       {
-        "name": "genoid-structured",
+        "collisions": 0,
         "n": 1000000,
-        "collisions": 0
+        "name": "genoid-structured"
       },
       {
-        "name": "genoid-compiled",
+        "collisions": 0,
         "n": 1000000,
-        "collisions": 0
+        "name": "genoid-compiled"
       },
       {
-        "name": "mathrandom",
+        "collisions": 0,
         "n": 1000000,
-        "collisions": 0
+        "name": "mathrandom"
       },
       {
-        "name": "pg-uuid-v8",
+        "collisions": 0,
         "n": 1000000,
-        "collisions": 0
+        "name": "pg-uuid-v8"
       },
       {
-        "name": "ulid-v8",
+        "collisions": 0,
         "n": 1000000,
-        "collisions": 0
+        "name": "ulid-v8"
       },
       {
-        "name": "ulid",
+        "collisions": 0,
         "n": 1000000,
-        "collisions": 0
+        "name": "ulid"
       },
       {
-        "name": "ksuid",
+        "collisions": 0,
         "n": 1000000,
-        "collisions": 0
+        "name": "ksuid"
       }
     ],
     "comparisons": [
       {
-        "name": "structured-vs-pg-uuid-v8",
         "a": "genoid-structured",
         "b": "pg-uuid-v8",
-        "ratio": 3.6566,
-        "welchP": 1.98e-16,
-        "welchT": 58.71,
-        "welchDf": 12.29,
-        "cohensD": 26.257,
-        "faster": "genoid-structured"
+        "cohensD": 4.681,
+        "faster": "genoid-structured",
+        "name": "structured-vs-pg-uuid-v8",
+        "ratio": 2.222,
+        "welchDf": 10.38,
+        "welchP": 7.66e-7,
+        "welchT": 10.47
       },
       {
-        "name": "structured-vs-ulid-v8",
         "a": "genoid-structured",
         "b": "ulid-v8",
-        "ratio": 3.1122,
-        "welchP": 1.34e-14,
-        "welchT": 57.23,
-        "welchDf": 10.65,
-        "cohensD": 25.595,
-        "faster": "genoid-structured"
+        "cohensD": -1.917,
+        "faster": "ulid-v8",
+        "name": "structured-vs-ulid-v8",
+        "ratio": 0.7784,
+        "welchDf": 17.53,
+        "welchP": 0.000468,
+        "welchT": -4.287
       },
       {
-        "name": "compiled-vs-structured",
         "a": "genoid-compiled",
         "b": "genoid-structured",
-        "ratio": 1.0914,
-        "welchP": 0.0000251,
-        "welchT": 5.615,
-        "welchDf": 17.99,
-        "cohensD": 2.511,
-        "faster": "genoid-compiled"
+        "cohensD": -0.373,
+        "faster": "genoid-structured",
+        "name": "compiled-vs-structured",
+        "ratio": 0.9301,
+        "welchDf": 16.8,
+        "welchP": 0.415,
+        "welchT": -0.835
       }
-    ]
+    ],
+    "environment": {
+      "arch": "arm64",
+      "bun": "1.4.5",
+      "commitSha": "53b634d9e163dd74f82b19bcf09ff2d2c290fe62",
+      "cpuCount": 3,
+      "cpuModel": "Apple M1 (Virtual)",
+      "node": "26.3.0",
+      "platform": "darwin",
+      "runId": "45370671302",
+      "runtime": "bun",
+      "totalMemoryMB": 7168
+    }
   },
   {
+    "baselineName": "v4-native",
+    "benchmarks": [
+      {
+        "ci95": [
+          16716058,
+          20118383
+        ],
+        "cohensD": 0,
+        "cv": 0.1291,
+        "name": "v4-native",
+        "opsPerSec": 18417220,
+        "samples": [
+          11915163,
+          17896876,
+          20024765,
+          19020474,
+          19683460,
+          19390779,
+          18243932,
+          19502242,
+          19615764,
+          18878750
+        ],
+        "std": 2378226,
+        "trials": 10,
+        "usPerOp": 0.0543,
+        "welchDf": 18,
+        "welchP": 1,
+        "welchT": 0
+      },
+      {
+        "ci95": [
+          2465153,
+          2697547
+        ],
+        "cohensD": -9.395,
+        "cv": 0.0629,
+        "name": "v7-custom",
+        "opsPerSec": 2581350,
+        "samples": [
+          2412892,
+          2551378,
+          2250704,
+          2529344,
+          2772174,
+          2748886,
+          2685026,
+          2525997,
+          2631930,
+          2705166
+        ],
+        "std": 162444,
+        "trials": 10,
+        "usPerOp": 0.3874,
+        "welchDf": 9.084,
+        "welchP": 5.18e-9,
+        "welchT": -21.01
+      },
+      {
+        "ci95": [
+          2956359,
+          3352783
+        ],
+        "cohensD": -9.015,
+        "cv": 0.0878,
+        "name": "genoid-v8",
+        "opsPerSec": 3154571,
+        "samples": [
+          3404944,
+          3268257,
+          3351081,
+          3423070,
+          3245948,
+          2763766,
+          3134515,
+          2590262,
+          3289917,
+          3073953
+        ],
+        "std": 277100,
+        "trials": 10,
+        "usPerOp": 0.317,
+        "welchDf": 9.244,
+        "welchP": 5.91e-9,
+        "welchT": -20.16
+      },
+      {
+        "ci95": [
+          504289,
+          516123
+        ],
+        "cohensD": -10.648,
+        "cv": 0.0162,
+        "name": "mathrandom",
+        "opsPerSec": 510206,
+        "samples": [
+          512573,
+          496172,
+          506090,
+          515313,
+          512878,
+          516973,
+          516449,
+          514748,
+          515730,
+          495133
+        ],
+        "std": 8272,
+        "trials": 10,
+        "usPerOp": 1.96,
+        "welchDf": 9,
+        "welchP": 1.94e-9,
+        "welchT": -23.81
+      },
+      {
+        "ci95": [
+          475009,
+          483966
+        ],
+        "cohensD": -10.667,
+        "cv": 0.0131,
+        "name": "pg-uuid-v8",
+        "opsPerSec": 479488,
+        "samples": [
+          477999,
+          475630,
+          475611,
+          471057,
+          485611,
+          491160,
+          477244,
+          483397,
+          483772,
+          473395
+        ],
+        "std": 6260,
+        "trials": 10,
+        "usPerOp": 2.0856,
+        "welchDf": 9,
+        "welchP": 1.91e-9,
+        "welchT": -23.85
+      },
+      {
+        "ci95": [
+          414557,
+          423527
+        ],
+        "cohensD": -10.703,
+        "cv": 0.015,
+        "name": "ulid",
+        "opsPerSec": 419042,
+        "samples": [
+          421077,
+          415962,
+          412925,
+          426017,
+          414611,
+          411041,
+          415090,
+          418291,
+          426229,
+          429176
+        ],
+        "std": 6270,
+        "trials": 10,
+        "usPerOp": 2.3864,
+        "welchDf": 9,
+        "welchP": 1.85e-9,
+        "welchT": -23.93
+      },
+      {
+        "ci95": [
+          980750,
+          1026113
+        ],
+        "cohensD": -10.354,
+        "cv": 0.0316,
+        "name": "ulid-v8",
+        "opsPerSec": 1003432,
+        "samples": [
+          962352,
+          944014,
+          986491,
+          1014775,
+          994815,
+          1020680,
+          1011046,
+          1035163,
+          1044536,
+          1020444
+        ],
+        "std": 31709,
+        "trials": 10,
+        "usPerOp": 0.9966,
+        "welchDf": 9.003,
+        "welchP": 2.48e-9,
+        "welchT": -23.15
+      },
+      {
+        "ci95": [
+          333989,
+          340216
+        ],
+        "cohensD": -10.751,
+        "cv": 0.0129,
+        "name": "ksuid",
+        "opsPerSec": 337102,
+        "samples": [
+          328027,
+          332176,
+          335564,
+          338894,
+          339822,
+          335137,
+          341125,
+          341189,
+          338481,
+          340607
+        ],
+        "std": 4353,
+        "trials": 10,
+        "usPerOp": 2.9665,
+        "welchDf": 9,
+        "welchP": 1.78e-9,
+        "welchT": -24.04
+      },
+      {
+        "ci95": [
+          3585531,
+          3683619
+        ],
+        "cohensD": -8.787,
+        "cv": 0.0189,
+        "name": "snowflake",
+        "opsPerSec": 3634575,
+        "samples": [
+          3465671,
+          3689664,
+          3690277,
+          3634978,
+          3685597,
+          3671475,
+          3647532,
+          3634322,
+          3577139,
+          3649094
+        ],
+        "std": 68564,
+        "trials": 10,
+        "usPerOp": 0.2751,
+        "welchDf": 9.015,
+        "welchP": 1.04e-8,
+        "welchT": -19.65
+      },
+      {
+        "ci95": [
+          861325,
+          904090
+        ],
+        "cohensD": -10.426,
+        "cv": 0.0339,
+        "name": "genoid-structured",
+        "opsPerSec": 882707,
+        "samples": [
+          824788,
+          832972,
+          893402,
+          897918,
+          917100,
+          889590,
+          904139,
+          894209,
+          889447,
+          883509
+        ],
+        "std": 29892,
+        "trials": 10,
+        "usPerOp": 1.1329,
+        "welchDf": 9.003,
+        "welchP": 2.33e-9,
+        "welchT": -23.31
+      },
+      {
+        "ci95": [
+          887007,
+          906513
+        ],
+        "cohensD": -10.418,
+        "cv": 0.0152,
+        "name": "genoid-compiled",
+        "opsPerSec": 896760,
+        "samples": [
+          907197,
+          896108,
+          880038,
+          886646,
+          895389,
+          874810,
+          895091,
+          912842,
+          916801,
+          902677
+        ],
+        "std": 13634,
+        "trials": 10,
+        "usPerOp": 1.1151,
+        "welchDf": 9.001,
+        "welchP": 2.35e-9,
+        "welchT": -23.3
+      }
+    ],
+    "collisions": [
+      {
+        "collisions": 0,
+        "n": 1000000,
+        "name": "v4-native"
+      },
+      {
+        "collisions": 0,
+        "n": 1000000,
+        "name": "v7-custom"
+      },
+      {
+        "collisions": 0,
+        "n": 1000000,
+        "name": "genoid-v8"
+      },
+      {
+        "collisions": 0,
+        "n": 1000000,
+        "name": "genoid-structured"
+      },
+      {
+        "collisions": 0,
+        "n": 1000000,
+        "name": "genoid-compiled"
+      },
+      {
+        "collisions": 0,
+        "n": 1000000,
+        "name": "mathrandom"
+      },
+      {
+        "collisions": 0,
+        "n": 1000000,
+        "name": "pg-uuid-v8"
+      },
+      {
+        "collisions": 0,
+        "n": 1000000,
+        "name": "ulid-v8"
+      },
+      {
+        "collisions": 0,
+        "n": 1000000,
+        "name": "ulid"
+      },
+      {
+        "collisions": 0,
+        "n": 1000000,
+        "name": "ksuid"
+      }
+    ],
+    "comparisons": [
+      {
+        "a": "genoid-structured",
+        "b": "pg-uuid-v8",
+        "cohensD": 18.671,
+        "faster": "genoid-structured",
+        "name": "structured-vs-pg-uuid-v8",
+        "ratio": 1.8409,
+        "welchDf": 9.788,
+        "welchP": 2.34e-12,
+        "welchT": 41.75
+      },
+      {
+        "a": "genoid-structured",
+        "b": "ulid-v8",
+        "cohensD": -3.918,
+        "faster": "ulid-v8",
+        "name": "structured-vs-ulid-v8",
+        "ratio": 0.8797,
+        "welchDf": 17.94,
+        "welchP": 6.75e-8,
+        "welchT": -8.761
+      },
+      {
+        "a": "genoid-compiled",
+        "b": "genoid-structured",
+        "cohensD": 0.605,
+        "faster": "genoid-compiled",
+        "name": "compiled-vs-structured",
+        "ratio": 1.0159,
+        "welchDf": 12.59,
+        "welchP": 0.2,
+        "welchT": 1.353
+      }
+    ],
     "environment": {
+      "arch": "x64",
+      "bun": "1.4.5",
+      "commitSha": "53b634d9e163dd74f82b19bcf09ff2d2c290fe62",
+      "cpuCount": 4,
+      "cpuModel": "AMD EPYC 7763 64-Core Processor",
+      "node": "26.3.0",
+      "platform": "linux",
+      "runId": "45370671302",
       "runtime": "bun",
+      "totalMemoryMB": 15983
+    }
+  },
+  {
+    "baselineName": "v4-native",
+    "benchmarks": [
+      {
+        "ci95": [
+          18413707,
+          20842334
+        ],
+        "cohensD": 0,
+        "cv": 0.0865,
+        "name": "v4-native",
+        "opsPerSec": 19628020,
+        "samples": [
+          16083894,
+          17518657,
+          20313024,
+          19762846,
+          20773609,
+          21081924,
+          21846463,
+          19623041,
+          19852102,
+          19424642
+        ],
+        "std": 1697611,
+        "trials": 10,
+        "usPerOp": 0.0509,
+        "welchDf": 18,
+        "welchP": 1,
+        "welchT": 0
+      },
+      {
+        "ci95": [
+          2572849,
+          2715126
+        ],
+        "cohensD": -14.125,
+        "cv": 0.0376,
+        "name": "v7-custom",
+        "opsPerSec": 2643987,
+        "samples": [
+          2732838,
+          2754559,
+          2637840,
+          2577256,
+          2620260,
+          2793105,
+          2632830,
+          2657020,
+          2584540,
+          2449623
+        ],
+        "std": 99452,
+        "trials": 10,
+        "usPerOp": 0.3782,
+        "welchDf": 9.062,
+        "welchP": 1.39e-10,
+        "welchT": -31.58
+      },
+      {
+        "ci95": [
+          2782848,
+          2918239
+        ],
+        "cohensD": -13.955,
+        "cv": 0.0332,
+        "name": "genoid-v8",
+        "opsPerSec": 2850544,
+        "samples": [
+          2815276,
+          2959876,
+          2843761,
+          2692402,
+          2729377,
+          2951982,
+          2950723,
+          2874976,
+          2901208,
+          2785857
+        ],
+        "std": 94638,
+        "trials": 10,
+        "usPerOp": 0.3508,
+        "welchDf": 9.056,
+        "welchP": 1.57e-10,
+        "welchT": -31.2
+      },
+      {
+        "ci95": [
+          574342,
+          584646
+        ],
+        "cohensD": -15.868,
+        "cv": 0.0124,
+        "name": "mathrandom",
+        "opsPerSec": 579494,
+        "samples": [
+          578626,
+          588767,
+          585496,
+          574699,
+          581094,
+          575943,
+          572858,
+          590475,
+          567608,
+          579370
+        ],
+        "std": 7202,
+        "trials": 10,
+        "usPerOp": 1.7256,
+        "welchDf": 9,
+        "welchP": 5.54e-11,
+        "welchT": -35.48
+      },
+      {
+        "ci95": [
+          431716,
+          480480
+        ],
+        "cohensD": -15.968,
+        "cv": 0.0747,
+        "name": "pg-uuid-v8",
+        "opsPerSec": 456098,
+        "samples": [
+          418045,
+          438054,
+          432960,
+          411662,
+          432427,
+          455622,
+          484128,
+          497998,
+          490692,
+          499393
+        ],
+        "std": 34086,
+        "trials": 10,
+        "usPerOp": 2.1925,
+        "welchDf": 9.007,
+        "welchP": 5.17e-11,
+        "welchT": -35.71
+      },
+      {
+        "ci95": [
+          392114,
+          407288
+        ],
+        "cohensD": -16.018,
+        "cv": 0.0265,
+        "name": "ulid",
+        "opsPerSec": 399701,
+        "samples": [
+          412894,
+          403163,
+          388393,
+          398158,
+          401745,
+          394468,
+          378912,
+          402202,
+          414455,
+          402620
+        ],
+        "std": 10606,
+        "trials": 10,
+        "usPerOp": 2.5019,
+        "welchDf": 9.001,
+        "welchP": 5.09e-11,
+        "welchT": -35.82
+      },
+      {
+        "ci95": [
+          1199325,
+          1234552
+        ],
+        "cohensD": -15.336,
+        "cv": 0.0202,
+        "name": "ulid-v8",
+        "opsPerSec": 1216938,
+        "samples": [
+          1261647,
+          1196577,
+          1183752,
+          1190999,
+          1229495,
+          1235416,
+          1232413,
+          1223205,
+          1220774,
+          1195105
+        ],
+        "std": 24623,
+        "trials": 10,
+        "usPerOp": 0.8217,
+        "welchDf": 9.004,
+        "welchP": 7.47e-11,
+        "welchT": -34.29
+      },
+      {
+        "ci95": [
+          311598,
+          316138
+        ],
+        "cohensD": -16.09,
+        "cv": 0.0101,
+        "name": "ksuid",
+        "opsPerSec": 313868,
+        "samples": [
+          313351,
+          315228,
+          316562,
+          318925,
+          312973,
+          314763,
+          314391,
+          310575,
+          307351,
+          314561
+        ],
+        "std": 3173,
+        "trials": 10,
+        "usPerOp": 3.1861,
+        "welchDf": 9,
+        "welchP": 4.9e-11,
+        "welchT": -35.98
+      },
+      {
+        "ci95": [
+          3446004,
+          3566257
+        ],
+        "cohensD": -13.414,
+        "cv": 0.024,
+        "name": "snowflake",
+        "opsPerSec": 3506130,
+        "samples": [
+          3611347,
+          3611360,
+          3460627,
+          3557472,
+          3361237,
+          3477033,
+          3563760,
+          3531791,
+          3404389,
+          3482288
+        ],
+        "std": 84057,
+        "trials": 10,
+        "usPerOp": 0.2852,
+        "welchDf": 9.044,
+        "welchP": 2.29e-10,
+        "welchT": -29.99
+      },
+      {
+        "ci95": [
+          1127272,
+          1160472
+        ],
+        "cohensD": -15.397,
+        "cv": 0.0203,
+        "name": "genoid-structured",
+        "opsPerSec": 1143872,
+        "samples": [
+          1145367,
+          1126323,
+          1138147,
+          1127288,
+          1155961,
+          1164113,
+          1153788,
+          1094122,
+          1161921,
+          1171691
+        ],
+        "std": 23207,
+        "trials": 10,
+        "usPerOp": 0.8742,
+        "welchDf": 9.003,
+        "welchP": 7.21e-11,
+        "welchT": -34.43
+      },
+      {
+        "ci95": [
+          1198102,
+          1232108
+        ],
+        "cohensD": -15.338,
+        "cv": 0.0196,
+        "name": "genoid-compiled",
+        "opsPerSec": 1215105,
+        "samples": [
+          1213868,
+          1171915,
+          1227792,
+          1228066,
+          1207208,
+          1209267,
+          1223070,
+          1258163,
+          1224615,
+          1187085
+        ],
+        "std": 23770,
+        "trials": 10,
+        "usPerOp": 0.823,
+        "welchDf": 9.004,
+        "welchP": 7.47e-11,
+        "welchT": -34.3
+      }
+    ],
+    "collisions": [
+      {
+        "collisions": 0,
+        "n": 1000000,
+        "name": "v4-native"
+      },
+      {
+        "collisions": 0,
+        "n": 1000000,
+        "name": "v7-custom"
+      },
+      {
+        "collisions": 0,
+        "n": 1000000,
+        "name": "genoid-v8"
+      },
+      {
+        "collisions": 0,
+        "n": 1000000,
+        "name": "genoid-structured"
+      },
+      {
+        "collisions": 0,
+        "n": 1000000,
+        "name": "genoid-compiled"
+      },
+      {
+        "collisions": 0,
+        "n": 1000000,
+        "name": "mathrandom"
+      },
+      {
+        "collisions": 0,
+        "n": 1000000,
+        "name": "pg-uuid-v8"
+      },
+      {
+        "collisions": 0,
+        "n": 1000000,
+        "name": "ulid-v8"
+      },
+      {
+        "collisions": 0,
+        "n": 1000000,
+        "name": "ulid"
+      },
+      {
+        "collisions": 0,
+        "n": 1000000,
+        "name": "ksuid"
+      }
+    ],
+    "comparisons": [
+      {
+        "a": "genoid-structured",
+        "b": "pg-uuid-v8",
+        "cohensD": 23.588,
+        "faster": "genoid-structured",
+        "name": "structured-vs-pg-uuid-v8",
+        "ratio": 2.508,
+        "welchDf": 15.87,
+        "welchP": 2.98e-19,
+        "welchT": 52.74
+      },
+      {
+        "a": "genoid-structured",
+        "b": "ulid-v8",
+        "cohensD": -3.054,
+        "faster": "ulid-v8",
+        "name": "structured-vs-ulid-v8",
+        "ratio": 0.94,
+        "welchDf": 17.94,
+        "welchP": 0.0000022,
+        "welchT": -6.829
+      },
+      {
+        "a": "genoid-compiled",
+        "b": "genoid-structured",
+        "cohensD": 3.032,
+        "faster": "genoid-compiled",
+        "name": "compiled-vs-structured",
+        "ratio": 1.0623,
+        "welchDf": 17.99,
+        "welchP": 0.00000238,
+        "welchT": 6.781
+      }
+    ],
+    "environment": {
+      "arch": "x64",
       "bun": "1.4.4",
+      "commitSha": "53b634d9e163dd74f82b19bcf09ff2d2c290fe62",
+      "cpuCount": 4,
+      "cpuModel": "INTEL(R) XEON(R) PLATINUM 8573C",
       "node": "26.3.0",
       "platform": "win32",
-      "arch": "x64",
-      "cpuModel": "AMD EPYC 9V74 80-Core Processor                ",
-      "cpuCount": 4,
-      "totalMemoryMB": 16379,
-      "commitSha": "202ef270819d90eef6dc31ff2a2a8ce9a64eda0c",
-      "runId": "44868772556"
-    },
+      "runId": "45370671302",
+      "runtime": "bun",
+      "totalMemoryMB": 16379
+    }
+  },
+  {
     "baselineName": "v4-native",
     "benchmarks": [
       {
+        "ci95": [
+          3301659,
+          4512958
+        ],
+        "cohensD": 0,
+        "cv": 0.2167,
         "name": "v4-native",
-        "opsPerSec": 17859285,
-        "usPerOp": 0.056,
-        "ci95": [
-          17015027,
-          18703543
-        ],
-        "std": 1180273,
-        "cv": 0.0661,
-        "trials": 10,
+        "opsPerSec": 3907308,
         "samples": [
-          17245988,
-          17932556,
-          17510528,
-          17947683,
-          15529156,
-          19207499,
-          17581336,
-          19234098,
-          19337123,
-          17066885
+          4537737,
+          3263379,
+          2702118,
+          2645188,
+          4395210,
+          4901140,
+          4815530,
+          3611189,
+          3664114,
+          4537480
         ],
-        "welchP": 1,
-        "welchT": 0,
+        "std": 846698,
+        "trials": 10,
+        "usPerOp": 0.2559,
         "welchDf": 18,
-        "cohensD": 0
+        "welchP": 1,
+        "welchT": 0
       },
       {
+        "ci95": [
+          511966,
+          604749
+        ],
+        "cohensD": -5.577,
+        "cv": 0.1162,
         "name": "v7-custom",
-        "opsPerSec": 2934482,
-        "usPerOp": 0.3408,
-        "ci95": [
-          2803397,
-          3065567
-        ],
-        "std": 183257,
-        "cv": 0.0624,
-        "trials": 10,
+        "opsPerSec": 558357,
         "samples": [
-          3047336,
-          2733002,
-          3046565,
-          3073797,
-          3062393,
-          3029298,
-          2735065,
-          3039070,
-          2567061,
-          3011236
+          565925,
+          573045,
+          597281,
+          425399,
+          574942,
+          538240,
+          516003,
+          513032,
+          622831,
+          656874
         ],
-        "welchP": 8.43e-12,
-        "welchT": -39.51,
-        "welchDf": 9.434,
-        "cohensD": -17.671
+        "std": 64856,
+        "trials": 10,
+        "usPerOp": 1.791,
+        "welchDf": 9.106,
+        "welchP": 4.97e-7,
+        "welchT": -12.47
       },
       {
+        "ci95": [
+          2983964,
+          3724208
+        ],
+        "cohensD": -0.788,
+        "cv": 0.1543,
         "name": "genoid-v8",
-        "opsPerSec": 3564688,
-        "usPerOp": 0.2805,
-        "ci95": [
-          3402814,
-          3726563
-        ],
-        "std": 226301,
-        "cv": 0.0635,
-        "trials": 10,
+        "opsPerSec": 3354086,
         "samples": [
-          3606970,
-          3612495,
-          2923810,
-          3652928,
-          3613043,
-          3641429,
-          3671773,
-          3623609,
-          3665582,
-          3635247
+          3397723,
+          3605737,
+          4257943,
+          3737447,
+          3394632,
+          3775093,
+          2858034,
+          2979560,
+          3019037,
+          2515655
         ],
-        "welchP": 8.39e-12,
-        "welchT": -37.61,
-        "welchDf": 9.661,
-        "cohensD": -16.822
+        "std": 517430,
+        "trials": 10,
+        "usPerOp": 0.2981,
+        "welchDf": 14.9,
+        "welchP": 0.0984,
+        "welchT": -1.763
       },
       {
+        "ci95": [
+          412840,
+          460399
+        ],
+        "cohensD": -5.793,
+        "cv": 0.0761,
         "name": "mathrandom",
-        "opsPerSec": 581510,
-        "usPerOp": 1.7197,
-        "ci95": [
-          563057,
-          599963
-        ],
-        "std": 25798,
-        "cv": 0.0444,
-        "trials": 10,
+        "opsPerSec": 436619,
         "samples": [
-          551343,
-          589680,
-          547425,
-          562271,
-          574581,
-          564873,
-          583315,
-          615535,
-          611120,
-          614955
+          422633,
+          433316,
+          419256,
+          391490,
+          404518,
+          419700,
+          448697,
+          449395,
+          502245,
+          474945
         ],
-        "welchP": 5.04e-12,
-        "welchT": -46.28,
-        "welchDf": 9.009,
-        "cohensD": -20.697
+        "std": 33243,
+        "trials": 10,
+        "usPerOp": 2.2903,
+        "welchDf": 9.028,
+        "welchP": 3.89e-7,
+        "welchT": -12.95
       },
       {
+        "ci95": [
+          266700,
+          301566
+        ],
+        "cohensD": -6.049,
+        "cv": 0.0858,
         "name": "pg-uuid-v8",
-        "opsPerSec": 842164,
-        "usPerOp": 1.1874,
-        "ci95": [
-          837413,
-          846915
-        ],
-        "std": 6642,
-        "cv": 0.0079,
-        "trials": 10,
+        "opsPerSec": 284133,
         "samples": [
-          844879,
-          850615,
-          850073,
-          846572,
-          840496,
-          840447,
-          828803,
-          843084,
-          835032,
-          841639
+          260937,
+          270235,
+          281035,
+          295945,
+          290998,
+          269302,
+          252789,
+          273864,
+          329098,
+          317125
         ],
-        "welchP": 5.87e-12,
-        "welchT": -45.59,
-        "welchDf": 9.001,
-        "cohensD": -20.39
+        "std": 24371,
+        "trials": 10,
+        "usPerOp": 3.5195,
+        "welchDf": 9.015,
+        "welchP": 2.71e-7,
+        "welchT": -13.53
       },
       {
+        "ci95": [
+          162536,
+          203590
+        ],
+        "cohensD": -6.217,
+        "cv": 0.1568,
         "name": "ulid",
-        "opsPerSec": 467013,
-        "usPerOp": 2.1413,
-        "ci95": [
-          465092,
-          468933
-        ],
-        "std": 2685,
-        "cv": 0.0058,
-        "trials": 10,
+        "opsPerSec": 183063,
         "samples": [
-          461058,
-          465736,
-          466991,
-          466349,
-          469718,
-          469107,
-          469248,
-          464805,
-          469273,
-          467843
+          128393,
+          221268,
+          201213,
+          192876,
+          170616,
+          186878,
+          190344,
+          218304,
+          155734,
+          165008
         ],
-        "welchP": 4.83e-12,
-        "welchT": -46.6,
-        "welchDf": 9,
-        "cohensD": -20.84
-      },
-      {
-        "name": "ulid-v8",
-        "opsPerSec": 881564,
-        "usPerOp": 1.1343,
-        "ci95": [
-          869987,
-          893141
-        ],
-        "std": 16184,
-        "cv": 0.0184,
+        "std": 28697,
         "trials": 10,
-        "samples": [
-          865561,
-          882288,
-          843388,
-          892719,
-          895642,
-          880377,
-          882541,
-          886813,
-          896481,
-          889834
-        ],
-        "welchP": 5.96e-12,
-        "welchT": -45.48,
-        "welchDf": 9.003,
-        "cohensD": -20.341
-      },
-      {
-        "name": "ksuid",
-        "opsPerSec": 315875,
-        "usPerOp": 3.1658,
-        "ci95": [
-          314252,
-          317497
-        ],
-        "std": 2268,
-        "cv": 0.0072,
-        "trials": 10,
-        "samples": [
-          317703,
-          316157,
-          314506,
-          311195,
-          316881,
-          318340,
-          318561,
-          315678,
-          316024,
-          313701
-        ],
-        "welchP": 4.47e-12,
-        "welchT": -47,
-        "welchDf": 9,
-        "cohensD": -21.021
-      },
-      {
-        "name": "snowflake",
-        "opsPerSec": 3584101,
-        "usPerOp": 0.279,
-        "ci95": [
-          3481879,
-          3686323
-        ],
-        "std": 142906,
-        "cv": 0.0399,
-        "trials": 10,
-        "samples": [
-          3626125,
-          3655933,
-          3618731,
-          3653195,
-          3608460,
-          3180105,
-          3631425,
-          3607575,
-          3638083,
-          3621378
-        ],
-        "welchP": 1.74e-11,
-        "welchT": -37.97,
-        "welchDf": 9.264,
-        "cohensD": -16.981
-      },
-      {
-        "name": "genoid-structured",
-        "opsPerSec": 3096556,
-        "usPerOp": 0.3229,
-        "ci95": [
-          3067723,
-          3125388
-        ],
-        "std": 40308,
-        "cv": 0.013,
-        "trials": 10,
-        "samples": [
-          3031787,
-          3129518,
-          3084444,
-          3113810,
-          3123448,
-          3128921,
-          3078785,
-          3154957,
-          3078894,
-          3040993
-        ],
-        "welchP": 2.02e-11,
-        "welchT": -39.53,
+        "usPerOp": 5.4626,
         "welchDf": 9.021,
-        "cohensD": -17.679
+        "welchP": 2.13e-7,
+        "welchT": -13.9
       },
       {
-        "name": "genoid-compiled",
-        "opsPerSec": 3083884,
-        "usPerOp": 0.3243,
         "ci95": [
-          3058995,
-          3108774
+          228860,
+          257461
         ],
-        "std": 34796,
-        "cv": 0.0113,
-        "trials": 10,
-        "samples": [
-          2998222,
-          3091419,
-          3095855,
-          3090918,
-          3069090,
-          3112584,
-          3076696,
-          3084392,
-          3130665,
-          3089003
-        ],
-        "welchP": 2.02e-11,
-        "welchT": -39.57,
-        "welchDf": 9.016,
-        "cohensD": -17.696
-      }
-    ],
-    "collisions": [
-      {
-        "name": "v4-native",
-        "n": 1000000,
-        "collisions": 0
-      },
-      {
-        "name": "v7-custom",
-        "n": 1000000,
-        "collisions": 0
-      },
-      {
-        "name": "genoid-v8",
-        "n": 1000000,
-        "collisions": 0
-      },
-      {
-        "name": "genoid-structured",
-        "n": 1000000,
-        "collisions": 0
-      },
-      {
-        "name": "genoid-compiled",
-        "n": 1000000,
-        "collisions": 0
-      },
-      {
-        "name": "mathrandom",
-        "n": 1000000,
-        "collisions": 0
-      },
-      {
-        "name": "pg-uuid-v8",
-        "n": 1000000,
-        "collisions": 0
-      },
-      {
+        "cohensD": -6.118,
+        "cv": 0.0822,
         "name": "ulid-v8",
-        "n": 1000000,
-        "collisions": 0
-      },
-      {
-        "name": "ulid",
-        "n": 1000000,
-        "collisions": 0
-      },
-      {
-        "name": "ksuid",
-        "n": 1000000,
-        "collisions": 0
-      }
-    ],
-    "comparisons": [
-      {
-        "name": "structured-vs-pg-uuid-v8",
-        "a": "genoid-structured",
-        "b": "pg-uuid-v8",
-        "ratio": 3.6769,
-        "welchP": 5.84e-18,
-        "welchT": 174.5,
-        "welchDf": 9.488,
-        "cohensD": 78.044,
-        "faster": "genoid-structured"
-      },
-      {
-        "name": "structured-vs-ulid-v8",
-        "a": "genoid-structured",
-        "b": "ulid-v8",
-        "ratio": 3.5126,
-        "welchP": 3.88e-21,
-        "welchT": 161.3,
-        "welchDf": 11.83,
-        "cohensD": 72.118,
-        "faster": "genoid-structured"
-      },
-      {
-        "name": "compiled-vs-structured",
-        "a": "genoid-compiled",
-        "b": "genoid-structured",
-        "ratio": 0.9959,
-        "welchP": 0.462,
-        "welchT": -0.7525,
-        "welchDf": 17.62,
-        "cohensD": -0.337,
-        "faster": "genoid-structured"
-      }
-    ]
-  },
-  {
-    "environment": {
-      "runtime": "deno",
-      "bun": null,
-      "node": "deno-2.9.3",
-      "platform": "darwin",
-      "arch": "arm64",
-      "cpuModel": "unknown",
-      "cpuCount": 3,
-      "totalMemoryMB": 0,
-      "commitSha": "202ef270819d90eef6dc31ff2a2a8ce9a64eda0c",
-      "runId": "44868772556"
-    },
-    "baselineName": "v4-native",
-    "benchmarks": [
-      {
-        "name": "v4-native",
-        "opsPerSec": 16178793,
-        "usPerOp": 0.0618,
-        "ci95": [
-          15166481,
-          17191105
-        ],
-        "std": 1415213,
-        "cv": 0.0875,
-        "trials": 10,
+        "opsPerSec": 243160,
         "samples": [
-          15969976,
-          16891892,
-          16955379,
-          16971326,
-          17376824,
-          16528471,
-          16566234,
-          15601993,
-          12424129,
-          16501707
+          255197,
+          211649,
+          230534,
+          252441,
+          257643,
+          225234,
+          252946,
+          222069,
+          247177,
+          276715
         ],
-        "welchP": 1,
-        "welchT": 0,
-        "welchDf": 18,
-        "cohensD": 0
-      },
-      {
-        "name": "v7-custom",
-        "opsPerSec": 2583397,
-        "usPerOp": 0.3871,
-        "ci95": [
-          2328109,
-          2838685
-        ],
-        "std": 356893,
-        "cv": 0.1381,
+        "std": 19992,
         "trials": 10,
-        "samples": [
-          3003260,
-          2987362,
-          2797566,
-          2392212,
-          2508897,
-          2578321,
-          2185185,
-          2875155,
-          2611385,
-          1894626
-        ],
-        "welchP": 3.7e-11,
-        "welchT": -29.46,
-        "welchDf": 10.14,
-        "cohensD": -13.173
-      },
-      {
-        "name": "genoid-v8",
-        "opsPerSec": 4108184,
-        "usPerOp": 0.2434,
-        "ci95": [
-          3959084,
-          4257284
-        ],
-        "std": 208441,
-        "cv": 0.0507,
-        "trials": 10,
-        "samples": [
-          3845189,
-          3823705,
-          3991146,
-          4400952,
-          4288682,
-          4316756,
-          4311758,
-          4025890,
-          4100612,
-          3977148
-        ],
-        "welchP": 3.58e-10,
-        "welchT": -26.68,
-        "welchDf": 9.39,
-        "cohensD": -11.933
-      },
-      {
-        "name": "mathrandom",
-        "opsPerSec": 626404,
-        "usPerOp": 1.5964,
-        "ci95": [
-          588015,
-          664792
-        ],
-        "std": 53667,
-        "cv": 0.0857,
-        "trials": 10,
-        "samples": [
-          558863,
-          655519,
-          612682,
-          659756,
-          678922,
-          660398,
-          555221,
-          587875,
-          584693,
-          710108
-        ],
-        "welchP": 6.38e-11,
-        "welchT": -34.73,
-        "welchDf": 9.026,
-        "cohensD": -15.53
-      },
-      {
-        "name": "pg-uuid-v8",
-        "opsPerSec": 743321,
-        "usPerOp": 1.3453,
-        "ci95": [
-          727388,
-          759253
-        ],
-        "std": 22274,
-        "cv": 0.03,
-        "trials": 10,
-        "samples": [
-          725419,
-          742763,
-          753516,
-          705524,
-          749134,
-          778772,
-          719034,
-          759081,
-          764020,
-          735943
-        ],
-        "welchP": 7.09e-11,
-        "welchT": -34.49,
-        "welchDf": 9.004,
-        "cohensD": -15.423
-      },
-      {
-        "name": "ulid",
-        "opsPerSec": 614391,
-        "usPerOp": 1.6276,
-        "ci95": [
-          586817,
-          641964
-        ],
-        "std": 38548,
-        "cv": 0.0627,
-        "trials": 10,
-        "samples": [
-          520753,
-          599498,
-          610017,
-          621413,
-          635841,
-          620984,
-          652707,
-          640213,
-          593110,
-          649372
-        ],
-        "welchP": 6.48e-11,
-        "welchT": -34.77,
-        "welchDf": 9.013,
-        "cohensD": -15.548
-      },
-      {
-        "name": "ulid-v8",
-        "opsPerSec": 724630,
-        "usPerOp": 1.38,
-        "ci95": [
-          680300,
-          768961
-        ],
-        "std": 61975,
-        "cv": 0.0855,
-        "trials": 10,
-        "samples": [
-          769442,
-          774209,
-          611647,
-          742584,
-          667189,
-          654121,
-          698370,
-          774284,
-          782455,
-          772003
-        ],
-        "welchP": 6.66e-11,
-        "welchT": -34.5,
-        "welchDf": 9.035,
-        "cohensD": -15.428
-      },
-      {
-        "name": "ksuid",
-        "opsPerSec": 393078,
-        "usPerOp": 2.544,
-        "ci95": [
-          382677,
-          403478
-        ],
-        "std": 14540,
-        "cv": 0.037,
-        "trials": 10,
-        "samples": [
-          404610,
-          401486,
-          408417,
-          379159,
-          398984,
-          398541,
-          379561,
-          409584,
-          382705,
-          367730
-        ],
-        "welchP": 5.83e-11,
-        "welchT": -35.27,
-        "welchDf": 9.002,
-        "cohensD": -15.774
-      },
-      {
-        "name": "snowflake",
-        "opsPerSec": 7642366,
-        "usPerOp": 0.1308,
-        "ci95": [
-          7536385,
-          7748346
-        ],
-        "std": 148161,
-        "cv": 0.0194,
-        "trials": 10,
-        "samples": [
-          7550150,
-          7721324,
-          7553940,
-          7832336,
-          7569163,
-          7821424,
-          7596980,
-          7734264,
-          7698155,
-          7345919
-        ],
-        "welchP": 1.09e-8,
-        "welchT": -18.97,
-        "welchDf": 9.197,
-        "cohensD": -8.484
-      },
-      {
-        "name": "genoid-structured",
-        "opsPerSec": 3199562,
-        "usPerOp": 0.3125,
-        "ci95": [
-          3076872,
-          3322253
-        ],
-        "std": 171522,
-        "cv": 0.0536,
-        "trials": 10,
-        "samples": [
-          3092034,
-          3307286,
-          3090468,
-          3320191,
-          3450487,
-          3284144,
-          2841082,
-          3304411,
-          3176820,
-          3128699
-        ],
-        "welchP": 2.22e-10,
-        "welchT": -28.79,
-        "welchDf": 9.264,
-        "cohensD": -12.876
-      },
-      {
-        "name": "genoid-compiled",
-        "opsPerSec": 3247475,
-        "usPerOp": 0.3079,
-        "ci95": [
-          3064403,
-          3430547
-        ],
-        "std": 255934,
-        "cv": 0.0788,
-        "trials": 10,
-        "samples": [
-          3227197,
-          3444040,
-          3599866,
-          2927642,
-          3014271,
-          3148703,
-          3115364,
-          3135603,
-          3145985,
-          3716079
-        ],
-        "welchP": 1.39e-10,
-        "welchT": -28.43,
-        "welchDf": 9.588,
-        "cohensD": -12.716
-      }
-    ],
-    "collisions": [
-      {
-        "name": "v4-native",
-        "n": 1000000,
-        "collisions": 0
-      },
-      {
-        "name": "v7-custom",
-        "n": 1000000,
-        "collisions": 0
-      },
-      {
-        "name": "genoid-v8",
-        "n": 1000000,
-        "collisions": 0
-      },
-      {
-        "name": "genoid-structured",
-        "n": 1000000,
-        "collisions": 0
-      },
-      {
-        "name": "genoid-compiled",
-        "n": 1000000,
-        "collisions": 0
-      },
-      {
-        "name": "mathrandom",
-        "n": 1000000,
-        "collisions": 0
-      },
-      {
-        "name": "pg-uuid-v8",
-        "n": 1000000,
-        "collisions": 0
-      },
-      {
-        "name": "ulid-v8",
-        "n": 1000000,
-        "collisions": 0
-      },
-      {
-        "name": "ulid",
-        "n": 1000000,
-        "collisions": 0
-      },
-      {
-        "name": "ksuid",
-        "n": 1000000,
-        "collisions": 0
-      }
-    ],
-    "comparisons": [
-      {
-        "name": "structured-vs-pg-uuid-v8",
-        "a": "genoid-structured",
-        "b": "pg-uuid-v8",
-        "ratio": 4.3044,
-        "welchP": 3.4e-12,
-        "welchT": 44.91,
-        "welchDf": 9.303,
-        "cohensD": 20.083,
-        "faster": "genoid-structured"
-      },
-      {
-        "name": "structured-vs-ulid-v8",
-        "a": "genoid-structured",
-        "b": "ulid-v8",
-        "ratio": 4.4154,
-        "welchP": 6.98e-14,
-        "welchT": 42.91,
-        "welchDf": 11.31,
-        "cohensD": 19.192,
-        "faster": "genoid-structured"
-      },
-      {
-        "name": "compiled-vs-structured",
-        "a": "genoid-compiled",
-        "b": "genoid-structured",
-        "ratio": 1.015,
-        "welchP": 0.63,
-        "welchT": 0.4918,
-        "welchDf": 15.73,
-        "cohensD": 0.22,
-        "faster": "genoid-compiled"
-      }
-    ]
-  },
-  {
-    "environment": {
-      "runtime": "deno",
-      "bun": null,
-      "node": "deno-2.9.3",
-      "platform": "linux",
-      "arch": "x64",
-      "cpuModel": "unknown",
-      "cpuCount": 4,
-      "totalMemoryMB": 0,
-      "commitSha": "202ef270819d90eef6dc31ff2a2a8ce9a64eda0c",
-      "runId": "44868772556"
-    },
-    "baselineName": "v4-native",
-    "benchmarks": [
-      {
-        "name": "v4-native",
-        "opsPerSec": 17832320,
-        "usPerOp": 0.0561,
-        "ci95": [
-          17722997,
-          17941644
-        ],
-        "std": 152834,
-        "cv": 0.0086,
-        "trials": 10,
-        "samples": [
-          17891237,
-          17906355,
-          17479387,
-          17856604,
-          17982649,
-          17978569,
-          17864147,
-          17740965,
-          17916334,
-          17706958
-        ],
-        "welchP": 1,
-        "welchT": 0,
-        "welchDf": 18,
-        "cohensD": 0
-      },
-      {
-        "name": "v7-custom",
-        "opsPerSec": 2434313,
-        "usPerOp": 0.4108,
-        "ci95": [
-          2406101,
-          2462524
-        ],
-        "std": 39440,
-        "cv": 0.0162,
-        "trials": 10,
-        "samples": [
-          2329120,
-          2423759,
-          2431437,
-          2470295,
-          2458130,
-          2451340,
-          2456282,
-          2445790,
-          2441057,
-          2435917
-        ],
-        "welchP": 1.42e-21,
-        "welchT": -308.5,
-        "welchDf": 10.19,
-        "cohensD": -137.962
-      },
-      {
-        "name": "genoid-v8",
-        "opsPerSec": 4048319,
-        "usPerOp": 0.247,
-        "ci95": [
-          3958926,
-          4137712
-        ],
-        "std": 124971,
-        "cv": 0.0309,
-        "trials": 10,
-        "samples": [
-          4032272,
-          3703865,
-          4116555,
-          4111573,
-          4057689,
-          4110852,
-          4045980,
-          4119441,
-          4096599,
-          4088366
-        ],
-        "welchP": 2.56e-31,
-        "welchT": -220.8,
-        "welchDf": 17.32,
-        "cohensD": -98.74
-      },
-      {
-        "name": "mathrandom",
-        "opsPerSec": 525015,
-        "usPerOp": 1.9047,
-        "ci95": [
-          521334,
-          528696
-        ],
-        "std": 5147,
-        "cv": 0.0098,
-        "trials": 10,
-        "samples": [
-          529197,
-          525879,
-          529516,
-          530832,
-          529999,
-          523836,
-          521677,
-          514261,
-          522744,
-          522207
-        ],
-        "welchP": 4.84e-20,
-        "welchT": -357.9,
-        "welchDf": 9.02,
-        "cohensD": -160.058
-      },
-      {
-        "name": "pg-uuid-v8",
-        "opsPerSec": 412691,
-        "usPerOp": 2.4231,
-        "ci95": [
-          411107,
-          414274
-        ],
-        "std": 2214,
-        "cv": 0.0054,
-        "trials": 10,
-        "samples": [
-          410630,
-          410104,
-          409626,
-          411018,
-          414450,
-          412056,
-          414355,
-          414898,
-          415222,
-          414548
-        ],
-        "welchP": 4.88e-20,
-        "welchT": -360.4,
-        "welchDf": 9.004,
-        "cohensD": -161.172
-      },
-      {
-        "name": "ulid",
-        "opsPerSec": 377190,
-        "usPerOp": 2.6512,
-        "ci95": [
-          376245,
-          378136
-        ],
-        "std": 1322,
-        "cv": 0.0035,
-        "trials": 10,
-        "samples": [
-          376283,
-          377867,
-          379185,
-          377011,
-          375625,
-          375098,
-          378703,
-          377768,
-          377884,
-          376479
-        ],
-        "welchP": 4.84e-20,
-        "welchT": -361.1,
-        "welchDf": 9.001,
-        "cohensD": -161.511
-      },
-      {
-        "name": "ulid-v8",
-        "opsPerSec": 420046,
-        "usPerOp": 2.3807,
-        "ci95": [
-          417472,
-          422620
-        ],
-        "std": 3599,
-        "cv": 0.0086,
-        "trials": 10,
-        "samples": [
-          410419,
-          421238,
-          422023,
-          422766,
-          419561,
-          421079,
-          418501,
-          421582,
-          421612,
-          421679
-        ],
-        "welchP": 4.78e-20,
-        "welchT": -360.2,
+        "usPerOp": 4.1125,
         "welchDf": 9.01,
-        "cohensD": -161.076
+        "welchP": 2.47e-7,
+        "welchT": -13.68
       },
       {
-        "name": "ksuid",
-        "opsPerSec": 259116,
-        "usPerOp": 3.8593,
         "ci95": [
-          257318,
-          260914
+          85493,
+          93629
         ],
-        "std": 2513,
-        "cv": 0.0097,
-        "trials": 10,
+        "cohensD": -6.377,
+        "cv": 0.0635,
+        "name": "ksuid",
+        "opsPerSec": 89561,
         "samples": [
-          259315,
-          260490,
-          259817,
-          260066,
-          260725,
-          260626,
-          260453,
-          254258,
-          254600,
-          260811
+          87179,
+          86541,
+          84574,
+          89984,
+          82969,
+          97166,
+          100811,
+          90323,
+          91038,
+          85023
         ],
-        "welchP": 4.49e-20,
-        "welchT": -363.6,
-        "welchDf": 9.005,
-        "cohensD": -162.588
+        "std": 5687,
+        "trials": 10,
+        "usPerOp": 11.1656,
+        "welchDf": 9.001,
+        "welchP": 1.75e-7,
+        "welchT": -14.26
       },
       {
+        "ci95": [
+          3697142,
+          4360430
+        ],
+        "cohensD": 0.178,
+        "cv": 0.1151,
         "name": "snowflake",
-        "opsPerSec": 5559637,
-        "usPerOp": 0.1799,
-        "ci95": [
-          5472404,
-          5646870
-        ],
-        "std": 121952,
-        "cv": 0.0219,
-        "trials": 10,
+        "opsPerSec": 4028786,
         "samples": [
-          5592235,
-          5569915,
-          5605852,
-          5591436,
-          5591883,
-          5607239,
-          5609151,
-          5604497,
-          5609847,
-          5214320
+          3565131,
+          3540087,
+          4626131,
+          4561047,
+          3840956,
+          3426709,
+          3678034,
+          4379111,
+          4267308,
+          4403347
         ],
-        "welchP": 2.8e-30,
-        "welchT": -198.5,
-        "welchDf": 17.15,
-        "cohensD": -88.767
+        "std": 463638,
+        "trials": 10,
+        "usPerOp": 0.2482,
+        "welchDf": 13.95,
+        "welchP": 0.697,
+        "welchT": 0.3979
       },
       {
+        "ci95": [
+          200187,
+          218656
+        ],
+        "cohensD": -6.176,
+        "cv": 0.0616,
         "name": "genoid-structured",
-        "opsPerSec": 3169321,
-        "usPerOp": 0.3155,
-        "ci95": [
-          3088518,
-          3250124
-        ],
-        "std": 112963,
-        "cv": 0.0356,
-        "trials": 10,
+        "opsPerSec": 209421,
         "samples": [
-          3197045,
-          3203883,
-          3183880,
-          2959019,
-          2971682,
-          3241517,
-          3217565,
-          3183777,
-          3301965,
-          3232879
+          193703,
+          190929,
+          205256,
+          212940,
+          209533,
+          219034,
+          209562,
+          198508,
+          230922,
+          223824
         ],
-        "welchP": 6.66e-31,
-        "welchT": -244,
-        "welchDf": 16.57,
-        "cohensD": -109.112
-      },
-      {
-        "name": "genoid-compiled",
-        "opsPerSec": 2705195,
-        "usPerOp": 0.3697,
-        "ci95": [
-          2690305,
-          2720086
-        ],
-        "std": 20817,
-        "cv": 0.0077,
+        "std": 12910,
         "trials": 10,
-        "samples": [
-          2689676,
-          2692591,
-          2727916,
-          2703538,
-          2713071,
-          2690101,
-          2709279,
-          2744458,
-          2671810,
-          2709514
+        "usPerOp": 4.7751,
+        "welchDf": 9.004,
+        "welchP": 2.3e-7,
+        "welchT": -13.81
+      },
+      {
+        "ci95": [
+          192840,
+          216135
         ],
-        "welchP": 4.75e-20,
-        "welchT": -310.1,
-        "welchDf": 9.334,
-        "cohensD": -138.695
-      }
-    ],
-    "collisions": [
-      {
-        "name": "v4-native",
-        "n": 1000000,
-        "collisions": 0
-      },
-      {
-        "name": "v7-custom",
-        "n": 1000000,
-        "collisions": 0
-      },
-      {
-        "name": "genoid-v8",
-        "n": 1000000,
-        "collisions": 0
-      },
-      {
-        "name": "genoid-structured",
-        "n": 1000000,
-        "collisions": 0
-      },
-      {
+        "cohensD": -6.184,
+        "cv": 0.0796,
         "name": "genoid-compiled",
-        "n": 1000000,
-        "collisions": 0
-      },
-      {
-        "name": "mathrandom",
-        "n": 1000000,
-        "collisions": 0
-      },
-      {
-        "name": "pg-uuid-v8",
-        "n": 1000000,
-        "collisions": 0
-      },
-      {
-        "name": "ulid-v8",
-        "n": 1000000,
-        "collisions": 0
-      },
-      {
-        "name": "ulid",
-        "n": 1000000,
-        "collisions": 0
-      },
-      {
-        "name": "ksuid",
-        "n": 1000000,
-        "collisions": 0
-      }
-    ],
-    "comparisons": [
-      {
-        "name": "structured-vs-pg-uuid-v8",
-        "a": "genoid-structured",
-        "b": "pg-uuid-v8",
-        "ratio": 7.6797,
-        "welchP": 5.12e-14,
-        "welchT": 77.15,
+        "opsPerSec": 204488,
+        "samples": [
+          205655,
+          221982,
+          180353,
+          212164,
+          189792,
+          190393,
+          217572,
+          225454,
+          186897,
+          214616
+        ],
+        "std": 16283,
+        "trials": 10,
+        "usPerOp": 4.8903,
         "welchDf": 9.007,
-        "cohensD": 34.504,
-        "faster": "genoid-structured"
-      },
-      {
-        "name": "structured-vs-ulid-v8",
-        "a": "genoid-structured",
-        "b": "ulid-v8",
-        "ratio": 7.5452,
-        "welchP": 5.1e-14,
-        "welchT": 76.92,
-        "welchDf": 9.018,
-        "cohensD": 34.401,
-        "faster": "genoid-structured"
-      },
-      {
-        "name": "compiled-vs-structured",
-        "a": "genoid-compiled",
-        "b": "genoid-structured",
-        "ratio": 0.8536,
-        "welchP": 2.39e-7,
-        "welchT": -12.78,
-        "welchDf": 9.611,
-        "cohensD": -5.714,
-        "faster": "genoid-structured"
-      }
-    ]
-  },
-  {
-    "environment": {
-      "runtime": "deno",
-      "bun": null,
-      "node": "deno-2.9.3",
-      "platform": "windows",
-      "arch": "x64",
-      "cpuModel": "unknown",
-      "cpuCount": 4,
-      "totalMemoryMB": 0,
-      "commitSha": "202ef270819d90eef6dc31ff2a2a8ce9a64eda0c",
-      "runId": "44868772556"
-    },
-    "baselineName": "v4-native",
-    "benchmarks": [
-      {
-        "name": "v4-native",
-        "opsPerSec": 22088349,
-        "usPerOp": 0.0453,
-        "ci95": [
-          21451170,
-          22725528
-        ],
-        "std": 890777,
-        "cv": 0.0403,
-        "trials": 10,
-        "samples": [
-          22676251,
-          22416499,
-          22170491,
-          20716587,
-          20550760,
-          21328101,
-          22712045,
-          22910295,
-          22845394,
-          22557069
-        ],
-        "welchP": 1,
-        "welchT": 0,
-        "welchDf": 18,
-        "cohensD": 0
-      },
-      {
-        "name": "v7-custom",
-        "opsPerSec": 3028592,
-        "usPerOp": 0.3302,
-        "ci95": [
-          2935704,
-          3121479
-        ],
-        "std": 129857,
-        "cv": 0.0429,
-        "trials": 10,
-        "samples": [
-          2887916,
-          2911416,
-          3112448,
-          3141700,
-          3098148,
-          3067762,
-          3135135,
-          3140674,
-          3023093,
-          2767626
-        ],
-        "welchP": 6.78e-14,
-        "welchT": -66.95,
-        "welchDf": 9.382,
-        "cohensD": -29.943
-      },
-      {
-        "name": "genoid-v8",
-        "opsPerSec": 4620900,
-        "usPerOp": 0.2164,
-        "ci95": [
-          4521228,
-          4720573
-        ],
-        "std": 139342,
-        "cv": 0.0302,
-        "trials": 10,
-        "samples": [
-          4470123,
-          4285261,
-          4685190,
-          4655093,
-          4645113,
-          4678844,
-          4694593,
-          4763186,
-          4651563,
-          4680038
-        ],
-        "welchP": 1.34e-13,
-        "welchT": -61.26,
-        "welchDf": 9.44,
-        "cohensD": -27.398
-      },
-      {
-        "name": "mathrandom",
-        "opsPerSec": 617649,
-        "usPerOp": 1.619,
-        "ci95": [
-          593649,
-          641650
-        ],
-        "std": 33553,
-        "cv": 0.0543,
-        "trials": 10,
-        "samples": [
-          656486,
-          659853,
-          649127,
-          627842,
-          639754,
-          594583,
-          591978,
-          575426,
-          570288,
-          611157
-        ],
-        "welchP": 5.46e-14,
-        "welchT": -76.17,
-        "welchDf": 9.026,
-        "cohensD": -34.063
-      },
-      {
-        "name": "pg-uuid-v8",
-        "opsPerSec": 494177,
-        "usPerOp": 2.0236,
-        "ci95": [
-          490817,
-          497537
-        ],
-        "std": 4698,
-        "cv": 0.0095,
-        "trials": 10,
-        "samples": [
-          495782,
-          487088,
-          493159,
-          496662,
-          487913,
-          489596,
-          497578,
-          499004,
-          500770,
-          494218
-        ],
-        "welchP": 5.53e-14,
-        "welchT": -76.66,
-        "welchDf": 9.001,
-        "cohensD": -34.283
-      },
-      {
-        "name": "ulid",
-        "opsPerSec": 479392,
-        "usPerOp": 2.086,
-        "ci95": [
-          474120,
-          484664
-        ],
-        "std": 7370,
-        "cv": 0.0154,
-        "trials": 10,
-        "samples": [
-          473894,
-          471773,
-          486412,
-          478422,
-          487593,
-          483483,
-          477081,
-          487668,
-          481861,
-          465735
-        ],
-        "welchP": 5.48e-14,
-        "welchT": -76.71,
-        "welchDf": 9.001,
-        "cohensD": -34.306
-      },
-      {
-        "name": "ulid-v8",
-        "opsPerSec": 509558,
-        "usPerOp": 1.9625,
-        "ci95": [
-          504114,
-          515002
-        ],
-        "std": 7611,
-        "cv": 0.0149,
-        "trials": 10,
-        "samples": [
-          492692,
-          516999,
-          505586,
-          511416,
-          506612,
-          517101,
-          511728,
-          508578,
-          518535,
-          506335
-        ],
-        "welchP": 5.55e-14,
-        "welchT": -76.6,
-        "welchDf": 9.001,
-        "cohensD": -34.258
-      },
-      {
-        "name": "ksuid",
-        "opsPerSec": 319968,
-        "usPerOp": 3.1253,
-        "ci95": [
-          318454,
-          321481
-        ],
-        "std": 2115,
-        "cv": 0.0066,
-        "trials": 10,
-        "samples": [
-          318460,
-          318119,
-          320768,
-          316440,
-          322758,
-          322282,
-          320321,
-          319015,
-          322500,
-          319011
-        ],
-        "welchP": 5.15e-14,
-        "welchT": -77.28,
-        "welchDf": 9,
-        "cohensD": -34.56
-      },
-      {
-        "name": "snowflake",
-        "opsPerSec": 6298376,
-        "usPerOp": 0.1588,
-        "ci95": [
-          6239464,
-          6357289
-        ],
-        "std": 82360,
-        "cv": 0.0131,
-        "trials": 10,
-        "samples": [
-          6207652,
-          6365372,
-          6365312,
-          6389001,
-          6383576,
-          6354593,
-          6256687,
-          6210466,
-          6174841,
-          6276262
-        ],
-        "welchP": 6.54e-13,
-        "welchT": -55.82,
-        "welchDf": 9.154,
-        "cohensD": -24.962
-      },
-      {
-        "name": "genoid-structured",
-        "opsPerSec": 3502064,
-        "usPerOp": 0.2855,
-        "ci95": [
-          3409741,
-          3594388
-        ],
-        "std": 129069,
-        "cv": 0.0369,
-        "trials": 10,
-        "samples": [
-          3528644,
-          3581502,
-          3430697,
-          3158490,
-          3507043,
-          3570224,
-          3570587,
-          3538821,
-          3583786,
-          3550853
-        ],
-        "welchP": 8.68e-14,
-        "welchT": -65.3,
-        "welchDf": 9.378,
-        "cohensD": -29.203
-      },
-      {
-        "name": "genoid-compiled",
-        "opsPerSec": 3368704,
-        "usPerOp": 0.2969,
-        "ci95": [
-          3318767,
-          3418641
-        ],
-        "std": 69812,
-        "cv": 0.0207,
-        "trials": 10,
-        "samples": [
-          3442193,
-          3409455,
-          3437507,
-          3249227,
-          3363346,
-          3244625,
-          3362458,
-          3391106,
-          3410781,
-          3376342
-        ],
-        "welchP": 1.53e-13,
-        "welchT": -66.25,
-        "welchDf": 9.111,
-        "cohensD": -29.629
+        "welchP": 2.27e-7,
+        "welchT": -13.83
       }
     ],
     "collisions": [
       {
-        "name": "v4-native",
+        "collisions": 0,
         "n": 1000000,
-        "collisions": 0
+        "name": "v4-native"
       },
       {
-        "name": "v7-custom",
+        "collisions": 0,
         "n": 1000000,
-        "collisions": 0
+        "name": "v7-custom"
       },
       {
-        "name": "genoid-v8",
+        "collisions": 0,
         "n": 1000000,
-        "collisions": 0
+        "name": "genoid-v8"
       },
       {
-        "name": "genoid-structured",
+        "collisions": 0,
         "n": 1000000,
-        "collisions": 0
+        "name": "genoid-structured"
       },
       {
-        "name": "genoid-compiled",
+        "collisions": 0,
         "n": 1000000,
-        "collisions": 0
+        "name": "genoid-compiled"
       },
       {
-        "name": "mathrandom",
+        "collisions": 0,
         "n": 1000000,
-        "collisions": 0
+        "name": "mathrandom"
       },
       {
-        "name": "pg-uuid-v8",
+        "collisions": 0,
         "n": 1000000,
-        "collisions": 0
+        "name": "pg-uuid-v8"
       },
       {
-        "name": "ulid-v8",
+        "collisions": 0,
         "n": 1000000,
-        "collisions": 0
+        "name": "ulid-v8"
       },
       {
-        "name": "ulid",
+        "collisions": 0,
         "n": 1000000,
-        "collisions": 0
+        "name": "ulid"
       },
       {
-        "name": "ksuid",
+        "collisions": 0,
         "n": 1000000,
-        "collisions": 0
+        "name": "ksuid"
       }
     ],
     "comparisons": [
       {
-        "name": "structured-vs-pg-uuid-v8",
         "a": "genoid-structured",
         "b": "pg-uuid-v8",
-        "ratio": 7.0867,
-        "welchP": 7.43e-14,
-        "welchT": 73.65,
-        "welchDf": 9.024,
-        "cohensD": 32.936,
-        "faster": "genoid-structured"
+        "cohensD": -3.831,
+        "faster": "pg-uuid-v8",
+        "name": "structured-vs-pg-uuid-v8",
+        "ratio": 0.7371,
+        "welchDf": 13.68,
+        "welchP": 7.24e-7,
+        "welchT": -8.566
       },
       {
-        "name": "structured-vs-ulid-v8",
         "a": "genoid-structured",
         "b": "ulid-v8",
-        "ratio": 6.8727,
-        "welchP": 7.06e-14,
-        "welchT": 73.19,
-        "welchDf": 9.063,
-        "cohensD": 32.732,
-        "faster": "genoid-structured"
+        "cohensD": -2.005,
+        "faster": "ulid-v8",
+        "name": "structured-vs-ulid-v8",
+        "ratio": 0.8612,
+        "welchDf": 15.39,
+        "welchP": 0.000412,
+        "welchT": -4.483
       },
       {
-        "name": "compiled-vs-structured",
         "a": "genoid-compiled",
         "b": "genoid-structured",
-        "ratio": 0.9619,
-        "welchP": 0.0124,
-        "welchT": -2.874,
-        "welchDf": 13.85,
-        "cohensD": -1.285,
-        "faster": "genoid-structured"
+        "cohensD": -0.336,
+        "faster": "genoid-structured",
+        "name": "compiled-vs-structured",
+        "ratio": 0.9764,
+        "welchDf": 17.11,
+        "welchP": 0.463,
+        "welchT": -0.7507
       }
-    ]
-  },
-  {
+    ],
     "environment": {
-      "runtime": "node",
+      "arch": "arm64",
       "bun": null,
+      "commitSha": "53b634d9e163dd74f82b19bcf09ff2d2c290fe62",
+      "cpuCount": 3,
+      "cpuModel": "Apple M1 (Virtual)",
       "node": "22.23.5",
       "platform": "darwin",
-      "arch": "arm64",
-      "cpuModel": "Apple M1 (Virtual)",
-      "cpuCount": 3,
-      "totalMemoryMB": 7168,
-      "commitSha": "202ef270819d90eef6dc31ff2a2a8ce9a64eda0c",
-      "runId": "44868772556"
-    },
+      "runId": "45370671302",
+      "runtime": "node",
+      "totalMemoryMB": 7168
+    }
+  },
+  {
     "baselineName": "v4-native",
     "benchmarks": [
       {
+        "ci95": [
+          4549628,
+          4604914
+        ],
+        "cohensD": 0,
+        "cv": 0.0084,
         "name": "v4-native",
-        "opsPerSec": 3102519,
-        "usPerOp": 0.3223,
-        "ci95": [
-          2801400,
-          3403638
-        ],
-        "std": 420964,
-        "cv": 0.1357,
-        "trials": 10,
+        "opsPerSec": 4577271,
         "samples": [
-          2333761,
-          3554592,
-          2927170,
-          3759896,
-          3414783,
-          3016231,
-          2724118,
-          2908107,
-          3062422,
-          3324109
+          4569155,
+          4612625,
+          4609269,
+          4606535,
+          4526462,
+          4531444,
+          4531851,
+          4622755,
+          4554862,
+          4607753
         ],
-        "welchP": 1,
-        "welchT": 0,
+        "std": 38645,
+        "trials": 10,
+        "usPerOp": 0.2185,
         "welchDf": 18,
-        "cohensD": 0
+        "welchP": 1,
+        "welchT": 0
       },
       {
+        "ci95": [
+          474823,
+          483534
+        ],
+        "cohensD": -148.143,
+        "cv": 0.0127,
         "name": "v7-custom",
-        "opsPerSec": 527759,
-        "usPerOp": 1.8948,
-        "ci95": [
-          482080,
-          573439
-        ],
-        "std": 63860,
-        "cv": 0.121,
-        "trials": 10,
+        "opsPerSec": 479179,
         "samples": [
-          531943,
-          616802,
-          441691,
-          550447,
-          585920,
-          480629,
-          461138,
-          454924,
-          559328,
-          594772
+          477716,
+          484982,
+          475629,
+          470593,
+          478888,
+          469577,
+          482790,
+          478777,
+          487212,
+          485621
         ],
-        "welchP": 7.5e-9,
-        "welchT": -19.12,
-        "welchDf": 9.414,
-        "cohensD": -8.552
+        "std": 6089,
+        "trials": 10,
+        "usPerOp": 2.0869,
+        "welchDf": 9.447,
+        "welchP": 1.59e-20,
+        "welchT": -331.3
       },
       {
+        "ci95": [
+          3653950,
+          3937008
+        ],
+        "cohensD": -5.484,
+        "cv": 0.0521,
         "name": "genoid-v8",
-        "opsPerSec": 2401229,
-        "usPerOp": 0.4165,
-        "ci95": [
-          1948597,
-          2853862
-        ],
-        "std": 632781,
-        "cv": 0.2635,
-        "trials": 10,
+        "opsPerSec": 3795479,
         "samples": [
-          2152030,
-          1573648,
-          1861017,
-          2288829,
-          2832776,
-          1803567,
-          2916052,
-          2521171,
-          2347987,
-          3715213
+          3993513,
+          3978665,
+          3913400,
+          3850197,
+          3534922,
+          3371960,
+          3794885,
+          3893992,
+          3862468,
+          3760783
         ],
-        "welchP": 0.0102,
-        "welchT": -2.918,
-        "welchDf": 15.66,
-        "cohensD": -1.305
+        "std": 197858,
+        "trials": 10,
+        "usPerOp": 0.2635,
+        "welchDf": 9.686,
+        "welchP": 3.23e-7,
+        "welchT": -12.26
       },
       {
+        "ci95": [
+          607561,
+          612131
+        ],
+        "cohensD": -144.695,
+        "cv": 0.0052,
         "name": "mathrandom",
-        "opsPerSec": 410011,
-        "usPerOp": 2.439,
-        "ci95": [
-          363819,
-          456203
-        ],
-        "std": 64577,
-        "cv": 0.1575,
-        "trials": 10,
+        "opsPerSec": 609846,
         "samples": [
-          411581,
-          385867,
-          365717,
-          441920,
-          334695,
-          382020,
-          315932,
-          474332,
-          508268,
-          479778
+          609049,
+          610873,
+          607689,
+          611222,
+          612418,
+          613409,
+          611214,
+          613084,
+          604677,
+          604823
         ],
-        "welchP": 4.91e-9,
-        "welchT": -19.99,
-        "welchDf": 9.423,
-        "cohensD": -8.941
+        "std": 3195,
+        "trials": 10,
+        "usPerOp": 1.6398,
+        "welchDf": 9.123,
+        "welchP": 7.79e-20,
+        "welchT": -323.5
       },
       {
+        "ci95": [
+          236892,
+          239568
+        ],
+        "cohensD": -158.602,
+        "cv": 0.0079,
         "name": "pg-uuid-v8",
-        "opsPerSec": 257389,
-        "usPerOp": 3.8852,
-        "ci95": [
-          210195,
-          304584
-        ],
-        "std": 65978,
-        "cv": 0.2563,
-        "trials": 10,
+        "opsPerSec": 238230,
         "samples": [
-          150235,
-          152132,
-          266185,
-          217966,
-          255913,
-          274628,
-          319916,
-          284662,
-          309066,
-          343192
+          240242,
+          239467,
+          236724,
+          238928,
+          239114,
+          239263,
+          238094,
+          237207,
+          233880,
+          239378
         ],
-        "welchP": 2.89e-9,
-        "welchT": -21.11,
-        "welchDf": 9.442,
-        "cohensD": -9.443
+        "std": 1870,
+        "trials": 10,
+        "usPerOp": 4.1976,
+        "welchDf": 9.042,
+        "welchP": 4.78e-20,
+        "welchT": -354.6
       },
       {
+        "ci95": [
+          164381,
+          165043
+        ],
+        "cohensD": -161.466,
+        "cv": 0.0028,
         "name": "ulid",
-        "opsPerSec": 282873,
-        "usPerOp": 3.5352,
-        "ci95": [
-          256754,
-          308992
-        ],
-        "std": 36515,
-        "cv": 0.1291,
-        "trials": 10,
+        "opsPerSec": 164712,
         "samples": [
-          298428,
-          283194,
-          259712,
-          191832,
-          289906,
-          314151,
-          277973,
-          320658,
-          289904,
-          302970
+          164877,
+          163872,
+          164552,
+          164079,
+          164907,
+          164656,
+          165494,
+          164946,
+          164957,
+          164781
         ],
-        "welchP": 4.6e-9,
-        "welchT": -21.1,
-        "welchDf": 9.135,
-        "cohensD": -9.437
+        "std": 463,
+        "trials": 10,
+        "usPerOp": 6.0712,
+        "welchDf": 9.003,
+        "welchP": 4.83e-20,
+        "welchT": -361.1
       },
       {
+        "ci95": [
+          253987,
+          261471
+        ],
+        "cohensD": -156.645,
+        "cv": 0.0203,
         "name": "ulid-v8",
-        "opsPerSec": 338339,
-        "usPerOp": 2.9556,
-        "ci95": [
-          299514,
-          377164
-        ],
-        "std": 54277,
-        "cv": 0.1604,
-        "trials": 10,
+        "opsPerSec": 257729,
         "samples": [
-          271466,
-          271300,
-          389270,
-          394361,
-          388443,
-          397270,
-          349869,
-          348879,
-          277179,
-          295357
+          263706,
+          253861,
+          262343,
+          260929,
+          260563,
+          247407,
+          251975,
+          256924,
+          257888,
+          261696
         ],
-        "welchP": 4.49e-9,
-        "welchT": -20.59,
-        "welchDf": 9.299,
-        "cohensD": -9.21
+        "std": 5231,
+        "trials": 10,
+        "usPerOp": 3.88,
+        "welchDf": 9.33,
+        "welchP": 1.55e-20,
+        "welchT": -350.3
       },
       {
+        "ci95": [
+          147776,
+          149095
+        ],
+        "cohensD": -162.028,
+        "cv": 0.0062,
         "name": "ksuid",
-        "opsPerSec": 236781,
-        "usPerOp": 4.2233,
-        "ci95": [
-          222558,
-          251003
-        ],
-        "std": 19883,
-        "cv": 0.084,
-        "trials": 10,
+        "opsPerSec": 148436,
         "samples": [
-          249741,
-          238432,
-          228338,
-          249391,
-          267422,
-          237114,
-          245859,
-          242719,
-          205563,
-          203229
+          149091,
+          148723,
+          149661,
+          147676,
+          146593,
+          148325,
+          148804,
+          148785,
+          149180,
+          147518
         ],
-        "welchP": 4.5e-9,
-        "welchT": -21.5,
-        "welchDf": 9.04,
-        "cohensD": -9.617
+        "std": 922,
+        "trials": 10,
+        "usPerOp": 6.7369,
+        "welchDf": 9.01,
+        "welchP": 4.53e-20,
+        "welchT": -362.3
       },
       {
+        "ci95": [
+          6983253,
+          7044260
+        ],
+        "cohensD": 59.874,
+        "cv": 0.0061,
         "name": "snowflake",
-        "opsPerSec": 6074260,
-        "usPerOp": 0.1646,
-        "ci95": [
-          5837539,
-          6310982
-        ],
-        "std": 330937,
-        "cv": 0.0545,
-        "trials": 10,
+        "opsPerSec": 7013756,
         "samples": [
-          6668519,
-          5995421,
-          5993235,
-          6228945,
-          5998253,
-          6239479,
-          6356866,
-          5835831,
-          6000300,
-          5425752
+          6991339,
+          7058467,
+          6993055,
+          7013282,
+          7079667,
+          6983008,
+          6938988,
+          7025048,
+          7059440,
+          6995270
         ],
-        "welchP": 2.38e-12,
-        "welchT": 17.55,
-        "welchDf": 17.05,
-        "cohensD": 7.849
+        "std": 42644,
+        "trials": 10,
+        "usPerOp": 0.1426,
+        "welchDf": 17.83,
+        "welchP": 3.19e-28,
+        "welchT": 133.9
       },
       {
+        "ci95": [
+          389560,
+          393897
+        ],
+        "cohensD": -152.701,
+        "cv": 0.0077,
         "name": "genoid-structured",
-        "opsPerSec": 3170326,
-        "usPerOp": 0.3154,
-        "ci95": [
-          2878620,
-          3462033
-        ],
-        "std": 407806,
-        "cv": 0.1286,
-        "trials": 10,
+        "opsPerSec": 391729,
         "samples": [
-          3333715,
-          3267307,
-          3091250,
-          3101170,
-          2983802,
-          2163351,
-          3297177,
-          3579346,
-          3257798,
-          3628348
+          391126,
+          385705,
+          393305,
+          393694,
+          394365,
+          391566,
+          395090,
+          392642,
+          387261,
+          392533
         ],
-        "welchP": 0.719,
-        "welchT": 0.3658,
-        "welchDf": 17.98,
-        "cohensD": 0.164
+        "std": 3032,
+        "trials": 10,
+        "usPerOp": 2.5528,
+        "welchDf": 9.111,
+        "welchP": 5.02e-20,
+        "welchT": -341.5
       },
       {
-        "name": "genoid-compiled",
-        "opsPerSec": 556620,
-        "usPerOp": 1.7966,
         "ci95": [
-          535179,
-          578062
+          224811,
+          226446
         ],
-        "std": 29975,
-        "cv": 0.0539,
-        "trials": 10,
+        "cohensD": -159.179,
+        "cv": 0.0051,
+        "name": "genoid-compiled",
+        "opsPerSec": 225628,
         "samples": [
-          532958,
-          561304,
-          538281,
-          534248,
-          569100,
-          573079,
-          523928,
-          527563,
-          607867,
-          597875
+          224529,
+          226230,
+          223747,
+          225072,
+          226905,
+          225450,
+          225448,
+          226746,
+          227302,
+          224856
         ],
-        "welchP": 1.21e-8,
-        "welchT": -19.08,
-        "welchDf": 9.091,
-        "cohensD": -8.531
+        "std": 1143,
+        "trials": 10,
+        "usPerOp": 4.4321,
+        "welchDf": 9.016,
+        "welchP": 5.19e-20,
+        "welchT": -355.9
       }
     ],
     "collisions": [
       {
-        "name": "v4-native",
+        "collisions": 0,
         "n": 1000000,
-        "collisions": 0
+        "name": "v4-native"
       },
       {
-        "name": "v7-custom",
+        "collisions": 0,
         "n": 1000000,
-        "collisions": 0
+        "name": "v7-custom"
       },
       {
-        "name": "genoid-v8",
+        "collisions": 0,
         "n": 1000000,
-        "collisions": 0
+        "name": "genoid-v8"
       },
       {
-        "name": "genoid-structured",
+        "collisions": 0,
         "n": 1000000,
-        "collisions": 0
+        "name": "genoid-structured"
       },
       {
-        "name": "genoid-compiled",
+        "collisions": 0,
         "n": 1000000,
-        "collisions": 0
+        "name": "genoid-compiled"
       },
       {
-        "name": "mathrandom",
+        "collisions": 0,
         "n": 1000000,
-        "collisions": 0
+        "name": "mathrandom"
       },
       {
-        "name": "pg-uuid-v8",
+        "collisions": 0,
         "n": 1000000,
-        "collisions": 0
+        "name": "pg-uuid-v8"
       },
       {
-        "name": "ulid-v8",
+        "collisions": 0,
         "n": 1000000,
-        "collisions": 0
+        "name": "ulid-v8"
       },
       {
-        "name": "ulid",
+        "collisions": 0,
         "n": 1000000,
-        "collisions": 0
+        "name": "ulid"
       },
       {
-        "name": "ksuid",
+        "collisions": 0,
         "n": 1000000,
-        "collisions": 0
+        "name": "ksuid"
       }
     ],
     "comparisons": [
       {
-        "name": "structured-vs-pg-uuid-v8",
         "a": "genoid-structured",
         "b": "pg-uuid-v8",
-        "ratio": 12.3172,
-        "welchP": 1.66e-9,
-        "welchT": 22.3,
-        "welchDf": 9.471,
-        "cohensD": 9.972,
-        "faster": "genoid-structured"
+        "cohensD": 60.941,
+        "faster": "genoid-structured",
+        "name": "structured-vs-pg-uuid-v8",
+        "ratio": 1.6443,
+        "welchDf": 14.98,
+        "welchP": 1.35e-24,
+        "welchT": 136.3
       },
       {
-        "name": "structured-vs-ulid-v8",
         "a": "genoid-structured",
         "b": "ulid-v8",
-        "ratio": 9.3703,
-        "welchP": 2.63e-9,
-        "welchT": 21.77,
-        "welchDf": 9.319,
-        "cohensD": 9.735,
-        "faster": "genoid-structured"
+        "cohensD": 31.342,
+        "faster": "genoid-structured",
+        "name": "structured-vs-ulid-v8",
+        "ratio": 1.5199,
+        "welchDf": 14.43,
+        "welchP": 1.09e-19,
+        "welchT": 70.08
       },
       {
-        "name": "compiled-vs-structured",
         "a": "genoid-compiled",
         "b": "genoid-structured",
-        "ratio": 0.1756,
-        "welchP": 7.16e-9,
-        "welchT": -20.21,
-        "welchDf": 9.097,
-        "cohensD": -9.04,
-        "faster": "genoid-structured"
+        "cohensD": -72.502,
+        "faster": "genoid-structured",
+        "name": "compiled-vs-structured",
+        "ratio": 0.576,
+        "welchDf": 11.51,
+        "welchP": 1.08e-20,
+        "welchT": -162.1
       }
-    ]
-  },
-  {
+    ],
     "environment": {
-      "runtime": "node",
+      "arch": "x64",
       "bun": null,
+      "commitSha": "53b634d9e163dd74f82b19bcf09ff2d2c290fe62",
+      "cpuCount": 4,
+      "cpuModel": "AMD EPYC 9V74 80-Core Processor",
       "node": "22.23.5",
       "platform": "linux",
-      "arch": "x64",
-      "cpuModel": "AMD EPYC 9V74 80-Core Processor",
-      "cpuCount": 4,
-      "totalMemoryMB": 15983,
-      "commitSha": "202ef270819d90eef6dc31ff2a2a8ce9a64eda0c",
-      "runId": "44868772556"
-    },
+      "runId": "45370671302",
+      "runtime": "node",
+      "totalMemoryMB": 15983
+    }
+  },
+  {
     "baselineName": "v4-native",
     "benchmarks": [
       {
+        "ci95": [
+          2905109,
+          3045087
+        ],
+        "cohensD": 0,
+        "cv": 0.0329,
         "name": "v4-native",
-        "opsPerSec": 4646227,
-        "usPerOp": 0.2152,
-        "ci95": [
-          4618487,
-          4673968
-        ],
-        "std": 38781,
-        "cv": 0.0083,
-        "trials": 10,
+        "opsPerSec": 2975098,
         "samples": [
-          4698906,
-          4604203,
-          4628271,
-          4688514,
-          4642575,
-          4660241,
-          4624384,
-          4666534,
-          4673443,
-          4575204
+          2977591,
+          2875691,
+          3031350,
+          3017802,
+          3043228,
+          3039537,
+          3024341,
+          3032577,
+          2736869,
+          2971993
         ],
-        "welchP": 1,
-        "welchT": 0,
+        "std": 97844,
+        "trials": 10,
+        "usPerOp": 0.3361,
         "welchDf": 18,
-        "cohensD": 0
+        "welchP": 1,
+        "welchT": 0
       },
       {
+        "ci95": [
+          404488,
+          422441
+        ],
+        "cohensD": -36.724,
+        "cv": 0.0304,
         "name": "v7-custom",
-        "opsPerSec": 457807,
-        "usPerOp": 2.1843,
-        "ci95": [
-          444486,
-          471127
-        ],
-        "std": 18622,
-        "cv": 0.0407,
-        "trials": 10,
+        "opsPerSec": 413465,
         "samples": [
-          461706,
-          407957,
-          458621,
-          468315,
-          462813,
-          473116,
-          469125,
-          467541,
-          455988,
-          452885
+          419878,
+          419796,
+          412026,
+          412450,
+          424562,
+          412618,
+          422530,
+          418857,
+          411545,
+          380384
         ],
-        "welchP": 2.14e-26,
-        "welchT": -307.9,
-        "welchDf": 12.94,
-        "cohensD": -137.686
+        "std": 12550,
+        "trials": 10,
+        "usPerOp": 2.4186,
+        "welchDf": 9.296,
+        "welchP": 1.28e-14,
+        "welchT": -82.12
       },
       {
+        "ci95": [
+          2610685,
+          2929499
+        ],
+        "cohensD": -1.191,
+        "cv": 0.0804,
         "name": "genoid-v8",
-        "opsPerSec": 4766486,
-        "usPerOp": 0.2098,
-        "ci95": [
-          4278043,
-          5254929
-        ],
-        "std": 682844,
-        "cv": 0.1433,
-        "trials": 10,
+        "opsPerSec": 2770092,
         "samples": [
-          4861858,
-          4933811,
-          5298468,
-          4886083,
-          2916938,
-          4584174,
-          5159372,
-          4980332,
-          5218679,
-          4825149
+          2716745,
+          2714909,
+          2671418,
+          2915180,
+          2872515,
+          2891728,
+          2885970,
+          2197510,
+          2929304,
+          2905642
         ],
-        "welchP": 0.592,
-        "welchT": 0.556,
-        "welchDf": 9.058,
-        "cohensD": 0.249
+        "std": 222851,
+        "trials": 10,
+        "usPerOp": 0.361,
+        "welchDf": 12.35,
+        "welchP": 0.0202,
+        "welchT": -2.664
       },
       {
+        "ci95": [
+          393228,
+          419847
+        ],
+        "cohensD": -36.472,
+        "cv": 0.0458,
         "name": "mathrandom",
-        "opsPerSec": 602192,
-        "usPerOp": 1.6606,
-        "ci95": [
-          598179,
-          606206
-        ],
-        "std": 5611,
-        "cv": 0.0093,
-        "trials": 10,
+        "opsPerSec": 406538,
         "samples": [
-          597821,
-          601791,
-          597968,
-          600592,
-          604912,
-          606070,
-          590504,
-          608612,
-          606338,
-          607317
+          417888,
+          405723,
+          370597,
+          386017,
+          389793,
+          406972,
+          419440,
+          420910,
+          421925,
+          426113
         ],
-        "welchP": 2.46e-20,
-        "welchT": -326.4,
-        "welchDf": 9.377,
-        "cohensD": -145.952
+        "std": 18607,
+        "trials": 10,
+        "usPerOp": 2.4598,
+        "welchDf": 9.65,
+        "welchP": 5.02e-15,
+        "welchT": -81.55
       },
       {
+        "ci95": [
+          199025,
+          201219
+        ],
+        "cohensD": -40.104,
+        "cv": 0.0077,
         "name": "pg-uuid-v8",
-        "opsPerSec": 266714,
-        "usPerOp": 3.7493,
-        "ci95": [
-          265220,
-          268208
-        ],
-        "std": 2088,
-        "cv": 0.0078,
-        "trials": 10,
+        "opsPerSec": 200122,
         "samples": [
-          270979,
-          267656,
-          267933,
-          266024,
-          264308,
-          267801,
-          267795,
-          264934,
-          264885,
-          264827
+          197090,
+          200859,
+          200168,
+          199643,
+          199793,
+          201436,
+          200303,
+          198458,
+          202559,
+          200909
         ],
-        "welchP": 4.36e-20,
-        "welchT": -356.6,
-        "welchDf": 9.052,
-        "cohensD": -159.474
+        "std": 1533,
+        "trials": 10,
+        "usPerOp": 4.997,
+        "welchDf": 9.004,
+        "welchP": 1.33e-14,
+        "welchT": -89.67
       },
       {
+        "ci95": [
+          95553,
+          105786
+        ],
+        "cohensD": -41.436,
+        "cv": 0.0711,
         "name": "ulid",
-        "opsPerSec": 244635,
-        "usPerOp": 4.0877,
-        "ci95": [
-          243753,
-          245517
-        ],
-        "std": 1233,
-        "cv": 0.005,
-        "trials": 10,
+        "opsPerSec": 100670,
         "samples": [
-          244148,
-          246126,
-          245590,
-          242668,
-          246345,
-          244903,
-          244958,
-          244186,
-          242866,
-          244560
+          105652,
+          106255,
+          105973,
+          106288,
+          104872,
+          83675,
+          99088,
+          94902,
+          99096,
+          100894
         ],
-        "welchP": 4.78e-20,
-        "welchT": -358.7,
-        "welchDf": 9.018,
-        "cohensD": -160.43
+        "std": 7153,
+        "trials": 10,
+        "usPerOp": 9.9335,
+        "welchDf": 9.096,
+        "welchP": 7.56e-15,
+        "welchT": -92.65
       },
       {
+        "ci95": [
+          184321,
+          224802
+        ],
+        "cohensD": -38.468,
+        "cv": 0.1383,
         "name": "ulid-v8",
-        "opsPerSec": 263937,
-        "usPerOp": 3.7888,
-        "ci95": [
-          259986,
-          267888
-        ],
-        "std": 5523,
-        "cv": 0.0209,
-        "trials": 10,
+        "opsPerSec": 204562,
         "samples": [
-          249129,
-          264363,
-          268854,
-          268267,
-          265617,
-          263425,
-          266681,
-          264567,
-          264934,
-          263531
+          197555,
+          171006,
+          140750,
+          208157,
+          207091,
+          224633,
+          225613,
+          225583,
+          222357,
+          222872
         ],
-        "welchP": 1.22e-20,
-        "welchT": -353.8,
-        "welchDf": 9.365,
-        "cohensD": -158.21
+        "std": 28297,
+        "trials": 10,
+        "usPerOp": 4.8885,
+        "welchDf": 10.5,
+        "welchP": 2.71e-16,
+        "welchT": -86.02
       },
       {
+        "ci95": [
+          82715,
+          83270
+        ],
+        "cohensD": -41.801,
+        "cv": 0.0047,
         "name": "ksuid",
-        "opsPerSec": 191008,
-        "usPerOp": 5.2354,
-        "ci95": [
-          187541,
-          194476
-        ],
-        "std": 4847,
-        "cv": 0.0254,
-        "trials": 10,
+        "opsPerSec": 82993,
         "samples": [
-          192871,
-          191954,
-          194320,
-          193530,
-          194018,
-          177857,
-          189339,
-          191822,
-          191309,
-          193063
+          82918,
+          82100,
+          82585,
+          82947,
+          83233,
+          83090,
+          83340,
+          83220,
+          83148,
+          83343
         ],
-        "welchP": 1.46e-20,
-        "welchT": -360.5,
-        "welchDf": 9.281,
-        "cohensD": -161.212
+        "std": 388,
+        "trials": 10,
+        "usPerOp": 12.0493,
+        "welchDf": 9,
+        "welchP": 9.3e-15,
+        "welchT": -93.47
       },
       {
+        "ci95": [
+          3831710,
+          4008080
+        ],
+        "cohensD": 8.489,
+        "cv": 0.0315,
         "name": "snowflake",
-        "opsPerSec": 6884463,
-        "usPerOp": 0.1453,
-        "ci95": [
-          6871958,
-          6896967
-        ],
-        "std": 17481,
-        "cv": 0.0025,
-        "trials": 10,
+        "opsPerSec": 3919895,
         "samples": [
-          6876992,
-          6877513,
-          6858838,
-          6899084,
-          6871970,
-          6888276,
-          6869186,
-          6915955,
-          6903898,
-          6882916
+          3957590,
+          3939637,
+          3974579,
+          3942153,
+          3570874,
+          3944828,
+          3967797,
+          3961259,
+          3968726,
+          3971508
         ],
-        "welchP": 2.61e-22,
-        "welchT": 166.4,
-        "welchDf": 12.51,
-        "cohensD": 74.41
+        "std": 123283,
+        "trials": 10,
+        "usPerOp": 0.2551,
+        "welchDf": 17.12,
+        "welchP": 6.16e-13,
+        "welchT": 18.98
       },
       {
+        "ci95": [
+          314260,
+          319055
+        ],
+        "cohensD": -38.402,
+        "cv": 0.0106,
         "name": "genoid-structured",
-        "opsPerSec": 3725236,
-        "usPerOp": 0.2684,
-        "ci95": [
-          3593352,
-          3857121
-        ],
-        "std": 184374,
-        "cv": 0.0495,
-        "trials": 10,
+        "opsPerSec": 316657,
         "samples": [
-          3836472,
-          3663835,
-          3633853,
-          3683541,
-          3421012,
-          3527914,
-          3722972,
-          3781159,
-          4035751,
-          3945854
+          318408,
+          319110,
+          321460,
+          318234,
+          317643,
+          310947,
+          317061,
+          313907,
+          311820,
+          317984
         ],
-        "welchP": 3.33e-8,
-        "welchT": -15.46,
-        "welchDf": 9.795,
-        "cohensD": -6.913
+        "std": 3352,
+        "trials": 10,
+        "usPerOp": 3.158,
+        "welchDf": 9.021,
+        "welchP": 1.88e-14,
+        "welchT": -85.87
       },
       {
-        "name": "genoid-compiled",
-        "opsPerSec": 473660,
-        "usPerOp": 2.1112,
         "ci95": [
-          470783,
-          476536
+          194968,
+          196632
         ],
-        "std": 4021,
-        "cv": 0.0085,
-        "trials": 10,
+        "cohensD": -40.168,
+        "cv": 0.0059,
+        "name": "genoid-compiled",
+        "opsPerSec": 195800,
         "samples": [
-          468454,
-          472801,
-          467405,
-          473307,
-          471633,
-          480623,
-          473876,
-          474113,
-          477744,
-          476642
+          194428,
+          195024,
+          196073,
+          196154,
+          193905,
+          197241,
+          195317,
+          196851,
+          195634,
+          197371
         ],
-        "welchP": 3.82e-20,
-        "welchT": -338.4,
-        "welchDf": 9.193,
-        "cohensD": -151.348
+        "std": 1164,
+        "trials": 10,
+        "usPerOp": 5.1073,
+        "welchDf": 9.003,
+        "welchP": 1.32e-14,
+        "welchT": -89.82
       }
     ],
     "collisions": [
       {
-        "name": "v4-native",
+        "collisions": 0,
         "n": 1000000,
-        "collisions": 0
+        "name": "v4-native"
       },
       {
-        "name": "v7-custom",
+        "collisions": 0,
         "n": 1000000,
-        "collisions": 0
+        "name": "v7-custom"
       },
       {
-        "name": "genoid-v8",
+        "collisions": 0,
         "n": 1000000,
-        "collisions": 0
+        "name": "genoid-v8"
       },
       {
-        "name": "genoid-structured",
+        "collisions": 0,
         "n": 1000000,
-        "collisions": 0
+        "name": "genoid-structured"
       },
       {
-        "name": "genoid-compiled",
+        "collisions": 0,
         "n": 1000000,
-        "collisions": 0
+        "name": "genoid-compiled"
       },
       {
-        "name": "mathrandom",
+        "collisions": 0,
         "n": 1000000,
-        "collisions": 0
+        "name": "mathrandom"
       },
       {
-        "name": "pg-uuid-v8",
+        "collisions": 0,
         "n": 1000000,
-        "collisions": 0
+        "name": "pg-uuid-v8"
       },
       {
-        "name": "ulid-v8",
+        "collisions": 0,
         "n": 1000000,
-        "collisions": 0
+        "name": "ulid-v8"
       },
       {
-        "name": "ulid",
+        "collisions": 0,
         "n": 1000000,
-        "collisions": 0
+        "name": "ulid"
       },
       {
-        "name": "ksuid",
+        "collisions": 0,
         "n": 1000000,
-        "collisions": 0
+        "name": "ksuid"
       }
     ],
     "comparisons": [
       {
-        "name": "structured-vs-pg-uuid-v8",
         "a": "genoid-structured",
         "b": "pg-uuid-v8",
-        "ratio": 13.9671,
-        "welchP": 5.51e-13,
-        "welchT": 59.31,
-        "welchDf": 9.002,
-        "cohensD": 26.526,
-        "faster": "genoid-structured"
+        "cohensD": 44.713,
+        "faster": "genoid-structured",
+        "name": "structured-vs-pg-uuid-v8",
+        "ratio": 1.5823,
+        "welchDf": 12.61,
+        "welchP": 1.15e-19,
+        "welchT": 99.98
       },
       {
-        "name": "structured-vs-ulid-v8",
         "a": "genoid-structured",
         "b": "ulid-v8",
-        "ratio": 14.1141,
-        "welchP": 5.3e-13,
-        "welchT": 59.34,
-        "welchDf": 9.016,
-        "cohensD": 26.537,
-        "faster": "genoid-structured"
+        "cohensD": 5.563,
+        "faster": "genoid-structured",
+        "name": "structured-vs-ulid-v8",
+        "ratio": 1.548,
+        "welchDf": 9.252,
+        "welchP": 4.38e-7,
+        "welchT": 12.44
       },
       {
-        "name": "compiled-vs-structured",
         "a": "genoid-compiled",
         "b": "genoid-structured",
-        "ratio": 0.1271,
-        "welchP": 9.46e-13,
-        "welchT": -55.76,
-        "welchDf": 9.009,
-        "cohensD": -24.935,
-        "faster": "genoid-structured"
+        "cohensD": -48.174,
+        "faster": "genoid-structured",
+        "name": "compiled-vs-structured",
+        "ratio": 0.6183,
+        "welchDf": 11.14,
+        "welchP": 3.64e-18,
+        "welchT": -107.7
       }
-    ]
-  },
-  {
+    ],
     "environment": {
-      "runtime": "node",
+      "arch": "x64",
       "bun": null,
+      "commitSha": "53b634d9e163dd74f82b19bcf09ff2d2c290fe62",
+      "cpuCount": 4,
+      "cpuModel": "AMD EPYC 7763 64-Core Processor                ",
       "node": "22.23.5",
       "platform": "win32",
-      "arch": "x64",
-      "cpuModel": "AMD EPYC 7763 64-Core Processor                ",
-      "cpuCount": 4,
-      "totalMemoryMB": 16379,
-      "commitSha": "202ef270819d90eef6dc31ff2a2a8ce9a64eda0c",
-      "runId": "44868772556"
-    },
-    "baselineName": "v4-native",
-    "benchmarks": [
-      {
-        "name": "v4-native",
-        "opsPerSec": 2680000,
-        "usPerOp": 0.3731,
-        "ci95": [
-          2502200,
-          2857799
-        ],
-        "std": 248564,
-        "cv": 0.0927,
-        "trials": 10,
-        "samples": [
-          2840502,
-          2718525,
-          2705639,
-          2795787,
-          2072457,
-          2728364,
-          2960726,
-          2749398,
-          2774056,
-          2454545
-        ],
-        "welchP": 1,
-        "welchT": 0,
-        "welchDf": 18,
-        "cohensD": 0
-      },
-      {
-        "name": "v7-custom",
-        "opsPerSec": 403935,
-        "usPerOp": 2.4756,
-        "ci95": [
-          394446,
-          413424
-        ],
-        "std": 13266,
-        "cv": 0.0328,
-        "trials": 10,
-        "samples": [
-          405507,
-          406532,
-          420592,
-          409740,
-          408193,
-          407090,
-          403622,
-          416561,
-          381630,
-          379885
-        ],
-        "welchP": 3.14e-10,
-        "welchT": -28.92,
-        "welchDf": 9.051,
-        "cohensD": -12.931
-      },
-      {
-        "name": "genoid-v8",
-        "opsPerSec": 3262277,
-        "usPerOp": 0.3065,
-        "ci95": [
-          3058146,
-          3466407
-        ],
-        "std": 285374,
-        "cv": 0.0875,
-        "trials": 10,
-        "samples": [
-          3299508,
-          3598747,
-          3463347,
-          2759447,
-          2964702,
-          3485559,
-          3034492,
-          3061873,
-          3508729,
-          3446363
-        ],
-        "welchP": 0.000131,
-        "welchT": 4.865,
-        "welchDf": 17.67,
-        "cohensD": 2.176
-      },
-      {
-        "name": "mathrandom",
-        "opsPerSec": 429408,
-        "usPerOp": 2.3288,
-        "ci95": [
-          424974,
-          433843
-        ],
-        "std": 6200,
-        "cv": 0.0144,
-        "trials": 10,
-        "samples": [
-          431901,
-          434456,
-          435741,
-          427997,
-          426523,
-          428031,
-          415112,
-          426074,
-          433140,
-          435108
-        ],
-        "welchP": 3.7e-10,
-        "welchT": -28.62,
-        "welchDf": 9.011,
-        "cohensD": -12.801
-      },
-      {
-        "name": "pg-uuid-v8",
-        "opsPerSec": 214507,
-        "usPerOp": 4.6618,
-        "ci95": [
-          212314,
-          216700
-        ],
-        "std": 3066,
-        "cv": 0.0143,
-        "trials": 10,
-        "samples": [
-          216597,
-          214751,
-          215966,
-          214959,
-          219506,
-          212335,
-          216236,
-          209038,
-          210642,
-          215046
-        ],
-        "welchP": 1.66e-10,
-        "welchT": -31.36,
-        "welchDf": 9.003,
-        "cohensD": -14.026
-      },
-      {
-        "name": "ulid",
-        "opsPerSec": 171472,
-        "usPerOp": 5.8319,
-        "ci95": [
-          170628,
-          172315
-        ],
-        "std": 1180,
-        "cv": 0.0069,
-        "trials": 10,
-        "samples": [
-          172152,
-          173746,
-          172132,
-          170447,
-          170481,
-          170221,
-          170083,
-          172161,
-          172087,
-          171206
-        ],
-        "welchP": 1.43e-10,
-        "welchT": -31.91,
-        "welchDf": 9,
-        "cohensD": -14.272
-      },
-      {
-        "name": "ulid-v8",
-        "opsPerSec": 218500,
-        "usPerOp": 4.5767,
-        "ci95": [
-          216256,
-          220744
-        ],
-        "std": 3138,
-        "cv": 0.0144,
-        "trials": 10,
-        "samples": [
-          223024,
-          218540,
-          220719,
-          221485,
-          217604,
-          219273,
-          216985,
-          213367,
-          220146,
-          213859
-        ],
-        "welchP": 1.69e-10,
-        "welchT": -31.31,
-        "welchDf": 9.003,
-        "cohensD": -14.004
-      },
-      {
-        "name": "ksuid",
-        "opsPerSec": 105380,
-        "usPerOp": 9.4895,
-        "ci95": [
-          104958,
-          105803
-        ],
-        "std": 591,
-        "cv": 0.0056,
-        "trials": 10,
-        "samples": [
-          104227,
-          104782,
-          105752,
-          105875,
-          104722,
-          105687,
-          105726,
-          105841,
-          105351,
-          105839
-        ],
-        "welchP": 1.13e-10,
-        "welchT": -32.75,
-        "welchDf": 9,
-        "cohensD": -14.648
-      },
-      {
-        "name": "snowflake",
-        "opsPerSec": 3969362,
-        "usPerOp": 0.2519,
-        "ci95": [
-          3954915,
-          3983808
-        ],
-        "std": 20196,
-        "cv": 0.0051,
-        "trials": 10,
-        "samples": [
-          3976728,
-          3973378,
-          3973063,
-          3963779,
-          3918142,
-          3986692,
-          3976325,
-          3983826,
-          3957246,
-          3984437
-        ],
-        "welchP": 4.58e-8,
-        "welchT": 16.35,
-        "welchDf": 9.119,
-        "cohensD": 7.312
-      },
-      {
-        "name": "genoid-structured",
-        "opsPerSec": 2773693,
-        "usPerOp": 0.3605,
-        "ci95": [
-          2678812,
-          2868573
-        ],
-        "std": 132643,
-        "cv": 0.0478,
-        "trials": 10,
-        "samples": [
-          2737851,
-          2844533,
-          2793464,
-          2829102,
-          2836727,
-          2688917,
-          2855633,
-          2433647,
-          2840030,
-          2877023
-        ],
-        "welchP": 0.311,
-        "welchT": 1.052,
-        "welchDf": 13.74,
-        "cohensD": 0.47
-      },
-      {
-        "name": "genoid-compiled",
-        "opsPerSec": 455645,
-        "usPerOp": 2.1947,
-        "ci95": [
-          451770,
-          459520
-        ],
-        "std": 5417,
-        "cv": 0.0119,
-        "trials": 10,
-        "samples": [
-          456551,
-          447673,
-          463731,
-          451922,
-          447387,
-          457601,
-          458043,
-          459581,
-          453543,
-          460423
-        ],
-        "welchP": 4.12e-10,
-        "welchT": -28.29,
-        "welchDf": 9.009,
-        "cohensD": -12.653
-      }
-    ],
-    "collisions": [
-      {
-        "name": "v4-native",
-        "n": 1000000,
-        "collisions": 0
-      },
-      {
-        "name": "v7-custom",
-        "n": 1000000,
-        "collisions": 0
-      },
-      {
-        "name": "genoid-v8",
-        "n": 1000000,
-        "collisions": 0
-      },
-      {
-        "name": "genoid-structured",
-        "n": 1000000,
-        "collisions": 0
-      },
-      {
-        "name": "genoid-compiled",
-        "n": 1000000,
-        "collisions": 0
-      },
-      {
-        "name": "mathrandom",
-        "n": 1000000,
-        "collisions": 0
-      },
-      {
-        "name": "pg-uuid-v8",
-        "n": 1000000,
-        "collisions": 0
-      },
-      {
-        "name": "ulid-v8",
-        "n": 1000000,
-        "collisions": 0
-      },
-      {
-        "name": "ulid",
-        "n": 1000000,
-        "collisions": 0
-      },
-      {
-        "name": "ksuid",
-        "n": 1000000,
-        "collisions": 0
-      }
-    ],
-    "comparisons": [
-      {
-        "name": "structured-vs-pg-uuid-v8",
-        "a": "genoid-structured",
-        "b": "pg-uuid-v8",
-        "ratio": 12.9305,
-        "welchP": 4.21e-13,
-        "welchT": 61,
-        "welchDf": 9.01,
-        "cohensD": 27.278,
-        "faster": "genoid-structured"
-      },
-      {
-        "name": "structured-vs-ulid-v8",
-        "a": "genoid-structured",
-        "b": "ulid-v8",
-        "ratio": 12.6942,
-        "welchP": 4.26e-13,
-        "welchT": 60.9,
-        "welchDf": 9.01,
-        "cohensD": 27.235,
-        "faster": "genoid-structured"
-      },
-      {
-        "name": "compiled-vs-structured",
-        "a": "genoid-compiled",
-        "b": "genoid-structured",
-        "ratio": 0.1643,
-        "welchP": 9.79e-13,
-        "welchT": -55.22,
-        "welchDf": 9.03,
-        "cohensD": -24.694,
-        "faster": "genoid-structured"
-      }
-    ]
+      "runId": "45370671302",
+      "runtime": "node",
+      "totalMemoryMB": 16379
+    }
   }
 ]
