@@ -4634,3 +4634,101 @@ export const CONFORMANCE_LAYOUT: V8Layout = completeLayout("conformance", [
 
   { length: 40, name: "wide", start: 66, type: "random" },
 ])
+
+export const deriveWorkerId = (ipv4: string): number => {
+  const parts = ipv4.split(".")
+  if (parts.length !== 4) {
+    throw new RangeError(`deriveWorkerId: invalid IPv4 "${ipv4}"`)
+  }
+  const octets: number[] = []
+  for (const p of parts) {
+    if (!/^(?<octet>0|[1-9]\d{0,2})$/u.test(p)) {
+      throw new RangeError(`deriveWorkerId: invalid IPv4 "${ipv4}"`)
+    }
+    const o = Number(p)
+    if (o > 255) {
+      throw new RangeError(`deriveWorkerId: invalid IPv4 "${ipv4}"`)
+    }
+    octets.push(o)
+  }
+  return octets[2] * 256 + octets[3]
+}
+
+export const splitMsFrac = (floatMs: number): { frac: number; ms: number } => {
+  if (!Number.isFinite(floatMs) || floatMs < 0) {
+    throw new RangeError(`splitMsFrac: expected finite ms >= 0, got ${floatMs}`)
+  }
+  const ms = Math.trunc(floatMs)
+  const frac = Math.trunc((floatMs - ms) * 4096) % 4096
+  return { frac, ms }
+}
+
+const stegoKeystream = (seed: string, n: number): Uint8Array => {
+  let h = 2_166_136_261
+  for (let i = 0; i < seed.length; i += 1) {
+    h = Math.imul(xor32(h, (seed.codePointAt(i) ?? 0) % 256), 16_777_619)
+    h = shiftRightUnsignedBits(h, 0)
+  }
+  let s = h === 0 ? 1 : h
+  const out = new Uint8Array(n)
+  for (let i = 0; i < n; i += 1) {
+    s = xor32(s, shiftRightUnsignedBits(shiftLeftBits(s, 13), 0))
+    s = shiftRightUnsignedBits(s, 0)
+    s = xor32(s, shiftRightUnsignedBits(s, 17))
+    s = xor32(s, shiftRightUnsignedBits(shiftLeftBits(s, 5), 0))
+    s = shiftRightUnsignedBits(s, 0)
+    out[i] = ((s % 256) + 256) % 256
+  }
+  return out
+}
+
+export const stegoSeal = (ms: number, seed: string): Uint8Array => {
+  if (!Number.isInteger(ms) || ms < 0 || ms >= 2 ** 48) {
+    throw new RangeError(`stegoSeal: ms out of 48-bit range: ${ms}`)
+  }
+  const ks = stegoKeystream(seed, 6)
+  const out = new Uint8Array(6)
+  for (let i = 0; i < 6; i += 1) {
+    const shift = 8 * (5 - i)
+    out[i] = xorByte(Math.trunc(ms / 2 ** shift) % 256, ks[i])
+  }
+  return out
+}
+
+export const stegoOpen = (sealed: Uint8Array, seed: string): number => {
+  if (sealed.length !== 6) {
+    throw new RangeError(`stegoOpen: expected 6 bytes, got ${sealed.length}`)
+  }
+  const ks = stegoKeystream(seed, 6)
+  let ms = 0
+  for (let i = 0; i < 6; i += 1) {
+    ms = ms * 256 + xorByte(sealed[i], ks[i])
+  }
+  return ms
+}
+
+export const experimentalIntegrityTag = (
+  data: Uint8Array,
+  key: Uint8Array
+): number => {
+  if (key.length === 0) {
+    throw new RangeError("experimentalIntegrityTag: key must not be empty")
+  }
+  let h = 2_166_136_261
+  for (let i = 0; i < data.length; i += 1) {
+    h = Math.imul(xor32(h, xorByte(data[i], key[i % key.length])), 16_777_619)
+    h = shiftRightUnsignedBits(h, 0)
+  }
+  return shiftRightUnsignedBits(h, 0)
+}
+
+export const experimentalIntegrityVerify = (
+  data: Uint8Array,
+  key: Uint8Array,
+  tag: number
+): boolean => {
+  if (key.length === 0) {
+    throw new RangeError("experimentalIntegrityVerify: key must not be empty")
+  }
+  return experimentalIntegrityTag(data, key) === shiftRightUnsignedBits(tag, 0)
+}

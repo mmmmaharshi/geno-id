@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.29.0] - 2026-11-24
+
+### Summary
+
+**Breakthrough bake-off: six helpers from the arXiv/GitHub/HuggingFace survey land as a measured, opt-in API addition; preformatted pooling tested and rejected.**
+
+### Highlights
+
+- 🧪 **New public helpers.** `deriveWorkerId` (stateless IP-derived node identity), `splitMsFrac` (12-bit sub-millisecond fraction per RFC 9562 section 6.2 method 3), `stegoSeal`/`stegoOpen` (keyed XOR timestamp obfuscation), `experimentalIntegrityTag`/`experimentalIntegrityVerify` (keyed integrity tag for zero-lookup verification).
+- 📊 **Measured, not assumed.** `src/scripts/bench-breakthroughs.ts` bakes every arm off against the baselines in one harness; results archived in `results/breakthroughs.json` (0 collisions on every arm).
+- ➖ **Honest negative.** Preformatted structured pooling gains only ~4% (refill still pays generation), so the hot path is unchanged — documented in the artifact, not integrated.
+- 📚 **Docs with code.** README API section documents all six helpers in the same commit.
+
+### Breaking Changes
+
+- None.
+
+### Upgrade Guide
+
+- Update to `1.29.0`. All previous function signatures and UUID output formats stay unchanged; the new helpers are additive.
+
+### Known Issues
+
+- `stegoSeal`/`experimentalIntegrityTag` are obfuscation/integrity aids, not replacements for AES/HMAC; the names say experimental on purpose.
+- Helper-based stego/tag run ~87k/236k ops/s (shared-arithmetic bitwise helpers); keep them off the per-ID hot path.
+- Deno ports remain outside oxlint and the scripts typecheck. CI checks them with Deno.
+
+### Dependencies Updated
+
+- None.
+
 ## [1.28.4] - 2026-11-24
 
 ### Summary

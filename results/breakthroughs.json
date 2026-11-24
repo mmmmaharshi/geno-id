@@ -1,0 +1,29 @@
+{
+  "arms": {
+    "baselineOpsPerSec": 1109703,
+    "fracOrdered": true,
+    "preformattedOpsPerSec": 469080,
+    "stegoOpsPerSec": 86925,
+    "stegoRoundtrip": true,
+    "structuredOpsPerSec": 450774,
+    "tagOpsPerSec": 236612,
+    "workerDeriveOpsPerSec": 1201002,
+    "workerSample": 772
+  },
+  "collisions": {
+    "baseline": 0,
+    "preformatted": 0,
+    "structured": 0
+  },
+  "description": "Breakthrough bake-off: pooled preformat (nope-id), IP-derived worker (stateless snowflake), ms+frac ordering (ramsey 4.10), XOR stego timestamp (pg_uuid_v8), keyed integrity tag (SKEID) vs baselines.",
+  "environment": {
+    "generatedAt": "2026-11-24T15:33:31.913Z",
+    "os": "win32 10.0.26300 x64",
+    "runtime": "Bun 1.4.4"
+  },
+  "experiment": "breakthrough-bakeoff",
+  "n": {
+    "collisions": 20000,
+    "throughput": 50000
+  }
+}

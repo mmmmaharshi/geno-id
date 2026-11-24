@@ -247,6 +247,35 @@ console.log(fields.shard)   // → 3
 console.log(fields.counter) // → 14
 ```
 
+### `deriveWorkerId(ipv4): number`
+
+Derive a 16-bit node identity from the last two octets of a private IPv4 address (stateless Snowflake style, no coordinator).
+
+```ts
+deriveWorkerId("10.0.3.4")  // → 772
+```
+
+### `splitMsFrac(floatMs): { ms, frac }`
+
+Split a millisecond timestamp into its integer part and a 12-bit sub-millisecond fraction (RFC 9562 section 6.2 method 3).
+
+```ts
+const { ms, frac } = splitMsFrac(1700000000000.5)
+```
+
+### `stegoSeal(ms, seed): Uint8Array` / `stegoOpen(sealed, seed): number`
+
+Obfuscate a 48-bit timestamp with a keyed XOR keystream and recover it. Same seed round-trips; a wrong seed does not.
+
+```ts
+const sealed = stegoSeal(Date.now(), "deploy-secret")
+stegoOpen(sealed, "deploy-secret")  // → ms
+```
+
+### `experimentalIntegrityTag(data, key): number` / `experimentalIntegrityVerify(data, key, tag): boolean`
+
+Keyed 32-bit integrity tag for zero-lookup verification of embedded fields. Experimental: FNV-1a based, not a MAC replacement.
+
 ### `configureRandom(fn)`
 
 Supply a CSPRNG for platforms without Web Crypto.
