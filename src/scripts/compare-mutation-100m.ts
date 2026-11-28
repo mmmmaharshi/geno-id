@@ -1,12 +1,7 @@
 import path from "node:path"
 import { pathToFileURL } from "node:url"
 
-import {
-  andBits,
-  shiftLeftBits,
-  shiftRightBits,
-  xorBits,
-} from "../shared/bitwise.ts"
+import { andBits, shiftLeftBits, shiftRightBits } from "../shared/bitwise.ts"
 
 const __dirname = import.meta.dirname
 
@@ -14,9 +9,16 @@ const root = path.resolve(__dirname, "..", "..")
 
 const algo = (await import(
   pathToFileURL(path.resolve(root, "dist", "algo.js")).href
-)) as { scrambleByte: (b: number) => number }
+)) as {
+  mutateChildBytes: (
+    child: Uint8Array,
+    mutPos: number,
+    mixByte: number,
+    useScramble: boolean
+  ) => void
+}
 
-const { scrambleByte } = algo
+const { mutateChildBytes } = algo
 
 const FREE_MASK = [
   0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x0f, 0xff, 0x3f, 0xff, 0xff, 0xff, 0xff,
@@ -113,8 +115,7 @@ for (let done = 0; done < N; done += CHUNK) {
       for (; j < 16; j += 1) {
         child[j] = pool[off + 16 + j]
       }
-      const mix = useScramble ? scrambleByte(mixByte) : mixByte
-      child[mutPos] = xorBits(child[mutPos], mix)
+      mutateChildBytes(child, mutPos, mixByte, useScramble)
       child[6] = (child[6] % 16) + 0x80
       child[8] = (child[8] % 64) + 0x80
       let pos = 0

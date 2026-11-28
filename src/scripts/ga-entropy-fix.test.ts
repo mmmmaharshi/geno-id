@@ -16,16 +16,17 @@ const algo = (await import(
   createSeededRandom: (s0: number, s1: number) => unknown
   genGenoID: () => string
   getEntropySourceId: () => string
+  mutateChildBytes: (
+    child: Uint8Array,
+    mutPos: number,
+    mixByte: number,
+    useScramble: boolean
+  ) => void
   resetSeededState: () => void
   scoreLayoutFitness: (
     layout: unknown,
     trials?: number
-  ) => {
-    repairsPerUuid: number
-    maxAllowedDev: number
-    score: number
-    trials: number
-  }
+  ) => { repairsPerUuid: number; maxAllowedDev: number; trials: number }
   scrambleByte: (b: number) => number
 }
 
@@ -33,9 +34,10 @@ void test("entropy path reports pooled CSPRNG", () => {
   assert.equal(algo.getEntropySourceId(), "pooled-csprng-v1")
 })
 
-void test("seeded entropy makes output deterministic", () => {
+void test("seeded entropy reports injected and stays deterministic in single-slot pool", () => {
   algo.configurePools({ simplePoolSize: 1 })
   algo.configureRandom(algo.createSeededRandom(11, 22))
+  assert.equal(algo.getEntropySourceId(), "injected")
   algo.resetSeededState()
   const a = algo.genGenoID()
   algo.configureRandom(algo.createSeededRandom(11, 22))
@@ -52,6 +54,17 @@ void test("scrambleByte single-xor vectors", () => {
   assert.equal(algo.scrambleByte(0), 0)
   assert.equal(algo.scrambleByte(1), 9)
   assert.equal(algo.scrambleByte(255), 0)
+})
+
+void test("mutateChildBytes shares one path with and without scrambler", () => {
+  const a = new Uint8Array([10, 20])
+  const b = new Uint8Array([10, 20])
+  algo.mutateChildBytes(a, 0, 7, false)
+  algo.mutateChildBytes(b, 0, 7, true)
+  assert.equal(a[0], 13)
+  assert.equal(b[0], 53)
+  assert.equal(a[1], 20)
+  assert.equal(b[1], 20)
 })
 
 void test("layout fitness measures repair cost", () => {
