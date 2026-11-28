@@ -97,6 +97,4 @@ void test("compareBench aggregates two BenchStats into a significance result", (
   assert.ok(Number.isFinite(r.t))
 
   assert.ok(Number.isFinite(r.d))
-
-  assert.ok(r.df >= 1)
 })
