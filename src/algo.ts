@@ -1,5 +1,8 @@
 import {
+  andBits,
+  orBits,
   shiftLeftBits,
+  shiftRightBits,
   shiftRightUnsignedBits,
   xor32,
   xorByte,
@@ -292,6 +295,14 @@ export const configureRandom = (fn: RandomFill | null): void => {
   _compiledGenCache.clear()
 }
 
+export const getEntropySourceId = (): string => {
+  if (_fillRandom === _noRngFill) {
+    return "none"
+  }
+
+  return "pooled-csprng-v1"
+}
+
 const _v7Rnd = new Uint8Array(10)
 
 const _v7Bytes = new Uint8Array(16)
@@ -399,6 +410,9 @@ let _genoIdx = _genoPoolN
 
 const _child = new Uint8Array(16)
 
+export const scrambleByte = (b: number): number =>
+  xorByte(b, andBits(orBits(shiftLeftBits(b, 3), shiftRightBits(b, 5)), 0xff))
+
 const refillGenoPool = (): void => {
   const e = GENO_ENTRY_BYTES,
     g = _genoPool,
@@ -424,7 +438,10 @@ const refillGenoPool = (): void => {
       _child[j] = g[off + 16 + j]
     }
 
-    _child[mutPos] = xorByte(_child[mutPos], g[off + ((mutPos + 1) % 16)])
+    _child[mutPos] = xorByte(
+      _child[mutPos],
+      scrambleByte(g[off + ((mutPos + 1) % 16)])
+    )
 
     _child[6] = (_child[6] % 16) + 0x80
 
@@ -4416,6 +4433,55 @@ export const genStructuredGenoID = (
   }
 
   return genStructuredGenoIDSingleParent(layout)
+}
+
+export const scoreLayoutFitness = (
+  layout: ReadonlyV8Layout,
+  trials = 20_000
+): {
+  repairsPerUuid: number
+  maxAllowedDev: number
+  score: number
+  trials: number
+} => {
+  ensureValidated(layout)
+
+  let repairs = 0
+
+  for (let i = 0; i < trials; i += 1) {
+    const b = new Uint8Array(16)
+
+    fillRandom(b)
+
+    forceVersionVariant(b)
+
+    repairs += repairConstraints(layout, b)
+  }
+
+  let maxDev = 0
+
+  for (const f of layout.fields) {
+    const c = f.constraint
+
+    if (!isMissing(c) && c.allowed && c.allowed.length > 0) {
+      const space = 2 ** f.length
+
+      const bias = (space % c.allowed.length) / space
+
+      if (bias > maxDev) {
+        maxDev = bias
+      }
+    }
+  }
+
+  const repairsPerUuid = repairs / trials
+
+  return {
+    repairsPerUuid,
+    maxAllowedDev: maxDev,
+    score: repairsPerUuid + maxDev,
+    trials,
+  }
 }
 
 const _interpretLast = new Map<string, number>()
