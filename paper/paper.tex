@@ -362,7 +362,7 @@ Declaring a field answers two questions at once: how wide it must be, and where 
 
 \noindent\emph{Widths first.} A field with $c$ values needs $\lceil \log_2 c \rceil$ bits, and the residual random bits $r$ must satisfy the collision target: for $n$ identifiers the smallest safe $r$ is $\lceil \log_2\, n(n-1)\,/\,4\ln\frac{1}{1-\tau} \rceil$. Two million identifiers need 47 bits at $\tau = 10^{-2}$ and 70 at $\tau = 10^{-9}$. A declaration whose floors and required residual exceed the 122-bit payload is refused with a reason naming the shortfall.
 
-\noindent\emph{Position next.} Weighted depth $D = \sum_i w_i (o_i + \ell_i)$ is the comparison work a range of queries performs: treating each field as a job of length $\ell_i$ completing at $o_i+\ell_i$ gives exactly the single-machine weighted-completion-time objective. By Smith's exchange argument~\cite{24}, the allocator orders fields in non-increasing $w_i/\ell_i$, exact on one segment and near-optimal across reserved bits (proof in the supplementary material). \begin{table}[!ht]
+\noindent\emph{Position next.} Weighted depth $D = \sum_i w_i (o_i + \ell_i)$ is the comparison work a range of queries performs: treating each field as a job of length $\ell_i$ completing at $o_i+\ell_i$ gives exactly the single-machine weighted-completion-time objective. By Smith's exchange argument~\cite{24}, the allocator orders fields in non-increasing $w_i/\ell_i$, exact on one segment and near-optimal across reserved bits (proof in the appendix). \begin{table}[!ht]
 \caption{Bit allocation. E-A1 compares the allocator against the exhaustive
 optimum over every permutation and against the role-rank order it replaces;
 E-A2 widens one field a bit at a time and records the cost of each bit.}
@@ -418,7 +418,7 @@ The closest public overlap is Microshard, a fixed
 RFC~9562 v8 layout with 54-bit microsecond timestamp, 32-bit shard, and 36
 random bits, measured here through a bit-exact independent mirror
 cross-checked field-for-field against a second independent implementation (version,
-variant, shard, and timestamp all agree on fixed vectors). On the same 200{,}000-row SQLite setup the prunable layout wins modestly with parity elsewhere (full numbers in the supplementary material). 
+variant, shard, and timestamp all agree on fixed vectors). On the same 200{,}000-row SQLite setup the prunable layout wins modestly with parity elsewhere (full numbers in the appendix). 
 
 \section{Confidentiality and Authentication}
 \label{sec:security}
@@ -504,7 +504,7 @@ Per-field uniformity is measured directly rather than inferred from whole-UUID b
 
 \subsection{NIST SP 800-22 and dieharder}
 \label{sec:nist}
-This subsection is a structural sanity check on the pooling path, not a certification and not evidence of security: SP~800-22 is withdrawn, each layout contributes five streams where NIST prefers $\geq 100$, and the battery is fanned across layouts by script. The full battery ran on all three layouts with fresh $10^7$-bit exports per layout. Full per-draw tables and battery configurations are in the supplementary material. A curated dieharder subset (diehard plus STS, 12.5\,MB per generator per trial, 5 trials, no file rewind) reports a modal PASS on all 152 test rows across four generator variants (see the archived dieharder record). This is a CI-budget curation over payload generators, not a full-battery run, and it covers the unstructured and database-key payload paths only.
+This subsection is a structural sanity check on the pooling path, not a certification and not evidence of security: SP~800-22 is withdrawn, each layout contributes five streams where NIST prefers $\geq 100$, and the battery is fanned across layouts by script. The full battery ran on all three layouts with fresh $10^7$-bit exports per layout. Full per-draw tables and battery configurations are in the appendix. A curated dieharder subset (diehard plus STS, 12.5\,MB per generator per trial, 5 trials, no file rewind) reports a modal PASS on all 152 test rows across four generator variants (see the archived dieharder record). This is a CI-budget curation over payload generators, not a full-battery run, and it covers the unstructured and database-key payload paths only.
 
 \subsection{Throughput and baseline comparison}
 \label{sec:throughput}
@@ -636,6 +636,47 @@ The following limitations are disclosed openly, ranked by expected reviewer pres
 \section{Conclusion and Future Work}
 \label{sec:conclusion}
 RFC~9562 leaves version~8's 122 bits undefined; GenoID fills them with a declarative, portable algorithm. Its core contribution is the layout declaration abstraction: typed, constrained multi-field composition with a single shared repair pass, validated through per-field uniformity at $10^8$ scale, an adversarial security analysis, and a cross-language reproducibility check. The measured throughput comparison over the closest prior art is mixed: ahead of the steganographic prior art in eight of nine environments and of the second structured baseline in seven, by $1.1$--$2.7\times$ where it leads, with macOS hosts behind and host-dependent magnitude (Table~\ref{tab:paired}). This is a secondary result. The primary result is a framework for making shard, tenant, and sequence identity a property of the key itself, with proven $O(k)$ repair cost and the total-variation bound $m/2^\ell$ on allowed-set repaired fields.
+
+\section*{Appendix}
+\noindent\textbf{NIST per-draw detail.}
+Full NIST per-draw p-value tables and dieharder per-trial pass fractions live in the archived battery results, the archived draws, and the archived dieharder record; the body reports the head-draw summary and the 5-draw empirical rate.
+
+NIST per-draw detail. No test fails in a majority of draws, and the single repeat (Spectral on multitenant, twice in five draws) is expected under the null: the per-test repeat probability is $\approx 0.001$, giving $\approx 11\%$ for at least one repeat across 123 test slots. A targeted follow-up ran the Spectral test alone over 30 fresh $10^6$-bit exports per arm (multitenant suspect, database-key layout control, unstructured pooled control). Fail rates 1/30, 0/30, 1/30, consistent with Type-I noise rather than a layout-induced spectral peak at this lower-power stream length (a matched $10^7$-bit repeat remains future work).
+
+Draw sizes per layout: 200k/98k/122k UUIDs. Machine-readable results are archived with the battery results. Draws ran 123/123, 120/123, 123/123, 120/123, and 122/123. Every failed draw is archived with its bit-stream provenance.
+
+The full 15-test NIST SP~800-22 battery was run on all three structured layouts. On fresh $10^7$-bit exports of the random-field payload per layout, all 123 reported p-values satisfy $p \geq 0.01$; across five draws the empirical failure rate is $1.1\%$, consistent with Type-I noise.
+
+\noindent\textbf{Repair-distribution grids.}
+The bound is measured directly: over four $(\ell,\textit{min},\textit{max})$ cells including the shipped conformance window ($2\times10^5$ seeded draws per cell), every measured endpoint mass matches its closed form to within $0.06$ percentage points ($4/4$ cells; the archived grid). The fibre prediction is also checked directly over a grid of $(m,\ell)$ pairs ($m \in \{2,3,4,5,8\}$, $\ell \in \{3,4,8,12,16\}$, $2\times10^5$ seeded draws per cell): every measured frequency matches its closed-form fibre to within $0.3$ percentage points ($24/24$ cells; the archived grid).
+
+\noindent\textbf{Worked uniformity examples.}
+The conditions are also tight, and the two paths really do diverge when they fail. Take $m=2$, $\ell=2$, $A = \{0,2\}$: $m \mid 2^\ell$ holds, so the compiled path stays uniform at $(50\%, 50\%)$, whereas the pooled path folds the residue-1 draws onto $a_1 = 2$ and emits $(25\%, 75\%)$; the accompanying test suite pins both the prediction and the empirical split. This is the precise sense in which a declarative layout's field width and admissible set are correctness obligations on the author, not tuning parameters. A declaration that skips residue classes is still \emph{admissible} on every draw, but its per-value frequencies are path-dependent and the validator reports the residual bound rather than silently accepting it.
+
+For database-key ($m=5$, $\ell=8$), $256 \bmod 5 = 1$, so one residue class holds 52 raw values and the other four hold 51; with the contiguous set $A = \{1,2,3,4,5\}$ the class of index~0 (value~1) is the heavy one, giving $(52,51,51,51,51)$ preimages out of 256, a maximum per-value deviation of $(52 - 51.2)/256 \approx 0.31\%$ from uniform $51.2/256$, and a worst-case spread between classes of $(52-51)/256 = 0.39\%$. For multi-tenant, the region field ($m=4$, $\ell=8$) and the tenant field ($m=8$, $\ell=12$) both satisfy $m \mid 2^\ell$ with $G_i = 1$ throughout, so both are exactly uniform on either path.
+
+\noindent\textbf{Rejection crossover densities.}
+The asymptotic advantage is real but bounded, and its limits are stated where it begins. for $k=1$ the crossover falls between $d=0.016$ and $d=0.031$ (adjacent
+measured densities), for $k=2$ between $0.0625$ and $0.125$, and for
+$k \geq 3$ between $0.25$ and $0.5$ (the archived sweep table):
+the boundary moves toward higher density as $k$ grows, because repair cost
+is flat in $d$ while rejection is exponential in $k$. A layout with a single loosely constrained field is
+better served by rejection.
+
+\noindent\textbf{Smith optimality proof.}
+Smith swap proof. $D$ is minimised by ordering fields in non-increasing $w_i/\ell_i$: swapping an adjacent inverted pair changes $D$ by $\ell_a \ell_b (w_a/\ell_a - w_b/\ell_b) \le 0$.
+
+\noindent\textbf{Microshard measurement detail.}
+On the same
+200{,}000-row SQLite setup, a tenant prune is one PK range seek for the
+tenant-first GenoID layout against a full scan with in-app shard filtering
+for microshard:
+$3446\,\mu$s versus $4383\,\mu$s (means over 5 reps of 500 lookups; CIs
+nearly touch), with full-ID
+point lookups and inserts at parity on both sides.
+
+\noindent\textbf{Family-wise uniformity assessment.}
+Across all 17 tested cells the family-wise assessment gives max-$|z|=2.90$ against a Bonferroni critical value of $2.97$ at family-wise $\alpha=0.05$ (\v{S}id\'ak $2.97$, Bonferroni $p=0.064$), i.e.\ consistent with sampling noise once the 17-fold multiple comparison is accounted for. The archived max-z analysis supports that reading, computed from the archived per-cell counts with no new draws.
 
 \begin{thebibliography}{00}
 
