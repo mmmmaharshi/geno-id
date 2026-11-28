@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.30.0] - 2026-11-28
+
+### Summary
+
+**Entropy path frozen to pooled CSPRNG with a scored layout-fitness API; 100M-bit paired test confirms mutation choice is noise.**
+
+### Highlights
+
+- 🔒 **Frozen entropy path.** `getEntropySourceId()` reports `pooled-csprng-v1`; seeded-`configureRandom` determinism test pins the single-sink contract.
+- 🔀 **Xor scrambler.** `scrambleByte()` single-xor rotate replaces the raw pool-byte xor in pool refill; paired shared-entropy test (`src/scripts/compare-mutation-100m.ts`, 100,040,000 bits per arm) shows old and new arms both pass with margin (monobit p 0.43 vs 0.87, runs p 0.17 vs 0.34).
+- 📐 **Layout fitness.** `scoreLayoutFitness(layout)` returns `{repairsPerUuid, maxAllowedDev, score}` so the workload planner optimizes repair cost plus analytic modulo bias instead of NIST score.
+- 📊 **Honest negative.** Throughput delta sits inside ±2x shared-host noise; repairs/UUID identical (5.906); 0 collisions both sides.
+
+### Breaking Changes
+
+- None.
+
+### Upgrade Guide
+
+- Update to `1.30.0`. All previous function signatures and UUID output formats stay unchanged; the new API is additive. UUID bytes from the pool path may differ bit-for-bit versus 1.29.0 (same format, same guarantees).
+
+### Known Issues
+
+- Throughput numbers vary ±2x run-to-run on shared Windows hosts; do not cite them as gains.
+- `bun run bench-ci` and `bun run playwright` were not rerun in this worktree (bench-ci exceeds 180s on Windows per-call entropy cost).
+- Full suite stands at 257/258 with one pre-existing `bench-cluster` paper-mapping failure also present on clean HEAD.
+
+### Dependencies Updated
+
+- None.
+
 ## [1.29.0] - 2026-11-24
 
 ### Summary
