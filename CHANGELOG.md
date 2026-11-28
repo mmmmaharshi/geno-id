@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.30.1] - 2026-11-28
+
+### Summary
+
+**Audit fixes: reseeds replay from the start, worker ids hash the full address, one field-segment core, canonical extractor, seeded comparison runs.**
+
+### Highlights
+
+- 🔁 **`resetSeededState` replays.** The pool index resets with the pools, so a reseed plus reset regenerates the identical sequence. Adds a regression test.
+- 🖥️ **`deriveWorkerId` hashes the full address.** FNV-1a over the whole IPv4 string replaces the last-two-octets shortcut, so hosts in different subnets no longer collide. Values differ from 1.30.0.
+- 🧩 **One field-segment core.** Five copies of start/length to byte/mask/shift math collapse into `fieldByteMasks`. Composition checks stay at 0 mismatches.
+- 📦 **Canonical extractor.** `uuidToFreeBits` plus masks live once in `shared/export-bits.ts`. Six scripts share it.
+- 🔬 **Seeded comparison runs.** `compare-mutation-100m.ts` accepts `SEED` for byte-identical reruns.
+- 🧪 **Harness repairs.** E1/E2 BigInt comparison fixed (was always-false, E2 loop never ended). Worker pool asserts it spawned when enabled. Two vacuous assertions removed.
+
+### Breaking Changes
+
+- None.
+
+### Upgrade Guide
+
+- Update to `1.30.1`. `deriveWorkerId` returns new values by design. All other signatures and UUID output stay unchanged.
+
+### Known Issues
+
+- The test-only seeded RNG shows bias at 100M-bit scale. It stays deterministic, which is its only contract.
+- Deno mirrors keep their own operator style. Deno is CI-only and no Deno runs here.
+- Full `bench-structured` E3 and later were not rerun in this worktree.
+
+### Dependencies Updated
+
+- None.
+
 ## [1.30.0] - 2026-11-28
 
 ### Summary

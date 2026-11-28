@@ -249,10 +249,10 @@ console.log(fields.counter) // → 14
 
 ### `deriveWorkerId(ipv4): number`
 
-Derive a 16-bit node identity from the last two octets of a private IPv4 address (stateless Snowflake style, no coordinator).
+Derive a 16-bit node identity from the full text of a private IPv4 address (stateless Snowflake style, no coordinator).
 
 ```ts
-deriveWorkerId("10.0.3.4")  // → 772
+deriveWorkerId("10.0.3.4")  // → stable 16-bit id
 ```
 
 ### `splitMsFrac(floatMs): { ms, frac }`
