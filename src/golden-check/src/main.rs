@@ -2,30 +2,28 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 
-// === Deterministic PRNG (xorshift128+, matches TypeScript createSeededRandom) ===
-struct Xorshift128p {
-    s0: u32,
-    s1: u32,
+// === Deterministic PRNG (splitmix32, matches TypeScript createSeededRandom) ===
+struct SplitMix32 {
+    s: u32,
 }
 
-impl Xorshift128p {
+impl SplitMix32 {
     fn new(s0: u32, s1: u32) -> Self {
-        Self { s0, s1 }
+        Self {
+            s: s0.wrapping_mul(0x9E3779B9).wrapping_add(s1),
+        }
     }
     fn fill_bytes(&mut self, buf: &mut [u8]) {
         let mut off = 0;
         while off < buf.len() {
-            let mut t = self.s1;
-            t ^= t << 23;
-            t ^= t >> 17;
-            t ^= self.s0;
-            t ^= self.s0 >> 26;
-            self.s0 = self.s1;
-            self.s1 = t;
-            let val = self.s1;
+            self.s = self.s.wrapping_add(0x9E3779B9);
+            let mut z = self.s;
+            z = (z ^ (z >> 15)).wrapping_mul(0x85EBCA6B);
+            z = (z ^ (z >> 13)).wrapping_mul(0xC2B2AE35);
+            z ^= z >> 16;
             let n = (buf.len() - off).min(4);
             for i in 0..n {
-                buf[off + i] = ((val >> (i * 8)) & 0xff) as u8;
+                buf[off + i] = ((z >> (i * 8)) & 0xff) as u8;
             }
             off += n;
         }
@@ -205,7 +203,7 @@ fn repair_constraints(
 const TIMESTAMP_MS: u64 = 1_700_000_000_000;
 
 fn generate_batch(
-    rng: &mut Xorshift128p,
+    rng: &mut SplitMix32,
     fields: &[Field],
     layout_name: &str,
     counters: &mut HashMap<String, u64>,
@@ -417,7 +415,7 @@ fn compare(golden_dir: &Path, label: &str, layout: &[Field], mutate: Mutation) -
     });
     let ts_lines: Vec<&str> = content_ts.lines().collect();
 
-    let mut rng = Xorshift128p::new(SEED0, SEED1);
+    let mut rng = SplitMix32::new(SEED0, SEED1);
     let mut counters = HashMap::new();
     let rust_uuids = generate_batch(&mut rng, layout, label, &mut counters, N, mutate);
 

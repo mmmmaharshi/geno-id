@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.30.3] - 2026-11-28
+
+### Summary
+
+**Seeded test RNG replaced with splitmix32 in TypeScript and Rust. No production change.**
+
+### Highlights
+
+- 🎲 **Fixed seeded RNG.** The test-only generator showed seed-dependent bias up to monobit 0.25. It now runs splitmix32 identically on both sides of the cross-language check.
+- 🔁 **Golden vectors regenerated.** All 10 vectors plus their hashes reflect the fixed stream. Cross-language check passes with 0 mismatches on all four layouts.
+- 🧪 **Negative controls still detect.** The repair and counter mutations fail loudly as designed.
+
+### Breaking Changes
+
+- None.
+
+### Upgrade Guide
+
+- Update to `1.30.3`. Only deterministic test vectors changed. Production output is untouched.
+
+### Known Issues
+
+- Full `bench-structured` E3 and later were not rerun in this worktree.
+
+### Dependencies Updated
+
+- None.
+
 ## [1.30.2] - 2026-11-28
 
 ### Summary

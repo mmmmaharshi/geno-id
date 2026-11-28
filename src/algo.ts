@@ -223,44 +223,46 @@ export const createSeededRandom = (
   seed0: number,
   seed1: number
 ): RandomFill => {
-  let s0 = Math.trunc(seed0)
+  let s =
+    (Math.imul(Math.trunc(seed0), 0x9e_37_79_b9) + Math.trunc(seed1)) % 2 ** 32
 
-  let s1 = Math.trunc(seed1)
+  if (s < 0) {
+    s += 2 ** 32
+  }
 
   return (buf: Uint8Array): void => {
     let off = 0
 
     while (off < buf.length) {
-      let t = s1
+      s = (s + 0x9e_37_79_b9) % 2 ** 32
 
-      t = xor32(t, shiftLeftBits(t, 23))
+      let z = Math.imul(xor32(s, shiftRightUnsignedBits(s, 15)), 0x85_eb_ca_6b)
 
-      t = xor32(t, shiftRightUnsignedBits(t, 17))
+      z = Math.imul(xor32(z, shiftRightUnsignedBits(z, 13)), 0xc2_b2_ae_35)
 
-      t = xor32(t, s0)
+      z = xor32(z, shiftRightUnsignedBits(z, 16))
 
-      t = xor32(t, shiftRightUnsignedBits(s0, 26))
+      const u = z < 0 ? z + 2 ** 32 : z
 
-      s0 = s1
-
-      s1 = t
-
-      buf[off] = s1 % 256
+      buf[off] = u % 256
 
       off += 1
 
       if (off < buf.length) {
-        buf[off] = shiftRightUnsignedBits(s1, 8) % 256
+        buf[off] = Math.trunc(u / 256) % 256
+
         off += 1
       }
 
       if (off < buf.length) {
-        buf[off] = shiftRightUnsignedBits(s1, 16) % 256
+        buf[off] = Math.trunc(u / 65_536) % 256
+
         off += 1
       }
 
       if (off < buf.length) {
-        buf[off] = shiftRightUnsignedBits(s1, 24) % 256
+        buf[off] = Math.trunc(u / 16_777_216) % 256
+
         off += 1
       }
     }
