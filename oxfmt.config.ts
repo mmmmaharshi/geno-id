@@ -10,7 +10,7 @@ export default defineConfig({
     "docs/**",
     "golden/**",
     "**/*.md",
-    "paper.tex",
+    "paper/**",
   ],
   semi: false,
 })

@@ -3,7 +3,7 @@ import path from "node:path"
 
 const __dirname = import.meta.dirname
 
-const paperPath = path.resolve(__dirname, "..", "..", "paper.tex")
+const paperPath = path.resolve(__dirname, "..", "..", "paper", "paper.tex")
 
 export interface PaperViolation {
   line: number

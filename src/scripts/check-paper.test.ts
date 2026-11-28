@@ -32,7 +32,7 @@ void test("triple dash and unicode dashes report rule and line", () => {
 
 void test("checked-in paper.tex is clean", () => {
   const text = readFileSync(
-    path.resolve(__dirname, "..", "..", "paper.tex"),
+    path.resolve(__dirname, "..", "..", "paper", "paper.tex"),
     "utf8"
   )
 

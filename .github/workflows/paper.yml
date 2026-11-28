@@ -4,13 +4,13 @@ on:
   push:
     branches: [main]
     paths:
-      - "paper.tex"
+      - "paper/**"
       - "results/artifact-manifest.json"
       - "src/scripts/check-paper*.ts"
       - ".github/workflows/paper.yml"
   pull_request:
     paths:
-      - "paper.tex"
+      - "paper/**"
       - "results/artifact-manifest.json"
       - "src/scripts/check-paper*.ts"
       - ".github/workflows/paper.yml"
@@ -41,5 +41,6 @@ jobs:
       - name: Compile manuscript
         uses: xu-cheng/latex-action@v3
         with:
+          working_directory: paper
           root_file: paper.tex
           docker_image: danteev/texlive@sha256:0d9a3e04eb3a6918c64c502c2129e9ffbf5ec0c55ea74f0eff277bc564ae5c41

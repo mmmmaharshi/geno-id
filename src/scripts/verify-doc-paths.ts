@@ -10,7 +10,7 @@ import path from "node:path"
 const root = path.resolve(import.meta.dirname, "..", "..")
 
 const files = [
-  "paper.tex",
+  "paper/paper.tex",
 
   "AGENTS.md",
 

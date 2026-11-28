@@ -3,7 +3,7 @@ RFC-1958 scaffold experiment
 
 NOTE: This file is a structural experiment generated from the writing-scaffold
 MCP using RFC 1958 ("Architectural Principles of the Internet") as the scaffold.
-It is NOT the manuscript. paper.tex on main remains the peer-reviewed paper.
+It is NOT the manuscript. paper/paper.tex on main remains the peer-reviewed paper.
 Do not merge this into the published manuscript without an explicit decision.
 
 

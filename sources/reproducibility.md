@@ -14,7 +14,7 @@ functional, reusable) at the level a Scopus Q1 systems/security venue expects.
 | TypeScript | `7.0.2` (pinned in `package.json` devDependencies) |
 | Python (NIST bridge only) | 3.x + `numpy`, `scipy`, `nist80022` (imported by `scripts/nist-bridge.py`) |
 | dieharder (extended randomness only) | installed on the host (`brew install dieharder` / `apt install dieharder`) — see §3 |
-| LaTeX (manuscript only) | `latexmk` from a full TeX Live (`paper.yml` CI job); class file vendored as `svproc.cls` v1.3 (2016/07/20), byte-identical across independent public mirrors |
+| LaTeX (manuscript only) | `latexmk` from a full TeX Live (`paper.yml` CI job); class file vendored as `paper/svproc.cls` v1.3 (2016/07/20), byte-identical across independent public mirrors |
 
 `bun.lock` pins every transitive dependency, so `bun install` reproduces the
 exact dependency graph used to produce the numbers in the README, not just

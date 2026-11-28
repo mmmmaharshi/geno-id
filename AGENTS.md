@@ -54,7 +54,7 @@ GenoID is a TypeScript RFC 9562 v8 UUID library + CLI + browser benchmark. The p
 | `bun run lint:fix` | Auto-fix type-aware lint issues | varies | `bun install` |
 | `bun run typecheck` | Typecheck root + scripts tsconfigs | ~10s | `bun install` |
 | `bun run test` | Run all unit tests (`src/scripts/*.test.ts`, `--parallel`) | ~2min (browser engines) | `bun install` |
-| `bun run check:paper` | Deterministic dash gate for `paper.tex` | ~5s | `bun install` |
+| `bun run check:paper` | Deterministic dash gate for `paper/paper.tex` | ~5s | `bun install` |
 | `bun run evidence:verify` | Verify manifest claims against committed artifacts | ~5s | `bun install` |
 | `bun run bench-ci` | Condensed CI-shaped benchmark + collisions → `dist/bench-ci-results.json` | ~30s | `bun install` |
 | `bun run bench-rejection` | O(k) vs (1/d)^k repair sweep → `results/rejection-sweep.json` | ~5s | `bun install` |
@@ -127,7 +127,7 @@ After every change to any `.ts` file, run in order. **Stop and fix on any failur
 3. `bun run typecheck` — both root + scripts tsconfigs.
 4. `bun run test` — Bun test runner over `src/scripts/*.test.ts`.
 5. `bun run build` — compiles to `dist/`.
-6. `bun run check:paper` — deterministic dash gate for `paper.tex`. **Confirm clean.**
+6. `bun run check:paper` — deterministic dash gate for `paper/paper.tex`. **Confirm clean.**
 7. `bun run evidence:verify` — manifest claims vs committed artifacts. **Confirm verified.**
 8. `bun run bench-rejection` — validates O(k) vs O((1/d)^k) repair bound. **Confirm no NaN/null cells + `results/rejection-sweep.json` written.**
 9. `bun run bench-db` — index-locality benchmark. **Confirm output written to `results/db-sqlite.json`.**
@@ -258,7 +258,7 @@ GA genuinely helps UUIDs only through *composition*, not randomness. Implemented
 | `src/scripts/nist-bridge.py` | Full 15-test NIST SP 800-22 battery |
 | `src/scripts/stats.ts` | In-house monobit, runs, chi-square, pairwise correlation, entropy |
 | `src/scripts/bench-cluster.ts` / `.test.ts` | Small local multi-shard scan and versioned reshard; writes `results/cluster-experiment.json` (not production-scale evidence) |
-| `src/scripts/check-paper.ts` / `.test.ts` | Deterministic dash gate for `paper.tex`, wired into `check:paper` and pre-commit |
+| `src/scripts/check-paper.ts` / `.test.ts` | Deterministic dash gate for `paper/paper.tex`, wired into `check:paper` and pre-commit |
 
 ### Deno ports (`src/scripts/deno/*`, CI-only)
 
