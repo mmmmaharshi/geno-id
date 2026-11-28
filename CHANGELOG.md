@@ -13,9 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Highlights
 
-- 🔒 **Frozen entropy path.** `getEntropySourceId()` reports `pooled-csprng-v1`; seeded-`configureRandom` determinism test pins the single-sink contract.
-- 🔀 **Xor scrambler.** `scrambleByte()` single-xor rotate replaces the raw pool-byte xor in pool refill; paired shared-entropy test (`src/scripts/compare-mutation-100m.ts`, 100,040,000 bits per arm) shows old and new arms both pass with margin (monobit p 0.43 vs 0.87, runs p 0.17 vs 0.34).
-- 📐 **Layout fitness.** `scoreLayoutFitness(layout)` returns `{repairsPerUuid, maxAllowedDev, score}` so the workload planner optimizes repair cost plus analytic modulo bias instead of NIST score.
+- 🔒 **Frozen entropy path.** `getEntropySourceId()` reports `pooled-csprng-v1`, `injected` under an injected RNG, or `none` with no CSPRNG; seeded-`configureRandom` determinism test pins the single-sink contract.
+- 🔀 **Xor scrambler.** `scrambleByte()` single-xor rotate replaces the raw pool-byte xor in pool refill, shared through `mutateChildBytes()`; paired shared-entropy test (`src/scripts/compare-mutation-100m.ts`, 100,040,000 bits per arm) shows old and new arms both pass with margin (monobit p 0.43 vs 0.87, runs p 0.17 vs 0.34).
+- 📐 **Layout fitness.** `scoreLayoutFitness(layout)` returns `{repairsPerUuid, maxAllowedDev, trials}` with no composite score so the workload planner optimizes repair cost plus analytic modulo bias instead of NIST score.
 - 📊 **Honest negative.** Throughput delta sits inside ±2x shared-host noise; repairs/UUID identical (5.906); 0 collisions both sides.
 
 ### Breaking Changes

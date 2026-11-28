@@ -173,6 +173,8 @@ const defaultRandomFill = (): RandomFill => {
 
 let _fillRandom: RandomFill = defaultRandomFill()
 
+let _injectedEntropy = false
+
 const fillRandom = (buf: Uint8Array): void => {
   _fillRandom(buf)
 }
@@ -279,6 +281,8 @@ export const configureRandom = (fn: RandomFill | null): void => {
   if (fn === nullValue) {
     _fillRandom = defaultRandomFill()
 
+    _injectedEntropy = false
+
     _compiledGenCache.clear()
 
     return
@@ -292,12 +296,18 @@ export const configureRandom = (fn: RandomFill | null): void => {
 
   _fillRandom = fn
 
+  _injectedEntropy = true
+
   _compiledGenCache.clear()
 }
 
 export const getEntropySourceId = (): string => {
   if (_fillRandom === _noRngFill) {
     return "none"
+  }
+
+  if (_injectedEntropy) {
+    return "injected"
   }
 
   return "pooled-csprng-v1"
@@ -413,6 +423,17 @@ const _child = new Uint8Array(16)
 export const scrambleByte = (b: number): number =>
   xorByte(b, andBits(orBits(shiftLeftBits(b, 3), shiftRightBits(b, 5)), 0xff))
 
+export const mutateChildBytes = (
+  child: Uint8Array,
+  mutPos: number,
+  mixByte: number,
+  useScramble: boolean
+): void => {
+  const mix = useScramble ? scrambleByte(mixByte) : mixByte
+
+  child[mutPos] = xorByte(child[mutPos], mix)
+}
+
 const refillGenoPool = (): void => {
   const e = GENO_ENTRY_BYTES,
     g = _genoPool,
@@ -438,10 +459,7 @@ const refillGenoPool = (): void => {
       _child[j] = g[off + 16 + j]
     }
 
-    _child[mutPos] = xorByte(
-      _child[mutPos],
-      scrambleByte(g[off + ((mutPos + 1) % 16)])
-    )
+    mutateChildBytes(_child, mutPos, g[off + ((mutPos + 1) % 16)], true)
 
     _child[6] = (_child[6] % 16) + 0x80
 
@@ -4441,7 +4459,6 @@ export const scoreLayoutFitness = (
 ): {
   repairsPerUuid: number
   maxAllowedDev: number
-  score: number
   trials: number
 } => {
   ensureValidated(layout)
@@ -4476,12 +4493,7 @@ export const scoreLayoutFitness = (
 
   const repairsPerUuid = repairs / trials
 
-  return {
-    repairsPerUuid,
-    maxAllowedDev: maxDev,
-    score: repairsPerUuid + maxDev,
-    trials,
-  }
+  return { repairsPerUuid, maxAllowedDev: maxDev, trials }
 }
 
 const _interpretLast = new Map<string, number>()
