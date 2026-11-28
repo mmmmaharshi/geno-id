@@ -201,12 +201,23 @@ void test("cluster reshard ratios match the archived read and migration measurem
   )
 })
 
-void test("paper maps the cluster claim to its command and committed artifact", () => {
-  const paper = readFileSync(path.resolve(root, "paper.tex"), "utf8")
+void test("manifest maps the cluster claim to its command and committed artifact", () => {
+  const manifest = JSON.parse(
+    readFileSync(path.resolve(root, "results/artifact-manifest.json"), "utf8")
+  ) as {
+    artifacts: Record<
+      string,
+      { artifact?: string; command?: string } | undefined
+    >
+  }
 
-  assert.match(paper, /bun run bench-cluster/u)
+  const entry = manifest.artifacts.sec_cluster
 
-  assert.match(paper, /results\/cluster-experiment\.json/u)
+  assert.ok(entry, "manifest maps sec_cluster")
 
-  assert.match(paper, /sec:cluster/u)
+  assert.equal(entry.artifact, "results/cluster-experiment.json")
+
+  assert.ok(
+    typeof entry.command === "string" && entry.command.includes("bench-cluster")
+  )
 })

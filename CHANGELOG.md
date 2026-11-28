@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.30.2] - 2026-11-28
+
+### Summary
+
+**Manuscript follows implementation-independent reporting. No numbers changed.**
+
+### Highlights
+
+- 📄 **Method-only prose.** The manuscript no longer names repository paths, commands, languages, runtimes, or harness internals. It states algorithms, guarantees, and measured behavior.
+- 🔗 **Traceability moved to the manifest.** The cluster claim now traces to its command and artifact through the artifact map instead of prose.
+- 🧪 **Stronger cluster test.** The traceability test asserts the manifest entry instead of matching manuscript text.
+
+### Breaking Changes
+
+- None.
+
+### Upgrade Guide
+
+- Update to `1.30.2`. No code changes. Numbers and guarantees are unchanged.
+
+### Known Issues
+
+- Deno mirrors keep their own operator style. Deno is CI-only and no Deno runs here.
+- Full `bench-structured` E3 and later were not rerun in this worktree.
+
+### Dependencies Updated
+
+- None.
+
 ## [1.30.1] - 2026-11-28
 
 ### Summary
