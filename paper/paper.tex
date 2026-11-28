@@ -60,9 +60,9 @@ Declaring a structured identifier answers two questions at once: how wide each f
 
 Imagine a service whose records each carry an owning shard in the identifier itself. RFC~9562 version 8 reserves 122 bits for application-defined structure but specifies no algorithm to fill them. GenoID is that missing algorithm: instead of the exponential tail of whole-identifier rejection sampling, it produces correct keys on the first try in $O(k)$ work with no unbounded tail. This is not a faster sampler than per-layout hand-coded direct construction, which is equally $O(k)$; it is one shared pass serving every layout.
 
-Existing identifiers fall short: version 4 carries no structure, version 7 fixes one timestamp layout, and the steganographic prior art embeds an encrypted timestamp with no multi-field composition. Structure in the key is not always the right choice; a composite key is simpler whenever the identifier never leaves the database. Section~\ref{sec:why-embed} states the conditions under which embedding wins, and Section~\ref{sec:composite-bench} quantifies the cost of the alternative. GenoID declares field structure once as a layout declaration and satisfies it by deterministic repair, drawing from pre-populated CSPRNG pools to amortize entropy cost.
+Existing identifiers fall short: version 4 carries no structure, version 7 fixes one timestamp layout, and the steganographic prior art embeds an encrypted timestamp with no multi-field composition. Section~\ref{sec:why-embed} states the conditions under which embedding wins, and Section~\ref{sec:composite-bench} quantifies the cost of the alternative. GenoID declares field structure once as a layout declaration and satisfies it by deterministic repair, drawing from pre-populated CSPRNG pools to amortize entropy cost.
 
-Whether embedding an ordered key pays off is conditional. As motivation only, the buffer saturation ratio model~\cite{27} predicts random-key inserts turn I/O bound once the index outgrows the buffer pool; GenoID did not run this model and it covers random OLTP primary keys, not GenoID's measurements. Its role is a decision aid: emit an ordered field when the index outgrows the buffer, omit it otherwise. GenoID emits such a field through the same declarative layout when wanted.
+
 
 \noindent\textbf{Contributions.}
 \begin{itemize}
@@ -74,28 +74,16 @@ Whether embedding an ordered key pays off is conditional. As motivation only, th
     \item Validation across per-field uniformity at $10^8$ scale (matching the closed-form $m/2^\ell$ bound to within $0.012$ percentage points, consistent with the $0.004$ pp binomial sampling noise at $n=10^8$), NIST and dieharder batteries, and multi-runtime throughput benchmarks, with limitations disclosed openly.
 \end{itemize}
 
-\noindent\textbf{Organization.} Section~\ref{sec:related-work} positions the work against identifier standards, sortable schemes, steganographic generators, and constrained-generation lineage. Section~\ref{sec:design} presents the layout abstraction and pooled generation. Section~\ref{sec:repair} gives the repair pass with its correctness argument. Section~\ref{sec:applications} works through the deployment question, when structure belongs in the key, with sharded, multi-tenant, and event-sourced designs, and Section~\ref{sec:formal} proves the complexity, entropy, and uniformity claims with the bit-allocation compiler. Section~\ref{sec:security} gives the entropy accounting and threat model, and Section~\ref{sec:evaluation} reports composition correctness, repair cost, randomness quality, and throughput with the methodology that keeps each claim refutable. Deployability conditions are consolidated in Section~\ref{sec:why-embed}. Section~\ref{sec:validity} discusses validity and limits, and Section~\ref{sec:conclusion} concludes.
+\noindent\textbf{Organization.} Section~\ref{sec:related-work} positions the work against identifier standards, sortable schemes, steganographic generators, and constrained-generation lineage. Section~\ref{sec:design} presents the layout abstraction and pooled generation. Section~\ref{sec:repair} gives the repair pass with its correctness argument. Section~\ref{sec:formal} proves the complexity, entropy, and uniformity claims with the bit-allocation compiler. Section~\ref{sec:evaluation} reports the measurements with the methodology that keeps each claim refutable. Section~\ref{sec:validity} discusses limits, and Section~\ref{sec:conclusion} concludes.
 
 \section{Related Work}
 \label{sec:related-work}
 \subsection{UUID standards: RFC 4122 to RFC 9562}
 UUIDs originated as RFC~4122 (versions~1--5), obsoleted by RFC~9562 (2024), which adds versions~6, 7, and~8~\cite{4}. UUIDv4 carries 122 CSPRNG bits but lacks order; UUIDv7 prepends a 48-bit timestamp for index locality~\cite[\S5.7]{4}; UUIDv8 is explicitly experimental, with the RFC providing no creation algorithm for its 122 bits~\cite[\S5.8]{4}; its Appendix~B illustrates custom v8 algorithms without prescribing generation, confirming the standard leaves the design space open rather than unoccupied.
-\subsection{Sortable and structured identifiers}
-RFC~9562 surveyed sixteen prior implementations~\cite{4}. Representative members: ULID~\cite{5} (48-bit timestamp + 80-bit randomness), KSUID~\cite{6} (32-bit timestamp + 128-bit randomness), Snowflake~\cite{7} (timestamp $|$ worker $|$ sequence), TypeID~\cite{8} (typed prefix over UUIDv7), and COMBGUID-style sequential GUIDs (cf.\ the GUID-as-PK cost discussion~\cite{9}). MongoDB ObjectId (timestamp\,|\,machine\,|\,pid\,|\,counter, 2009) is the canonical embedded-structure precedent; GenoID is its declarative generalization to multi-field layouts. Time-ordered identifiers improve database behavior~\cite{9}, with academic comparisons of UUIDv4/v7/ULID for distributed systems~\cite{10}. This is a well-explored field limited to fixed, hand-coded layouts; no source documented through September 2026 offers a declarative layout language with per-field repair for multi-field version 8 composition over allowed-set, range, and monotonic constraints.
-\subsection{Steganographic UUIDs: closest prior art}
-The steganographic prior art~\cite{11}, a PostgreSQL C extension, is the closest prior art. It generates version-4-compatible UUIDs with an embedded microsecond timestamp, recoverable by extraction function. GenoID differs: the prior art offers one fixed stego layout with no multi-field abstraction or repair, while GenoID provides a declarative, multi-field language and constraint-guided repair as a portable library.
-\subsection{Closest contemporary overlap}
-Microshard~\cite{14} is the nearest deployable overlap: a public RFC~9562 version 8 with a fixed 54-bit microsecond timestamp, 32-bit shard, and 36 random bits, advertising zero-lookup routing with extensions for SQLite, PostgreSQL, MySQL, DuckDB, and ClickHouse~\cite{14}. It is a fixed layout, not a layout language: there is no per-field admissibility vocabulary, no repair policy, and no random-bit budget that varies by workload. GenoID concedes the fixed-layout case entirely; its claim starts where Microshard stops, at declared multi-field layouts whose admissible sets, bounds, and counters are repaired deterministically with a stated total-variation bound.
-\subsection{Source-Known Identifiers}
-Source-Known Identifiers~\cite{26} is the closest overlapping prior art to the metadata-in-key goal. It specifies a fixed three-tier scheme: a 64-bit timestamp-ordered key, a 128-bit entity identifier that adds entity type, epoch and a keyed message authentication code for zero-lookup origin checks inside a shared-key trust domain, and an encrypted variant that conceals the metadata while preserving linkability of repeated identifiers. GenoID is a different contribution. Where Source-Known Identifiers fixes its three tiers and establishes origin with a keyed MAC or encryption, GenoID is a declarative multi-field layout compiler: an author declares field offsets, widths and admissible sets over the RFC~9562 version 8 payload, and a deterministic constraint-repair pass satisfies them at generation time with a proven per-field total-variation bound $m/2^\ell$. GenoID embeds no keyed MAC and performs no encryption, so it makes no integrity or confidentiality claim; its fields are metadata by declaration and are read directly from the key. The two works therefore optimise different things. Source-Known Identifiers targets compact cross-tier identity and origin verification under one key, while GenoID targets the composition of arbitrary application fields into a standards-defined identifier with deterministic repair and a stated uniformity guarantee.
-\subsection{Constrained generation and repair lineage}
-The generic lineage is older and stronger than the UUID literature. Property-based testing compiles executable properties into generators~\cite{15}; Claessen, Dureg{\aa}rd, and Pa{\l}ka derive random data satisfying a Boolean predicate while targeting uniformity~\cite{16}; LaFontaine et al.\ repair incomplete generators from type and coverage information~\cite{17}; Goldstein et al.\ synthesise generators with guarantees~\cite{18}. The formal distinction is scope: those systems solve arbitrary predicates or synthesise generators from proof obligations. GenoID does neither. It projects one fixed-width random field into one declared admissible set, with no predicate solving and no distribution-preservation claim beyond the fibre bound of Section~\ref{sec:uniformity}. ``Constraint-guided repair'' names that projection, not a general constrained-generation result.
-\subsection{Declarative schema languages}
-Declaring a data layout once and generating the accessors is an old idea: schema languages such as Protocol Buffers let authors declare typed fields in a schema file and generate readers, writers, and validators in many languages~\cite{25}. The layout declaration belongs to that lineage but answers a narrower question: not how to serialize an arbitrary message, but how to fill a fixed 122-bit standards-defined payload so that every emitted value satisfies per-field constraints by construction. Schema languages validate after the fact or generate unconstrained codecs; the repair pass is the generator, and the RFC~9562 version and variant bits are the conformance boundary no schema language has to respect. The layout is therefore smaller than a schema (offsets, lengths, admissibility sets) and total where a codec is partial: the repair pass cannot fail, so there is no invalid value to detect downstream.
-\subsection{Database-locality alternatives}
-Embedding is not the only route to locality. CockroachDB hash-shards indexes to spread sequential writes while keeping a logical partition key~\cite{19}; TiDB AUTO\_RANDOM randomises integer primary keys with shard bits~\cite{20}; SQL Server's NEWSEQUENTIALID issues process-ordered GUIDs for sequential index behaviour~\cite{21}; and expression or covering indexes extract queryable structure from plain values without touching the key format. GenoID's bet is narrower. When the key itself must carry routing so a partition prunes with no secondary index, embedding wins (Section~\ref{sec:composite-bench}). Where it need not, an expression index over the plain key is the better-supported answer, but measured on the same rig it is not the cheaper one: it carries $1.93\times$ the storage and $2.07\times$ lower insert throughput of embedding for lookup parity ($1.04\times$), so the index trades throughput for tooling, not for savings.
-
-On throughput, prior work amortizes CSPRNG draws via pooling~\cite{12}, and a major PostgreSQL release ships a native time-ordered function~\cite{13}; GenoID adopts the same principle with a 256-entry pool.
+\subsection{Closest prior art}
+RFC~9562 surveyed sixteen prior implementations~\cite{4}: ULID~\cite{5}, KSUID~\cite{6}, Snowflake~\cite{7}, TypeID~\cite{8}, COMBGUID-style sequential GUIDs, and MongoDB ObjectId, the canonical embedded-structure precedent. Time-ordered identifiers improve database behavior~\cite{9}, confirmed by academic comparisons of UUIDv4/v7/ULID~\cite{10}. All are fixed, hand-coded layouts; none offers a declarative language with per-field repair. Three systems come closest. The steganographic prior art~\cite{11}, a PostgreSQL C extension, embeds one encrypted timestamp with no multi-field abstraction. Microshard~\cite{14} is a fixed RFC~9562 version 8 with zero-lookup routing but no admissibility vocabulary, repair policy, or workload-varying random budget. Source-Known Identifiers~\cite{26} fixes three tiers with keyed origin checks where GenoID declares arbitrary fields with deterministic repair and a stated uniformity bound. GenoID concedes the fixed-layout case entirely.
+\subsection{Lineage}
+The generic lineage is older: property-based testing compiles properties into generators~\cite{15}; Claessen et al.\ derive uniform random data satisfying predicates~\cite{16}; LaFontaine et al.\ repair incomplete generators~\cite{17}; Goldstein et al.\ synthesise generators with guarantees~\cite{18}. Those solve arbitrary predicates; GenoID projects one fixed-width field into one admissible set, with no claim beyond the fibre bound. Schema languages such as Protocol Buffers declare typed fields and generate codecs~\cite{25}, but validate after the fact over arbitrary messages, while the repair pass is the generator and the version and variant bits are a conformance boundary no schema language respects. For locality without embedding, hash-sharded indexes~\cite{19}, randomized keys~\cite{20}, sequential GUIDs~\cite{21}, and expression indexes all apply; measured on the same rig, an expression index costs $1.93\times$ the storage with lookup parity, trading throughput for tooling. On throughput, pooled draws~\cite{12} and native time-ordered functions~\cite{13} motivate the 256-entry pool.
 
 \section{Is there a GenoID Architecture?}
 \label{sec:design}
@@ -131,10 +119,6 @@ That declaration is the complete specification: no generation code is written pe
 32-bit words. $^\dagger$RFC-fixed: version (bits 48--51), variant (bits 64--65). All other bits carry the declared timestamp, shard, and counter; undeclared bits are random.}
 \label{fig:layout}
 \end{figure}
-
-\subsection{General design issues}
-\label{sec:principles}
-Heterogeneity is inevitable and must be supported by design: one shared repair pass serves every declared layout, from session tokens to distributed database keys. If there are several ways of doing the same thing, choose one: a single layout declaration replaces per-layout generation code. All designs must scale readily to very many identifiers per site and to many millions of sites. Performance and cost count alongside functionality; the repair pass costs $O(k)$ regardless of the drawn value. Keep it simple: when in doubt, declare the narrower field. Modularity holds: the layout declaration, the pooled generator, and the repair pass vary independently. In many cases it is better to adopt an almost complete layout now than to wait for a perfect one. Avoid options wherever possible. Be strict when emitting and tolerant when reading: every emitted value satisfies its declared constraints, and readers accept both layout generations during migration. Circular dependencies are avoided: routing never depends on a lookup the routing itself must populate. And perhaps most important: nothing gets standardised until there are multiple instances of running code -- the cross-language port and golden vectors, not the prose specification, establish executability. These principles guide design and add no new claim; they are not an invariant reference model.
 
 \subsection{Implementation: pooled CSPRNG generation}
 \label{sec:pooled-gen}
@@ -176,7 +160,7 @@ outside its admissible set.
 \end{algorithmic}
 \end{algorithm}
 
-Every branch assigns $v'$ unconditionally, so the loop body cannot fail and the procedure contains no backward jump: it executes exactly $k$ iterations for $k$ \textsc{allowed}- or \textsc{range}-constrained fields, independent of the drawn value. Correctness is by construction. Each branch's codomain is the constraint's satisfying set: 0 violations, not ``near 0.'' \textbf{Lemma (tick-keyed counter).}\label{lem:counter} Monotonic fields never enter the loop: they are resolved by the pool refill path's tick-keyed counter logic before the repair pass is called, which clamps the timestamp to $\max(\textit{clock}, \textit{last tick})$, increments the counter within a tick, and freezes generation until the clock advances on exhaustion. No emitted pair moves backwards. Both generator paths implement this (pooled refill loop and compiled prologue).
+\textbf{Lemma (tick-keyed counter).}\label{lem:counter} Monotonic fields never enter the loop: they are resolved by the pool refill path's tick-keyed counter logic before the repair pass is called, which clamps the timestamp to $\max(\textit{clock}, \textit{last tick})$, increments the counter within a tick, and freezes generation until the clock advances on exhaustion. No emitted pair moves backwards. Both generator paths implement this (pooled refill loop and compiled prologue).
 
 Figure~\ref{fig:pipeline} shows a single repair: a drawn candidate whose shard field reads 7 is mapped to the admissible value 3.
 
@@ -221,163 +205,73 @@ generation code is written per application.
 
 \subsection{Why embed structure in the key?}
 \label{sec:why-embed}
+The obvious alternative is a composite key
+$(\textit{shard\_id}, \textit{uuid})$ or a separate indexed column. That
+design is simpler and wins on three axes: resharding is a column update,
+the identifier keeps all 122 random bits, and the shard count is unbounded
+by field width. Embedding wins in one circumstance: when the identifier must
+cross a boundary carrying a single value. A composite key crossing such a
+boundary degrades to string concatenation: ad-hoc, unvalidated, and no longer
+a UUID. A second benefit is integrity: a row whose key-embedded tenant
+disagrees with its session context is impossible by construction. Never trust
+the key-embedded tenant for authorization; any key holder can forge it.
 
-The obvious alternative to embedding a shard in the identifier is to keep
-it beside the identifier: a composite key
-$(\textit{shard\_id}, \textit{uuid})$, or a separate indexed column. That
-design is simpler than anything in this paper, and it is better on three
-axes not contested here. Resharding becomes a column update rather than a
-layout migration and a dual-read window. The identifier retains all 122
-random bits, so none of the entropy accounting in
-Section~\ref{sec:entropy-accounting} applies. And the shard count is not
-bounded by a field width fixed at declaration time.
+Do not embed when the identifier never leaves the database, when the shard
+set churns, or when tenant concealment matters: structured bits leak by design,
+and masking after repair destroys exactly what embedding buys. Embedding spends
+the residual random budget: the database-key layout leaves 50 random bits, a
+50\% collision bound near $3.95\times10^7$ draws.
 
-Embedding wins in one specific circumstance: when the identifier must
-cross a boundary that carries a single value. A URL path segment, a cache
-key, a queue partition key, a log line, or a foreign key in a system one
-does not control each admit one identifier, not two. A composite key
-crossing such a boundary degrades to string concatenation, an ad-hoc,
-unvalidated encoding of precisely what the layout declaration specifies
-formally, and the concatenated form is no longer a UUID, forfeiting
-the native 16-byte column type, its index representation, and the library
-and tooling support that RFC~9562 conformance carries.
-
-A second, narrower benefit is integrity. When the tenant is a projection
-of the key rather than a neighbouring column, a row whose key-embedded tenant
-disagrees with its session context is detectable without a join rather than
-requiring one: two columns can drift, one cannot. Still enforce authorization
-and row-level security on the session value; never trust the key-embedded tenant,
-which any key holder can forge or enumerate.
-
-GenoID therefore suits stable shard and tenant sets whose
-identifiers escape the database, and not for elastic partitioning behind
-a boundary the application fully controls.
-
-Do not embed when the identifier never leaves the database (a composite
-key is simpler and keeps all 122 random bits), when the shard set churns
-(each resharding is a layout migration with a dual-read window), or when
-tenant concealment matters: structured bits leak by design
-(Section~\ref{sec:security}), and XOR-masking after repair (as in
-the steganographic prior art) composes mechanically but destroys exactly what
-embedding buys, prefix prunability and range locality, so choose
-masking for concealment or plaintext for routing, not both. A keyed
-format-preserving permutation could in principle preserve equality pruning while
-concealing values, but it is not one of the primitives evaluated here and its
-residual leakage is unanalysed, so it is out of scope for this claim. Finally,
-embedding spends the residual random budget: the database-key layout leaves 50
-random bits (Section~\ref{sec:entropy-accounting}), a 50\% collision bound near
-$3.95\times10^7$ draws. Embed only if the expected identifier volume fits the
-residual budget of the chosen layout.
-
-A resharding migration has a fixed shape. Version layout names across generations, never reuse a bare name, and run readers that accept both generations while writers emit the new one; track the fraction of old-generation keys as the migration metric and retire the old reader when it reaches zero. Size monotonic counters from peak
-burst: a counter field admits $2^{\ell_c}$ increments per millisecond tick, and
-generation blocks until the clock advances past any exhausted tick, so a burst
-above budget stalls rather than degrades. Clock backsteps are safe by
-construction (the tick clamps to $\max(\textit{clock}, \textit{last tick})$, so a
-backstep re-emits the previous tick and a VM pause stalls); monitor stall
-duration at the application level, since the generator exposes no stall counters
-of its own (a blocked-count/stall-duration hook is future work). Where tenant or shard values must not be enumerable, keep them out
-of URLs, logs, and caches: structured bits are readable by anyone holding the
-key, and enumeration of a small set such as tenant $[1,8]$ is trivial.
+A resharding migration versions layout names across generations, runs readers
+accepting both generations while writers emit the new one, and retires the old
+reader at zero old-generation keys. Size counters from peak burst: a burst above
+budget stalls rather than degrades. Clock backsteps re-emit the previous tick by
+construction. Where values must not be enumerable, keep them out of URLs, logs,
+and caches.
 
 \noindent\textbf{Deploy iff:} the key crosses a boundary alone; the shard set is stable; the identifier fits the residual budget (database-key: 50 bits, 50\% bound $3.95\times10^7$); tenant concealment is not required; bursts fit $2^{\ell_c}$ per tick or stall is acceptable.
 
 \subsection{Cost of embedding versus a composite key}
 \label{sec:composite-bench}
-
 Section~\ref{sec:why-embed} claims a composite key does not help a lookup
-arriving without its shard. The comparison tests this against five alternatives over
-one workload, all arms using the same timestamp-sorted 128-bit identifier
-under clustered storage, so the only variable is
-where the shard resides.
+arriving without its shard. Five alternatives run over one workload with the
+same timestamp-sorted 128-bit identifier under clustered storage, so the only
+variable is where the shard resides.
 
-Given a primary key $(\textit{shard},\textit{id})$, a lookup by
-identifier alone cannot seek the index: the query planner
-reports a full scan, and latency grows linearly in table size against
-the embedded key's logarithmic growth. Answering such a query therefore
-requires a secondary index on \textit{id}, and that is the comparison
-that matters, since any deployment facing this access pattern would add
-one.
+A lookup by identifier alone cannot seek a $(\textit{shard},\textit{id})$
+primary key: the planner reports a full scan against the embedded key's
+logarithmic growth. The honest comparison adds the secondary index any
+deployment would add. Embedding avoids it: $1.99\times$ the storage ($56.4$
+against $28.4$ bytes/row), $1.88\times$ lower insert throughput, and still
+$1.29\times$ slower lookups, descending two indexes where the embedded form
+descends once. The embedded arm is the only one simultaneously near-best on
+insert, near-best on bare-identifier lookup, and free of the second index.
 
-The secondary index is what embedding avoids. It carries $1.99\times$ the
-storage per row ($56.4$ against $28.4$ bytes) and sustains $1.88\times$
-lower insert throughput, while still resolving lookups $1.29\times$
-slower, since resolution descends the secondary index and then the primary
-key, where the embedded form descends once. Embedding serves both access
-paths with a single index. Its advantage is the \emph{combination}: the
-embedded arm is the only arm that is simultaneously near-best on insert,
-near-best on bare-identifier lookup, and free of the second index.
+Two null results are reported as such: insert throughput is within 15\% of an
+unindexed composite key ($291$K vs $250$K rows/s), and point-lookup latency
+matches a concatenated text key ($11.7$ vs $12.8\,\mu$s, CIs overlap).
+Concatenation still costs $1.85\times$ storage and $1.24\times$ insert
+throughput and is no longer a UUID. The conceded expression-index alternative
+costs $1.93\times$ storage and $2.07\times$ insert throughput for lookup parity
+($12.2$ vs $11.7\,\mu$s), with shard scans matching the embedded predicate scan
+rather than the composite's leading-column seek: it trades throughput for
+tooling, not savings.
 
-Two comparisons show no difference and both are reported as such: insert
-throughput is within 15\% between the embedded key and an
-unindexed composite key ($291$K vs $250$K rows/s), and point-lookup latency is indistinguishable between the
-embedded key and a concatenated text key ($11.7$ vs $12.8\,\mu$s, CIs
-overlap). Concatenation nonetheless costs $1.85\times$ the storage and
-$1.24\times$ lower insert throughput, and is no longer a UUID, forfeiting
-the native 16-byte column type and RFC~9562 tooling.
+Byte-aligned offset (56 vs shipped 52) shows no separable lookup effect: four
+repeated runs reversed direction three times. Alignment stays
+validator-enforceable style guidance with no performance claim. No advantage is
+claimed on shard-major scans, where the composite's leading column wins $3.1\times$
+($5.7$--$7.4$\,ms against $22.7$\,ms).
 
-The conceded alternative, a plain key plus an expression index
-extracting the shard, is measured in the same table. It costs
-$1.93\times$ the storage ($54.9$ against $28.4$ bytes/row) and
-$2.07\times$ lower insert throughput ($141$K vs $291$K rows/s) for lookup
-parity with embedding ($12.2$ vs $11.7\,\mu$s, CIs overlap), while its
-shard scan matches the embedded predicate scan ($30.6$ vs $22.7$\,ms)
-rather than the composite's leading-column seek ($7.4$\,ms). The
-expression index is the same price as the composite's secondary index
-with none of its scan advantage: where the key must carry routing,
-embedding still wins; where it need not, the expression index trades
-insert throughput for tooling, not for savings.
-
-The experiment finds no lookup advantage in declaring the shard at a byte-aligned offset
-(56 rather than the shipped 52). Across four repeated runs of the same
-experiment the direction of the effect reversed three times ($+14\%$,
-$-2\%$, $+4.7\%$, $+4\%$ in favour of the aligned offset), so it is
-not separable from run-to-run variance at these trial counts, and SQLite
-evidently evaluates the straddling two-byte predicate as cheaply as the
-byte-aligned one. The aligned-offset variant was measured on the same rig
-and is archived in the archived composite results, but it is
-not a table arm: alignment remains validator-enforceable style guidance
-for engines with a different cost model, with no performance claim here.
-
-No advantage is claimed on shard-major scans, where the composite key's
-leading column is the better structure: the composite and
-composite-indexed arms resolve the shard range scan in $5.7$--$7.4$\,ms
-against $22.7$\,ms for the embedded arm, a $3.1\times$ difference.
-Embedding trades partition-scan speed for single-index storage and
-bare-identifier seeks.
-
-The same arms run against native engines. At $N=10^5$ rows per build over three
-distributions (uniform, hot-tenant, bursty) on the tested PostgreSQL and MySQL releases
-(local host, binary/binary primary key,
-64-byte payloads), the structured arm inserts at parity with UUIDv7 on PostgreSQL
-(within a few percent), and at parity with UUIDv7 on MySQL (parity-to-ahead
-depending on host; absolute rates vary run to run by more than twofold across CI
-refreshes at identical scale, so only the parity band, not any single rate, is
-claimed; per-refresh values in the native results file). The shard-first
-arm sits in the same broad parity band on both engines. Point lookups and range scans show no
-arm separation on either engine (100-probe lookup sets within $\approx 10\%$ on
-PostgreSQL and $\approx 6\%$ on MySQL; range scans within $\approx 7\%$).
-Tail latency matches or beats the median story: at p99 the structured arm is within $5\%$ of UUIDv7 on PostgreSQL point lookups ($14.16$ against $13.53\,\mu$s) and strictly lower on MySQL ($17.76$ against $25.30\,\mu$s), with range-scan p99s within $9\%$ on both engines (representative snapshot; per-refresh values in the native results file).
-The tracked artifact
-(the native results file, with per-rep percentiles, query plans, and
-server versions) records the $N=10^5$ result, with the same single-host caveat that
-applies to every rate in this section. The committed harness measures both engines, and
-the native-database check re-runs the same scaled invocation against
-current PostgreSQL and MySQL service containers on every main push.
+The same arms run natively at $N=10^5$ over three distributions on PostgreSQL
+and MySQL: inserts at parity with UUIDv7 on both engines (absolute rates vary
+twofold across refreshes, so only the parity band is claimed). Lookups and range
+scans show no arm separation; p99 matches or beats the median story. The native
+results file records per-rep percentiles, query plans, and server versions; the
+native-database check re-runs the scaled invocation on every main push.
 
 \begin{table}[!ht]
-\caption{Schema comparison (single-host SQLite~\cite{22}, file-backed, $N=10^5$, 10 trials, 1000
-point lookups per trial; every arm uses the same timestamp-sorted GenoID
-database-key identifier, so the only variable is where the shard field
-resides). Point lookup is by identifier alone. The unindexed composite arm
-scans rather than seeks, so its lookup latency is three orders of
-magnitude worse and is shown as an order of magnitude, not a mean.
-Cell entries are means with 95\% CI in brackets; raw per-trial arrays, query plans, and host metadata are
-archived in the archived composite results.
-Conceptual generalization to clustered storage engines is discussed in
-Section~3.2 below; the PostgreSQL result at $N=10^5$ is archived in the native results file and shows the
-structured arms at parity with UUIDv7 on inserts with parity elsewhere
-(representative host snapshot; see Section~3.2 for the host-dependence caveat).}
+\caption{Schema comparison (single-host SQLite~\cite{22}, file-backed, $N=10^5$, 10 trials, 1000 point lookups per trial; every arm uses the same timestamp-sorted identifier). Point lookup is by identifier alone. Cell entries are means with 95\% CI in brackets; raw per-trial arrays are archived with the composite results.}
 \label{tab:composite}
 \centering\footnotesize
 \begin{tabular*}{\columnwidth}{@{\extracolsep{\fill}}lcccc}
@@ -393,22 +287,11 @@ PK $+$ expression index  & 54.9 & 141 [136--145] & 12.2 [11.67--12.79] & 30.62 [
 \end{tabular*}
 \end{table}
 
-\subsection{Extension to clustered storage engines}
-The preceding measurements use SQLite because it requires no external daemon, but the underlying B+\!tree locality argument is confirmed on production clustered-storage engines: the tested PostgreSQL release shows the structured arm at parity with UUIDv7 on inserts with parity elsewhere, and the tested MySQL release shows both structured arms at parity-to-ahead depending on host, each at $N=10^5$ rows per build with binary primary keys. The single-host caveat applies. Neither the page layout, the WAL policy, nor the cost of a secondary index translates unchanged to other deployments. The benchmark harness for both native engines is committed alongside this paper (the native-database harness, with seven identifier arms, three key distributions, percentiles over $\geq 5$ reps, query plans, storage, and WAL accounting, with a validator that refuses an incomplete result), and the native-database check re-runs it at the same scale against current PostgreSQL and MySQL service containers, so the experiment can be re-run and audited without reimplementation.
-
-
 \subsection{Sharded databases}
 The database-key declaration embeds the owning shard directly in the key.
 A router extracts bits 52--59 and dispatches without consulting a
-shard map as a mechanism: routing becomes a bit-mask and a comparison, replacing a
-hash computation and a ring lookup under consistent hashing in the single-key case
-(a small local multi-shard measurement follows below; cross-node dispatch on a hosted service remains future work). The 48-bit timestamp prefix orders keys by emission
-time; on 16-byte binary storage this yields the insert and lookup
-behaviour of Table~\ref{tab:composite}, while
-Section~\ref{sec:deployability} shows the effect is masked entirely
-under 36-byte text encoding.
-The trade-offs of embedding vs a composite key are discussed in
-Sections~\ref{sec:why-embed} and~\ref{sec:composite-bench}.
+shard map: routing becomes a bit-mask and a comparison, replacing a
+hash computation and a ring lookup under consistent hashing. The 48-bit timestamp prefix orders keys by emission time; on 16-byte binary storage this yields the insert and lookup behaviour of Table~\ref{tab:composite}.
 
 \label{sec:cluster}
 That routing claim is quantified on a small local deployment, not a hosted
@@ -427,20 +310,8 @@ network dispatch, replication, consensus, or cross-node clock skew, so this
 is a small local cluster and not production-scale evidence; cross-node
 behaviour remains future work.
 
-\subsection{Multi-tenant isolation}
-The multi-tenant declaration carries a 12-bit tenant enum and an 8-bit region enum. Tenant
-scoping becomes a bit-range predicate on the primary key rather than
-a join against a tenant table, and a row whose key-embedded tenant
-disagrees with its session context is detectable without a join, not
-prevented by the key alone. Still enforce authorization against the session
-context; the key-embedded value is a routing hint any key holder can forge.
-The region field supports data-residency assertions without a
-secondary index. The allowed-tenant set is declared as $[1,8]$; a
-wider set or a different constraint kind requires changing the
-declaration, not the generator. Only the constrained fields are declared; the generator is unchanged.
-
-\subsection{Event sourcing}
-The shipped event-sourcing layout pairs a 16-bit stream node at bit~0 with a 24-bit monotonic sequence counter at bit~66, leaving 82 random bits. The layout is deliberately not timestamped: within one process, log position is carried by the counter, and the stream field separates concurrent writers, so an append-only log orders by primary key alone without a sequence server or a coordination round trip. Ordering rests on a single non-decreasing pair, the same one database-key uses: the counter increments within a tick rather than being redrawn, and on exhaustion generation freezes until the clock advances, following RFC~9562 \S6.2, which prefers a bounded stall to a broken sort order. Both generation paths implement this: the pooled path clamps the tick and freezes inside the refill loop, and the compiled path emits the same clamp-and-freeze prologue into the generated function, so the guarantee does not depend on which path the runtime selects. A timestamped variant of this layout is obtained by declaring a millisecond timestamp field; that variant inherits the identical clamp and freeze-and-wait behaviour. Ordering is per-generator; cross-node total order still requires an external mechanism. Deployment envelope: single-writer/process logs only.
+\subsection{More layouts}
+The same declaration pattern covers multi-tenancy (12-bit tenant plus 8-bit region enums, tenant scoping as a bit-range predicate, data residency without a secondary index) and event sourcing (16-bit stream node plus 24-bit monotonic counter for primary-key-ordered logs without a sequence server). Only constrained fields are declared; cross-node total order still requires an external mechanism.
 
 \section{Formal Analysis}
 \label{sec:formal}
@@ -451,7 +322,7 @@ Rejection bets that a lucky whole-UUID draw arrives before an unlucky run; repai
 
 \noindent\emph{In plain terms: rejection sampling needs $\sim$69 billion tries for six constrained fields; GenoID succeeds on the first try. The exponential gap is against the general alternative, not against a per-layout hand-coded one.}
 
-\textbf{Setup.} For $k$ constrained fields of bit-lengths $\ell_i$, each with $a_i$ valid values, rejection sampling succeeds with probability $\prod_i a_i / 2^{\ell_i}$, so the expected number of draws is $\prod_i 2^{\ell_i}/a_i$. Taking a representative tight constraint ($a_i=4$ admissible values in an $\ell_i=8$ bit field, a density of $2^{-6}$) gives $64^k$ expected draws ($6.9\times10^{10}$ for $k=6$), with a geometric tail and therefore no upper bound on any single run. The shard field of the database-key declaration sits in this regime at $5/256$. The degenerate case $a_i=1$ is excluded: a field with a single admissible value is a constant and requires no sampling. The repair pass (Algorithm~\ref{alg:repair}) is linear in $k$: it iterates the layout once, each branch is $O(1)$: an index-modulo lookup, an affine modulo, or a counter increment, so the pass has worst-case $O(k)$ cost. Both $|\text{allowed}_i|$ and $\ell_i$ are fixed by the layout declaration; treating them as constants yields $O(k)$. The function never redraws and never loops, eliminating rejection sampling's unbounded tail risk. The honest baseline for a fixed layout is per-field direct construction. It draws a uniform index into the allowed set, draws uniform in-range values, increments the counter, and composes, equally $O(k)$, single-pass, bounded-tail, and exactly uniform with zero total-variation debt. Repair is not a faster sampler than direct construction on its own. It is the mechanism that lets one shared pass serve every declared layout without per-layout code, at the stated fibre debt ($m/2^\ell$ on allowed-set fields) and endpoint pile-up on range clamps. The reason to repair a pooled value rather than draw a uniform index directly is architectural. The pre-filled pool is a single byte array shared by both parents, so repairing in place keeps generation byte-identical across both language ports and preserves the pooling amortization; a direct-construction compiler would need its own per-layout draw path and would forfeit that shared byte-level seam. Where a single fixed layout is all that is ever needed, direct construction dominates on distribution quality and should be used; GenoID's claim starts at declared multi-field layouts whose admissible sets, bounds, and counters are repaired deterministically. The $64^k$ figure is one representative cell of the general expectation $\prod_i 2^{\ell_i}/a_i$ (four admissible values in an eight-bit field), not the cost for every layout; the shipped shard field, for example, has density $5/256$.
+\textbf{Setup.} For $k$ constrained fields of bit-lengths $\ell_i$, each with $a_i$ valid values, rejection sampling succeeds with probability $\prod_i a_i / 2^{\ell_i}$, so the expected number of draws is $\prod_i 2^{\ell_i}/a_i$. Taking a representative tight constraint ($a_i=4$ admissible values in an $\ell_i=8$ bit field, a density of $2^{-6}$) gives $64^k$ expected draws ($6.9\times10^{10}$ for $k=6$), with a geometric tail and therefore no upper bound on any single run. The shard field of the database-key declaration sits in this regime at $5/256$. The repair pass (Algorithm~\ref{alg:repair}) is linear in $k$: it iterates the layout once, each branch is $O(1)$: an index-modulo lookup, an affine modulo, or a counter increment, so the pass has worst-case $O(k)$ cost. Layout parameters are fixed at declaration, so the pass has worst-case $O(k)$ cost with no redraws and no loops. The honest baseline for a fixed layout is per-field direct construction, equally $O(k)$ and exactly uniform with zero total-variation debt; repair is not a faster sampler, it is the mechanism that lets one shared pass serve every declared layout without per-layout code. Where a single fixed layout is all that is ever needed, direct construction dominates; the $64^k$ figure is one representative cell, not the cost for every layout.
 
 \subsection{Entropy preservation}
 \label{sec:entropy}
@@ -470,7 +341,7 @@ Let $A = (a_0, a_1, \dots, a_{m-1})$ be the admissible set in declaration order,
   \|p - u\|_{\mathrm{TV}} \;\le\; \frac{m}{2^\ell}, \qquad
   \max_i |p(a_i) - 1/m| \;\le\; \frac{\lceil 2^\ell/m \rceil}{2^\ell},
 \]
-where $u$ is uniform on $A$; the second bound follows from the first because no admissible value can gain more than a whole excess class.
+where $u$ is uniform on $A$.
 
 \textbf{Theorem (fibre sizes).} On the compiled path, which applies $A[v \bmod m]$ unconditionally, the probability of drawing $a_i$ is $C_i / 2^\ell$, and the repaired distribution is exactly uniform \emph{iff} $m \mid 2^\ell$.
 
@@ -478,47 +349,20 @@ The pooled path keeps an already-admissible value as itself before falling back 
 
 \textbf{Corollary (pooled-path uniformity).} On the pooled path the repaired distribution is exactly uniform \emph{iff} $m \mid 2^\ell$ and $G_i = 1$ for every $i$, i.e.\ the admissible set occupies every residue class exactly once.
 
-Both conditions are satisfied by every layout this paper evaluates, which is why the measurement in Section~\ref{sec:evaluation} is path-independent for them. The conditions are also tight, and the two paths really do diverge when they fail. Take $m=2$, $\ell=2$, $A = \{0,2\}$: $m \mid 2^\ell$ holds, so the compiled path stays uniform at $(50\%, 50\%)$, whereas the pooled path folds the residue-1 draws onto $a_1 = 2$ and emits $(25\%, 75\%)$; the accompanying test suite pins both the prediction and the empirical split. This is the precise sense in which a declarative layout's field width and admissible set are correctness obligations on the author, not tuning parameters. A declaration that skips residue classes is still \emph{admissible} on every draw, but its per-value frequencies are path-dependent and the validator reports the residual bound rather than silently accepting it.
+Both conditions hold for every evaluated layout. 
 
-For database-key ($m=5$, $\ell=8$), $256 \bmod 5 = 1$, so one residue class holds 52 raw values and the other four hold 51; with the contiguous set $A = \{1,2,3,4,5\}$ the class of index~0 (value~1) is the heavy one, giving $(52,51,51,51,51)$ preimages out of 256, a maximum per-value deviation of $(52 - 51.2)/256 \approx 0.31\%$ from uniform $51.2/256$, and a worst-case spread between classes of $(52-51)/256 = 0.39\%$. For multi-tenant, the region field ($m=4$, $\ell=8$) and the tenant field ($m=8$, $\ell=12$) both satisfy $m \mid 2^\ell$ with $G_i = 1$ throughout, so both are exactly uniform on either path. No multi-tenant field is declared at $\ell=12$ with $m=4$. The map is a surjection with near-equal fibres and involves no redraw. It preserves the $O(1)$ per-field cost of Algorithm~\ref{alg:repair}.
+For database-key ($m=5$, $\ell=8$) the classes hold $(52,51,51,51,51)$ raw values, a maximum deviation of $0.31\%$; multi-tenant fields satisfy $m \mid 2^\ell$ with $G_i = 1$ throughout and are exactly uniform on either path.
 
-The \textsc{range} branch clamps rather than folds, and is therefore not uniformity-preserving: draws outside $[\textit{min},\textit{max}]$ accumulate at the endpoints, with closed-form masses $P(\textit{out} = \textit{min}) = (\textit{lo}+1)/2^\ell$ and $P(\textit{out} = \textit{max}) = (2^\ell-\textit{hi})/2^\ell$ where $[\textit{lo},\textit{hi}]$ is the declared interval clipped to the $\ell$-bit field domain (closed form in the implementation), so the total pinned mass is $(\textit{lo} + 2^\ell - 1 - \textit{hi})/2^\ell$. Neither layout evaluated here declares a range constraint; a layout that does should size the field so that out-of-range draws are rare, or declare an admissible set instead. The bound is measured directly: over four $(\ell,\textit{min},\textit{max})$ cells including the shipped conformance window ($2\times10^5$ seeded draws per cell), every measured endpoint mass matches its closed form to within $0.06$ percentage points ($4/4$ cells; the archived grid). The fibre prediction is also checked directly over a grid of $(m,\ell)$ pairs ($m \in \{2,3,4,5,8\}$, $\ell \in \{3,4,8,12,16\}$, $2\times10^5$ seeded draws per cell): every measured frequency matches its closed-form fibre to within $0.3$ percentage points ($24/24$ cells; the archived grid).
+The \textsc{range} branch clamps rather than folds, and is therefore not uniformity-preserving: draws outside $[\textit{min},\textit{max}]$ accumulate at the endpoints, with closed-form masses $P(\textit{out} = \textit{min}) = (\textit{lo}+1)/2^\ell$ and $P(\textit{out} = \textit{max}) = (2^\ell-\textit{hi})/2^\ell$ where $[\textit{lo},\textit{hi}]$ is the declared interval clipped to the $\ell$-bit field domain (closed form in the implementation), so the total pinned mass is $(\textit{lo} + 2^\ell - 1 - \textit{hi})/2^\ell$. Neither layout evaluated here declares a range constraint. Both predictions are measured directly: endpoint masses match to within $0.06$ pp ($4/4$ cells) and fibre frequencies to within $0.3$ pp ($24/24$ cells; the archived grid).
 
 \subsection{Bit allocation}
 \label{sec:bit-allocation}
 
-Declaring a field answers two questions at once: how wide it must be, and where
-it sits. Width is an entropy question, a field holding one of five values
-needs three bits, not eight, and every surplus bit comes out of the residual
-entropy the collision guarantee depends on. Position is a locality question,
-a field a query filters on costs more the deeper it sits, because every
-comparison walks past it. A planner that leaves widths caller-declared and
-unchecked against the cardinality they must represent fails the width question.
-A planner that orders fields by three workload-role ranks and, inside a rank,
-by descending width fails the position question. Section~\ref{sec:bit-allocation}
-gives the ordering rule that satisfies both.
+Declaring a field answers two questions at once: how wide it must be, and where it sits. Width is an entropy question; position is a locality question. A planner that leaves widths caller-declared fails the first, and one ordering by role rank then width fails the second.
 
-\noindent\emph{Widths first.} A field whose domain contains $c$ values requires
-$\lceil \log_2 c \rceil$ bits, so that is a hard floor, and it is the
-entropy-minimising width because weighted depth is non-decreasing in every
-width. A second constraint is new to this compiler: the residual random bits
-$r$ must satisfy the collision target. For $n$ identifiers drawn with $r$
-random bits the collision probability is bounded by
-$1 - \exp(-n(n-1)/2^{r+2})$, so the smallest safe $r$ is
-$\lceil \log_2\, n(n-1)\,/\,4\ln\frac{1}{1-\tau} \rceil$. Two million
-identifiers at $\tau = 10^{-2}$ need 47 bits; at $\tau = 10^{-9}$ they need 70.
-A declaration whose floors and required residual exceed the 122-bit payload is
-refused with a reason naming the shortfall, rather than being silently
-truncated.
+\noindent\emph{Widths first.} A field with $c$ values needs $\lceil \log_2 c \rceil$ bits, and the residual random bits $r$ must satisfy the collision target: for $n$ identifiers the smallest safe $r$ is $\lceil \log_2\, n(n-1)\,/\,4\ln\frac{1}{1-\tau} \rceil$. Two million identifiers need 47 bits at $\tau = 10^{-2}$ and 70 at $\tau = 10^{-9}$. A declaration whose floors and required residual exceed the 122-bit payload is refused with a reason naming the shortfall.
 
-\noindent\emph{Position next.} Weighted depth $D = \sum_i w_i (o_i + \ell_i)$,
-weight times end-offset, summed over fields, is the comparison work a
-range of queries performs. Treating each field as a job of length $\ell_i$
-completing at $o_i+\ell_i$, this is exactly the single-machine
-weighted-completion-time objective. By Smith's exchange argument~\cite{24}, the allocator orders fields in non-increasing $w_i/\ell_i$, exact on one segment and near-optimal across reserved bits (proof in the appendix). The role-rank order is neither Smith order nor a special
-case of it, and the difference is measurable.
-
-\begin{table}[!ht]
+\noindent\emph{Position next.} Weighted depth $D = \sum_i w_i (o_i + \ell_i)$ is the comparison work a range of queries performs: treating each field as a job of length $\ell_i$ completing at $o_i+\ell_i$ gives exactly the single-machine weighted-completion-time objective. By Smith's exchange argument~\cite{24}, the allocator orders fields in non-increasing $w_i/\ell_i$, exact on one segment and near-optimal across reserved bits (proof in the supplementary material). \begin{table}[!ht]
 \caption{Bit allocation. E-A1 compares the allocator against the exhaustive
 optimum over every permutation and against the role-rank order it replaces;
 E-A2 widens one field a bit at a time and records the cost of each bit.}
@@ -543,33 +387,7 @@ Shipped database-key: gain over role-rank order & 0 & already optimal \\
 \end{tabular*}
 \end{table}
 
-The guarantee is stated exactly where it holds. The six reserved bits split the
-free payload into the segments $[0,48)$, $[52,64)$, and $[66,128)$; Smith's
-rule is exact on one unconstrained timeline, so the allocator is provably
-optimal for any declaration whose fields fit inside a single segment, and misses
-the optimum by at most a few percent when structure spills across a reserved
-region. Every one of the five suboptimal instances in Table~\ref{tab:bit-allocation}
-crosses bit~48, and no instance that stays inside $[0,48)$ is suboptimal.
-
-The trade this makes explicit is linear in depth and logarithmic in risk
-(Table~\ref{tab:bit-allocation}, E-A2): widening a declared field by one bit
-costs about 95 units of $D$ and exactly doubles the collision probability. E-A3
-plays the allocator back over the shipped database-key declaration and finds
-it already optimal, with the timestamp pinned at offset~0 and only two free
-fields, a validation of the hand-written layout rather than a
-disagreement. The one thing it gets wrong is width: the shard field is declared
-at 8 bits for five admissible values, and $\lceil \log_2 5 \rceil = 3$ recovers
-the five surplus bits as residual entropy.
-
-Two limits are worth stating. Weighted depth is a proxy for comparison work, not
-a measurement of query throughput; the database experiment in
-Section~\ref{sec:composite-bench} is the closest empirical check and it measures
-latency, not $D$. The bit-offset resolution of $D$ should not be over-read: the byte-aligned-offset comparison was withdrawn as noise, so the planner's gain is realised through range contiguity (the one-seek versus four-seek result of the workload loop), not through per-bit comparison savings. And nothing here infers the weight $w_i$ from a workload: the
-caller supplies it, and mapping the workload profile's read weight
-and skew onto $w_i$ is left to the caller. The reduction to scheduling is not
-new. Smith's rule is from 1956, so the contribution is the reduction
-itself, the collision-safety constraint the compiler lacked, and the measurement
-of what the role-rank order was costing.
+The allocator is provably optimal for declarations fitting a single free segment, missing the optimum by at most a few percent across reserved regions; all five suboptimal instances in Table~\ref{tab:bit-allocation} cross bit~48. Widening a field by one bit costs about 95 units of $D$ and exactly doubles collision probability. E-A3 finds the shipped declaration already optimal, except the 8-bit shard wastes five residual bits. Weighted depth is a proxy, not a throughput measurement. Smith's rule is from 1956; the contribution is the reduction, the collision-safety constraint, and the costing.
 
 \subsection{Closing the loop: workload-driven weights}
 \label{sec:workload-planning}
@@ -589,18 +407,7 @@ PK range seek against the hand layout's four:
 $3099\,\mu$s versus $14694\,\mu$s per lookup (means over 5 reps of 500
 lookups, non-overlapping 95\% CIs), a $4.7\times$ win, with insert throughput
 at parity on both engines (alternating timed reps; SQLite reps vary with host
-load, PostgreSQL reps agree within 5\%). Under an inverted region-heavy mix the planner emits region-first,
-coinciding with the hand layout, and the region probes show parity on both
-engines (SQLite $5636\,\mu$s versus $5762\,\mu$s with overlapping CIs;
-PostgreSQL $1.03\times$, CIs narrowly separated around a $3\%$ gap): convergence, not a win, which is the correct outcome when
-the hand order is already optimal. The same loop runs on PostgreSQL (embedded PostgreSQL~\cite{23}, BYTEA PK):
-there both layouts tie on lookups ($1.02\times$, overlapping CIs), because
-counting 25{,}000 matching rows in the embedded engine dominates the 1-vs-4 seek
-difference that the native SQLite executor exposes. The planning win
-materializes where index access dominates row visits; on row-visit-dominated
-engines the layout choice is free either way. The trace is synthetic but seeded and archived with its parameters
-in the archived workload results, so the loop, not the trace,
-is the claim under test. A skewed trace is the favourable case by
+load, PostgreSQL reps agree within 5\%). Under an inverted region-heavy mix the planner emits region-first, coinciding with the hand layout at parity on both engines: convergence, not a win, which is the correct outcome. The same loop runs on embedded PostgreSQL with tied lookups, where counting dominates seeks. The trace is synthetic but seeded and archived with its parameters, so the loop, not the trace, is the claim under test. A skewed trace is the favourable case by
 construction; the Section~\ref{sec:composite-bench} result stands for the
 neutral one.
 
@@ -611,16 +418,7 @@ The closest public overlap is Microshard, a fixed
 RFC~9562 v8 layout with 54-bit microsecond timestamp, 32-bit shard, and 36
 random bits, measured here through a bit-exact independent mirror
 cross-checked field-for-field against a second independent implementation (version,
-variant, shard, and timestamp all agree on fixed vectors). On the same
-200{,}000-row SQLite setup, a tenant prune is one PK range seek for the
-tenant-first GenoID layout against a full scan with in-app shard filtering
-for microshard, whose shard straddles time bits and offers no SQL prefix:
-$3446\,\mu$s versus $4383\,\mu$s (means over 5 reps of 500 lookups; CIs
-nearly touch), a modest $1.3\times$ edge to the prunable layout, with full-ID
-point lookups and inserts at parity on both sides. Mirrored-throughput favours
-GenoID ($2.2$M vs $0.14$M UUIDs/s in the independent mirror; most of the gap is per-value allocation cost in the mirror harness rather than an architectural gap). The comparison isolates what each structure buys: GenoID
-buys SQL prunability and counter-ordered bursts; microshard buys a fixed
-layout with zero-lookup routing, at the price of birthday-bound bursts. Burst-collision counts at $2\times10^6$ draws are omitted here because the database-key random budget alone predicts zero collisions and does not isolate the counter; the counter contribution is ordering within a tick.
+variant, shard, and timestamp all agree on fixed vectors). On the same 200{,}000-row SQLite setup the prunable layout wins modestly with parity elsewhere (full numbers in the supplementary material). 
 
 \section{Confidentiality and Authentication}
 \label{sec:security}
@@ -656,7 +454,7 @@ Math.random$^\dagger$ & 128 & PRNG state & 0 \\
 
 For database-key, $128-48-8-16-6=50$ random bits remain. Non-structured bits inherit the OS CSPRNG's security conditioned on correct seeding; repair adds no entropy and the residual security level is that of the $\sim$50-bit payload, not a separate indistinguishability reduction. Structured layouts leak metadata by design; the steganographic prior art is stronger on this axis with masked timestamps. Within a single millisecond, the counter is predictable by design; this discloses emission order rather than reducing entropy, consistent with RFC~9562 \S6.2's recommendation that counter values need not be secret.
 
-Base generation pools hold 256 entries and structured generation pools hold up to 1024 entries, independently repopulated per refill. An adversary who reads pool state predicts at most $\leq 1024$ future UUIDs per active generator, a bounded forward-secrecy window. Past buffers are overwritten, providing backward secrecy. Pool configuration can be tuned at runtime via pool sizing. Size the pool from an exposure budget: a pool of $W$ UUIDs exposes at most $W$ future identifiers per active generator (256 on the simple path, up to 1024 on the structured paths), i.e.\ a window of $W/R$ seconds at a sustained $R$ UUIDs/s (single-digit milliseconds at the Table~\ref{tab:throughput} rates). Shrink $W$ to narrow the window at the cost of more frequent CSPRNG refills. Output is byte-identical at any pool size, so sizing trades only refill frequency against exposure.
+Base generation pools hold 256 entries and structured generation pools hold up to 1024 entries, independently repopulated per refill. An adversary who reads pool state predicts at most $\leq 1024$ future UUIDs per active generator, a bounded forward-secrecy window. Past buffers are overwritten, providing backward secrecy. 
 
 
 \section{Evaluation}
@@ -670,22 +468,14 @@ Four questions organize the evaluation. RQ1 (composition): does every emitted UU
 
 The evaluation obeys six reporting constraints, each chosen to keep a claim
 tied to evidence that can fail. Quantitative claims use envelope wording.
-Absolute rates vary by host, so throughput is a same-rig ratio of means with a
-host-dependent envelope (\S\ref{sec:throughput}). A wording must hold across
-independent artifact refreshes before it is kept, so a claim that depends on a
-single run is not reported. Negative controls delimit positive results. The
-a non-cryptographic generator collision gate (\S\ref{sec:evaluation}, collision and
-uniformity) and the inverted region-heavy control of the workload loop
-(\S\ref{sec:workload-planning}) set the boundary of what the main results show;
-the latter converges to parity. An exclusion rule is fixed before a run is
-selected, so no reported number rests on a selective exclusion
+Throughput is a same-rig ratio of means (\S\ref{sec:throughput}). A wording must hold across
+independent artifact refreshes before it is kept. Negative controls delimit positive results:
+the non-cryptographic generator collision gate and the inverted region-heavy
+workload control. An exclusion rule is fixed before runs are selected
 (Section~\ref{sec:validity}); no run met the rule. Every table and figure traces
-to a harness and archived file (Table~\ref{tab:artifact-map}, Availability
-section). Fast checks and slow stress tests run at different cadences so a
-curation-heavy battery does not gate a routine change. The individual-arm
-coefficient of variation stays below $0.30$ in the consolidated matrix (worst case
-(worst case one environment, $0.292$), so outlier sensitivity is visible from
-the archived per-trial samples.
+to a harness and archived file (Table~\ref{tab:artifact-map}). The individual-arm
+coefficient of variation stays below $0.30$ in the consolidated matrix, so outlier
+sensitivity is visible from the archived per-trial samples.
 
 \subsection{Composition correctness}
 \label{sec:composition-correctness}
@@ -699,28 +489,22 @@ separates the two strategies structurally. Measured repairs per
 identifier follow $k(1-d)$ at every cell, converging to exactly $k$ as
 $d \to 0$ and to $k/2$ at $d=0.5$: the repair pass performs
 one bounded operation per constrained field and none that depend on the
-drawn value. Full per-cell absolute timings are tabulated with the archived sweep and in the appendix; only the repair counts bear the structural claim, since absolute timings
+drawn value. Full per-cell absolute timings are tabulated with the archived sweep; only the repair counts bear the structural claim, since absolute timings
 carry the warm-up ordering effect noted in Section~\ref{sec:validity}.
 
 Rejection's expected trial count follows $d^{-k}$ and becomes infeasible to measure beyond $k=3$ at low density. At $d=1/64$, the representative constraint of Section~\ref{sec:repair-complexity}, the sweep reproduces $64^k$ exactly for $k=3,4,6$ ($2.62\times10^{5}$, $1.68\times10^{7}$, $6.87\times10^{10}$).
 
 The asymptotic advantage is real but bounded, and its limits are stated where it
-begins. Rejection is faster at loose constraints and low field counts:
-for $k=1$ the crossover falls between $d=0.016$ and $d=0.031$ (adjacent
-measured densities), for $k=2$ between $0.0625$ and $0.125$, and for
-$k \geq 3$ between $0.25$ and $0.5$ (the archived sweep table):
-the boundary moves toward higher density as $k$ grows, because repair cost
-is flat in $d$ while rejection is exponential in $k$. A layout with a single loosely constrained field is
-better served by rejection. GenoID's guarantee is that cost never depends
+begins. Rejection is faster at loose constraints and low field counts, with the crossover moving toward higher density as $k$ grows; a single loosely constrained field is better served by rejection. GenoID's guarantee is that cost never depends
 on the draw, which matters when constraints are tight, when fields are
 many, or when unbounded tail latency is unacceptable.
 
 \subsection{Collision and uniformity}
-Per-field uniformity is measured directly rather than inferred from whole-UUID batteries, since an 8-bit field's deviation is invisible inside 122 bits under NIST monobit. Over $10^8$ database-key draws on the shipped compiled path, one shard value ($1$) appears at $52/256$ and the other four at $51/256$, matching the closed-form index-modulo prediction of Section~\ref{sec:uniformity}. The maximum absolute deviation from the predicted fibre frequency is $0.012$ percentage points, which is $2.9$ of that cell's own binomial sampling standard deviation ($0.004$ pp at $n=10^8$). Across all 17 tested cells the family-wise assessment gives max-$|z|=2.90$ against a Bonferroni critical value of $2.97$ at family-wise $\alpha=0.05$ (\v{S}id\'ak $2.97$, Bonferroni $p=0.064$), i.e.\ consistent with sampling noise once the 17-fold multiple comparison is accounted for. The archived max-z analysis supports that reading, computed from the archived per-cell counts with no new draws. The multi-tenant tenant ($m=8$ at $\ell=12$) and region ($m=4$ at $\ell=8$) fields are uniform to within $0.008$ pp, consistent with $m \mid 2^{\ell}$ making the partition exact. No admissible value ever falls outside its declared set across $2\times10^8$ draws. Collision expectations for database-key use the 50 random-payload bits (50\%-collision bound $3.95\times10^7$; $\approx\!10^{10}$ within-tick with the 16-bit same-tick counter). Agreement is reported with the predicted distribution rather than a goodness-of-fit test against strict uniformity: at $n=10^8$ even the analytically expected $\leq 0.39\%$ per-value deviation would cause chi-square against uniform to reject by design, so rejection is inevitable when testing against perfect uniformity. As a negative control, a non-cryptographic generator (insecure, runtime-native PRNG) passes the collision test in all nine environments under the same protocol. This confirms that the 1M-draw collision gate has no discriminating power against a low-entropy source; only the analytical uniformity bound and NIST battery separate quality from speed. the archived counts records the raw counts, per-cell binomial standard deviations, commit SHA, host, and elapsed time.
+Per-field uniformity is measured directly rather than inferred from whole-UUID batteries, since an 8-bit field's deviation is invisible inside 122 bits under NIST monobit. Over $10^8$ database-key draws on the shipped compiled path, one shard value ($1$) appears at $52/256$ and the other four at $51/256$, matching the closed-form index-modulo prediction of Section~\ref{sec:uniformity}. The maximum absolute deviation from the predicted fibre frequency is $0.012$ percentage points, which is $2.9$ of that cell's own binomial sampling standard deviation ($0.004$ pp at $n=10^8$).  The multi-tenant tenant ($m=8$ at $\ell=12$) and region ($m=4$ at $\ell=8$) fields are uniform to within $0.008$ pp; chi-square against strict uniformity would reject by design at this $n$. Family-wise assessment over 17 cells is consistent with sampling noise. No admissible value ever falls outside its declared set across $2\times10^8$ draws. Collision expectations for database-key use the 50 random-payload bits (50\%-collision bound $3.95\times10^7$; $\approx\!10^{10}$ within-tick with the 16-bit same-tick counter). As a negative control, a non-cryptographic generator (insecure, runtime-native PRNG) passes the collision test in all nine environments under the same protocol. This confirms that the 1M-draw collision gate has no discriminating power against a low-entropy source; only the analytical uniformity bound and NIST battery separate quality from speed. The archived counts record the raw counts, per-cell binomial standard deviations, commit SHA, host, and elapsed time.
 
 \subsection{NIST SP 800-22 and dieharder}
 \label{sec:nist}
-This subsection is a structural sanity check on the pooling path, not a certification and not evidence of security: SP~800-22 is withdrawn, each layout contributes five streams where NIST prefers $\geq 100$, and the battery is fanned across layouts by script. The full 15-test NIST SP~800-22 battery was run on all three structured layouts (Block Frequency implemented per SP~800-22 \S2.2 and cross-checked against reference vectors (custom implementation noted as a single point of failure); a community testing package provides the remaining tests, fanned across layouts by the battery script). On fresh $10^7$-bit exports of the random-field payload per layout (200k/98k/122k UUIDs), all 123 reported p-values (41 per layout, including the 8 Random Excursions states and 18 Random Excursions Variant states) satisfy $p \geq 0.01$ (unconditional pass probability $\approx 0.29$ under the null); machine-readable results are archived in the archived battery results. Because the battery reports 123 p-values at $\alpha=0.01$, marginal values below threshold are expected by chance ($\approx 1.2$ per full run). Across five independent draws (615 p-values) 7 failures are observed for an empirical $1.1\%$ rate, with draws at 123/123, 120/123, 123/123, 120/123, and 122/123. Every failed draw is archived with its bit-stream provenance in the archived draws (draws 2--5; the clean head draw's bit stream is archived with the archived battery results); full per-draw tables and the Spectral follow-up are in the appendix. Each layout contributes five streams, where NIST guidance prefers $\geq 100$; the battery therefore reads as evidence of no structural bias on the pooling path, not a certification. (SP~800-22 has been withdrawn by NIST and its planned revision explicitly rejects the suite's use for assessing cryptographic generators~\cite{2}; the result is reported as a sanity check on the pooling path, not as evidence of security.) A curated dieharder subset (diehard plus STS, 12.5\,MB per generator per trial, 5 trials, no file rewind; methodology in the reproducibility guide~\S3) reports a modal PASS on all 152 test rows across four generator variants (see the archived dieharder record). This is a CI-budget curation over payload generators, not a full-battery run, and it covers the unstructured and database-key payload paths only.
+This subsection is a structural sanity check on the pooling path, not a certification and not evidence of security: SP~800-22 is withdrawn, each layout contributes five streams where NIST prefers $\geq 100$, and the battery is fanned across layouts by script. The full 15-test NIST SP~800-22 battery was run on all three structured layouts. On fresh $10^7$-bit exports of the random-field payload per layout, all 123 reported p-values satisfy $p \geq 0.01$; across five draws the empirical failure rate is $1.1\%$, consistent with Type-I noise. Full per-draw tables are in the supplementary material. A curated dieharder subset (diehard plus STS, 12.5\,MB per generator per trial, 5 trials, no file rewind) reports a modal PASS on all 152 test rows across four generator variants (see the archived dieharder record). This is a CI-budget curation over payload generators, not a full-battery run, and it covers the unstructured and database-key payload paths only.
 
 \subsection{Throughput and baseline comparison}
 \label{sec:throughput}
@@ -728,11 +512,7 @@ This subsection is a structural sanity check on the pooling path, not a certific
 The benchmark loop consumes every generated identifier, so that no generator's work can be elided as dead code. Only same-rig ratios of means are claimed; the representative-environment and Min--Max columns below are illustrative snapshots that vary by host and runtime. This correction reduced the measured rate of the pure-JavaScript generators by roughly $2\times$ relative to an unconsumed loop, while leaving the native platform generator unchanged, serving as a useful check that the sink is doing what it claims.
 
 \begin{table}[!ht]
-\caption{Throughput across nine environments (representative-environment column shows mean with 95\% CI over 10 trials after a
-discarded warm-up; the timing loop consumes each generated value to
-prevent dead-code elimination). Absolute rates vary by runtime and host;
-claims in the text are stated as same-rig ratios of means
-(Table~\ref{tab:paired}).}
+\caption{Throughput across nine environments (means with 95\% CI over 10 trials; claims in the text are same-rig ratios).}
 \label{tab:throughput}
 \centering\footnotesize
 \begin{tabular*}{\columnwidth}{@{\extracolsep{\fill}}lcc}
@@ -759,18 +539,7 @@ an entropy-based UUID; it is excluded from the collision gate because its
 \end{table}
 
 \begin{table}[!ht]
-\caption{The structured generator against the two closest structured
-baselines, and the compiled layout against the interpreted path. Ratios
-are same-rig, same-run, so host and runtime noise cancel. Cells are a
-representative host snapshot from the refreshed artifact, not live truth;
-per-refresh values live in the consolidated archive. Ratios below 1
-mean trails that baseline. Sixteen of the 18
-comparisons against the steganographic prior art and the second structured baseline are significant
-at $p<10^{-6}$; the remaining two are $p=5.3\times10^{-4}$ (one environment against
-the second structured baseline) and $p=0.035$ (another environment against the second structured baseline), and all
-18 are below $0.05$. The per-comparison $t$, $df$, $p$ and Cohen's $d$ are
-stored per environment under the comparisons record of
-the consolidated archive. ``n.s.'' marks $p>0.05$.}
+\caption{Same-rig, same-run ratios against the two closest structured baselines; ``n.s.'' marks $p>0.05$. All 18 comparisons clear $p<0.05$ (16 below $10^{-6}$); per-comparison statistics live in the consolidated archive.
 \label{tab:paired}
 \centering\footnotesize
 \begin{tabular*}{\columnwidth}{@{\extracolsep{\fill}}lccc}
@@ -791,9 +560,9 @@ Env I      & 1.74$\times$ & 1.33$\times$ & 0.94 \\
 \end{tabular*}
 \end{table}
 
-the structured generator is ahead of the steganographic prior art in eight of nine environments and ahead of the second structured baseline in seven. Where it leads, the same-rig advantage is $1.1$--$2.7\times$; it trails the prior art only in one runtime-OS combination ($0.76\times$) and trails the second structured baseline in two ($0.76\times$ and $0.79\times$). Exact per-environment ratios are tabulated from the refreshed artifact (Table~\ref{tab:paired}). Every comparison between the structured row and each prior-art baseline is significant at $p<0.05$ under an unpaired Welch test; 16 of 18 are below $10^{-6}$ (Table~\ref{tab:paired} caption). A hand-coded time-ordered variant is faster in every environment of this matrix: the structured generator runs at $0.27$--$0.82\times$ of the hand-coded variant, while satisfying three declared field constraints that the variant does not express.
+the structured generator is ahead of the steganographic prior art in eight of nine environments and ahead of the second structured baseline in seven. Where it leads, the same-rig advantage is $1.1$--$2.7\times$; it trails the prior art only in one runtime-OS combination ($0.76\times$) and trails the second structured baseline in two ($0.76\times$ and $0.79\times$). Exact per-environment ratios are tabulated from the refreshed artifact (Table~\ref{tab:paired}); all comparisons clear $p<0.05$. A hand-coded time-ordered variant is faster in every environment of this matrix: the structured generator runs at $0.27$--$0.82\times$ of the hand-coded variant, while satisfying three declared field constraints that the variant does not express.
 
-Two results run against GenoID. Snowflake is faster than the structured generator in all nine environments, by $3.0$--$21.6\times$; it is a 64-bit time-and-sequence integer rather than a 122-bit UUID, and it collides once its sequence wraps, so the comparison is across guarantee classes rather than within one. On the same rig, the structured generator runs at $0.03$--$0.10\times$ of the platform random baseline, so any multiples claimed here are strictly against the closest structured prior art. Second, the compiled layout path is at approximate parity on two runtimes ($0.97$--$1.05\times$ and $0.93$--$1.07\times$) and regresses on the third to $0.63$--$0.76\times$ of the interpreted path (Table~\ref{tab:paired}), reversing the earlier finding that compilation was a small win. Section~\ref{sec:validity} treats this as a portability limitation rather than tuning it away. The interpreted structured path itself runs at $0.06$--$0.37\times$ of the unstructured pooled base across the matrix, with the slowest-runtime hosts at $0.06$--$0.12\times$ (per-refresh values in the consolidated archive).
+Two results run against GenoID. Snowflake is faster than the structured generator in all nine environments, by $3.0$--$21.6\times$; it is a 64-bit time-and-sequence integer rather than a 122-bit UUID, and it collides once its sequence wraps, so the comparison is across guarantee classes rather than within one. The compiled path is at parity on two runtimes but regresses on the third ($0.63$--$0.76\times$), reversing the earlier small-win finding. The interpreted structured path itself runs at $0.06$--$0.37\times$ of the unstructured pooled base across the matrix, with the slowest-runtime hosts at $0.06$--$0.12\times$ (per-refresh values in the consolidated archive).
 
 \subsection{Ablation}
 \label{sec:ablation}
@@ -812,26 +581,21 @@ $6.3\times$ speedup, not quality.
 
 \subsection{Additional deployability checks}
 \label{sec:deployability}
-Concurrent generation shows 0 cross-worker collisions. A SQLite B-tree index benchmark (500K rows, clustered storage, 64-byte payloads) shows the structured arm inserting at $90.3$K rows/s [89.9--90.7K] against $61.5$K for UUIDv7 and $7.0$K for UUIDv4, with on-disk density nearly identical across arms ($0.074$--$0.077$ pages/row, the steganographic prior art an outlier at $0.116$). Per the harness note, SQLite repacks pages so on-disk size diverges less than production InnoDB, and the partition differentiator is storage plus write amplification rather than read latency. Text-stored (36-byte) keys would mask the ordering effect entirely. A cross-browser test across three major engines reports 0 errors and 0 collisions.
+Concurrent generation shows 0 cross-worker collisions. A SQLite B-tree index benchmark (500K rows, clustered storage, 64-byte payloads) shows the structured arm inserting at $90.3$K rows/s [89.9--90.7K] against $61.5$K for UUIDv7 and $7.0$K for UUIDv4, with on-disk density nearly identical across arms ($0.074$--$0.077$ pages/row, the steganographic prior art an outlier at $0.116$). Text-stored (36-byte) keys would mask the ordering effect entirely. A cross-browser test across three major engines reports 0 errors and 0 collisions.
 
 \subsection{Cross-language reproducibility}
 \label{sec:cross-lang}
 
 To turn the portability claim into a checkable artifact, the composition core was reimplemented in a second language and verified against golden vectors from the reference implementation. Every repair branch is total and tie-free (index-modulo has no ambiguous outputs), so byte-identity across languages is a constructive property of the algorithm rather than an accident of hash-map iteration order. A fixed-seed deterministic generator with a fixed clock produces 1000 UUIDs per layout across all three structured layouts, then diffed byte-for-byte against committed golden files, achieving zero mismatches across $3\times1000=3000$ UUIDs.
 
-To establish that the vectors discriminate rather than merely agree, the check re-runs against deliberately broken semantics, and CI fails unless the breakage is detected. Shifting the index-modulo repair by one position fails database-key (994/1000) and multi-tenant (1000/1000) while leaving event-sourcing and conformance, which declare no admissible-set constraint, untouched (0/1000 each); the six clean database-key draws are ones whose raw values were already admissible, where repair is idempotent by design and any repair variant agrees. Freezing the tick-keyed counter instead of incrementing it fails database-key (999/1000) and event-sourcing (999/1000) and leaves multi-tenant and conformance, which declare no counter, untouched (0/1000 each); the single agreement per run is the first UUID, which both paths seed from the same draw. Each layout is sensitive to exactly the constraint kinds it declares, and the per-layout mismatch counts are printed by the check itself.
+The vectors also discriminate: shifting the repair by one position fails database-key (994/1000) and multi-tenant (1000/1000), and freezing the counter fails database-key (999/1000) and event-sourcing (999/1000), while layouts declaring neither constraint stay untouched. Each layout is sensitive to exactly the constraint kinds it declares.
 
-The vectors make a semantic disagreement visible that prose cannot. When the
-repair and counter operators are altered, the committed vectors detect the
-change: the reimplementation diverges on both operators under test, and a prose
-specification would not surface the divergence. The vectors are archived with
-the golden-vector set and verified automatically with every run, serving as an executable
-specification for any future port.
+The vectors are archived with the golden-vector set and verified automatically with every run.
 
-In production, each port draws from its own OS CSPRNG; the deterministic input sequence exists only for cross-language verification. Different buffering in a reimplementation would be no less correct for producing different byte sequences.
+In production each port draws from its own OS CSPRNG; the deterministic inputs exist only for verification.
 
 \subsection*{Availability}
-The implementation, benchmark harness, experimental artifacts, golden vectors, and the cross-language reproducibility check are available at \url{https://github.com/mmmmaharshi/geno-id}. Each evaluation number traces to a committed artifact under the results archive carrying its own environment metadata. No single command regenerates the full evaluation; Table~\ref{tab:artifact-map} maps every manuscript table and figure to the harness and archived file, so a reader can reproduce each result independently of the others. Full reproducibility instructions appear in the reproducibility guide. Relative to the conference version, this manuscript adds the workload-driven planning loop, the composite-key cost experiment, native-engine validation, and the contemporary head-to-head comparison. Available as the published package under the MIT license. The manuscript revision is recorded alongside the archived manifest; that manifest also records which earlier release DOIs are deliberately not cited, because each predates behaviour reported here (the RFC~9562 \S6.2 monotonicity fix, the production-path E1 rewrite, and the $10^8$ field histogram). No hosted native-database box is required: the native-database check runs the committed harness against current PostgreSQL and MySQL service containers and archives the result in the native results file. The workload-planning experiment in Section~\ref{sec:workload-planning} additionally runs against an embedded PostgreSQL, so the layout effect is confirmed on two engines with the stated execution caveat.
+The implementation, benchmark harness, experimental artifacts, golden vectors, and the cross-language reproducibility check are available at \url{https://github.com/mmmmaharshi/geno-id}. Table~\ref{tab:artifact-map} maps every result to its harness and archived file. Relative to the conference version, this manuscript adds the workload-driven planning loop, the composite-key cost experiment, native-engine validation, and the contemporary head-to-head comparison. Available as the published package under the MIT license. The manuscript revision is recorded alongside the archived manifest; that manifest also records which earlier release DOIs are deliberately not cited, because each predates behaviour reported here (the RFC~9562 \S6.2 monotonicity fix, the production-path E1 rewrite, and the $10^8$ field histogram). No hosted native-database box is required: the native-database check runs the committed harness against current PostgreSQL and MySQL service containers and archives the result in the native results file. The workload-planning experiment in Section~\ref{sec:workload-planning} additionally runs against an embedded PostgreSQL, so the layout effect is confirmed on two engines with the stated execution caveat.
 
 \begin{table}[!ht]
 \caption{Artifact map: manuscript result $\to$ harness and archived output.}
@@ -867,30 +631,11 @@ The following limitations are disclosed openly, ranked by expected reviewer pres
 
 \textbf{External validity.} Independent reimplementation produces byte-identical output across 3000 seeded UUIDs and three layouts. Performance portability remains future work. Benchmarks run on shared runners; numbers are relative comparisons. A small local multi-shard experiment (Section~\ref{sec:cluster}) measures shard-major scan and resharding cost on one host, but cross-node dispatch, replication, and clock skew are unmeasured; the routing claim still rests on the single-key bit-mask mechanism.
 
-\textbf{Construct validity.} NIST PASS/FAIL is necessary but not sufficient for security; Section~\ref{sec:security} provides a threat model and entropy accounting.
-
-\textbf{Run-to-run stability.} The SQLite composite-key lookup measurement is the least stable quantity in this paper: the offset-56 versus offset-52 lookup difference reversed direction three times across four repeated runs of the same experiment ($+14\%$, $-2\%$, $+4.7\%$, $+4\%$), so no claim is made for it and only the direction every arm agrees on is reported. Insert throughput carried a similar instability in an earlier experiment, where one of three runs was uniformly $1.3$--$2.5\times$ slower under background load. The composite-key table above reports ten trials on one host, and the per-trial arrays in the archived composite results let a reader re-check that no trial is an outlier.
-
-\textbf{Internal validity.} Benchmark confounds are mitigated by mean $\pm$ SD over 10 trials with 95\% CI and Welch $t$-tests. Two implementation defects in the measured paths are guarded by tests: a byte-consumption mismatch in the event-sourcing layout's node-typed field and a missing seed-state reset. A dead-code-elimination (DCE) hazard in the timing loop was identified and corrected after early throughput runs: an unconsumed loop elides the pure-JavaScript generators' work, inflating measured rates by roughly $2\times$ while leaving the native platform generator unchanged. Every number in Table~\ref{tab:throughput} post-dates the correction, confirmed by consuming each generated value into a live accumulator that the JIT cannot prove is a no-op (via the shared timing loop). NIST runs unconditionally; dieharder is a CI-budget curation. The SQLite composite-key benchmark (Section~\ref{sec:composite-bench}) revealed a between-run variance component not captured by within-run CIs; a post-hoc rule was applied under which a run is excluded only when every arm is $>1.3\times$ slower than the median run. All three full repeat runs are archived (the archived per-run records; $N=10^5$, 10 trials, 1000 lookups per trial), so a reader can re-check the rule from the committed per-trial arrays. None of the three runs met the rule, so no run is excluded. The kept run backing Table~\ref{tab:composite} (the archived composite results) gives a headline ratio of $3.1\times$ ($22.72$\,ms embedded against $7.38$\,ms composite shard scan); pooling all three runs gives an all-runs headline ratio of $3.8\times$ ($20.33$\,ms embedded against $5.29$\,ms composite shard scan, 30 trials per arm). The two ratios agree in direction and are of similar magnitude, and both are reported rather than selecting a single run. Absolute per-identifier times in the density sweep (Section~\ref{sec:repair-vs-rejection}) carry a warm-up ordering effect; the repair-count and trial-count results, on which the analysis rests, are order-independent.
-
-\textbf{Runtime portability.} The refreshed nine-environment matrix puts the interpreted structured path at $0.06$--$0.37\times$ of the unstructured pooled base depending on host and runtime, with the slowest runtime at $0.06$--$0.12\times$ and the fastest at $0.29$--$0.37\times$, so the earlier boxed wide-integer attribution for the repair pass is not supported by the current data and is not repeated here. The compiled path is at approximate parity on two runtimes but regresses to $0.63$--$0.76\times$ of the interpreted path on the third (Table~\ref{tab:paired}), a code-generation limitation whose cause is under investigation. A reader deploying on the affected runtime should ship the interpreted structured path and benchmark before assuming any single figure transfers. The standalone portability probe on a newer build of that runtime measures $0.69\times$ of base throughput (95\% CI $[0.60, 0.79]$, 20 reps of 200k UUIDs; the archived portability record), above the matrix range for that runtime, so the gap is host- and runtime-dependent rather than a single stable ratio.
-
-\textbf{Conclusion validity.} Throughput comparisons use Welch $t$-tests. ``0 collisions'' is reported alongside the birthday-bound expectation.
-
-\textbf{Layout identity.} Pool validation, pool state, and compiled-generator caches are keyed by canonical structure hash, with a fail-closed guard: registering a layout whose name matches a previously registered but structurally different layout throws instead of sharing state. Layout names are therefore a human label over a structural identity, and reusing a name for a different field structure is a misuse, not a supported migration path.
-
-
+\textbf{Validity.} NIST PASS/FAIL is necessary but not sufficient for security; two implementation defects in the measured paths are guarded by tests, and every reported number post-dates the dead-code-elimination correction. Alignment claims rest on directions every run agrees on. The interpreted path runs at $0.06$--$0.37\times$ of base with compiler regression on one runtime; deploy the interpreted path there. Throughput comparisons use Welch $t$-tests with birthday-bound expectations.
 
 \section{Conclusion and Future Work}
 \label{sec:conclusion}
 RFC~9562 leaves version~8's 122 bits undefined; GenoID fills them with a declarative, portable algorithm. Its core contribution is the layout declaration abstraction: typed, constrained multi-field composition with a single shared repair pass, validated through per-field uniformity at $10^8$ scale, an adversarial security analysis, and a cross-language reproducibility check. The measured throughput comparison over the closest prior art is mixed: ahead of the steganographic prior art in eight of nine environments and of the second structured baseline in seven, by $1.1$--$2.7\times$ where it leads, with macOS hosts behind and host-dependent magnitude (Table~\ref{tab:paired}). This is a secondary result. The primary result is a framework for making shard, tenant, and sequence identity a property of the key itself, with proven $O(k)$ repair cost and the total-variation bound $m/2^\ell$ on allowed-set repaired fields.
-
-\section*{Appendix: battery detail}
-Full NIST per-draw p-value tables and dieharder per-trial pass fractions live in the archived battery results, the archived draws, and the archived dieharder record; the body reports the head-draw summary and the 5-draw empirical rate.
-
-NIST per-draw detail. No test fails in a majority of draws, and the single repeat (Spectral on multitenant, twice in five draws) is expected under the null: the per-test repeat probability is $\approx 0.001$, giving $\approx 11\%$ for at least one repeat across 123 test slots. A targeted follow-up ran the Spectral test alone over 30 fresh $10^6$-bit exports per arm (multitenant suspect, database-key layout control, unstructured pooled control). Fail rates 1/30, 0/30, 1/30, consistent with Type-I noise rather than a layout-induced spectral peak at this lower-power stream length (a matched $10^7$-bit repeat remains future work).
-
-Smith swap proof. $D$ is minimised by ordering fields in non-increasing $w_i/\ell_i$: swapping an adjacent inverted pair changes $D$ by $\ell_a \ell_b (w_a/\ell_a - w_b/\ell_b) \le 0$.
 
 \begin{thebibliography}{00}
 
