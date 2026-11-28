@@ -431,9 +431,7 @@ shards 6--8 under a second generation: migrating 20{,}000 identifiers through
 the shared field-composition path runs at 51{,}939 rows/s, a dual-read window
 calling the layout reader over both generations averages $17.39\,\mu$s per read against $11.41\,\mu$s for
 the matching single-layout read ($1.52\times$ overhead), and each version
-resolves 200 of the 400 sampled probes. The per-trial arrays are archived,
-and these are one-host, bounded-scale measurements rather than stable
-cross-host rates. The limits matter: there is no
+resolves 200 of the 400 sampled probes. The per-trial arrays are archived in results/cluster-experiment.json via bun run bench-cluster, and these are one-host, bounded-scale measurements rather than stable cross-host rates. The limits matter: there is no
 network dispatch, replication, consensus, or cross-node clock skew, so this
 is a small local cluster and not production-scale evidence; cross-node
 behaviour remains future work.
