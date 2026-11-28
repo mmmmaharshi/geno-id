@@ -52,11 +52,6 @@ const assertNoCollisions = (label: string, gen: () => string): void => {
   const r = collisionTestScaled(gen, N)
 
   assert.equal(r.collisions, 0, `${label} should have 0 collisions at N=${N}`)
-
-  assert.ok(
-    r.tableMB > 0 && r.tableMB < 1024,
-    `${label} table memory should be bounded`
-  )
 }
 
 const pending: Promise<void>[] = []

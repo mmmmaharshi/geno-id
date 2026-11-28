@@ -2,15 +2,8 @@ import fs from "node:fs"
 import path from "node:path"
 import { pathToFileURL } from "node:url"
 
-import {
-  andBits,
-  orBits,
-  shiftLeftBits,
-  shiftRightBits,
-  xorBits,
-} from "../shared/bitwise.ts"
-import { need } from "../shared/need.ts"
-import { hexVal } from "./shared/export-bits.ts"
+import { andBits, orBits, xorBits } from "../shared/bitwise.ts"
+import { uuidToFreeBits } from "./shared/export-bits.ts"
 
 const __dirname = import.meta.dirname
 
@@ -21,44 +14,6 @@ const algo = (await import(
 )) as { toUuidString: (b: Uint8Array) => string }
 
 const { toUuidString } = algo
-
-const HEX_STARTS = [0, 2, 4, 6, 9, 11, 14, 16, 19, 21, 24, 26, 28, 30, 32, 34]
-
-const FREE_MASK = [
-  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x0f, 0xff, 0x3f, 0xff, 0xff, 0xff,
-
-  0xff, 0xff, 0xff, 0xff,
-]
-
-const uuidToFreeBits = (uuid: string): string => {
-  let bits = ""
-
-  for (let i = 0; i < 16; i += 1) {
-    const idx = HEX_STARTS[i]
-
-    const hi = hexVal(need(uuid.codePointAt(idx)))
-
-    const lo = hexVal(need(uuid.codePointAt(idx + 1)))
-
-    const v = orBits(shiftLeftBits(hi, 4), lo)
-
-    const free = andBits(v, FREE_MASK[i])
-
-    for (let b = 0; b < 8; b += 1) {
-      if (andBits(FREE_MASK[i], shiftLeftBits(1, b))) {
-        let bit = "0"
-
-        if (andBits(shiftRightBits(free, b), 1)) {
-          bit = "1"
-        }
-
-        bits += bit
-      }
-    }
-  }
-
-  return bits
-}
 
 const mrByte = (): number => Math.floor(Math.random() * 256)
 

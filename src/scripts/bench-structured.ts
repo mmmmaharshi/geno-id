@@ -44,7 +44,7 @@ const algo = (await import(
 
   forceVersionVariant: (b: Uint8Array) => void
 
-  getFieldValue: (b: Readonly<Uint8Array>, f: Readonly<V8Field>) => number
+  getFieldValue: (b: Readonly<Uint8Array>, f: Readonly<V8Field>) => bigint
 
   completeLayout: (name: string, core: readonly V8Field[]) => V8Layout
 
@@ -218,7 +218,7 @@ const e1 = (): E1Result => {
         if (constraint) {
           const { allowed } = constraint
 
-          if (allowed && !allowed.includes(v)) {
+          if (allowed && !allowed.some((a) => BigInt(a) === v)) {
             constraintFail += 1
           }
         }
@@ -347,10 +347,10 @@ const e2 = (): E2Row[] => {
           ok = true
 
           for (const f of constrained) {
+            const v = getFieldValue(bytes, f)
+
             if (
-              !need(need(f.constraint).allowed).includes(
-                getFieldValue(bytes, f)
-              )
+              !need(need(f.constraint).allowed).some((a) => BigInt(a) === v)
             ) {
               ok = false
 
@@ -631,7 +631,7 @@ const e7 = (): E7Result => {
         if (constraint) {
           const { allowed } = constraint
 
-          if (allowed && !allowed.includes(v)) {
+          if (allowed && !allowed.some((a) => BigInt(a) === v)) {
             constraintFail += 1
           }
         }

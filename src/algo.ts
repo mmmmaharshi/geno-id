@@ -897,24 +897,10 @@ export const getFieldValue = (
 
   let value = 0n
 
-  const end = field.start + field.length
+  for (const seg of fieldByteMasks(field)) {
+    const part = Math.floor(bytes[seg.byte] / 2 ** seg.shift) % 2 ** seg.width
 
-  for (
-    let byte = Math.floor(field.start / 8);
-    byte < Math.ceil(end / 8);
-    byte += 1
-  ) {
-    const first = Math.max(field.start, byte * 8)
-
-    const last = Math.min(end - 1, byte * 8 + 7)
-
-    const shift = 7 - (last % 8)
-
-    const width = last - first + 1
-
-    const part = Math.floor(bytes[byte] / 2 ** shift) % 2 ** width
-
-    value = value * 2n ** BigInt(width) + BigInt(part)
+    value = value * 2n ** BigInt(seg.width) + BigInt(part)
   }
 
   return value
@@ -926,24 +912,10 @@ const readFieldNumber = (
 ): number => {
   let value = 0
 
-  const end = field.start + field.length
+  for (const seg of fieldByteMasks(field)) {
+    const part = Math.floor(bytes[seg.byte] / 2 ** seg.shift) % 2 ** seg.width
 
-  for (
-    let byte = Math.floor(field.start / 8);
-    byte < Math.ceil(end / 8);
-    byte += 1
-  ) {
-    const first = Math.max(field.start, byte * 8)
-
-    const last = Math.min(end - 1, byte * 8 + 7)
-
-    const shift = 7 - (last % 8)
-
-    const width = last - first + 1
-
-    const part = Math.floor(bytes[byte] / 2 ** shift) % 2 ** width
-
-    value = value * 2 ** width + part
+    value = value * 2 ** seg.width + part
   }
 
   return value
@@ -968,39 +940,23 @@ const _fieldWritePlans = new WeakMap<ReadonlyV8Field, WritePlanEntry[]>()
 const computeWritePlan = (field: ReadonlyV8Field): WritePlanEntry[] => {
   const end = field.start + field.length
 
-  const entries: WritePlanEntry[] = []
+  return fieldByteMasks(field).map((seg) => {
+    const writeMask = (2 ** seg.width - 1) * 2 ** seg.shift
 
-  for (
-    let byte = Math.floor(field.start / 8);
-    byte < Math.ceil(end / 8);
-    byte += 1
-  ) {
-    const first = Math.max(field.start, byte * 8)
+    return {
+      bitOffset: seg.shift,
 
-    const last = Math.min(end - 1, byte * 8 + 7)
-
-    const width = last - first + 1
-
-    const bitOffset = 7 - (last % 8)
-
-    const writeMask = (2 ** width - 1) * 2 ** bitOffset
-
-    entries.push({
-      bitOffset,
-
-      byte,
+      byte: seg.byte,
 
       clearMask: 255 - writeMask,
 
-      divisor: 2 ** (end - 1 - last),
+      divisor: 2 ** (end - seg.first - seg.width),
 
-      width,
+      width: seg.width,
 
       writeMask,
-    })
-  }
-
-  return entries
+    }
+  })
 }
 
 export const getFieldWritePlan = (field: ReadonlyV8Field): WritePlanEntry[] => {
@@ -1152,6 +1108,8 @@ export const forceVersionVariant = (bytes: Uint8Array): void => {
 interface ByteMask {
   readonly byte: number
 
+  readonly first: number
+
   readonly mask: number
 
   readonly shift: number
@@ -1172,28 +1130,24 @@ const fieldByteMasks = (f: ReadonlyV8Field): ByteMask[] => {
 
   const { start } = f
 
-  const end = f.start + f.length
+  const end = start + f.length
 
-  const endByte = Math.ceil(end / 8)
+  for (let byte = Math.floor(start / 8); byte < Math.ceil(end / 8); byte += 1) {
+    const first = Math.max(start, byte * 8)
 
-  for (let byte = Math.floor(start / 8); byte < endByte; byte += 1) {
-    let mask = 0
+    const last = Math.min(end - 1, byte * 8 + 7)
 
-    let width = 0
+    const width = last - first + 1
 
-    for (let bit = 0; bit < 8; bit += 1) {
-      const position = byte * 8 + bit
+    const shift = 7 - (last % 8)
 
-      if (position >= start && position < end) {
-        mask += 2 ** (7 - bit)
-
-        width += 1
-      }
-    }
-
-    if (mask) {
-      m.push({ byte, mask, shift: 8 - width, width })
-    }
+    m.push({
+      byte,
+      first,
+      mask: (2 ** width - 1) * 2 ** shift,
+      shift,
+      width,
+    })
   }
 
   _fieldByteMasks.set(f, m)
@@ -3122,15 +3076,6 @@ const structuredValue = (
       return (tick * 1000) % mod
     }
 
-    case "counter":
-    case "fixed":
-    case "node":
-    case "process":
-    case "random":
-    case "shard": {
-      return 0
-    }
-
     default: {
       return 0
     }
@@ -3635,23 +3580,13 @@ const genFieldReadExpr = (f: ReadonlyV8Field, buf = "b"): string => {
   for (let i = bm.length - 1; i >= 0; i -= 1) {
     const mk = bm[i]
 
-    const byteStart = mk.byte * 8
-
-    const fieldEnd = f.start + f.length - 1
-
-    const fEnd = Math.min(fieldEnd, byteStart + 7)
-
-    const nbits = fEnd - Math.max(f.start, byteStart) + 1
-
-    const rshift = 7 - (fEnd % 8)
-
     let expr = `(${buf}[${mk.byte}]&${mk.mask})`
 
-    if (rshift > 0) {
-      expr = `(${expr}>>>${rshift})`
+    if (mk.shift > 0) {
+      expr = `(${expr}>>>${mk.shift})`
     }
 
-    parts.push({ expr, nbits })
+    parts.push({ expr, nbits: mk.width })
   }
 
   if (parts.length === 0) {
@@ -4519,13 +4454,6 @@ const rawFieldValue = (
 
     case "fixed": {
       return field.value ?? 0
-    }
-
-    case "shard":
-    case "node":
-    case "process":
-    case "random": {
-      return selectorValue(field, bytes)
     }
 
     default: {
