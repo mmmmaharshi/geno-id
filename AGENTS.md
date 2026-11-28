@@ -43,6 +43,7 @@ GenoID is a TypeScript RFC 9562 v8 UUID library + CLI + browser benchmark. The p
 - Install deps: `bun install`
 - Compile to `dist/`: `bun run build` (~5s)
 - Install Playwright browsers: `bun x playwright install` (for `bun run playwright`)
+- Install TinyTeX once per machine (official `install-bin-windows` script from tinytex.yihui.org, installs to `%APPDATA%\TinyTeX`): `latexmk -pdf paper.tex` inside `paper/` must build with zero errors before committing any `paper/*.tex` change
 - Deno (CI-only): install from https://deno.com
 
 ## Development Workflow
@@ -127,7 +128,7 @@ After every change to any `.ts` file, run in order. **Stop and fix on any failur
 3. `bun run typecheck` — both root + scripts tsconfigs.
 4. `bun run test` — Bun test runner over `src/scripts/*.test.ts`.
 5. `bun run build` — compiles to `dist/`.
-6. `bun run check:paper` — deterministic dash gate for `paper/paper.tex`. **Confirm clean.**
+6. `bun run check:paper` — deterministic dash gate for `paper/paper.tex`. **Confirm clean. After any `paper/*.tex` change, fully compile with `latexmk -pdf paper.tex` inside `paper/` and confirm zero errors before committing — the dash gate cannot catch broken LaTeX.**
 7. `bun run evidence:verify` — manifest claims vs committed artifacts. **Confirm verified.**
 8. `bun run bench-rejection` — validates O(k) vs O((1/d)^k) repair bound. **Confirm no NaN/null cells + `results/rejection-sweep.json` written.**
 9. `bun run bench-db` — index-locality benchmark. **Confirm output written to `results/db-sqlite.json`.**
