@@ -35,7 +35,7 @@
 \begin{document}
 \mainmatter
 
-\title{GenoID: A Declarative Framework for Structured RFC 9562 v8 UUIDs via Constraint-Guided Repair}
+\title{GenoID: Declarative Structured RFC 9562 v8 UUIDs with Workload-Driven Planning and Native-Engine Validation}
 
 \titlerunning{GenoID: Declarative Structured RFC 9562 v8 UUIDs}
 
@@ -58,23 +58,23 @@ Distributed systems need identifiers that carry application structure, a shard, 
 
 \section{Introduction}
 
-Imagine a service whose records each carry an owning shard in the identifier itself. RFC~9562 version 8 reserves 122 bits for application-defined structure but specifies no algorithm to fill them. GenoID is that missing algorithm: instead of the exponential tail of rejection sampling, it produces correct keys on the first try in $O(k)$ work.
+Imagine a service whose records each carry an owning shard in the identifier itself. RFC~9562 version 8 reserves 122 bits for application-defined structure but specifies no algorithm to fill them. GenoID is that missing algorithm: instead of the exponential tail of whole-identifier rejection sampling, it produces correct keys on the first try in $O(k)$ work with no unbounded tail. This is not a faster sampler than per-layout hand-coded direct construction, which is equally $O(k)$; it is one shared pass serving every layout.
 
 Existing identifiers fall short: version 4 carries no structure, version 7 fixes one timestamp layout, and the steganographic prior art embeds an encrypted timestamp with no multi-field composition. Structure in the key is not always the right choice; a composite key is simpler whenever the identifier never leaves the database. Section~\ref{sec:why-embed} states the conditions under which embedding wins, and Section~\ref{sec:composite-bench} quantifies the cost of the alternative. GenoID declares field structure once as a layout declaration and satisfies it by deterministic repair, drawing from pre-populated CSPRNG pools to amortize entropy cost.
 
-Whether embedding an ordered key pays off is itself conditional, and an external cost model gives the decision rule. The buffer saturation ratio model~\cite{27} defines BSR as the buffer-pool size divided by total index size and predicts that once BSR drops below 1.0 a uniformly random key insert must read a page from disk before it can write, moving insert cost from CPU bound to I/O bound. The model derives from B-tree page splits, LRU eviction under uniform random keys, and a two-phase InnoDB I/O cost function, and it places the latency inflection near BSR = 1.0 using published PostgreSQL benchmark data plus one production incident; its output is a practitioner table mapping BSR ranges to a key choice. This is an external model that GenoID did not run, and it applies to random primary keys in an OLTP B-tree, not to GenoID's own measurements. Its role here is a decision aid: it tells a reader when an ordered key is worth emitting, namely when the index outgrows the buffer pool, and when that ordering is unnecessary. GenoID can emit a monotone field through the same declarative layout, so a deployment in the model's BSR < 1 regime may choose an ordered key without changing frameworks; the model's stated conditions define where that choice matters.
+Whether embedding an ordered key pays off is conditional. As motivation only, the buffer saturation ratio model~\cite{27} predicts random-key inserts turn I/O bound once the index outgrows the buffer pool; GenoID did not run this model and it covers random OLTP primary keys, not GenoID's measurements. Its role is a decision aid: emit an ordered field when the index outgrows the buffer, omit it otherwise. GenoID emits such a field through the same declarative layout when wanted.
 
 \noindent\textbf{Contributions.}
 \begin{itemize}
     \item A declarative RFC~9562 version 8 layout abstraction for typed, constrained fields.
     \item A pooled generation architecture that amortizes CSPRNG draws, entropy-neutral by construction.
-    \item Constraint-guided repair: $O(k)$ per identifier with no redraw, versus exponential expected trials under whole-identifier rejection sampling.
-    \item A proven total-variation bound $m/2^\ell$ on every allowed-set repaired field, with exact-fibre conditions on both shipped repair paths.
+    \item Constraint-guided repair: $O(k)$ per identifier with no redraw and no unbounded tail, versus exponential expected trials under whole-identifier rejection sampling. Repair is not faster than per-layout direct construction, which is equally $O(k)$ and exactly uniform; its advantage is one shared pass serving every layout with a stated fibre debt.
+    \item A proven total-variation envelope $m/2^\ell$ on every allowed-set repaired field, with exact uniformity iff $m \mid 2^\ell$ (and $G_i=1$ on the pooled path); shipped layouts satisfy the exact condition where claimed.
     \item An adversarial security analysis disclosing the bounded forward-secrecy window and by-design metadata leakage of structured layouts.
     \item Validation across per-field uniformity at $10^8$ scale (matching the closed-form $m/2^\ell$ bound to within $0.012$ percentage points, consistent with the $0.004$ pp binomial sampling noise at $n=10^8$), NIST and dieharder batteries, and multi-runtime throughput benchmarks, with limitations disclosed openly.
 \end{itemize}
 
-\noindent\textbf{Organization.} Section~\ref{sec:related-work} positions the work against identifier standards, sortable schemes, steganographic generators, and constrained-generation lineage. Section~\ref{sec:constant-change} records the one durable principle, and Section~\ref{sec:design} asks whether a GenoID architecture exists, answering with the layout abstraction and pooled generation. Section~\ref{sec:repair} gives the repair pass with its correctness argument. Section~\ref{sec:applications} works through the deployment question, when structure belongs in the key, with sharded, multi-tenant, and event-sourced designs, and Section~\ref{sec:formal} proves the complexity, entropy, and uniformity claims with the bit-allocation compiler. Section~\ref{sec:security} gives the entropy accounting and threat model, and Section~\ref{sec:evaluation} reports composition correctness, repair cost, randomness quality, and throughput with the methodology that keeps each claim refutable. Section~\ref{sec:validity} discusses validity and limits, and Section~\ref{sec:conclusion} concludes.
+\noindent\textbf{Organization.} Section~\ref{sec:related-work} positions the work against identifier standards, sortable schemes, steganographic generators, and constrained-generation lineage. Section~\ref{sec:design} presents the layout abstraction and pooled generation. Section~\ref{sec:repair} gives the repair pass with its correctness argument. Section~\ref{sec:applications} works through the deployment question, when structure belongs in the key, with sharded, multi-tenant, and event-sourced designs, and Section~\ref{sec:formal} proves the complexity, entropy, and uniformity claims with the bit-allocation compiler. Section~\ref{sec:security} gives the entropy accounting and threat model, and Section~\ref{sec:evaluation} reports composition correctness, repair cost, randomness quality, and throughput with the methodology that keeps each claim refutable. Deployability conditions are consolidated in Section~\ref{sec:why-embed}. Section~\ref{sec:validity} discusses validity and limits, and Section~\ref{sec:conclusion} concludes.
 
 \section{Related Work}
 \label{sec:related-work}
@@ -96,13 +96,6 @@ Declaring a data layout once and generating the accessors is an old idea: schema
 Embedding is not the only route to locality. CockroachDB hash-shards indexes to spread sequential writes while keeping a logical partition key~\cite{19}; TiDB AUTO\_RANDOM randomises integer primary keys with shard bits~\cite{20}; SQL Server's NEWSEQUENTIALID issues process-ordered GUIDs for sequential index behaviour~\cite{21}; and expression or covering indexes extract queryable structure from plain values without touching the key format. GenoID's bet is narrower. When the key itself must carry routing so a partition prunes with no secondary index, embedding wins (Section~\ref{sec:composite-bench}). Where it need not, an expression index over the plain key is the better-supported answer, but measured on the same rig it is not the cheaper one: it carries $1.93\times$ the storage and $2.07\times$ lower insert throughput of embedding for lookup parity ($1.04\times$), so the index trades throughput for tooling, not for savings.
 
 On throughput, prior work amortizes CSPRNG draws via pooling~\cite{12}, and a major PostgreSQL release ships a native time-ordered function~\cite{13}; GenoID adopts the same principle with a 256-entry pool.
-
-\section{Constant Change}
-\label{sec:constant-change}
-
-In searching for identifier architectural principles, remember that technical change is continuous in the data-systems industry, and GenoID reflects it. Shipped layouts are a snapshot, not dogma: field widths, admissible sets, and workload weights all move as deployments grow. Principles that seemed inviolable a few years ago are deprecated today, and principles that seem sacred today will be deprecated tomorrow. The principle of constant change is perhaps the only principle that should survive indefinitely.
-
-The purpose of this document is therefore not to lay down dogma about how identifiers should be designed, or even about how they should fit together. Rather, it is to convey guidelines found useful in the past that may be useful to those declaring new layouts or evaluating such designs. A resharding migration has a fixed shape: version the layout name across generations, never reuse a bare name, and run readers that accept both generations while writers emit the new one, tracking the fraction of old-generation keys as the migration metric and retiring the old reader when it reaches zero.
 
 \section{Is there a GenoID Architecture?}
 \label{sec:design}
@@ -276,12 +269,7 @@ random bits (Section~\ref{sec:entropy-accounting}), a 50\% collision bound near
 $3.95\times10^7$ draws. Embed only if the expected identifier volume fits the
 residual budget of the chosen layout.
 
-A resharding migration has a fixed shape. Version layout names as
-Version layout names across generations, never reuse a bare name, and run the
-dual-read window with readers accepting both generations (the versioned-layout
-layout reader over both generations) while writers emit the
-new one; track the fraction of old-generation keys as the migration metric and
-retire the old reader when it reaches zero. Size monotonic counters from peak
+A resharding migration has a fixed shape. Version layout names across generations, never reuse a bare name, and run readers that accept both generations while writers emit the new one; track the fraction of old-generation keys as the migration metric and retire the old reader when it reaches zero. Size monotonic counters from peak
 burst: a counter field admits $2^{\ell_c}$ increments per millisecond tick, and
 generation blocks until the clock advances past any exhausted tick, so a burst
 above budget stalls rather than degrades. Clock backsteps are safe by
@@ -291,6 +279,8 @@ duration at the application level, since the generator exposes no stall counters
 of its own (a blocked-count/stall-duration hook is future work). Where tenant or shard values must not be enumerable, keep them out
 of URLs, logs, and caches: structured bits are readable by anyone holding the
 key, and enumeration of a small set such as tenant $[1,8]$ is trivial.
+
+\noindent\textbf{Deploy iff:} the key crosses a boundary alone; the shard set is stable; the identifier fits the residual budget (database-key: 50 bits, 50\% bound $3.95\times10^7$); tenant concealment is not required; bursts fit $2^{\ell_c}$ per tick or stall is acceptable.
 
 \subsection{Cost of embedding versus a composite key}
 \label{sec:composite-bench}
@@ -431,8 +421,7 @@ shards 6--8 under a second generation: migrating 20{,}000 identifiers through
 the shared field-composition path runs at 51{,}939 rows/s, a dual-read window
 calling the layout reader over both generations averages $17.39\,\mu$s per read against $11.41\,\mu$s for
 the matching single-layout read ($1.52\times$ overhead), and each version
-resolves 200 of the 400 sampled probes. The per-trial arrays are archived,
-and these are one-host, bounded-scale measurements rather than stable
+resolves 200 of the 400 sampled probes. The per-trial arrays are archived in results/cluster-experiment.json via bun run bench-cluster, and these are one-host, bounded-scale measurements rather than stable
 cross-host rates. The limits matter: there is no
 network dispatch, replication, consensus, or cross-node clock skew, so this
 is a small local cluster and not production-scale evidence; cross-node
@@ -476,7 +465,7 @@ identically (Section~\ref{sec:nist}), consistent with the former.
 \subsection{Uniformity of constraint repair}
 \label{sec:uniformity}
 
-Let $A = (a_0, a_1, \dots, a_{m-1})$ be the admissible set in declaration order, $m = |A|$, and let $C_i = \left\lfloor (2^\ell - 1 - i)/m \right\rfloor + 1$ be the number of $\ell$-bit values congruent to $i$ modulo $m$. Index-modulo repair sends a raw value $v$ to $a_{v \bmod m}$, so the fibre of $a_i$ is exactly $C_i$. Total variation distance is bounded by
+Let $A = (a_0, a_1, \dots, a_{m-1})$ be the admissible set in declaration order, $m = |A|$, and let $C_i = \left\lfloor (2^\ell - 1 - i)/m \right\rfloor + 1$ be the number of $\ell$-bit values congruent to $i$ modulo $m$. Index-modulo repair sends a raw value $v$ to $a_{v \bmod m}$, so the fibre of $a_i$ is exactly $C_i$. The load-bearing claim is exact uniformity iff $m \mid 2^\ell$ (Theorem below); the envelope is bounded by
 \[
   \|p - u\|_{\mathrm{TV}} \;\le\; \frac{m}{2^\ell}, \qquad
   \max_i |p(a_i) - 1/m| \;\le\; \frac{\lceil 2^\ell/m \rceil}{2^\ell},
@@ -628,19 +617,10 @@ tenant-first GenoID layout against a full scan with in-app shard filtering
 for microshard, whose shard straddles time bits and offers no SQL prefix:
 $3446\,\mu$s versus $4383\,\mu$s (means over 5 reps of 500 lookups; CIs
 nearly touch), a modest $1.3\times$ edge to the prunable layout, with full-ID
-point lookups and inserts at parity on both sides. mirrored-throughput favours
-GenoID ($2.2$M vs $0.14$M UUIDs/s in the TypeScript mirror; most of the gap is BigInt construction cost in the mirror rather than an architectural gap). The structural difference
-appears under burst load: with the clock frozen and the shard fixed,
-200{,}000 draws collide never for either layout, but at $2\times10^6$ draws
-microshard shows 33 duplicates against an expected
-$n^2/2\cdot2^{36}\approx29$ while the tick-keyed monotonic counter holds
-GenoID at zero. This burst comparison is confounded: the database-key layout
-carries 117 random bits beyond its structured fields, so a zero-collision outcome
-at $2\times10^6$ draws is expected from the random budget alone and does not
-isolate the counter. The counter's contribution is ordering within a tick, not
-collision avoidance at this budget. The comparison isolates what each structure buys: GenoID
+point lookups and inserts at parity on both sides. Mirrored-throughput favours
+GenoID ($2.2$M vs $0.14$M UUIDs/s in the TypeScript mirror; most of the gap is BigInt construction cost in the mirror rather than an architectural gap). The comparison isolates what each structure buys: GenoID
 buys SQL prunability and counter-ordered bursts; microshard buys a fixed
-layout with zero-lookup routing, at the price of birthday-bound bursts.
+layout with zero-lookup routing, at the price of birthday-bound bursts. Burst-collision counts at $2\times10^6$ draws are omitted here because the database-key random budget alone predicts zero collisions and does not isolate the counter; the counter contribution is ordering within a tick.
 
 \section{Confidentiality and Authentication}
 \label{sec:security}
@@ -719,10 +699,7 @@ separates the two strategies structurally. Measured repairs per
 identifier follow $k(1-d)$ at every cell, converging to exactly $k$ as
 $d \to 0$ and to $k/2$ at $d=0.5$: the repair pass performs
 one bounded operation per constrained field and none that depend on the
-drawn value. At the low-density end of each block, per-identifier cost is
-$\approx\!0.7$--$1.0\,\mu$s per constrained field at $d=1/64$ across
-$k \in \{1,2,3,4,6\}$ ($0.8$/$2.0$/$2.8$/$4.1$/$4.1\,\mu$s totals;
-the archived sweep), rising with $k$; absolute timings
+drawn value. Full per-cell absolute timings are tabulated with the archived sweep and in the appendix; only the repair counts bear the structural claim, since absolute timings
 carry the warm-up ordering effect noted in Section~\ref{sec:validity}.
 
 Rejection's expected trial count follows $d^{-k}$ and becomes infeasible to measure beyond $k=3$ at low density. At $d=1/64$, the representative constraint of Section~\ref{sec:repair-complexity}, the sweep reproduces $64^k$ exactly for $k=3,4,6$ ($2.62\times10^{5}$, $1.68\times10^{7}$, $6.87\times10^{10}$).
@@ -743,12 +720,12 @@ Per-field uniformity is measured directly rather than inferred from whole-UUID b
 
 \subsection{NIST SP 800-22 and dieharder}
 \label{sec:nist}
-The full 15-test NIST SP~800-22 battery was run on all three structured layouts (Block Frequency implemented per SP~800-22 \S2.2 and cross-checked against reference vectors (custom implementation noted as a single point of failure); a community testing package provides the remaining tests, fanned across layouts by the battery script). On fresh $10^7$-bit exports of the random-field payload per layout (200k/98k/122k UUIDs), all 123 reported p-values (41 per layout, including the 8 Random Excursions states and 18 Random Excursions Variant states) satisfy $p \geq 0.01$ (unconditional pass probability $\approx 0.29$ under the null); machine-readable results are archived in the archived battery results. Because the battery reports 123 p-values at $\alpha=0.01$, marginal values below threshold are expected by chance ($\approx 1.2$ per full run). Across five independent draws (615 p-values) 7 failures are observed for an empirical $1.1\%$ rate, with draws at 123/123, 120/123, 123/123, 120/123, and 122/123. Every failed draw is archived with its bit-stream provenance in the archived draws (draws 2--5; the clean head draw's bit stream is archived with the archived battery results); full per-draw tables and the Spectral follow-up are in the appendix. Each layout contributes five streams, where NIST guidance prefers $\geq 100$; the battery therefore reads as evidence of no structural bias on the pooling path, not a certification. (SP~800-22 has been withdrawn by NIST and its planned revision explicitly rejects the suite's use for assessing cryptographic generators~\cite{2}; the result is reported as a sanity check on the pooling path, not as evidence of security.) A curated dieharder subset (diehard plus STS, 12.5\,MB per generator per trial, 5 trials, no file rewind; methodology in the reproducibility guide~\S3) reports a modal PASS on all 152 test rows across four generator variants (see the archived dieharder record). This is a CI-budget curation over payload generators, not a full-battery run, and it covers the unstructured and database-key payload paths only.
+This subsection is a structural sanity check on the pooling path, not a certification and not evidence of security: SP~800-22 is withdrawn, each layout contributes five streams where NIST prefers $\geq 100$, and the battery is fanned across layouts by script. The full 15-test NIST SP~800-22 battery was run on all three structured layouts (Block Frequency implemented per SP~800-22 \S2.2 and cross-checked against reference vectors (custom implementation noted as a single point of failure); a community testing package provides the remaining tests, fanned across layouts by the battery script). On fresh $10^7$-bit exports of the random-field payload per layout (200k/98k/122k UUIDs), all 123 reported p-values (41 per layout, including the 8 Random Excursions states and 18 Random Excursions Variant states) satisfy $p \geq 0.01$ (unconditional pass probability $\approx 0.29$ under the null); machine-readable results are archived in the archived battery results. Because the battery reports 123 p-values at $\alpha=0.01$, marginal values below threshold are expected by chance ($\approx 1.2$ per full run). Across five independent draws (615 p-values) 7 failures are observed for an empirical $1.1\%$ rate, with draws at 123/123, 120/123, 123/123, 120/123, and 122/123. Every failed draw is archived with its bit-stream provenance in the archived draws (draws 2--5; the clean head draw's bit stream is archived with the archived battery results); full per-draw tables and the Spectral follow-up are in the appendix. Each layout contributes five streams, where NIST guidance prefers $\geq 100$; the battery therefore reads as evidence of no structural bias on the pooling path, not a certification. (SP~800-22 has been withdrawn by NIST and its planned revision explicitly rejects the suite's use for assessing cryptographic generators~\cite{2}; the result is reported as a sanity check on the pooling path, not as evidence of security.) A curated dieharder subset (diehard plus STS, 12.5\,MB per generator per trial, 5 trials, no file rewind; methodology in the reproducibility guide~\S3) reports a modal PASS on all 152 test rows across four generator variants (see the archived dieharder record). This is a CI-budget curation over payload generators, not a full-battery run, and it covers the unstructured and database-key payload paths only.
 
 \subsection{Throughput and baseline comparison}
 \label{sec:throughput}
 
-The benchmark loop consumes every generated identifier, so that no generator's work can be elided as dead code. This correction reduced the measured rate of the pure-JavaScript generators by roughly $2\times$ relative to an unconsumed loop, while leaving the native platform generator unchanged, serving as a useful check that the sink is doing what it claims.
+The benchmark loop consumes every generated identifier, so that no generator's work can be elided as dead code. Only same-rig ratios of means are claimed; the representative-environment and Min--Max columns below are illustrative snapshots that vary by host and runtime. This correction reduced the measured rate of the pure-JavaScript generators by roughly $2\times$ relative to an unconsumed loop, while leaving the native platform generator unchanged, serving as a useful check that the sink is doing what it claims.
 
 \begin{table}[!ht]
 \caption{Throughput across nine environments (representative-environment column shows mean with 95\% CI over 10 trials after a
