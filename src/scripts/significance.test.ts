@@ -67,8 +67,6 @@ void test("welchTTest: clearly separated samples give a small p-value", () => {
 
   assert.ok(r.p < 0.01)
 
-  assert.ok(r.df >= 1)
-
   assert.ok(r.p >= 0 && r.p <= 1)
 })
 

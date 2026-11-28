@@ -2,6 +2,7 @@ import path from "node:path"
 import { pathToFileURL } from "node:url"
 
 import { andBits, shiftLeftBits, shiftRightBits } from "../shared/bitwise.ts"
+import { STANDARD_FREE_MASK } from "./shared/export-bits.ts"
 
 const __dirname = import.meta.dirname
 
@@ -19,11 +20,6 @@ const algo = (await import(
 }
 
 const { mutateChildBytes } = algo
-
-const FREE_MASK = [
-  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x0f, 0xff, 0x3f, 0xff, 0xff, 0xff, 0xff,
-  0xff, 0xff, 0xff,
-]
 
 const ENTRY = 34
 
@@ -120,9 +116,9 @@ for (let done = 0; done < N; done += CHUNK) {
       child[8] = (child[8] % 64) + 0x80
       let pos = 0
       for (let k = 0; k < 16; k += 1) {
-        const free = andBits(child[k], FREE_MASK[k])
+        const free = andBits(child[k], STANDARD_FREE_MASK[k])
         for (let b = 0; b < 8; b += 1) {
-          if (andBits(FREE_MASK[k], shiftLeftBits(1, b))) {
+          if (andBits(STANDARD_FREE_MASK[k], shiftLeftBits(1, b))) {
             pushBit(acc, andBits(shiftRightBits(free, b), 1), pos)
             pos += 1
           }
