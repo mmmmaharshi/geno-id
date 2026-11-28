@@ -22,31 +22,31 @@
         "insertSeries": [
           {
             "atRows": 100000,
-            "rowsPerSec": 536797
+            "rowsPerSec": 671092
           },
           {
             "atRows": 200000,
-            "rowsPerSec": 480708
+            "rowsPerSec": 667062
           },
           {
             "atRows": 300000,
-            "rowsPerSec": 495565
+            "rowsPerSec": 681314
           },
           {
             "atRows": 400000,
-            "rowsPerSec": 377228
+            "rowsPerSec": 669450
           },
           {
             "atRows": 500000,
-            "rowsPerSec": 499950
+            "rowsPerSec": 664224
           }
         ],
         "insertTotalRowsPerSec": {
           "ci95": [
-            139353,
-            666065
+            252484,
+            914383
           ],
-          "mean": 402709
+          "mean": 583433
         },
         "pageBytes": 52346880,
         "pagesPerRow": 0.0256
@@ -56,33 +56,33 @@
         "insertSeries": [
           {
             "atRows": 100000,
-            "rowsPerSec": 10450
+            "rowsPerSec": 13052
           },
           {
             "atRows": 200000,
-            "rowsPerSec": 9865
+            "rowsPerSec": 11924
           },
           {
             "atRows": 300000,
-            "rowsPerSec": 8897
+            "rowsPerSec": 12427
           },
           {
             "atRows": 400000,
-            "rowsPerSec": 9507
+            "rowsPerSec": 11969
           },
           {
             "atRows": 500000,
-            "rowsPerSec": 9597
+            "rowsPerSec": 11513
           }
         ],
         "insertTotalRowsPerSec": {
           "ci95": [
-            5882,
-            15157
+            -8622,
+            49558
           ],
-          "mean": 10520
+          "mean": 20468
         },
-        "pageBytes": 157040640,
+        "pageBytes": 157044736,
         "pagesPerRow": 0.0767
       },
       "uuid_v7": {
@@ -90,33 +90,33 @@
         "insertSeries": [
           {
             "atRows": 100000,
-            "rowsPerSec": 157656
+            "rowsPerSec": 160163
           },
           {
             "atRows": 200000,
-            "rowsPerSec": 169714
+            "rowsPerSec": 150279
           },
           {
             "atRows": 300000,
-            "rowsPerSec": 185868
+            "rowsPerSec": 161499
           },
           {
             "atRows": 400000,
-            "rowsPerSec": 164968
+            "rowsPerSec": 162034
           },
           {
             "atRows": 500000,
-            "rowsPerSec": 183904
+            "rowsPerSec": 144299
           }
         ],
         "insertTotalRowsPerSec": {
           "ci95": [
-            106398,
-            213230
+            153484,
+            156138
           ],
-          "mean": 159814
+          "mean": 154811
         },
-        "pageBytes": 154349568,
+        "pageBytes": 154423296,
         "pagesPerRow": 0.0754
       },
       "pg_uuid_v8": {
@@ -124,170 +124,170 @@
         "insertSeries": [
           {
             "atRows": 100000,
-            "rowsPerSec": 73542
+            "rowsPerSec": 45333
           },
           {
             "atRows": 200000,
-            "rowsPerSec": 98566
+            "rowsPerSec": 53746
           },
           {
             "atRows": 300000,
-            "rowsPerSec": 106146
+            "rowsPerSec": 50381
           },
           {
             "atRows": 400000,
-            "rowsPerSec": 97945
+            "rowsPerSec": 48934
           },
           {
             "atRows": 500000,
-            "rowsPerSec": 102344
+            "rowsPerSec": 48283
           }
         ],
         "insertTotalRowsPerSec": {
           "ci95": [
-            79252,
-            114268
+            10544,
+            153963
           ],
-          "mean": 96760
+          "mean": 82253
         },
-        "pageBytes": 206032896,
-        "pagesPerRow": 0.1006
+        "pageBytes": 207302656,
+        "pagesPerRow": 0.1012
       },
       "ulid_v8": {
         "freePages": 0,
         "insertSeries": [
           {
             "atRows": 100000,
-            "rowsPerSec": 127799
+            "rowsPerSec": 62728
           },
           {
             "atRows": 200000,
-            "rowsPerSec": 133201
+            "rowsPerSec": 45158
           },
           {
             "atRows": 300000,
-            "rowsPerSec": 160122
+            "rowsPerSec": 63835
           },
           {
             "atRows": 400000,
-            "rowsPerSec": 136797
+            "rowsPerSec": 53730
           },
           {
             "atRows": 500000,
-            "rowsPerSec": 119101
+            "rowsPerSec": 66181
           }
         ],
         "insertTotalRowsPerSec": {
           "ci95": [
-            121682,
-            156011
+            47500,
+            78408
           ],
-          "mean": 138847
+          "mean": 62954
         },
-        "pageBytes": 153989120,
-        "pagesPerRow": 0.0752
+        "pageBytes": 154521600,
+        "pagesPerRow": 0.0755
       },
       "genoid_v8": {
         "freePages": 0,
         "insertSeries": [
           {
             "atRows": 100000,
-            "rowsPerSec": 9128
+            "rowsPerSec": 15665
           },
           {
             "atRows": 200000,
-            "rowsPerSec": 8827
+            "rowsPerSec": 15299
           },
           {
             "atRows": 300000,
-            "rowsPerSec": 9100
+            "rowsPerSec": 11937
           },
           {
             "atRows": 400000,
-            "rowsPerSec": 8387
+            "rowsPerSec": 11962
           },
           {
             "atRows": 500000,
-            "rowsPerSec": 8067
+            "rowsPerSec": 10380
           }
         ],
         "insertTotalRowsPerSec": {
           "ci95": [
-            6094,
-            13790
+            6235,
+            25695
           ],
-          "mean": 9942
+          "mean": 15965
         },
-        "pageBytes": 157138944,
-        "pagesPerRow": 0.0767
+        "pageBytes": 157257728,
+        "pagesPerRow": 0.0768
       },
       "genoid_structured": {
         "freePages": 0,
         "insertSeries": [
           {
             "atRows": 100000,
-            "rowsPerSec": 124406
+            "rowsPerSec": 145636
           },
           {
             "atRows": 200000,
-            "rowsPerSec": 110248
+            "rowsPerSec": 139491
           },
           {
             "atRows": 300000,
-            "rowsPerSec": 121007
+            "rowsPerSec": 149814
           },
           {
             "atRows": 400000,
-            "rowsPerSec": 128190
+            "rowsPerSec": 152209
           },
           {
             "atRows": 500000,
-            "rowsPerSec": 133524
+            "rowsPerSec": 142042
           }
         ],
         "insertTotalRowsPerSec": {
           "ci95": [
-            41895,
-            152945
+            99747,
+            168471
           ],
-          "mean": 97420
+          "mean": 134109
         },
-        "pageBytes": 154697728,
-        "pagesPerRow": 0.0755
+        "pageBytes": 154783744,
+        "pagesPerRow": 0.0756
       },
       "genoid_shardfirst": {
         "freePages": 0,
         "insertSeries": [
           {
             "atRows": 100000,
-            "rowsPerSec": 120800
+            "rowsPerSec": 126428
           },
           {
             "atRows": 200000,
-            "rowsPerSec": 87351
+            "rowsPerSec": 136551
           },
           {
             "atRows": 300000,
-            "rowsPerSec": 37926
+            "rowsPerSec": 134638
           },
           {
             "atRows": 400000,
-            "rowsPerSec": 41757
+            "rowsPerSec": 141773
           },
           {
             "atRows": 500000,
-            "rowsPerSec": 39759
+            "rowsPerSec": 142166
           }
         ],
         "insertTotalRowsPerSec": {
           "ci95": [
-            3315,
-            175029
+            130673,
+            141567
           ],
-          "mean": 89172
+          "mean": 136120
         },
-        "pageBytes": 151891968,
-        "pagesPerRow": 0.0742
+        "pageBytes": 151814144,
+        "pagesPerRow": 0.0741
       }
     },
     "secondary": {
@@ -296,31 +296,31 @@
         "insertSeries": [
           {
             "atRows": 100000,
-            "rowsPerSec": 91992
+            "rowsPerSec": 417792
           },
           {
             "atRows": 200000,
-            "rowsPerSec": 74384
+            "rowsPerSec": 433979
           },
           {
             "atRows": 300000,
-            "rowsPerSec": 100145
+            "rowsPerSec": 423031
           },
           {
             "atRows": 400000,
-            "rowsPerSec": 92996
+            "rowsPerSec": 441574
           },
           {
             "atRows": 500000,
-            "rowsPerSec": 99942
+            "rowsPerSec": 454045
           }
         ],
         "insertTotalRowsPerSec": {
           "ci95": [
-            29834,
-            139909
+            168923,
+            614001
           ],
-          "mean": 84871
+          "mean": 391462
         },
         "pageBytes": 63123456,
         "pagesPerRow": 0.0308
@@ -330,65 +330,65 @@
         "insertSeries": [
           {
             "atRows": 100000,
-            "rowsPerSec": 7197
+            "rowsPerSec": 21753
           },
           {
             "atRows": 200000,
-            "rowsPerSec": 6226
+            "rowsPerSec": 20328
           },
           {
             "atRows": 300000,
-            "rowsPerSec": 6905
+            "rowsPerSec": 19717
           },
           {
             "atRows": 400000,
-            "rowsPerSec": 5521
+            "rowsPerSec": 18660
           },
           {
             "atRows": 500000,
-            "rowsPerSec": 5753
+            "rowsPerSec": 18229
           }
         ],
         "insertTotalRowsPerSec": {
           "ci95": [
-            480,
-            16494
+            -6498,
+            49733
           ],
-          "mean": 8487
+          "mean": 21618
         },
-        "pageBytes": 188108800,
-        "pagesPerRow": 0.0919
+        "pageBytes": 188051456,
+        "pagesPerRow": 0.0918
       },
       "uuid_v7": {
         "freePages": 0,
         "insertSeries": [
           {
             "atRows": 100000,
-            "rowsPerSec": 40414
+            "rowsPerSec": 156719
           },
           {
             "atRows": 200000,
-            "rowsPerSec": 27590
+            "rowsPerSec": 148378
           },
           {
             "atRows": 300000,
-            "rowsPerSec": 41511
+            "rowsPerSec": 158797
           },
           {
             "atRows": 400000,
-            "rowsPerSec": 46756
+            "rowsPerSec": 149699
           },
           {
             "atRows": 500000,
-            "rowsPerSec": 49333
+            "rowsPerSec": 161867
           }
         ],
         "insertTotalRowsPerSec": {
           "ci95": [
-            36851,
-            42506
+            148115,
+            157841
           ],
-          "mean": 39679
+          "mean": 152978
         },
         "pageBytes": 189419520,
         "pagesPerRow": 0.0925
@@ -398,65 +398,65 @@
         "insertSeries": [
           {
             "atRows": 100000,
-            "rowsPerSec": 30566
+            "rowsPerSec": 99413
           },
           {
             "atRows": 200000,
-            "rowsPerSec": 29792
+            "rowsPerSec": 97910
           },
           {
             "atRows": 300000,
-            "rowsPerSec": 28144
+            "rowsPerSec": 90948
           },
           {
             "atRows": 400000,
-            "rowsPerSec": 22023
+            "rowsPerSec": 98354
           },
           {
             "atRows": 500000,
-            "rowsPerSec": 28751
+            "rowsPerSec": 99554
           }
         ],
         "insertTotalRowsPerSec": {
           "ci95": [
-            10319,
-            33763
+            95188,
+            102408
           ],
-          "mean": 22041
+          "mean": 98798
         },
-        "pageBytes": 207908864,
-        "pagesPerRow": 0.1015
+        "pageBytes": 216940544,
+        "pagesPerRow": 0.1059
       },
       "ulid_v8": {
         "freePages": 0,
         "insertSeries": [
           {
             "atRows": 100000,
-            "rowsPerSec": 51593
+            "rowsPerSec": 129388
           },
           {
             "atRows": 200000,
-            "rowsPerSec": 61306
+            "rowsPerSec": 141982
           },
           {
             "atRows": 300000,
-            "rowsPerSec": 62595
+            "rowsPerSec": 132224
           },
           {
             "atRows": 400000,
-            "rowsPerSec": 55748
+            "rowsPerSec": 129696
           },
           {
             "atRows": 500000,
-            "rowsPerSec": 64195
+            "rowsPerSec": 126023
           }
         ],
         "insertTotalRowsPerSec": {
           "ci95": [
-            10858,
-            77017
+            123728,
+            145860
           ],
-          "mean": 43937
+          "mean": 134794
         },
         "pageBytes": 189419520,
         "pagesPerRow": 0.0925
@@ -466,33 +466,33 @@
         "insertSeries": [
           {
             "atRows": 100000,
-            "rowsPerSec": 10168
+            "rowsPerSec": 20335
           },
           {
             "atRows": 200000,
-            "rowsPerSec": 8881
+            "rowsPerSec": 19885
           },
           {
             "atRows": 300000,
-            "rowsPerSec": 8235
+            "rowsPerSec": 18766
           },
           {
             "atRows": 400000,
-            "rowsPerSec": 9568
+            "rowsPerSec": 18268
           },
           {
             "atRows": 500000,
-            "rowsPerSec": 8079
+            "rowsPerSec": 17854
           }
         ],
         "insertTotalRowsPerSec": {
           "ci95": [
-            -467,
-            21070
+            -8079,
+            50401
           ],
-          "mean": 10302
+          "mean": 21161
         },
-        "pageBytes": 188133376,
+        "pageBytes": 188157952,
         "pagesPerRow": 0.0919
       },
       "genoid_structured": {
@@ -500,31 +500,31 @@
         "insertSeries": [
           {
             "atRows": 100000,
-            "rowsPerSec": 49482
+            "rowsPerSec": 135339
           },
           {
             "atRows": 200000,
-            "rowsPerSec": 47414
+            "rowsPerSec": 135127
           },
           {
             "atRows": 300000,
-            "rowsPerSec": 56513
+            "rowsPerSec": 142512
           },
           {
             "atRows": 400000,
-            "rowsPerSec": 61641
+            "rowsPerSec": 131280
           },
           {
             "atRows": 500000,
-            "rowsPerSec": 65711
+            "rowsPerSec": 140887
           }
         ],
         "insertTotalRowsPerSec": {
           "ci95": [
-            53928,
-            55820
+            133359,
+            143673
           ],
-          "mean": 54874
+          "mean": 138516
         },
         "pageBytes": 189419520,
         "pagesPerRow": 0.0925
@@ -534,34 +534,34 @@
         "insertSeries": [
           {
             "atRows": 100000,
-            "rowsPerSec": 66202
+            "rowsPerSec": 124046
           },
           {
             "atRows": 200000,
-            "rowsPerSec": 65522
+            "rowsPerSec": 124387
           },
           {
             "atRows": 300000,
-            "rowsPerSec": 63731
+            "rowsPerSec": 132657
           },
           {
             "atRows": 400000,
-            "rowsPerSec": 62180
+            "rowsPerSec": 136970
           },
           {
             "atRows": 500000,
-            "rowsPerSec": 66619
+            "rowsPerSec": 134386
           }
         ],
         "insertTotalRowsPerSec": {
           "ci95": [
-            32124,
-            84283
+            122070,
+            149645
           ],
-          "mean": 58204
+          "mean": 135857
         },
-        "pageBytes": 188391424,
-        "pagesPerRow": 0.092
+        "pageBytes": 187265024,
+        "pagesPerRow": 0.0914
       }
     }
   },
@@ -571,69 +571,69 @@
     "pointLookup": {
       "genoid_shardfirst": {
         "ci95": [
-          117.80451676031986,
-          132.11454723968012
+          56.906511260818384,
+          71.96898473918161
         ],
-        "mean": 124.959532
+        "mean": 64.437748
       },
       "uuid_v7": {
         "ci95": [
-          116.28114176525312,
-          166.69071423474688
+          52.88836001473847,
+          66.98635198526154
         ],
-        "mean": 141.485928
+        "mean": 59.937356
       },
       "genoid_structured": {
         "ci95": [
-          120.16475433212699,
-          171.91298166787303
+          51.20530742028169,
+          63.422316579718306
         ],
-        "mean": 146.038868
+        "mean": 57.313812
       },
       "uuid_v4": {
         "ci95": [
-          127.67591539646519,
-          146.45997260353477
+          56.80084801964821,
+          72.49979198035177
         ],
-        "mean": 137.06794399999998
+        "mean": 64.65032
       }
     },
     "shard": {
       "baselineExtraIndexBytes": 11489280,
       "baselineIndexedMs": {
         "ci95": [
-          6.421162927013561,
-          10.212197072986438
+          2.4264932283351115,
+          3.1705867716648886
         ],
-        "mean": 8.31668
+        "mean": 2.79854
       },
       "baselineNoIndexMs": {
         "ci95": [
-          147.67448906456488,
-          171.1945509354351
+          62.359299241823855,
+          77.98010075817614
         ],
-        "mean": 159.43452
+        "mean": 70.16969999999999
       },
       "genoidExtraIndexBytes": 0,
       "genoidRangeMs": {
         "ci95": [
-          4.774312044113046,
-          25.262807955886952
+          2.8750344069161358,
+          12.913725593083864
         ],
-        "mean": 15.018559999999999
+        "mean": 7.89438
       },
-      "matched": 99748,
+      "matched": 99603,
       "reps": 5,
       "total": 500000
     }
   },
   "writeAmplification": {
-    "baselineNoIndexRowsPerSec": 75747,
-    "baselineWithIndexRowsPerSec": 55594,
+    "baselineNoIndexRowsPerSec": 169810,
+    "baselineWithIndexRowsPerSec": 135510,
     "genoidIndexBytes": 0,
-    "genoidRowsPerSec": 45389,
-    "indexBytes": 7688192,
-    "insertTaxPct": 26.6,
+    "genoidRowsPerSec": 137439,
+    "indexBytes": 7536640,
+    "insertTaxPct": 20.2,
     "rows": 300000
   }
 }
