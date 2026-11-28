@@ -13,6 +13,10 @@ Full NIST per-draw p-value tables and dieharder per-trial pass fractions live in
 
 NIST per-draw detail. No test fails in a majority of draws, and the single repeat (Spectral on multitenant, twice in five draws) is expected under the null: the per-test repeat probability is $\approx 0.001$, giving $\approx 11\%$ for at least one repeat across 123 test slots. A targeted follow-up ran the Spectral test alone over 30 fresh $10^6$-bit exports per arm (multitenant suspect, database-key layout control, unstructured pooled control). Fail rates 1/30, 0/30, 1/30, consistent with Type-I noise rather than a layout-induced spectral peak at this lower-power stream length (a matched $10^7$-bit repeat remains future work).
 
+Draw sizes per layout: 200k/98k/122k UUIDs. Machine-readable results are archived with the battery results. Draws ran 123/123, 120/123, 123/123, 120/123, and 122/123. Every failed draw is archived with its bit-stream provenance.
+
+The full 15-test NIST SP~800-22 battery was run on all three structured layouts. On fresh $10^7$-bit exports of the random-field payload per layout, all 123 reported p-values satisfy $p \geq 0.01$; across five draws the empirical failure rate is $1.1\%$, consistent with Type-I noise.
+
 \section{Repair-distribution grids}
 The bound is measured directly: over four $(\ell,\textit{min},\textit{max})$ cells including the shipped conformance window ($2\times10^5$ seeded draws per cell), every measured endpoint mass matches its closed form to within $0.06$ percentage points ($4/4$ cells; the archived grid). The fibre prediction is also checked directly over a grid of $(m,\ell)$ pairs ($m \in \{2,3,4,5,8\}$, $\ell \in \{3,4,8,12,16\}$, $2\times10^5$ seeded draws per cell): every measured frequency matches its closed-form fibre to within $0.3$ percentage points ($24/24$ cells; the archived grid).
 
