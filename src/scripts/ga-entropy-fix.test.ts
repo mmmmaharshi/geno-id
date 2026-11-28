@@ -50,6 +50,19 @@ void test("seeded entropy reports injected and stays deterministic in single-slo
   assert.equal(algo.getEntropySourceId(), "pooled-csprng-v1")
 })
 
+void test("reseed replays the pool from the start", () => {
+  algo.configurePools({ simplePoolSize: 256 })
+  algo.configureRandom(algo.createSeededRandom(7, 8))
+  algo.resetSeededState()
+  const a = algo.genGenoID()
+  algo.configureRandom(algo.createSeededRandom(7, 8))
+  algo.resetSeededState()
+  const b = algo.genGenoID()
+  algo.configureRandom(null)
+  algo.resetSeededState()
+  assert.equal(a, b)
+})
+
 void test("scrambleByte single-xor vectors", () => {
   assert.equal(algo.scrambleByte(0), 0)
   assert.equal(algo.scrambleByte(1), 9)

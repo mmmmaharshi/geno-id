@@ -5,6 +5,7 @@ import {
   shiftRightBits,
 } from "../shared/bitwise.ts"
 import { need } from "../shared/need.ts"
+import { HEX_STARTS, hexVal } from "./shared/export-bits.ts"
 import { nullValue } from "./shared/runtime-values.ts"
 import { forEachSequential } from "./shared/sequence.ts"
 
@@ -13,20 +14,6 @@ import { forEachSequential } from "./shared/sequence.ts"
 // By `stats.ts` (orchestrator) and `stats-worker.ts` (one battery per CPU core).
 
 // No DOM, no I/O beyond the imported generator module.
-
-const HEX_STARTS = [0, 2, 4, 6, 9, 11, 14, 16, 19, 21, 24, 26, 28, 30, 32, 34]
-
-const hexVal = (c: number): number => {
-  if (c >= 48 && c <= 57) {
-    return c - 48
-  }
-
-  if (c >= 97 && c <= 102) {
-    return c - 87
-  }
-
-  return 0
-}
 
 const hexToBytes = (s: string, out: Uint8Array): Uint8Array => {
   for (let i = 0; i < 16; i += 1) {

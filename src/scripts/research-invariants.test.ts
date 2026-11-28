@@ -727,6 +727,10 @@ void test(
   async () => {
     await spawnPool()
 
+    if (USE_WORKERS) {
+      assert.equal(POOL.length, CORES)
+    }
+
     try {
       await scanLayouts(N, STATS)
 

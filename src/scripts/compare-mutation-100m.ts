@@ -11,6 +11,10 @@ const root = path.resolve(__dirname, "..", "..")
 const algo = (await import(
   pathToFileURL(path.resolve(root, "dist", "algo.js")).href
 )) as {
+  createSeededRandom: (
+    seed0: number,
+    seed1: number
+  ) => (buf: Uint8Array) => void
   mutateChildBytes: (
     child: Uint8Array,
     mutPos: number,
@@ -19,7 +23,20 @@ const algo = (await import(
   ) => void
 }
 
-const { mutateChildBytes } = algo
+const { createSeededRandom, mutateChildBytes } = algo
+
+const seedRaw = process.env.SEED
+
+const fillPool: (buf: Uint8Array) => void =
+  seedRaw === undefined || seedRaw === ""
+    ? (buf) => crypto.getRandomValues(buf as Uint8Array<ArrayBuffer>)
+    : createSeededRandom(Number(seedRaw), 0x9e_37_79_b9)
+
+console.log(
+  seedRaw === undefined || seedRaw === ""
+    ? "entropy: os CSPRNG"
+    : `entropy: seed ${seedRaw}`
+)
 
 const ENTRY = 34
 
@@ -94,7 +111,7 @@ const child = new Uint8Array(16)
 const pool = new Uint8Array(ENTRY * CHUNK)
 
 for (let done = 0; done < N; done += CHUNK) {
-  crypto.getRandomValues(pool)
+  fillPool(pool)
   for (let i = 0; i < CHUNK; i += 1) {
     const off = i * ENTRY
     const cut = pool[off + 32] % 16

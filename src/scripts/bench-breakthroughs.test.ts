@@ -20,9 +20,16 @@ const algo = (await import(
   ) => boolean
 }
 
-void test("deriveWorkerId uses last 16 bits of IPv4", () => {
-  assert.equal(algo.deriveWorkerId("10.0.3.4"), 3 * 256 + 4)
-  assert.equal(algo.deriveWorkerId("192.168.0.1"), 1)
+void test("deriveWorkerId hashes the full address into 16 bits", () => {
+  assert.equal(algo.deriveWorkerId("10.0.3.4"), algo.deriveWorkerId("10.0.3.4"))
+  assert.notEqual(
+    algo.deriveWorkerId("10.0.1.5"),
+    algo.deriveWorkerId("10.1.1.5")
+  )
+  for (const ip of ["10.0.3.4", "192.168.0.1", "255.255.255.255"]) {
+    const id = algo.deriveWorkerId(ip)
+    assert.ok(id >= 0 && id < 65_536)
+  }
   assert.throws(() => algo.deriveWorkerId("not-an-ip"), RangeError)
   assert.throws(() => algo.deriveWorkerId("10.0.0"), RangeError)
 })

@@ -109,10 +109,12 @@ export const toUuidString = (b: Readonly<Uint8Array>): string => {
   return formatUuidBytes(b, wordTable(), HEX8)
 }
 
+const freezeWaitSnippet = "while(Date.now()<=_tick){}"
+
 const waitForNextTick = (lastTick: number): number => {
   // §6.2 freeze-and-wait: stall until the clock advances past the last tick.
 
-  // Twin: genLayoutSource emits the same loop into compiled output.
+  // Twin: genLayoutSource emits freezeWaitSnippet into compiled output.
 
   while (Date.now() <= lastTick) {
     // Intentional busy-wait
@@ -203,6 +205,8 @@ const _layoutIdentities = new Map<string, string>()
 
 export const resetSeededState = (): void => {
   _csprngPos = _csprngBuf.length
+
+  _genoIdx = _genoPoolN
 
   _poolMonoTick.clear()
 
@@ -3572,9 +3576,7 @@ export interface CompiledLayout {
   fn: () => string
 }
 
-const genFieldReadExpr = (f: ReadonlyV8Field, buf = "b"): string => {
-  const bm = fieldByteMasks(f)
-
+const genFieldReadExpr = (bm: readonly ByteMask[], buf = "b"): string => {
   const parts: { expr: string; nbits: number }[] = []
 
   for (let i = bm.length - 1; i >= 0; i -= 1) {
@@ -3883,9 +3885,9 @@ const genLayoutSource = (
         const maxCtr = 2 ** f.length - 1
 
         output.push(
-          `{const lk=${JSON.stringify(f.name)};let c=_mctr[lk];const rs=(${genFieldReadExpr(f)})&${reseedMask};` +
+          `{const lk=${JSON.stringify(f.name)};let c=_mctr[lk];const rs=(${genFieldReadExpr(fieldByteMasks(f))})&${reseedMask};` +
             `if(c===undefined){c=rs}` +
-            `else if(c>=${maxCtr}){if(_now<=_tick){while(Date.now()<=_tick){};_now=Date.now()};c=rs}` +
+            `else if(c>=${maxCtr}){if(_now<=_tick){${freezeWaitSnippet};_now=Date.now()};c=rs}` +
             `else{c=(c+1)&${maxCtr}}` +
             `_mctr[lk]=c}`
         )
@@ -3927,7 +3929,7 @@ const genLayoutSource = (
 
     const output = target as string[]
 
-    const readExpr = genFieldReadExpr(field)
+    const readExpr = genFieldReadExpr(fieldByteMasks(field))
 
     output.push("{")
 
@@ -4646,18 +4648,24 @@ export const deriveWorkerId = (ipv4: string): number => {
   if (parts.length !== 4) {
     throw new RangeError(`deriveWorkerId: invalid IPv4 "${ipv4}"`)
   }
-  const octets: number[] = []
   for (const p of parts) {
     if (!/^(?<octet>0|[1-9]\d{0,2})$/u.test(p)) {
       throw new RangeError(`deriveWorkerId: invalid IPv4 "${ipv4}"`)
     }
-    const o = Number(p)
-    if (o > 255) {
+    if (Number(p) > 255) {
       throw new RangeError(`deriveWorkerId: invalid IPv4 "${ipv4}"`)
     }
-    octets.push(o)
   }
-  return octets[2] * 256 + octets[3]
+
+  let h = 2_166_136_261
+
+  for (let i = 0; i < ipv4.length; i += 1) {
+    h = Math.imul(xor32(h, ipv4.codePointAt(i) ?? 0), 16_777_619)
+
+    h = shiftRightUnsignedBits(h, 0)
+  }
+
+  return shiftRightUnsignedBits(h, 0) % 65_536
 }
 
 export const splitMsFrac = (floatMs: number): { frac: number; ms: number } => {
