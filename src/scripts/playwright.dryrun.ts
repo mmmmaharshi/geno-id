@@ -85,6 +85,12 @@ const makeMockBrowser = async (): Promise<MockBrowser> => {
   })
   benchModule.init(window)
 
+  const windowRunAll = (window as unknown as { runAll?: () => void }).runAll
+
+  if (typeof windowRunAll === "function") {
+    ;(globalThis as unknown as { runAll?: () => void }).runAll = windowRunAll
+  }
+
   const page: MockPage = {
     $$eval: async <T>(
       selector: string,
@@ -187,7 +193,7 @@ const main = async (): Promise<void> => {
     "UUIDv7 (custom, RFC 9562)",
     "SHA-256 hash-derived (v5-style)",
     "Math.random (v4-format)",
-    "GenoID (proposed, GA-inspired, v8)",
+    "GenoID (proposed, v8)",
     "GenoID-structured (dbkey, v8)",
   ]
   const namesMatch =
